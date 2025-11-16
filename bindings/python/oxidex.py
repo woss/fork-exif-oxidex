@@ -1,14 +1,14 @@
 """
-Python ctypes bindings for ExifTool-RS C FFI.
+Python ctypes bindings for OxiDex C FFI.
 
-This module provides a Pythonic wrapper around the ExifTool-RS shared library
+This module provides a Pythonic wrapper around the OxiDex shared library
 using Python's ctypes module.
 
 Example:
-    >>> from exiftool_rs import ExifTool
-    >>> with ExifTool() as et:
-    ...     et.read_file("photo.jpg")
-    ...     make = et.get_tag("EXIF:Make")
+    >>> from oxidex import Oxidex
+    >>> with Oxidex() as ox:
+    ...     ox.read_file("photo.jpg")
+    ...     make = ox.get_tag("EXIF:Make")
     ...     print(f"Camera: {make}")
 """
 
@@ -19,25 +19,25 @@ import sys
 from typing import Optional
 
 
-# Error codes from exiftool_rs.h
-EXIFTOOL_OK = 0
-EXIFTOOL_ERR_IO = 1
-EXIFTOOL_ERR_PARSE = 2
-EXIFTOOL_ERR_TAG_NOT_FOUND = 3
-EXIFTOOL_ERR_INVALID_TAG_VALUE = 4
-EXIFTOOL_ERR_UNSUPPORTED_FORMAT = 5
-EXIFTOOL_ERR_NULL_POINTER = 6
-EXIFTOOL_ERR_INTERNAL = 99
+# Error codes from oxidex.h
+OXIDEX_OK = 0
+OXIDEX_ERR_IO = 1
+OXIDEX_ERR_PARSE = 2
+OXIDEX_ERR_TAG_NOT_FOUND = 3
+OXIDEX_ERR_INVALID_TAG_VALUE = 4
+OXIDEX_ERR_UNSUPPORTED_FORMAT = 5
+OXIDEX_ERR_NULL_POINTER = 6
+OXIDEX_ERR_INTERNAL = 99
 
 
-class ExifToolError(Exception):
-    """Exception raised by ExifTool operations."""
+class OxidexError(Exception):
+    """Exception raised by Oxidex operations."""
     pass
 
 
 def _find_library() -> ctypes.CDLL:
     """
-    Locate and load the ExifTool-RS shared library.
+    Locate and load the OxiDex shared library.
 
     Attempts to find the library in the following locations:
     1. Common build directories relative to this script
@@ -51,11 +51,11 @@ def _find_library() -> ctypes.CDLL:
     """
     # Determine library name based on platform
     if sys.platform == "darwin":
-        lib_name = "libexiftool_rs.dylib"
+        lib_name = "liboxide.dylib"
     elif sys.platform == "win32":
-        lib_name = "exiftool_rs.dll"
+        lib_name = "oxidex.dll"
     else:  # Linux and other Unix-like systems
-        lib_name = "libexiftool_rs.so"
+        lib_name = "liboxidex.so"
 
     # Try common build directories relative to this script
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -79,7 +79,7 @@ def _find_library() -> ctypes.CDLL:
                 continue
 
     # Try system library path
-    lib_path = ctypes.util.find_library("exiftool_rs")
+    lib_path = ctypes.util.find_library("oxidex")
     if lib_path:
         try:
             return ctypes.CDLL(lib_path)
@@ -103,76 +103,76 @@ _lib = _find_library()
 
 # Define function signatures
 # Handle lifecycle
-_lib.exiftool_create.restype = ctypes.c_void_p
-_lib.exiftool_create.argtypes = []
+_lib.oxidex_create.restype = ctypes.c_void_p
+_lib.oxidex_create.argtypes = []
 
-_lib.exiftool_destroy.restype = None
-_lib.exiftool_destroy.argtypes = [ctypes.c_void_p]
+_lib.oxidex_destroy.restype = None
+_lib.oxidex_destroy.argtypes = [ctypes.c_void_p]
 
 # Metadata reading
-_lib.exiftool_read_file.restype = ctypes.c_int
-_lib.exiftool_read_file.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+_lib.oxidex_read_file.restype = ctypes.c_int
+_lib.oxidex_read_file.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
-_lib.exiftool_get_tag_count.restype = ctypes.c_size_t
-_lib.exiftool_get_tag_count.argtypes = [ctypes.c_void_p]
+_lib.oxidex_get_tag_count.restype = ctypes.c_size_t
+_lib.oxidex_get_tag_count.argtypes = [ctypes.c_void_p]
 
-_lib.exiftool_get_tag_name_at.restype = ctypes.c_char_p
-_lib.exiftool_get_tag_name_at.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+_lib.oxidex_get_tag_name_at.restype = ctypes.c_char_p
+_lib.oxidex_get_tag_name_at.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
 
-_lib.exiftool_has_tag.restype = ctypes.c_int
-_lib.exiftool_has_tag.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+_lib.oxidex_has_tag.restype = ctypes.c_int
+_lib.oxidex_has_tag.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
 # Tag access
-_lib.exiftool_get_tag_string.restype = ctypes.c_char_p
-_lib.exiftool_get_tag_string.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+_lib.oxidex_get_tag_string.restype = ctypes.c_char_p
+_lib.oxidex_get_tag_string.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
-_lib.exiftool_get_tag_integer.restype = ctypes.c_int
-_lib.exiftool_get_tag_integer.argtypes = [
+_lib.oxidex_get_tag_integer.restype = ctypes.c_int
+_lib.oxidex_get_tag_integer.argtypes = [
     ctypes.c_void_p,
     ctypes.c_char_p,
     ctypes.POINTER(ctypes.c_int64)
 ]
 
-_lib.exiftool_get_tag_float.restype = ctypes.c_int
-_lib.exiftool_get_tag_float.argtypes = [
+_lib.oxidex_get_tag_float.restype = ctypes.c_int
+_lib.oxidex_get_tag_float.argtypes = [
     ctypes.c_void_p,
     ctypes.c_char_p,
     ctypes.POINTER(ctypes.c_double)
 ]
 
 # Error handling
-_lib.exiftool_get_last_error.restype = ctypes.c_char_p
-_lib.exiftool_get_last_error.argtypes = []
+_lib.oxidex_get_last_error.restype = ctypes.c_char_p
+_lib.oxidex_get_last_error.argtypes = []
 
 
-class ExifTool:
+class Oxidex:
     """
-    Python wrapper for ExifTool-RS C FFI.
+    Python wrapper for OxiDex C FFI.
 
     Provides a Pythonic interface for reading EXIF metadata from images.
 
     Example:
-        >>> with ExifTool() as et:
-        ...     et.read_file("photo.jpg")
-        ...     print(et.get_tag("EXIF:Make"))
+        >>> with Oxidex() as ox:
+        ...     ox.read_file("photo.jpg")
+        ...     print(ox.get_tag("EXIF:Make"))
         Canon
     """
 
     def __init__(self):
         """
-        Create a new ExifTool handle.
+        Create a new Oxidex handle.
 
         Raises:
-            ExifToolError: If handle creation fails (out of memory)
+            OxidexError: If handle creation fails (out of memory)
         """
-        self._handle = _lib.exiftool_create()
+        self._handle = _lib.oxidex_create()
         if not self._handle:
-            raise ExifToolError("Failed to create ExifTool handle (out of memory)")
+            raise OxidexError("Failed to create Oxidex handle (out of memory)")
 
     def __del__(self):
         """Destroy the handle and free resources."""
         if hasattr(self, '_handle') and self._handle:
-            _lib.exiftool_destroy(self._handle)
+            _lib.oxidex_destroy(self._handle)
             self._handle = None
 
     def __enter__(self):
@@ -192,15 +192,15 @@ class ExifTool:
             result: Return code from C function
 
         Raises:
-            ExifToolError: If result is not EXIFTOOL_OK
+            OxidexError: If result is not OXIDEX_OK
         """
-        if result != EXIFTOOL_OK:
-            error_msg = _lib.exiftool_get_last_error()
+        if result != OXIDEX_OK:
+            error_msg = _lib.oxidex_get_last_error()
             if error_msg:
                 msg = error_msg.decode('utf-8', errors='replace')
             else:
                 msg = f"Unknown error (code {result})"
-            raise ExifToolError(msg)
+            raise OxidexError(msg)
 
     def read_file(self, filepath: str) -> None:
         """
@@ -210,13 +210,13 @@ class ExifTool:
             filepath: Path to the image file
 
         Raises:
-            ExifToolError: If reading fails (file not found, parse error, etc.)
+            OxidexError: If reading fails (file not found, parse error, etc.)
         """
         if not self._handle:
-            raise ExifToolError("ExifTool handle has been destroyed")
+            raise OxidexError("Oxidex handle has been destroyed")
 
         filepath_bytes = filepath.encode('utf-8')
-        result = _lib.exiftool_read_file(self._handle, filepath_bytes)
+        result = _lib.oxidex_read_file(self._handle, filepath_bytes)
         self._check_error(result)
 
     def get_tag_count(self) -> int:
@@ -228,7 +228,7 @@ class ExifTool:
         """
         if not self._handle:
             return 0
-        return _lib.exiftool_get_tag_count(self._handle)
+        return _lib.oxidex_get_tag_count(self._handle)
 
     def get_tag_name_at(self, index: int) -> Optional[str]:
         """
@@ -243,7 +243,7 @@ class ExifTool:
         if not self._handle:
             return None
 
-        c_str = _lib.exiftool_get_tag_name_at(self._handle, index)
+        c_str = _lib.oxidex_get_tag_name_at(self._handle, index)
         if c_str:
             return c_str.decode('utf-8', errors='replace')
         return None
@@ -262,7 +262,7 @@ class ExifTool:
             return False
 
         tag_bytes = tag_name.encode('utf-8')
-        return _lib.exiftool_has_tag(self._handle, tag_bytes) == 1
+        return _lib.oxidex_has_tag(self._handle, tag_bytes) == 1
 
     def get_tag(self, tag_name: str) -> Optional[str]:
         """
@@ -278,7 +278,7 @@ class ExifTool:
             return None
 
         tag_bytes = tag_name.encode('utf-8')
-        c_str = _lib.exiftool_get_tag_string(self._handle, tag_bytes)
+        c_str = _lib.oxidex_get_tag_string(self._handle, tag_bytes)
         if c_str:
             # IMPORTANT: Copy the string immediately before next API call
             return c_str.decode('utf-8', errors='replace')
@@ -299,11 +299,11 @@ class ExifTool:
 
         tag_bytes = tag_name.encode('utf-8')
         value = ctypes.c_int64()
-        result = _lib.exiftool_get_tag_integer(
+        result = _lib.oxidex_get_tag_integer(
             self._handle, tag_bytes, ctypes.byref(value)
         )
 
-        if result == EXIFTOOL_OK:
+        if result == OXIDEX_OK:
             return value.value
         return None
 
@@ -322,11 +322,11 @@ class ExifTool:
 
         tag_bytes = tag_name.encode('utf-8')
         value = ctypes.c_double()
-        result = _lib.exiftool_get_tag_float(
+        result = _lib.oxidex_get_tag_float(
             self._handle, tag_bytes, ctypes.byref(value)
         )
 
-        if result == EXIFTOOL_OK:
+        if result == OXIDEX_OK:
             return value.value
         return None
 
