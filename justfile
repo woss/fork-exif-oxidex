@@ -1,4 +1,4 @@
-# ExifTool-RS Justfile
+# OxiDex Justfile
 # Run `just` to see available commands
 # Run `just <command>` to execute a command
 
@@ -50,7 +50,7 @@ test-package package:
 # Run tests for all tag crates
 test-tags:
     @echo "Running tests for all tag crates..."
-    cargo test -p exiftool-tags -p exiftool-tags-core -p exiftool-tags-camera -p exiftool-tags-media -p exiftool-tags-image -p exiftool-tags-document -p exiftool-tags-specialty
+    cargo test -p oxidex-tags -p oxidex-tags-core -p oxidex-tags-camera -p oxidex-tags-media -p oxidex-tags-image -p oxidex-tags-document -p oxidex-tags-specialty
 
 # Build the project in debug mode
 build:
@@ -65,12 +65,12 @@ build-release:
 # Build just the binary
 build-bin:
     @echo "Building binary..."
-    cargo build --bin exiftool-rs
+    cargo build --bin oxidex
 
 # Build release binary
 build-bin-release:
     @echo "Building release binary..."
-    cargo build --bin exiftool-rs --release
+    cargo build --bin oxidex --release
 
 # Check the project for errors without building
 check:
@@ -112,13 +112,13 @@ rebuild: clean build
 
 # Run the binary with arguments
 run *args:
-    @echo "Running exiftool-rs..."
-    cargo run --bin exiftool-rs -- {{args}}
+    @echo "Running oxidex..."
+    cargo run --bin oxidex -- {{args}}
 
 # Run the release binary with arguments
 run-release *args:
-    @echo "Running exiftool-rs (release)..."
-    cargo run --bin exiftool-rs --release -- {{args}}
+    @echo "Running oxidex (release)..."
+    cargo run --bin oxidex --release -- {{args}}
 
 # Generate and open documentation
 docs:
@@ -152,13 +152,13 @@ audit:
 
 # Install the binary locally
 install:
-    @echo "Installing exiftool-rs..."
+    @echo "Installing oxidex..."
     cargo install --path .
 
 # Uninstall the binary
 uninstall:
-    @echo "Uninstalling exiftool-rs..."
-    cargo uninstall exiftool-rs
+    @echo "Uninstalling oxidex..."
+    cargo uninstall oxidex
 
 # Build Debian package (requires cargo-deb)
 deb:
