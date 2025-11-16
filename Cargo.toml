@@ -1,14 +1,14 @@
 # Workspace configuration
 [workspace]
-members = [".", "exiftool-tags", "exiftool-tags-core", "exiftool-tags-camera", "exiftool-tags-media", "exiftool-tags-image", "exiftool-tags-document", "exiftool-tags-specialty"]
+members = [".", "oxidex-tags", "oxidex-tags-core", "oxidex-tags-camera", "oxidex-tags-media", "oxidex-tags-image", "oxidex-tags-document", "oxidex-tags-specialty"]
 resolver = "2"
 
 [package]
-name = "exiftool-rs"
+name = "oxidex"
 version = "1.0.9"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "A modern, high-performance Rust reimplementation of ExifTool for reading, writing, and editing metadata in 300+ file formats"
+authors = ["OxiDex Contributors"]
+description = "A modern, high-performance Rust implementation of ExifTool for reading, writing, and editing metadata in 300+ file formats"
 license = "GPL-3.0"
 repository = "https://github.com/exiftool-rs/exiftool-rs"
 readme = "README.md"
@@ -16,12 +16,12 @@ keywords = ["exif", "metadata", "xmp", "iptc", "image"]
 categories = ["multimedia::images", "command-line-utilities", "parsing"]
 
 [lib]
-name = "exiftool_rs"
+name = "oxidex"
 path = "src/lib.rs"
 crate-type = ["lib", "staticlib", "cdylib"]
 
 [[bin]]
-name = "exiftool-rs"
+name = "oxidex"
 path = "src/main.rs"
 
 [[bench]]
@@ -38,7 +38,7 @@ harness = false
 
 [dependencies]
 # Tag database (separate crate, always optimized)
-exiftool-tags = { path = "exiftool-tags" }
+oxidex-tags = { path = "oxidex-tags" }
 
 # CLI Framework - lightweight, zero-dependency argument parser
 lexopt = "0.3"
@@ -113,32 +113,32 @@ opt-level = 0
 codegen-units = 16
 
 # Force optimization for the tag database crate to prevent OOM in debug builds
-[profile.dev.package.exiftool-tags]
+[profile.dev.package.oxidex-tags]
 opt-level = 2
 codegen-units = 16
 
 # Force optimization for ALL tag crates to prevent OOM
-[profile.dev.package.exiftool-tags-core]
+[profile.dev.package.oxidex-tags-core]
 opt-level = 2
 codegen-units = 16
 
-[profile.dev.package.exiftool-tags-camera]
+[profile.dev.package.oxidex-tags-camera]
 opt-level = 2
 codegen-units = 16
 
-[profile.dev.package.exiftool-tags-media]
+[profile.dev.package.oxidex-tags-media]
 opt-level = 2
 codegen-units = 16
 
-[profile.dev.package.exiftool-tags-image]
+[profile.dev.package.oxidex-tags-image]
 opt-level = 2
 codegen-units = 16
 
-[profile.dev.package.exiftool-tags-document]
+[profile.dev.package.oxidex-tags-document]
 opt-level = 2
 codegen-units = 16
 
-[profile.dev.package.exiftool-tags-specialty]
+[profile.dev.package.oxidex-tags-specialty]
 opt-level = 2
 codegen-units = 16
 
@@ -161,11 +161,11 @@ exiftool-comparison = []
 # Install cargo-deb: cargo install cargo-deb
 # Build: cargo deb
 [package.metadata.deb]
-maintainer = "ExifTool-RS Contributors <exiftool-rs@example.com>"
-copyright = "2025, ExifTool-RS Contributors"
+maintainer = "OxiDex Contributors <oxidex@example.com>"
+copyright = "2025, OxiDex Contributors"
 license-file = ["LICENSE", "4"]
 extended-description = """\
-A modern, high-performance Rust reimplementation of ExifTool for reading, \
+A modern, high-performance Rust implementation of ExifTool for reading, \
 writing, and editing metadata in over 300 file formats including JPEG, PNG, \
 TIFF, RAW, PDF, and many others. Provides both a command-line interface and \
 library for metadata extraction and manipulation."""
@@ -173,9 +173,9 @@ depends = "$auto"
 section = "utils"
 priority = "optional"
 assets = [
-    ["target/release/exiftool-rs", "usr/bin/", "755"],
-    ["README.md", "usr/share/doc/exiftool-rs/", "644"],
-    ["LICENSE", "usr/share/doc/exiftool-rs/", "644"],
+    ["target/release/oxidex", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/oxidex/", "644"],
+    ["LICENSE", "usr/share/doc/oxidex/", "644"],
 ]
 
 # RPM Package Configuration (cargo-generate-rpm)
@@ -183,9 +183,9 @@ assets = [
 # Build: cargo build --release && cargo generate-rpm
 [package.metadata.generate-rpm]
 assets = [
-    { source = "target/release/exiftool-rs", dest = "/usr/bin/exiftool-rs", mode = "755" },
-    { source = "README.md", dest = "/usr/share/doc/exiftool-rs/README.md", mode = "644" },
-    { source = "LICENSE", dest = "/usr/share/doc/exiftool-rs/LICENSE", mode = "644" },
+    { source = "target/release/oxidex", dest = "/usr/bin/oxidex", mode = "755" },
+    { source = "README.md", dest = "/usr/share/doc/oxidex/README.md", mode = "644" },
+    { source = "LICENSE", dest = "/usr/share/doc/oxidex/LICENSE", mode = "644" },
 ]
 [package.metadata.generate-rpm.requires]
 # No runtime dependencies - statically linked binary
