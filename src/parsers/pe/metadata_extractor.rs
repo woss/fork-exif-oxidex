@@ -67,7 +67,50 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
         TagValue::Integer(header.characteristics as i64),
     );
 
-    // Decode common flags
+    // Decode characteristic bit flags into human-readable strings
+    // Reference: Microsoft PE/COFF specification IMAGE_FILE_HEADER.Characteristics
+    let mut flags = Vec::new();
+
+    if (header.characteristics & 0x0001) != 0 {
+        flags.push("No relocs");
+    }
+    if (header.characteristics & 0x0002) != 0 {
+        flags.push("Executable");
+    }
+    if (header.characteristics & 0x0004) != 0 {
+        flags.push("No line numbers");
+    }
+    if (header.characteristics & 0x0008) != 0 {
+        flags.push("No symbols");
+    }
+    if (header.characteristics & 0x0020) != 0 {
+        flags.push("Large address aware");
+    }
+    if (header.characteristics & 0x0100) != 0 {
+        flags.push("32-bit");
+    }
+    if (header.characteristics & 0x0200) != 0 {
+        flags.push("Bytes reversed lo");
+    }
+    if (header.characteristics & 0x1000) != 0 {
+        flags.push("System file");
+    }
+    if (header.characteristics & 0x2000) != 0 {
+        flags.push("DLL");
+    }
+    if (header.characteristics & 0x4000) != 0 {
+        flags.push("Bytes reversed hi");
+    }
+
+    // Insert decoded characteristics as comma-separated string
+    if !flags.is_empty() {
+        metadata.insert(
+            "PE:ImageFileCharacteristics".to_string(),
+            TagValue::String(flags.join(", ")),
+        );
+    }
+
+    // Decode common flags for FileType (kept for compatibility)
     let is_executable = (header.characteristics & 0x0002) != 0;
     let is_dll = (header.characteristics & 0x2000) != 0;
     let file_type = if is_dll {
@@ -97,6 +140,12 @@ pub fn extract_optional_metadata(
     };
     metadata.insert(
         "PE:ImageFormat".to_string(),
+        TagValue::String(image_format.to_string()),
+    );
+
+    // PEType is an alias for ImageFormat (for ExifTool compatibility)
+    metadata.insert(
+        "PE:PEType".to_string(),
         TagValue::String(image_format.to_string()),
     );
 
