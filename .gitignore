@@ -90,3 +90,6 @@ __pycache__/
 # Cache and data directories
 .cache/
 .data/
+
+# Examples directory
+examples/
