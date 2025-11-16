@@ -60,16 +60,16 @@ jobs:
 
       - name: Verify C header is up-to-date
         run: |
-          cbindgen --config cbindgen.toml --crate exiftool-rs --output api/exiftool_rs.h.tmp
-          if ! diff -q api/exiftool_rs.h api/exiftool_rs.h.tmp; then
+          cbindgen --config cbindgen.toml --crate oxidex --output api/oxidex.h.tmp
+          if ! diff -q api/oxidex.h api/oxidex.h.tmp; then
             echo "Error: C header file is out of date. Please regenerate it with:"
-            echo "  cbindgen --config cbindgen.toml --crate exiftool-rs --output api/exiftool_rs.h"
+            echo "  cbindgen --config cbindgen.toml --crate oxidex --output api/oxidex.h"
             echo ""
             echo "Differences:"
-            diff api/exiftool_rs.h api/exiftool_rs.h.tmp || true
+            diff api/oxidex.h api/oxidex.h.tmp || true
             exit 1
           fi
-          rm api/exiftool_rs.h.tmp
+          rm api/oxidex.h.tmp
           echo "C header file is up-to-date"
 
   audit:
@@ -184,7 +184,7 @@ jobs:
             echo "ExifTool already installed: $(exiftool -ver)"
           fi
 
-      - name: Build ExifTool-RS
+      - name: Build OxiDex
         run: cargo build --release --all-features
 
       - name: Run integration tests with ExifTool comparison
@@ -315,5 +315,5 @@ jobs:
 
       - name: Verify binary
         run: |
-          ls -lh target/${{ matrix.target }}/release/exiftool-rs
-          file target/${{ matrix.target }}/release/exiftool-rs || true
+          ls -lh target/${{ matrix.target }}/release/oxidex
+          file target/${{ matrix.target }}/release/oxidex || true
