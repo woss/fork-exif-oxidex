@@ -35,12 +35,12 @@ This document outlines the remaining manual steps to complete the v1.0.0 release
 
    Note: Use `--allow-dirty` because .codemachine files are modified but not part of the package.
 
-5. Verify successful publish at https://crates.io/crates/exiftool-rs
+5. Verify successful publish at https://crates.io/crates/oxidex
 
 6. Test installation:
    ```bash
-   cargo install exiftool-rs
-   exiftool-rs --version  # Should show 1.0.0
+   cargo install oxidex
+   oxidex --version  # Should show 1.0.0
    ```
 
 ### Step 2: Create and Push v1.0.0 Git Tag
@@ -49,7 +49,7 @@ After successful crates.io publish:
 
 ```bash
 # Create annotated tag with release notes
-git tag -a v1.0.0 -m "ExifTool-RS v1.0.0 Stable Release
+git tag -a v1.0.0 -m "OxiDex v1.0.0 Stable Release
 
 See CHANGELOG.md for full details.
 
@@ -69,7 +69,7 @@ git push origin v1.0.0
 
 After pushing the tag:
 
-1. Go to https://github.com/exiftool-rs/exiftool-rs/actions
+1. Go to https://github.com/oxidex/oxidex/actions
 2. Watch the "Release" workflow run
 3. Verify all binary builds succeed:
    - Linux x86_64 (musl)
@@ -79,26 +79,26 @@ After pushing the tag:
    - Windows x86_64
 
 Expected artifacts:
-- exiftool-rs-x86_64-linux-musl.tar.gz
-- exiftool-rs-aarch64-linux-musl.tar.gz
-- exiftool-rs-x86_64-macos.tar.gz
-- exiftool-rs-aarch64-macos.tar.gz
-- exiftool-rs-x86_64-windows.zip
+- oxidex-x86_64-linux-musl.tar.gz
+- oxidex-aarch64-linux-musl.tar.gz
+- oxidex-x86_64-macos.tar.gz
+- oxidex-aarch64-macos.tar.gz
+- oxidex-x86_64-windows.zip
 - SHA256SUMS
 
 ### Step 4: Create GitHub Release
 
 The release workflow should auto-create a draft release. If not, create manually:
 
-1. Go to https://github.com/exiftool-rs/exiftool-rs/releases/new
+1. Go to https://github.com/oxidex/oxidex/releases/new
 2. Select tag: v1.0.0
-3. Title: "ExifTool-RS v1.0.0 - Stable Release"
+3. Title: "OxiDex v1.0.0 - Stable Release"
 4. Description: Copy content from RELEASE_ANNOUNCEMENT.md or use this shorter version:
 
 ```markdown
-# ExifTool-RS v1.0.0: Stable Release
+# OxiDex v1.0.0: Stable Release
 
-🎉 First stable release of ExifTool-RS - a modern, high-performance Rust reimplementation of ExifTool!
+🎉 First stable release of OxiDex - a modern, high-performance Rust reimplementation of ExifTool!
 
 ## Highlights
 
@@ -113,14 +113,14 @@ The release workflow should auto-create a draft release. If not, create manually
 
 ```bash
 # From crates.io
-cargo install exiftool-rs
+cargo install oxidex
 
 # Or download pre-built binaries below
 ```
 
 ## Performance Benchmarks
 
-| Operation | Perl ExifTool | ExifTool-RS | Speedup |
+| Operation | Perl ExifTool | OxiDex | Speedup |
 |-----------|---------------|-------------|---------|
 | Single file | 37.5ms | 2.3ms | **16.1x** |
 | Batch (1000 files) | 916.4ms | 14.1ms | **64.9x** |
@@ -131,7 +131,7 @@ cargo install exiftool-rs
 
 ## What's New
 
-See [CHANGELOG.md](https://github.com/exiftool-rs/exiftool-rs/blob/main/CHANGELOG.md) for full details.
+See [CHANGELOG.md](https://github.com/oxidex/oxidex/blob/main/CHANGELOG.md) for full details.
 
 **Core Features:**
 - Full CLI with 90% Perl ExifTool compatibility
@@ -148,14 +148,14 @@ See [CHANGELOG.md](https://github.com/exiftool-rs/exiftool-rs/blob/main/CHANGELO
 
 ## Links
 
-- 📦 [crates.io](https://crates.io/crates/exiftool-rs)
-- 📖 [User Guide](https://exiftool-rs.github.io/exiftool-rs/)
-- 💻 [GitHub](https://github.com/exiftool-rs/exiftool-rs)
-- 📝 [CHANGELOG](https://github.com/exiftool-rs/exiftool-rs/blob/main/CHANGELOG.md)
+- 📦 [crates.io](https://crates.io/crates/oxidex)
+- 📖 [User Guide](https://oxidex.github.io/oxidex/)
+- 💻 [GitHub](https://github.com/oxidex/oxidex)
+- 📝 [CHANGELOG](https://github.com/oxidex/oxidex/blob/main/CHANGELOG.md)
 
 ---
 
-**Full Changelog**: https://github.com/exiftool-rs/exiftool-rs/commits/v1.0.0
+**Full Changelog**: https://github.com/oxidex/oxidex/commits/v1.0.0
 ```
 
 5. Attach all binary artifacts (if not auto-attached)
@@ -168,14 +168,14 @@ Test downloading and running binaries from GitHub Releases:
 
 ```bash
 # Linux
-wget https://github.com/exiftool-rs/exiftool-rs/releases/download/v1.0.0/exiftool-rs-x86_64-linux-musl.tar.gz
-tar xzf exiftool-rs-x86_64-linux-musl.tar.gz
-./exiftool-rs --version
+wget https://github.com/oxidex/oxidex/releases/download/v1.0.0/oxidex-x86_64-linux-musl.tar.gz
+tar xzf oxidex-x86_64-linux-musl.tar.gz
+./oxidex --version
 
 # macOS
-wget https://github.com/exiftool-rs/exiftool-rs/releases/download/v1.0.0/exiftool-rs-aarch64-macos.tar.gz
-tar xzf exiftool-rs-aarch64-macos.tar.gz
-./exiftool-rs --version
+wget https://github.com/oxidex/oxidex/releases/download/v1.0.0/oxidex-aarch64-macos.tar.gz
+tar xzf oxidex-aarch64-macos.tar.gz
+./oxidex --version
 ```
 
 ### Step 6: Post Release Announcement
@@ -183,7 +183,7 @@ tar xzf exiftool-rs-aarch64-macos.tar.gz
 After successful release, post announcements to Rust community:
 
 **Reddit r/rust**:
-- Title: "ExifTool-RS v1.0.0: Fast, Memory-Safe Metadata Management (13-65x faster than Perl)"
+- Title: "OxiDex v1.0.0: Fast, Memory-Safe Metadata Management (13-65x faster than Perl)"
 - Content: Adapted from RELEASE_ANNOUNCEMENT.md (keep concise)
 - Link to GitHub release
 
@@ -194,12 +194,12 @@ After successful release, post announcements to Rust community:
 
 **users.rust-lang.org**:
 - Category: "Announcements"
-- Title: "[ANN] ExifTool-RS v1.0.0 - High-Performance Metadata Management"
+- Title: "[ANN] OxiDex v1.0.0 - High-Performance Metadata Management"
 - Content: Full announcement from RELEASE_ANNOUNCEMENT.md
 
 **Twitter/Mastodon/Bluesky** (optional):
 ```
-🎉 ExifTool-RS v1.0.0 is here!
+🎉 OxiDex v1.0.0 is here!
 
 A memory-safe Rust reimplementation of ExifTool with 13-65x performance improvements.
 
@@ -208,9 +208,9 @@ A memory-safe Rust reimplementation of ExifTool with 13-65x performance improvem
 ✨ Zero dependencies
 ✨ Cross-platform
 
-cargo install exiftool-rs
+cargo install oxidex
 
-https://github.com/exiftool-rs/exiftool-rs
+https://github.com/oxidex/oxidex
 #rustlang #opensource
 ```
 
@@ -239,8 +239,8 @@ After release:
 
 After completing all steps, verify:
 
-- [ ] crates.io shows v1.0.0 at https://crates.io/crates/exiftool-rs
-- [ ] `cargo install exiftool-rs` works and installs v1.0.0
+- [ ] crates.io shows v1.0.0 at https://crates.io/crates/oxidex
+- [ ] `cargo install oxidex` works and installs v1.0.0
 - [ ] GitHub Releases has v1.0.0 with all binaries attached
 - [ ] All download links in README.md work
 - [ ] Documentation site is up-to-date
