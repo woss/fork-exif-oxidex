@@ -1,3 +1,4 @@
+# Workspace configuration
 [workspace]
 members = [".", "exiftool-tags", "exiftool-tags-core", "exiftool-tags-camera", "exiftool-tags-media", "exiftool-tags-image", "exiftool-tags-document", "exiftool-tags-specialty"]
 resolver = "2"
