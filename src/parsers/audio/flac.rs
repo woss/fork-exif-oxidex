@@ -43,8 +43,7 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap};
 use crate::error::{ExifToolError, Result};
 use nom::{
-    bytes::complete::tag,
-    number::complete::{be_u16, be_u24, be_u32, be_u8},
+    number::complete::{be_u16, be_u24, be_u8},
     IResult,
 };
 
@@ -191,6 +190,14 @@ fn parse_streaminfo_block(data: &[u8], metadata: &mut MetadataMap) -> Result<()>
         );
     }
 
+    // Add MD5 hash as hex string
+    let md5_hex = stream_info
+        .md5
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>();
+    metadata.insert("FLAC:MD5Signature".to_string(), TagValue::new_string(md5_hex));
+
     Ok(())
 }
 
@@ -283,8 +290,12 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
     ]);
     offset += 4;
 
+    // Safety limit: cap at 10,000 comments to prevent excessive memory usage
+    const MAX_COMMENTS: u32 = 10_000;
+    let safe_comment_count = comment_count.min(MAX_COMMENTS);
+
     // Parse each comment
-    for _ in 0..comment_count {
+    for _ in 0..safe_comment_count {
         if offset + 4 > data.len() {
             break;
         }
