@@ -12,6 +12,8 @@
 
 #![allow(dead_code)]
 
+use crate::parsers::raw::RawFormat;
+
 /// Represents the file format of a media file.
 ///
 /// This enum is used by format parsers to indicate which file formats they support
@@ -73,6 +75,11 @@ pub enum FileFormat {
     /// RAW image formats (generic)
     RAW,
 
+    /// Camera raw formats from various manufacturers
+    /// This variant wraps a RawFormat enum that identifies the specific camera raw format
+    /// (e.g., Canon CR2, Nikon NEF, Sony ARW, etc.)
+    CameraRaw(RawFormat),
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -101,6 +108,7 @@ impl FileFormat {
             FileFormat::HEIF => "HEIF",
             FileFormat::WebP => "WebP",
             FileFormat::RAW => "RAW",
+            FileFormat::CameraRaw(_) => "Camera Raw",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -127,6 +135,12 @@ impl FileFormat {
             FileFormat::HEIF => &["heif", "heic"],
             FileFormat::WebP => &["webp"],
             FileFormat::RAW => &["cr2", "nef", "arw", "dng"],
+            FileFormat::CameraRaw(_) => &[
+                "cr2", "cr3", "crw", "nef", "nrw", "arw", "sr2", "srf", "srw", "arq", "ari",
+                "raf", "orf", "ori", "pef", "rw2", "rwl", "3fr", "fff", "iiq", "mef", "mos",
+                "dcr", "kdc", "mdc", "mrw", "erf", "x3f", "gpr", "dng", "hif", "lri", "sti",
+                "raw", "cam", "rev",
+            ],
             FileFormat::Unknown => &[],
         }
     }

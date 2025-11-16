@@ -17,7 +17,7 @@ use std::path::Path;
 ///
 /// This enum represents all supported camera raw file formats organized by manufacturer.
 /// Each variant corresponds to a specific raw format with its own file structure and metadata layout.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RawFormat {
     // Canon
     /// Canon Raw version 2 - TIFF-based raw format used by Canon DSLRs

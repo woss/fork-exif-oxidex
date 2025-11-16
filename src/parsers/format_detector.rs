@@ -40,6 +40,7 @@
 #![allow(dead_code)]
 
 use crate::core::{FileFormat, FileReader};
+use crate::parsers::raw;
 use std::io;
 
 /// Detects the file format by examining magic bytes.
@@ -95,12 +96,12 @@ use std::io;
 /// # }
 /// ```
 pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
-    // Attempt to read 16 bytes for magic byte detection
+    // Attempt to read 32 bytes for magic byte detection (increased from 16 to support raw format detection)
     // If the file is smaller, read only what's available
-    let magic_bytes = match reader.read(0, 16) {
+    let magic_bytes = match reader.read(0, 32) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
-            // File is smaller than 16 bytes, try reading available bytes
+            // File is smaller than 32 bytes, try reading available bytes
             let size = reader.size() as usize;
             if size == 0 {
                 // Empty file - cannot determine format
@@ -117,15 +118,54 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::Unknown);
     }
 
+    // Check for raw formats first (before TIFF check)
+    // Many raw formats are TIFF-based, so we need to check for raw-specific signatures
+    // before falling back to generic TIFF detection
+    //
+    // Note: Without filename context, we can only detect raw formats with unique magic bytes
+    // (CR2, CR3, RAF, X3F, MRW). TIFF-based raw formats without distinctive markers
+    // (NEF, ARW, DNG, etc.) will be detected as TIFF and require filename-based detection
+    // at a higher level.
+
+    // Canon CR2 has "CR\x02\x00" marker at offset 8
+    if magic_bytes.len() >= 12
+        && magic_bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00])
+        && &magic_bytes[8..12] == b"CR\x02\x00" {
+        return Ok(FileFormat::CameraRaw(raw::RawFormat::CanonCR2));
+    }
+
+    // Canon CR3 uses ISO Base Media Format with "ftypcrx " marker
+    if magic_bytes.len() >= 12 && &magic_bytes[4..12] == b"ftypcrx " {
+        return Ok(FileFormat::CameraRaw(raw::RawFormat::CanonCR3));
+    }
+
+    // Fujifilm RAF has "FUJIFILMCCD-RAW " signature
+    if magic_bytes.len() >= 16 && &magic_bytes[0..16] == b"FUJIFILMCCD-RAW " {
+        return Ok(FileFormat::CameraRaw(raw::RawFormat::FujifilmRAF));
+    }
+
+    // Sigma X3F has "FOVb" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"FOVb" {
+        return Ok(FileFormat::CameraRaw(raw::RawFormat::SigmaX3F));
+    }
+
+    // Minolta MRW has "\x00MRM" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"\x00MRM" {
+        return Ok(FileFormat::CameraRaw(raw::RawFormat::MinoltaMRW));
+    }
+
     // Check formats in order from most specific to least specific
     // Start with 4-byte signatures, then 3-byte signatures
 
     // TIFF Little-Endian: 0x49 0x49 0x2A 0x00 ("II" + 42 in LE)
+    // Note: Many raw formats (NEF, ARW, DNG, PEF, ORF, etc.) are TIFF-based
+    // and will be detected here. Higher-level code should use filename to distinguish.
     if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00]) {
         return Ok(FileFormat::TIFF);
     }
 
     // TIFF Big-Endian: 0x4D 0x4D 0x00 0x2A ("MM" + 42 in BE)
+    // Note: NEF and some other raw formats use this signature
     if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x4D, 0x4D, 0x00, 0x2A]) {
         return Ok(FileFormat::TIFF);
     }

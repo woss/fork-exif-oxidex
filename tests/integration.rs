@@ -84,3 +84,6 @@ mod sigma_makernotes_tests;
 
 #[path = "integration/phaseone_makernotes_tests.rs"]
 mod phaseone_makernotes_tests;
+
+#[path = "integration/format_detection.rs"]
+mod format_detection;
