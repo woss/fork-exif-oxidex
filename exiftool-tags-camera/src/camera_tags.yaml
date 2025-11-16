@@ -4505,6 +4505,10 @@ tables:
         name: "ColorDataVersion"
         writable: false
         description: "ColorDataVersion tag"
+      - id: "0x0041"
+        name: "65 (R50V)"
+        writable: false
+        description: "65 (R50V) tag"
       - id: "0x0069"
         name: "WB_RGGBLevelsAsShot"
         writable: false

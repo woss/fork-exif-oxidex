@@ -467,10 +467,6 @@ tables:
         name: "Model"
         writable: false
         description: "Model tag"
-      - id: "0x0111"
-        name: "StripOffsets"
-        writable: false
-        description: "StripOffsets tag"
       - id: "0x0112"
         name: "Orientation"
         writable: false
@@ -483,10 +479,6 @@ tables:
         name: "RowsPerStrip"
         writable: false
         description: "RowsPerStrip tag"
-      - id: "0x0117"
-        name: "StripByteCounts"
-        writable: false
-        description: "StripByteCounts tag"
       - id: "0x0118"
         name: "MinSampleValue"
         writable: false
@@ -13860,6 +13852,16 @@ tables:
         name: "CodePage"
         writable: false
         description: "CodePage tag"
+  - name: LNK::EnvVarData
+    tags:
+      - id: "0x0008"
+        name: "EnvironmentTarget"
+        writable: false
+        description: "EnvironmentTarget tag"
+      - id: "0x010C"
+        name: "EnvironmentTargetUnicode"
+        writable: false
+        description: "EnvironmentTargetUnicode tag"
   - name: LNK::Item0032
     tags:
       - id: "0x000E"
@@ -15870,6 +15872,10 @@ tables:
         name: "Sensor"
         writable: false
         description: "Sensor tag"
+      - id: "0x10BE"
+        name: "Quality"
+        writable: false
+        description: "Quality tag"
       - id: "0x200D"
         name: "ColorTemperature"
         writable: false
