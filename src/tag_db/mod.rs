@@ -8,7 +8,7 @@ pub mod generated_tags;
 pub mod tag_registry;
 
 // Re-export everything from exiftool-tags crate
-pub use exiftool_tags::*;
+pub use oxidex_tags::*;
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
