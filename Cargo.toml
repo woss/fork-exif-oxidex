@@ -85,7 +85,7 @@ flate2 = "1.1"
 
 [build-dependencies]
 # HTTP client for downloading ExifTool source
-ureq = { version = "3.1", default-features = false, features = ["native-tls"] }
+ureq = { version = "3.1", default-features = false, features = ["rustls"] }
 # Regex for parsing Perl tag definitions
 regex = "1.12"
 # Error handling
