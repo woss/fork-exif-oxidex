@@ -50,8 +50,8 @@ fn main() {
     } else if args.tags_from_file.is_some() {
         // Copy metadata mode
         handle_copy_operation(&file, &args);
-    } else if file.is_dir() || args.recursive {
-        // Batch processing mode
+    } else if file.is_dir() {
+        // Batch processing mode (directory)
         handle_batch_processing(&file, &args);
     } else {
         // Single file processing mode
