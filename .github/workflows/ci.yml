@@ -288,7 +288,7 @@ jobs:
         include:
           # Linux ARM64 - native build on arm64
           - target: aarch64-unknown-linux-musl
-            os: puzl-ubuntu-latest
+            os: warp-ubuntu-latest-arm64-2x
 
           # Linux x86_64 - native build on x64
           - target: x86_64-unknown-linux-musl
