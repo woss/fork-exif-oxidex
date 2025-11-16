@@ -26,7 +26,7 @@ fn main() {
 
     // Display warning for unimplemented features
     if args.short_format {
-        eprintln!("Warning: Short format output (-s) is not yet fully implemented");
+        eprintln!("Warning: Short format output (-s) is not yet implemented");
     }
 
     // Extract file path from arguments

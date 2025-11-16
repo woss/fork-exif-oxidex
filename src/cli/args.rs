@@ -20,7 +20,7 @@ pub struct CliArgs {
     /// Display all tags (default behavior, currently has no effect)
     pub all_tags: bool,
 
-    /// Recursive directory processing (placeholder - not yet implemented)
+    /// Recursive directory processing
     pub recursive: bool,
 
     /// Preserve original file modification time after writing metadata.
@@ -462,7 +462,7 @@ fn print_help() {
     println!("        --csv                   Output in CSV format");
     println!("    -s                          Short output format (not yet fully implemented)");
     println!("    -a                          Display all tags (default behavior)");
-    println!("    -r                          Recursive directory processing (not yet implemented)");
+    println!("    -r                          Recursive directory processing");
     println!("        --preserve-file-times   Preserve original file modification time after writing");
     println!("        --backup                Create backup copy before modifying file (.bak extension)");
     println!("        --readonly              Enable read-only mode to prevent file modifications");
