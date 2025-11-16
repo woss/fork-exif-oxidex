@@ -83,6 +83,7 @@ This design ensures:
 - ✅ **ICC Profiles** - Color profile metadata extraction
 - ✅ **Photoshop IRB** - Adobe Photoshop Image Resource Blocks
 - ✅ **PDF** - Document metadata, XMP, and ICC profiles
+- ✅ **PE (Portable Executable)** - Windows executables, DLLs, and drivers (.exe, .dll, .sys)
 - ✅ **PNG** - PNG chunks (tEXt, iTXt, zTXt, etc.)
 - ✅ **QuickTime/MP4** - Video/audio metadata atoms
 - ✅ **File System** - File attributes, permissions, timestamps
