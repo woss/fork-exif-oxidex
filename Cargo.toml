@@ -32,6 +32,10 @@ harness = false
 name = "integration_benchmarks"
 harness = false
 
+[[bench]]
+name = "raw_parsing_bench"
+harness = false
+
 [dependencies]
 # Tag database (separate crate, always optimized)
 exiftool-tags = { path = "exiftool-tags" }
