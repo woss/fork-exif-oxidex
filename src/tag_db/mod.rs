@@ -10,8 +10,8 @@ pub mod tag_registry;
 // Re-export everything from exiftool-tags crate
 pub use exiftool_tags::*;
 
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 // Re-export commonly used registry functions
 pub use tag_registry::{get_tag_descriptor, tag_count};

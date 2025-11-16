@@ -91,16 +91,12 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
     // (e.g., DNG, NEF, ARW all have TIFF magic bytes but different file extensions)
     if format == FileFormat::TIFF {
         // Get filename for raw format detection
-        let filename = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
+        let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
         // Read first 32 bytes for raw format detection
         if let Ok(magic_bytes) = reader.read(0, 32) {
             // Check if this is a camera raw format
-            if let Some(raw_format) =
-                crate::parsers::raw::detect_raw_format(magic_bytes, filename)
+            if let Some(raw_format) = crate::parsers::raw::detect_raw_format(magic_bytes, filename)
             {
                 // Override TIFF detection with specific raw format
                 format = FileFormat::CameraRaw(raw_format);

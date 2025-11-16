@@ -17,8 +17,8 @@ pub fn lookup_lens_name(lens_id: u16) -> Option<String> {
     PANASONIC_LENS_DATABASE.get(&lens_id).map(|s| s.to_string())
 }
 
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 static PANASONIC_LENS_DATABASE: LazyLock<HashMap<u16, &'static str>> = LazyLock::new(|| {
     let mut db = HashMap::new();

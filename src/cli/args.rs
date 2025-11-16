@@ -463,12 +463,20 @@ fn print_help() {
     println!("    -s                          Short output format (not yet fully implemented)");
     println!("    -a                          Display all tags (default behavior)");
     println!("    -r                          Recursive directory processing");
-    println!("        --preserve-file-times   Preserve original file modification time after writing");
-    println!("        --backup                Create backup copy before modifying file (.bak extension)");
+    println!(
+        "        --preserve-file-times   Preserve original file modification time after writing"
+    );
+    println!(
+        "        --backup                Create backup copy before modifying file (.bak extension)"
+    );
     println!("        --readonly              Enable read-only mode to prevent file modifications");
     println!("        --TagsFromFile VALUE    Copy metadata from source file");
-    println!("    -d VALUE                    Date format string for DateTime tags in filename patterns");
-    println!("    -n                          Dry-run mode: show proposed renames without executing");
+    println!(
+        "    -d VALUE                    Date format string for DateTime tags in filename patterns"
+    );
+    println!(
+        "    -n                          Dry-run mode: show proposed renames without executing"
+    );
     println!();
     println!("EXAMPLES:");
     println!("    # Read metadata from a file");

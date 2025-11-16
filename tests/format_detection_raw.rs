@@ -15,46 +15,26 @@ fn test_raw_extensions_supported() {
     // List of all camera raw extensions that should be supported
     let raw_extensions = vec![
         // Canon
-        "cr2", "cr3", "crw",
-        // Nikon
-        "nef", "nrw",
-        // Sony
-        "arw", "arq", "ari", "sr2", "srf", "srw",
-        // Fujifilm
-        "raf",
-        // Olympus
-        "orf", "ori",
-        // Pentax
-        "pef",
-        // Panasonic
-        "rw2", "rwl",
-        // Hasselblad
-        "3fr", "fff",
-        // Phase One
-        "iiq",
-        // Mamiya
-        "mef",
-        // Leaf
-        "mos",
-        // Kodak
-        "dcr", "kdc",
-        // Minolta
-        "mdc", "mrw",
-        // Epson
-        "erf",
-        // Sigma
-        "x3f",
-        // GoPro
-        "gpr",
-        // Adobe DNG
-        "dng",
-        // HEIF
-        "hif",
-        // Light
-        "lri",
-        // Sinar
-        "sti",
-        // Generic
+        "cr2", "cr3", "crw", // Nikon
+        "nef", "nrw", // Sony
+        "arw", "arq", "ari", "sr2", "srf", "srw", // Fujifilm
+        "raf", // Olympus
+        "orf", "ori", // Pentax
+        "pef", // Panasonic
+        "rw2", "rwl", // Hasselblad
+        "3fr", "fff", // Phase One
+        "iiq", // Mamiya
+        "mef", // Leaf
+        "mos", // Kodak
+        "dcr", "kdc", // Minolta
+        "mdc", "mrw", // Epson
+        "erf", // Sigma
+        "x3f", // GoPro
+        "gpr", // Adobe DNG
+        "dng", // HEIF
+        "hif", // Light
+        "lri", // Sinar
+        "sti", // Generic
         "raw", "cam", "rev",
     ];
 
@@ -77,10 +57,10 @@ fn test_raw_extensions_supported() {
 fn test_existing_formats_still_supported() {
     let existing_formats = vec![
         "jpg", "jpeg", "jpe", "jfif", // JPEG
-        "tif", "tiff",                 // TIFF
-        "png",                         // PNG
+        "tif", "tiff", // TIFF
+        "png",  // PNG
         "mp4", "m4v", "m4a", "m4b", "mov", // Video
-        "pdf",                         // PDF
+        "pdf", // PDF
     ];
 
     for ext in existing_formats {

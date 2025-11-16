@@ -60,7 +60,11 @@ fn test_detect_canon_cr2() {
     // Verify it's detected as a CameraRaw variant
     match format {
         FileFormat::CameraRaw(raw_format) => {
-            assert_eq!(raw_format, RawFormat::CanonCR2, "Should detect as Canon CR2");
+            assert_eq!(
+                raw_format,
+                RawFormat::CanonCR2,
+                "Should detect as Canon CR2"
+            );
         }
         _ => panic!("Expected CameraRaw(CanonCR2), got {:?}", format),
     }
@@ -80,7 +84,11 @@ fn test_detect_canon_cr3() {
 
     match format {
         FileFormat::CameraRaw(raw_format) => {
-            assert_eq!(raw_format, RawFormat::CanonCR3, "Should detect as Canon CR3");
+            assert_eq!(
+                raw_format,
+                RawFormat::CanonCR3,
+                "Should detect as Canon CR3"
+            );
         }
         _ => panic!("Expected CameraRaw(CanonCR3), got {:?}", format),
     }
@@ -148,16 +156,19 @@ fn test_detect_dng() {
 fn test_detect_fujifilm_raf() {
     // Fujifilm RAF has distinctive "FUJIFILMCCD-RAW " signature
     let raf_data = vec![
-        b'F', b'U', b'J', b'I', b'F', b'I', b'L', b'M',
-        b'C', b'C', b'D', b'-', b'R', b'A', b'W', b' ',
-        0x00, 0x00, 0x00, 0x00,
+        b'F', b'U', b'J', b'I', b'F', b'I', b'L', b'M', b'C', b'C', b'D', b'-', b'R', b'A', b'W',
+        b' ', 0x00, 0x00, 0x00, 0x00,
     ];
     let reader = TestReader::new(raf_data);
     let format = detect_format(&reader).expect("Should detect format");
 
     match format {
         FileFormat::CameraRaw(raw_format) => {
-            assert_eq!(raw_format, RawFormat::FujifilmRAF, "Should detect as Fujifilm RAF");
+            assert_eq!(
+                raw_format,
+                RawFormat::FujifilmRAF,
+                "Should detect as Fujifilm RAF"
+            );
         }
         _ => panic!("Expected CameraRaw(FujifilmRAF), got {:?}", format),
     }
@@ -166,16 +177,17 @@ fn test_detect_fujifilm_raf() {
 #[test]
 fn test_detect_sigma_x3f() {
     // Sigma X3F has "FOVb" signature
-    let x3f_data = vec![
-        b'F', b'O', b'V', b'b',
-        0x00, 0x00, 0x00, 0x00,
-    ];
+    let x3f_data = vec![b'F', b'O', b'V', b'b', 0x00, 0x00, 0x00, 0x00];
     let reader = TestReader::new(x3f_data);
     let format = detect_format(&reader).expect("Should detect format");
 
     match format {
         FileFormat::CameraRaw(raw_format) => {
-            assert_eq!(raw_format, RawFormat::SigmaX3F, "Should detect as Sigma X3F");
+            assert_eq!(
+                raw_format,
+                RawFormat::SigmaX3F,
+                "Should detect as Sigma X3F"
+            );
         }
         _ => panic!("Expected CameraRaw(SigmaX3F), got {:?}", format),
     }
@@ -184,16 +196,17 @@ fn test_detect_sigma_x3f() {
 #[test]
 fn test_detect_minolta_mrw() {
     // Minolta MRW has "\x00MRM" signature
-    let mrw_data = vec![
-        0x00, b'M', b'R', b'M',
-        0x00, 0x00, 0x00, 0x00,
-    ];
+    let mrw_data = vec![0x00, b'M', b'R', b'M', 0x00, 0x00, 0x00, 0x00];
     let reader = TestReader::new(mrw_data);
     let format = detect_format(&reader).expect("Should detect format");
 
     match format {
         FileFormat::CameraRaw(raw_format) => {
-            assert_eq!(raw_format, RawFormat::MinoltaMRW, "Should detect as Minolta MRW");
+            assert_eq!(
+                raw_format,
+                RawFormat::MinoltaMRW,
+                "Should detect as Minolta MRW"
+            );
         }
         _ => panic!("Expected CameraRaw(MinoltaMRW), got {:?}", format),
     }

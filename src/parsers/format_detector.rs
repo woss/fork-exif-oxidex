@@ -130,7 +130,8 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // Canon CR2 has "CR\x02\x00" marker at offset 8
     if magic_bytes.len() >= 12
         && magic_bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00])
-        && &magic_bytes[8..12] == b"CR\x02\x00" {
+        && &magic_bytes[8..12] == b"CR\x02\x00"
+    {
         return Ok(FileFormat::CameraRaw(raw::RawFormat::CanonCR2));
     }
 

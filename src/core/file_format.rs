@@ -136,10 +136,9 @@ impl FileFormat {
             FileFormat::WebP => &["webp"],
             FileFormat::RAW => &["cr2", "nef", "arw", "dng"],
             FileFormat::CameraRaw(_) => &[
-                "cr2", "cr3", "crw", "nef", "nrw", "arw", "sr2", "srf", "srw", "arq", "ari",
-                "raf", "orf", "ori", "pef", "rw2", "rwl", "3fr", "fff", "iiq", "mef", "mos",
-                "dcr", "kdc", "mdc", "mrw", "erf", "x3f", "gpr", "dng", "hif", "lri", "sti",
-                "raw", "cam", "rev",
+                "cr2", "cr3", "crw", "nef", "nrw", "arw", "sr2", "srf", "srw", "arq", "ari", "raf",
+                "orf", "ori", "pef", "rw2", "rwl", "3fr", "fff", "iiq", "mef", "mos", "dcr", "kdc",
+                "mdc", "mrw", "erf", "x3f", "gpr", "dng", "hif", "lri", "sti", "raw", "cam", "rev",
             ],
             FileFormat::Unknown => &[],
         }

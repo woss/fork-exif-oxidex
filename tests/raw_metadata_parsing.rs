@@ -116,7 +116,10 @@ fn test_parse_minimal_tiff_based_raw() {
                 metadata.contains_key("File:FileType"),
                 "Should have File:FileType tag"
             );
-            println!("Minimal TIFF parsed successfully with {} tags", metadata.len());
+            println!(
+                "Minimal TIFF parsed successfully with {} tags",
+                metadata.len()
+            );
         }
         Err(e) => {
             println!("Minimal TIFF parsing failed gracefully: {}", e);

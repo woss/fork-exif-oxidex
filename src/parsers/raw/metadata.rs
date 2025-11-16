@@ -274,7 +274,10 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                 }
             }
             Err(e) => {
-                eprintln!("Warning: Failed to parse IFD at offset {}: {}", ifd_offset, e);
+                eprintln!(
+                    "Warning: Failed to parse IFD at offset {}: {}",
+                    ifd_offset, e
+                );
                 break;
             }
         }

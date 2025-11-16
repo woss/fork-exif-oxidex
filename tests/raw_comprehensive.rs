@@ -235,9 +235,7 @@ fn test_all_formats_handled_gracefully() {
     // Test that each format can be parsed without panicking
     for format in formats {
         // Use std::panic::catch_unwind to catch any panics
-        let result = std::panic::catch_unwind(|| {
-            parse_raw_metadata(minimal_tiff, format)
-        });
+        let result = std::panic::catch_unwind(|| parse_raw_metadata(minimal_tiff, format));
 
         assert!(
             result.is_ok(),
@@ -413,11 +411,7 @@ fn test_read_real_raw_files() {
             );
 
             let meta = metadata.unwrap();
-            assert!(
-                meta.len() > 0,
-                "No metadata extracted from {}",
-                file_path
-            );
+            assert!(meta.len() > 0, "No metadata extracted from {}", file_path);
 
             println!(
                 "  Successfully extracted {} metadata tags from {}",

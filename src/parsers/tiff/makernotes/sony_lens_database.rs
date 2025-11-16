@@ -3,8 +3,8 @@
 //! Supports both A-mount (Minolta AF, Sony Alpha DSLR) and E-mount (α7, α9, α6000 series)
 //! lenses. Based on ExifTool's Sony.pm and Minolta.pm lens databases.
 
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 /// Looks up a lens name from a Sony lens ID
 ///

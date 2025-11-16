@@ -53,56 +53,31 @@ impl BatchStats {
 /// Supported image and media file extensions
 const SUPPORTED_EXTENSIONS: &[&str] = &[
     // JPEG
-    "jpg", "jpeg", "jpe", "jfif",
-    // TIFF
-    "tif", "tiff",
-    // PNG
-    "png",
-    // Video
-    "mp4", "m4v", "m4a", "m4b", "mov",
-    // PDF
-    "pdf",
-    // Camera Raw - Canon
-    "cr2", "cr3", "crw",
-    // Camera Raw - Nikon
-    "nef", "nrw",
-    // Camera Raw - Sony
-    "arw", "arq", "ari", "sr2", "srf", "srw",
-    // Camera Raw - Fujifilm
-    "raf",
-    // Camera Raw - Olympus
-    "orf", "ori",
-    // Camera Raw - Pentax
-    "pef",
-    // Camera Raw - Panasonic
-    "rw2", "rwl",
-    // Camera Raw - Hasselblad
-    "3fr", "fff",
-    // Camera Raw - Phase One
-    "iiq",
-    // Camera Raw - Mamiya
-    "mef",
-    // Camera Raw - Leaf
-    "mos",
-    // Camera Raw - Kodak
-    "dcr", "kdc",
-    // Camera Raw - Minolta
-    "mdc", "mrw",
-    // Camera Raw - Epson
-    "erf",
-    // Camera Raw - Sigma
-    "x3f",
-    // Camera Raw - GoPro
-    "gpr",
-    // Camera Raw - DNG (Adobe Digital Negative)
-    "dng",
-    // Camera Raw - HEIF
-    "hif",
-    // Camera Raw - Light
-    "lri",
-    // Camera Raw - Sinar
-    "sti",
-    // Camera Raw - Generic/Other
+    "jpg", "jpeg", "jpe", "jfif", // TIFF
+    "tif", "tiff", // PNG
+    "png",  // Video
+    "mp4", "m4v", "m4a", "m4b", "mov", // PDF
+    "pdf", // Camera Raw - Canon
+    "cr2", "cr3", "crw", // Camera Raw - Nikon
+    "nef", "nrw", // Camera Raw - Sony
+    "arw", "arq", "ari", "sr2", "srf", "srw", // Camera Raw - Fujifilm
+    "raf", // Camera Raw - Olympus
+    "orf", "ori", // Camera Raw - Pentax
+    "pef", // Camera Raw - Panasonic
+    "rw2", "rwl", // Camera Raw - Hasselblad
+    "3fr", "fff", // Camera Raw - Phase One
+    "iiq", // Camera Raw - Mamiya
+    "mef", // Camera Raw - Leaf
+    "mos", // Camera Raw - Kodak
+    "dcr", "kdc", // Camera Raw - Minolta
+    "mdc", "mrw", // Camera Raw - Epson
+    "erf", // Camera Raw - Sigma
+    "x3f", // Camera Raw - GoPro
+    "gpr", // Camera Raw - DNG (Adobe Digital Negative)
+    "dng", // Camera Raw - HEIF
+    "hif", // Camera Raw - Light
+    "lri", // Camera Raw - Sinar
+    "sti", // Camera Raw - Generic/Other
     "raw", "cam", "rev",
 ];
 

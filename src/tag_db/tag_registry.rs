@@ -7,8 +7,8 @@
 
 use crate::core::{FormatFamily, TagDescriptor, TagId, ValueType};
 use exiftool_tags::GENERATED_TAG_REGISTRY;
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 // Import YAML tag databases for fallback lookup
 use exiftool_tags::{camera, core, document, image, media, specialty};

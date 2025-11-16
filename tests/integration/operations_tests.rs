@@ -255,10 +255,7 @@ fn test_read_metadata_handles_unknown_raw() {
     let result = read_metadata(path);
 
     // Should return an error (file doesn't exist), not panic
-    assert!(
-        result.is_err(),
-        "Expected error for nonexistent raw file"
-    );
+    assert!(result.is_err(), "Expected error for nonexistent raw file");
 
     // The error should be an IO error (file not found), not a parse error
     if let Err(e) = result {

@@ -5,8 +5,8 @@
 //!
 //! The lens ID values are based on ExifTool's Fujifilm.pm module.
 
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 /// Looks up a Fujifilm lens name by its lens ID.
 ///

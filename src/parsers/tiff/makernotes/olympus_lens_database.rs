@@ -30,8 +30,8 @@ pub fn parse_hex_lens_id(hex_str: &str) -> Option<u16> {
     }
 }
 
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 static OLYMPUS_LENS_DATABASE: LazyLock<HashMap<u16, &'static str>> = LazyLock::new(|| {
     let mut db = HashMap::new();
