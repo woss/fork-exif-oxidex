@@ -69,26 +69,26 @@ jobs:
           # Linux x86_64 (static musl) - native build on x64
           - target: x86_64-unknown-linux-musl
             os: puzl-ubuntu-latest
-            binary_name: exiftool-rs
-            archive_name: exiftool-rs-x86_64-linux-musl.tar.gz
+            binary_name: oxidex
+            archive_name: oxidex-x86_64-linux-musl.tar.gz
 
           # Linux ARM64 (static musl) - native build on arm64
           - target: aarch64-unknown-linux-musl
             os: warp-ubuntu-latest-arm64-2x
-            binary_name: exiftool-rs
-            archive_name: exiftool-rs-aarch64-linux-musl.tar.gz
+            binary_name: oxidex
+            archive_name: oxidex-aarch64-linux-musl.tar.gz
 
           # macOS Apple Silicon - native build on arm64
           - target: aarch64-apple-darwin
             os: warp-macos-15-arm64-6x
-            binary_name: exiftool-rs
-            archive_name: exiftool-rs-aarch64-macos.tar.gz
+            binary_name: oxidex
+            archive_name: oxidex-aarch64-macos.tar.gz
 
           # Windows x86_64 - native build on x64
           - target: x86_64-pc-windows-msvc
             os: warp-windows-2025-x64-4x
-            binary_name: exiftool-rs.exe
-            archive_name: exiftool-rs-x86_64-windows.zip
+            binary_name: oxidex.exe
+            archive_name: oxidex-x86_64-windows.zip
 
     steps:
       - name: Checkout code
@@ -177,8 +177,8 @@ jobs:
         run: |
           echo "Release ${{ needs.create-release.outputs.version }} completed"
           echo "Expected artifacts:"
-          echo "  - exiftool-rs-x86_64-linux-musl.tar.gz"
-          echo "  - exiftool-rs-aarch64-linux-musl.tar.gz"
-          echo "  - exiftool-rs-aarch64-macos.tar.gz"
-          echo "  - exiftool-rs-x86_64-windows.zip"
+          echo "  - oxidex-x86_64-linux-musl.tar.gz"
+          echo "  - oxidex-aarch64-linux-musl.tar.gz"
+          echo "  - oxidex-aarch64-macos.tar.gz"
+          echo "  - oxidex-x86_64-windows.zip"
           echo "  + corresponding .sha256 checksums"
