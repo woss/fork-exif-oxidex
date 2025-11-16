@@ -119,6 +119,11 @@ jobs:
         with:
           components: rustfmt
 
+      - name: Generate build artifacts
+        run: cargo check --all-features
+        env:
+          CARGO_TERM_COLOR: always
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
