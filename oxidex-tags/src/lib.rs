@@ -6,12 +6,12 @@
 //! # Architecture
 //!
 //! This crate serves as a unified interface to six domain-specific crates:
-//! - `exiftool-tags-core`: Universal metadata standards (EXIF, XMP, IPTC, GPS, ICC Profile)
-//! - `exiftool-tags-camera`: Camera manufacturer tags (Canon, Nikon, Sony, etc.)
-//! - `exiftool-tags-media`: Audio/video format tags (QuickTime, FLAC, MPEG, etc.)
-//! - `exiftool-tags-image`: Image format tags (PNG, GIF, JPEG2000, etc.)
-//! - `exiftool-tags-document`: Document format tags (PDF, fonts, archives, etc.)
-//! - `exiftool-tags-specialty`: Medical/scientific format tags (DICOM, FITS, MRC, etc.)
+//! - `oxidex-tags-core`: Universal metadata standards (EXIF, XMP, IPTC, GPS, ICC Profile)
+//! - `oxidex-tags-camera`: Camera manufacturer tags (Canon, Nikon, Sony, etc.)
+//! - `oxidex-tags-media`: Audio/video format tags (QuickTime, FLAC, MPEG, etc.)
+//! - `oxidex-tags-image`: Image format tags (PNG, GIF, JPEG2000, etc.)
+//! - `oxidex-tags-document`: Document format tags (PDF, fonts, archives, etc.)
+//! - `oxidex-tags-specialty`: Medical/scientific format tags (DICOM, FITS, MRC, etc.)
 //!
 //! # Usage
 //!
@@ -28,16 +28,16 @@
 
 // Re-export all domain crates at the module level
 // This allows users to access domain-specific functionality via `oxidex_tags::core::`, etc.
-pub use exiftool_tags_camera as camera;
-pub use exiftool_tags_core as core;
-pub use exiftool_tags_document as document;
-pub use exiftool_tags_image as image;
-pub use exiftool_tags_media as media;
-pub use exiftool_tags_specialty as specialty;
+pub use oxidex_tags_camera as camera;
+pub use oxidex_tags_core as core;
+pub use oxidex_tags_document as document;
+pub use oxidex_tags_image as image;
+pub use oxidex_tags_media as media;
+pub use oxidex_tags_specialty as specialty;
 
 // Re-export common types at root level for convenience
 // This maintains backward compatibility with code expecting types at the root
-pub use exiftool_tags_core::types::*;
+pub use oxidex_tags_core::types::*;
 
 // Backward compatibility: stub implementation for old generated tag registry
 // The new YAML-based system doesn't use this, but old code may reference it
