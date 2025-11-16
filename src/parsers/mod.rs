@@ -12,6 +12,7 @@ pub mod jpeg;
 pub mod pdf;
 pub mod png;
 pub mod quicktime;
+pub mod raw;
 pub mod tiff;
 pub mod xmp;
 
