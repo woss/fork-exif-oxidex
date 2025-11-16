@@ -83,6 +83,43 @@ pub enum FileFormat {
     /// Portable Executable format (.exe, .dll, .sys)
     PE,
 
+    // Phase 1: Video/Audio formats
+    /// MKV (Matroska) video format (.mkv)
+    MKV,
+
+    /// WebM video format (.webm)
+    WEBM,
+
+    /// FLV (Flash Video) format (.flv)
+    FLV,
+
+    /// AVI (Audio Video Interleave) format (.avi)
+    AVI,
+
+    /// MTS (MPEG Transport Stream) format (.mts, .m2ts)
+    MTS,
+
+    /// MP3 audio format (.mp3)
+    MP3,
+
+    /// FLAC audio format (.flac)
+    FLAC,
+
+    /// AAC audio format (.aac, .m4a)
+    AAC,
+
+    /// WAV audio format (.wav)
+    WAV,
+
+    /// OGG Vorbis audio format (.ogg)
+    OGG,
+
+    /// Opus audio format (.opus)
+    OPUS,
+
+    /// APE (Monkey's Audio) format (.ape)
+    APE,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -113,6 +150,18 @@ impl FileFormat {
             FileFormat::RAW => "RAW",
             FileFormat::CameraRaw(_) => "Camera Raw",
             FileFormat::PE => "PE",
+            FileFormat::MKV => "MKV",
+            FileFormat::WEBM => "WebM",
+            FileFormat::FLV => "FLV",
+            FileFormat::AVI => "AVI",
+            FileFormat::MTS => "MTS",
+            FileFormat::MP3 => "MP3",
+            FileFormat::FLAC => "FLAC",
+            FileFormat::AAC => "AAC",
+            FileFormat::WAV => "WAV",
+            FileFormat::OGG => "OGG",
+            FileFormat::OPUS => "Opus",
+            FileFormat::APE => "APE",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -145,6 +194,18 @@ impl FileFormat {
                 "mdc", "mrw", "erf", "x3f", "gpr", "dng", "hif", "lri", "sti", "raw", "cam", "rev",
             ],
             FileFormat::PE => &["exe", "dll", "sys"],
+            FileFormat::MKV => &["mkv"],
+            FileFormat::WEBM => &["webm"],
+            FileFormat::FLV => &["flv"],
+            FileFormat::AVI => &["avi"],
+            FileFormat::MTS => &["mts", "m2ts"],
+            FileFormat::MP3 => &["mp3"],
+            FileFormat::FLAC => &["flac"],
+            FileFormat::AAC => &["aac", "m4a"],
+            FileFormat::WAV => &["wav"],
+            FileFormat::OGG => &["ogg"],
+            FileFormat::OPUS => &["opus"],
+            FileFormat::APE => &["ape"],
             FileFormat::Unknown => &[],
         }
     }
