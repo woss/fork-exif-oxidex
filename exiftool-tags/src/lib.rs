@@ -41,12 +41,12 @@ pub use exiftool_tags_core::types::*;
 
 // Backward compatibility: stub implementation for old generated tag registry
 // The new YAML-based system doesn't use this, but old code may reference it
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
 /// Stub for backward compatibility with old generated tag system
 /// In the new YAML-based system, this is empty as tags are accessed differently
-pub static GENERATED_TAG_REGISTRY: Lazy<HashMap<String, TagDescriptor>> = Lazy::new(HashMap::new);
+pub static GENERATED_TAG_REGISTRY: LazyLock<HashMap<String, TagDescriptor>> = LazyLock::new(HashMap::new);
 
 /// Get the count of tags in the generated registry
 /// Returns 0 in the new YAML-based system (tags are counted differently)

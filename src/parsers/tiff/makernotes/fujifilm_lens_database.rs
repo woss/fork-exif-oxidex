@@ -5,7 +5,7 @@
 //!
 //! The lens ID values are based on ExifTool's Fujifilm.pm module.
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
 /// Looks up a Fujifilm lens name by its lens ID.
@@ -36,7 +36,7 @@ pub fn lookup_lens_name(lens_id: u16) -> Option<String> {
 /// - GF-mount lenses (GFX medium format cameras)
 ///
 /// Lens IDs are manufacturer-specific values stored in Fujifilm MakerNotes.
-static FUJIFILM_LENS_DATABASE: Lazy<HashMap<u16, &'static str>> = Lazy::new(|| {
+static FUJIFILM_LENS_DATABASE: LazyLock<HashMap<u16, &'static str>> = LazyLock::new(|| {
     let mut db = HashMap::new();
 
     // ===== XF Lenses (X-Mount Prime Lenses) =====

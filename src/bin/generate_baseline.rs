@@ -19,7 +19,7 @@
 //! cargo run --bin generate_baseline -- --input tests/fixtures/jpeg --output tests/baselines/jpeg
 //! ```
 
-use clap::Parser;
+use lexopt::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -32,21 +32,85 @@ use std::process::Command;
 ///
 /// Generates baseline metadata outputs for all test fixtures by comparing
 /// Perl ExifTool and ExifTool-RS outputs.
-#[derive(Parser, Debug)]
-#[command(name = "generate_baseline")]
-#[command(author, version, about, long_about = None)]
+#[derive(Debug)]
 struct Cli {
     /// Input directory containing test images
-    #[arg(short, long, default_value = "tests/fixtures")]
     input: PathBuf,
 
     /// Output directory for baseline files
-    #[arg(short, long, default_value = "tests/baselines")]
     output: PathBuf,
 
     /// Update existing baselines (uses default paths)
-    #[arg(short, long)]
     update: bool,
+}
+
+impl Cli {
+    /// Parse command-line arguments using lexopt
+    fn parse() -> Result<Self, lexopt::Error> {
+        let mut input = PathBuf::from("tests/fixtures");
+        let mut output = PathBuf::from("tests/baselines");
+        let mut update = false;
+
+        let mut parser = lexopt::Parser::from_env();
+
+        while let Some(arg) = parser.next()? {
+            match arg {
+                Short('h') | Long("help") => {
+                    print_help();
+                    std::process::exit(0);
+                }
+                Short('V') | Long("version") => {
+                    println!("generate_baseline {}", env!("CARGO_PKG_VERSION"));
+                    std::process::exit(0);
+                }
+                Short('i') | Long("input") => {
+                    input = PathBuf::from(parser.value()?.string()?);
+                }
+                Short('o') | Long("output") => {
+                    output = PathBuf::from(parser.value()?.string()?);
+                }
+                Short('u') | Long("update") => {
+                    update = true;
+                }
+                _ => return Err(arg.unexpected()),
+            }
+        }
+
+        Ok(Cli {
+            input,
+            output,
+            update,
+        })
+    }
+}
+
+/// Print help text for the baseline generation tool
+fn print_help() {
+    println!("generate_baseline {}", env!("CARGO_PKG_VERSION"));
+    println!("ExifTool-RS Baseline Generation Tool");
+    println!();
+    println!("Generates baseline metadata outputs for all test fixtures by comparing");
+    println!("Perl ExifTool and ExifTool-RS outputs.");
+    println!();
+    println!("USAGE:");
+    println!("    generate_baseline [OPTIONS]");
+    println!();
+    println!("OPTIONS:");
+    println!("    -h, --help              Print help information");
+    println!("    -V, --version           Print version information");
+    println!("    -i, --input PATH        Input directory containing test images [default: tests/fixtures]");
+    println!("    -o, --output PATH       Output directory for baseline files [default: tests/baselines]");
+    println!("    -u, --update            Update existing baselines (uses default paths)");
+    println!();
+    println!("EXAMPLES:");
+    println!("    # Generate initial baseline");
+    println!("    cargo run --bin generate_baseline -- --input tests/fixtures/ --output tests/baselines/");
+    println!();
+    println!("    # Update existing baseline");
+    println!("    cargo run --bin generate_baseline -- --update");
+    println!();
+    println!("    # Generate baseline for specific format");
+    println!("    cargo run --bin generate_baseline -- --input tests/fixtures/jpeg --output tests/baselines/jpeg");
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -296,10 +360,16 @@ fn find_test_images(dir: &Path) -> Result<Vec<PathBuf>, String> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Parse command line arguments using clap (safe from invalid Unicode)
-    let cli = Cli::parse();
+    // Parse command line arguments using lexopt
+    let cli = match Cli::parse() {
+        Ok(cli) => cli,
+        Err(e) => {
+            eprintln!("Error parsing arguments: {}", e);
+            std::process::exit(1);
+        }
+    };
 
-    // Use input/output from CLI args (defaults are handled by clap)
+    // Use input/output from CLI args (defaults are handled in parse() method)
     let input_dir = cli.input;
     let output_dir = cli.output;
 

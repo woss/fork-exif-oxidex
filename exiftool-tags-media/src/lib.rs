@@ -10,7 +10,7 @@
 //! from parsing YAML files on first access.
 
 pub use exiftool_tags_core::types::*;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 // Include pre-compiled binary tag data generated at build time
 // This is significantly faster than parsing YAML at runtime
@@ -20,7 +20,7 @@ const MEDIA_TAGS_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/media_ta
 ///
 /// Uses binary deserialization (bincode 2.0 serde API) instead of YAML parsing for faster initialization.
 /// The Lazy wrapper ensures thread-safe initialization on first access.
-pub static MEDIA_TAGS: Lazy<TagDatabase> = Lazy::new(|| {
+pub static MEDIA_TAGS: LazyLock<TagDatabase> = LazyLock::new(|| {
     bincode::serde::decode_from_slice(MEDIA_TAGS_BIN, bincode::config::legacy())
         .expect("Failed to deserialize pre-compiled media tags binary data")
         .0 // decode_from_slice returns (T, usize), extract the decoded value

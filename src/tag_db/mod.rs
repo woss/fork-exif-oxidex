@@ -10,7 +10,7 @@ pub mod tag_registry;
 // Re-export everything from exiftool-tags crate
 pub use exiftool_tags::*;
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
 // Re-export commonly used registry functions
@@ -18,7 +18,7 @@ pub use tag_registry::{get_tag_descriptor, tag_count};
 
 /// Reverse lookup index: (numeric tag ID, format family) -> tag name
 /// Built lazily on first access from the YAML-based tag databases
-static TAG_ID_TO_NAME_INDEX: Lazy<HashMap<(u16, FormatFamily), String>> = Lazy::new(|| {
+static TAG_ID_TO_NAME_INDEX: LazyLock<HashMap<(u16, FormatFamily), String>> = LazyLock::new(|| {
     let mut index = HashMap::with_capacity(10000);
 
     // Helper function to determine FormatFamily and prefix from table name

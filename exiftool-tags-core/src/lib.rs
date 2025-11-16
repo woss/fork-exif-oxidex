@@ -9,7 +9,7 @@
 //! directly in the compiled binary, eliminating the ~40ms cold start penalty
 //! from parsing YAML files on first access.
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 pub mod types;
 pub use types::*;
@@ -22,7 +22,7 @@ const CORE_TAGS_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/core_tags
 ///
 /// Uses binary deserialization (bincode 2.0 serde API) instead of YAML parsing for faster initialization.
 /// The Lazy wrapper ensures thread-safe initialization on first access.
-pub static CORE_TAGS: Lazy<TagDatabase> = Lazy::new(|| {
+pub static CORE_TAGS: LazyLock<TagDatabase> = LazyLock::new(|| {
     bincode::serde::decode_from_slice(CORE_TAGS_BIN, bincode::config::legacy())
         .expect("Failed to deserialize pre-compiled core tags binary data")
         .0 // decode_from_slice returns (T, usize), extract the decoded value

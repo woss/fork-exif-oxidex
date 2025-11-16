@@ -2,7 +2,6 @@
 //!
 //! Main entry point for the exiftool-rs command-line application.
 
-use clap::Parser;
 use exiftool_rs::cli::args::CliArgs;
 use exiftool_rs::cli::batch_processor;
 use exiftool_rs::cli::output_formatter::{
@@ -14,38 +13,16 @@ use exiftool_rs::core::operations::{copy_metadata, modify_tag, read_metadata};
 use exiftool_rs::core::tag_value::TagValue;
 use std::process;
 
-/// Preprocesses command-line arguments to support Perl ExifTool-compatible syntax.
-///
-/// This function transforms single-dash long-form flags (e.g., `-json`) into
-/// double-dash long-form flags (e.g., `--json`) that clap can understand.
-///
-/// Perl ExifTool uses `-json` (single dash with long name), but Rust clap
-/// follows the POSIX/GNU convention where single-dash is for short flags
-/// and double-dash is for long flags. This preprocessing layer provides
-/// compatibility with Perl ExifTool's CLI syntax.
-fn preprocess_args() -> Vec<String> {
-    std::env::args()
-        .map(|arg| {
-            // Transform `-json` to `--json` for clap compatibility
-            // Only transform if it's exactly `-json` (not part of a tag name)
-            if arg == "-json" {
-                "--json".to_string()
-            } else if arg == "-csv" {
-                "--csv".to_string()
-            } else {
-                arg
-            }
-        })
-        .collect()
-}
-
 fn main() {
-    // Preprocess arguments to support Perl ExifTool-compatible flags
-    // Specifically, convert `-json` (single dash with long name) to `--json`
-    let preprocessed_args = preprocess_args();
-
-    // Parse command-line arguments using clap
-    let args = CliArgs::parse_from(preprocessed_args);
+    // Parse command-line arguments using lexopt
+    // lexopt naturally supports both single-dash (-json) and double-dash (--json) long options
+    let args = match CliArgs::parse() {
+        Ok(args) => args,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    };
 
     // Display warning for unimplemented features
     if args.short_format {

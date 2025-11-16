@@ -1,10 +1,10 @@
 //! DJI format family tags (auto-generated)
 
 use crate::core::{FormatFamily, TagDescriptor, TagId, ValueType};
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
-static TAGS: Lazy<Vec<TagDescriptor>> = Lazy::new(|| vec![
+static TAGS: LazyLock<Vec<TagDescriptor>> = LazyLock::new(|| vec![
     TagDescriptor::new(TagId::new_numeric(0x0001), "DJI:Make".to_string(), FormatFamily::MakerNotes, true, ValueType::String, "Make tag".to_string(), vec!["Example".to_string()]),
     TagDescriptor::new(TagId::new_numeric(0x0003), "DJI:SpeedX".to_string(), FormatFamily::MakerNotes, true, ValueType::Float, "SpeedX tag".to_string(), vec!["1.5".to_string()]),
     TagDescriptor::new(TagId::new_numeric(0x0004), "DJI:SpeedY".to_string(), FormatFamily::MakerNotes, true, ValueType::Float, "SpeedY tag".to_string(), vec!["1.5".to_string()]),
@@ -194,7 +194,7 @@ static TAGS: Lazy<Vec<TagDescriptor>> = Lazy::new(|| vec![
 ]);
 
 pub fn get_tags() -> &'static HashMap<String, TagDescriptor> {
-    static MAP: Lazy<HashMap<String, TagDescriptor>> = Lazy::new(|| {
+    static MAP: LazyLock<HashMap<String, TagDescriptor>> = LazyLock::new(|| {
         let mut map = HashMap::with_capacity(TAGS.len());
         for tag in TAGS.iter() {
             map.insert(tag.tag_name.clone(), tag.clone());

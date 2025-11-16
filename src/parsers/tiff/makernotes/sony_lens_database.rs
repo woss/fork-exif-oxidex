@@ -3,7 +3,7 @@
 //! Supports both A-mount (Minolta AF, Sony Alpha DSLR) and E-mount (α7, α9, α6000 series)
 //! lenses. Based on ExifTool's Sony.pm and Minolta.pm lens databases.
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
 /// Looks up a lens name from a Sony lens ID
@@ -18,7 +18,7 @@ pub fn lookup_lens_name(lens_id: u16) -> Option<String> {
     SONY_LENS_DATABASE.get(&lens_id).map(|s| s.to_string())
 }
 
-static SONY_LENS_DATABASE: Lazy<HashMap<u16, &'static str>> = Lazy::new(|| {
+static SONY_LENS_DATABASE: LazyLock<HashMap<u16, &'static str>> = LazyLock::new(|| {
     let mut db = HashMap::new();
 
     // ===== A-mount Lenses (Classic Minolta AF + Sony Alpha DSLR) =====

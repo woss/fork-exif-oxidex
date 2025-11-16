@@ -7,7 +7,7 @@
 
 use crate::core::{FormatFamily, TagDescriptor, TagId, ValueType};
 use exiftool_tags::GENERATED_TAG_REGISTRY;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
 // Import YAML tag databases for fallback lookup
@@ -15,7 +15,7 @@ use exiftool_tags::{camera, core, document, image, media, specialty};
 
 /// Static registry containing all 500+ registered metadata tags.
 /// Uses lazy initialization for zero-cost abstraction until first access.
-static TAG_REGISTRY: Lazy<HashMap<&'static str, TagDescriptor>> = Lazy::new(|| {
+static TAG_REGISTRY: LazyLock<HashMap<&'static str, TagDescriptor>> = LazyLock::new(|| {
     let mut registry = HashMap::with_capacity(512);
 
     // ===========================
@@ -6796,7 +6796,7 @@ static TAG_REGISTRY: Lazy<HashMap<&'static str, TagDescriptor>> = Lazy::new(|| {
 
 /// Lazy-loaded registry of TagDescriptors built from YAML tag databases.
 /// This serves as a fallback when tags are not found in the manual TAG_REGISTRY.
-static YAML_TAG_DESCRIPTORS: Lazy<HashMap<String, TagDescriptor>> = Lazy::new(|| {
+static YAML_TAG_DESCRIPTORS: LazyLock<HashMap<String, TagDescriptor>> = LazyLock::new(|| {
     let mut descriptors = HashMap::with_capacity(10000);
 
     // Helper to parse hex tag ID

@@ -1,10 +1,10 @@
 //! PCX format family tags (auto-generated)
 
 use crate::core::{FormatFamily, TagDescriptor, TagId, ValueType};
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
-static TAGS: Lazy<Vec<TagDescriptor>> = Lazy::new(|| vec![
+static TAGS: LazyLock<Vec<TagDescriptor>> = LazyLock::new(|| vec![
     TagDescriptor::new(TagId::new_numeric(0x0000), "PCX:Manufacturer".to_string(), FormatFamily::MakerNotes, false, ValueType::String, "Manufacturer tag".to_string(), vec!["Example".to_string()]),
     TagDescriptor::new(TagId::new_numeric(0x0001), "PCX:Software".to_string(), FormatFamily::MakerNotes, false, ValueType::String, "Software tag".to_string(), vec!["Example".to_string()]),
     TagDescriptor::new(TagId::new_numeric(0x0002), "PCX:PC Paintbrush 2.8 (with palette)".to_string(), FormatFamily::MakerNotes, false, ValueType::String, "PC Paintbrush 2.8 (with palette) tag".to_string(), vec!["Example".to_string()]),
@@ -29,7 +29,7 @@ static TAGS: Lazy<Vec<TagDescriptor>> = Lazy::new(|| vec![
 ]);
 
 pub fn get_tags() -> &'static HashMap<String, TagDescriptor> {
-    static MAP: Lazy<HashMap<String, TagDescriptor>> = Lazy::new(|| {
+    static MAP: LazyLock<HashMap<String, TagDescriptor>> = LazyLock::new(|| {
         let mut map = HashMap::with_capacity(TAGS.len());
         for tag in TAGS.iter() {
             map.insert(tag.tag_name.clone(), tag.clone());

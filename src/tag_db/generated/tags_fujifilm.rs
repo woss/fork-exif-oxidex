@@ -1,10 +1,10 @@
 //! FujiFilm format family tags (auto-generated)
 
 use crate::core::{FormatFamily, TagDescriptor, TagId, ValueType};
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::collections::HashMap;
 
-static TAGS: Lazy<Vec<TagDescriptor>> = Lazy::new(|| vec![
+static TAGS: LazyLock<Vec<TagDescriptor>> = LazyLock::new(|| vec![
     TagDescriptor::new(TagId::new_numeric(0x0000), "FujiFilm:Version".to_string(), FormatFamily::MakerNotes, false, ValueType::String, "Version tag".to_string(), vec!["Example".to_string()]),
     TagDescriptor::new(TagId::new_numeric(0x0010), "FujiFilm:InternalSerialNumber".to_string(), FormatFamily::MakerNotes, false, ValueType::String, "InternalSerialNumber tag".to_string(), vec!["Example".to_string()]),
     TagDescriptor::new(TagId::new_numeric(0x1000), "FujiFilm:Quality".to_string(), FormatFamily::MakerNotes, false, ValueType::String, "Quality tag".to_string(), vec!["Example".to_string()]),
@@ -273,7 +273,7 @@ static TAGS: Lazy<Vec<TagDescriptor>> = Lazy::new(|| vec![
 ]);
 
 pub fn get_tags() -> &'static HashMap<String, TagDescriptor> {
-    static MAP: Lazy<HashMap<String, TagDescriptor>> = Lazy::new(|| {
+    static MAP: LazyLock<HashMap<String, TagDescriptor>> = LazyLock::new(|| {
         let mut map = HashMap::with_capacity(TAGS.len());
         for tag in TAGS.iter() {
             map.insert(tag.tag_name.clone(), tag.clone());
