@@ -7,7 +7,7 @@ description = "Specialty format tag definitions for OxiDex"
 license = "GPL-3.0"
 
 [lib]
-name = "exiftool_tags_specialty"
+name = "oxidex_tags_specialty"
 path = "src/lib.rs"
 
 [dependencies]

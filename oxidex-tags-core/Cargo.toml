@@ -7,7 +7,7 @@ description = "Core tag definitions for OxiDex metadata extraction"
 license = "GPL-3.0"
 
 [lib]
-name = "exiftool_tags_core"
+name = "oxidex_tags_core"
 path = "src/lib.rs"
 
 [dependencies]

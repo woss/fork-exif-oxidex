@@ -7,7 +7,7 @@ description = "Document format tag definitions for OxiDex"
 license = "GPL-3.0"
 
 [lib]
-name = "exiftool_tags_document"
+name = "oxidex_tags_document"
 path = "src/lib.rs"
 
 [dependencies]

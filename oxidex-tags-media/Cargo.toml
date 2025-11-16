@@ -7,7 +7,7 @@ description = "Media format tag definitions for OxiDex"
 license = "GPL-3.0"
 
 [lib]
-name = "exiftool_tags_media"
+name = "oxidex_tags_media"
 path = "src/lib.rs"
 
 [dependencies]

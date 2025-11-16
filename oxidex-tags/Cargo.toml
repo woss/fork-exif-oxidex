@@ -7,7 +7,7 @@ description = "Tag database for OxiDex metadata extraction library"
 license = "GPL-3.0"
 
 [lib]
-name = "exiftool_tags"
+name = "oxidex_tags"
 path = "src/lib.rs"
 
 [dependencies]
