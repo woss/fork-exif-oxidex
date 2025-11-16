@@ -43,19 +43,18 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     extract_dos_metadata(&dos_header, &mut metadata);
 
     // Read COFF header at e_lfanew offset
+    // We need to read PE signature (4) + COFF header (20) + Optional header (variable)
+    // Read up to 512 bytes to cover typical optional headers
     let pe_offset = dos_header.e_lfanew as u64;
-    let coff_data = reader.read(pe_offset, 24)?; // PE signature (4) + COFF header (20)
-    let (remaining, coff_header) = parse_coff_header(coff_data)
+    let pe_data = reader.read(pe_offset, 512)?;
+    let (remaining, coff_header) = parse_coff_header(pe_data)
         .map_err(|e| ExifToolError::parse_error(format!("Failed to parse COFF header: {:?}", e)))?;
 
     extract_coff_metadata(&coff_header, &mut metadata);
 
     // Parse Optional Header if present
     if coff_header.size_of_optional_header > 0 {
-        let opt_size = coff_header.size_of_optional_header as usize;
-        let opt_data = &remaining[..opt_size.min(remaining.len())];
-
-        let (opt_remaining, std_header) = parse_optional_header_standard(opt_data)
+        let (opt_remaining, std_header) = parse_optional_header_standard(remaining)
             .map_err(|e| ExifToolError::parse_error(format!("Failed to parse Optional Header: {:?}", e)))?;
 
         let is_pe32_plus = std_header.magic == 0x020B;
