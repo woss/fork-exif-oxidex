@@ -86,3 +86,7 @@ __pycache__/
 
 # Ignore target in all workspace crates (fix for exiftool-tags-core/target/)
 **/target/
+
+# Cache and data directories
+.cache/
+.data/
