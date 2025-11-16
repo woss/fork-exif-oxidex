@@ -96,12 +96,12 @@ use std::io;
 /// # }
 /// ```
 pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
-    // Attempt to read 32 bytes for magic byte detection (increased from 16 to support raw format detection)
+    // Attempt to read 64 bytes for magic byte detection (increased from 16 to support raw and PE formats)
     // If the file is smaller, read only what's available
-    let magic_bytes = match reader.read(0, 32) {
+    let magic_bytes = match reader.read(0, 64) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
-            // File is smaller than 32 bytes, try reading available bytes
+            // File is smaller than 64 bytes, try reading available bytes
             let size = reader.size() as usize;
             if size == 0 {
                 // Empty file - cannot determine format
@@ -186,6 +186,32 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // Common types after ftyp: "isom", "mp42", "mp41", "M4V ", "qt  ", etc.
     if magic_bytes.len() >= 8 && &magic_bytes[4..8] == b"ftyp" {
         return Ok(FileFormat::QuickTime);
+    }
+
+    // PE (Portable Executable): 0x4D 0x5A ("MZ") DOS signature
+    // Must verify this is actually a PE file, not just an old DOS executable
+    if magic_bytes.len() >= 64 && magic_bytes.starts_with(&[0x4D, 0x5A]) {
+        // Read e_lfanew field at offset 0x3C (4 bytes, little-endian)
+        // This points to the PE signature
+        if magic_bytes.len() >= 0x40 {
+            let e_lfanew_bytes = &magic_bytes[0x3C..0x40];
+            let e_lfanew = u32::from_le_bytes([
+                e_lfanew_bytes[0],
+                e_lfanew_bytes[1],
+                e_lfanew_bytes[2],
+                e_lfanew_bytes[3],
+            ]) as u64;
+
+            // Verify PE signature exists at e_lfanew offset
+            // PE signature is "PE\0\0" (0x50 0x45 0x00 0x00)
+            if e_lfanew < reader.size() && e_lfanew + 4 <= reader.size() {
+                if let Ok(pe_sig) = reader.read(e_lfanew, 4) {
+                    if pe_sig == [0x50, 0x45, 0x00, 0x00] {
+                        return Ok(FileFormat::PE);
+                    }
+                }
+            }
+        }
     }
 
     // JPEG: 0xFF 0xD8 0xFF (SOI marker + start of next marker)
@@ -393,5 +419,50 @@ mod tests {
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
         assert_eq!(format, FileFormat::PDF);
+    }
+
+    #[test]
+    fn test_detect_pe_mz_signature() {
+        // PE files start with "MZ" (0x4D 0x5A) DOS signature
+        // Followed by DOS stub and NT headers
+        let mut data = vec![0x4D, 0x5A]; // MZ signature
+        data.extend_from_slice(&[0x90, 0x00]); // e_cblp
+        data.extend_from_slice(&[0x03, 0x00]); // e_cp
+        // Add padding to reach e_lfanew at offset 0x3C
+        data.resize(0x3C, 0x00);
+        data.extend_from_slice(&[0x80, 0x00, 0x00, 0x00]); // e_lfanew = 0x80
+        // Add padding and PE signature at offset 0x80
+        data.resize(0x80, 0x00);
+        data.extend_from_slice(&[0x50, 0x45, 0x00, 0x00]); // "PE\0\0" signature
+
+        let reader = TestReader::new(data);
+        let format = detect_format(&reader).unwrap();
+        assert_eq!(format, FileFormat::PE);
+    }
+
+    #[test]
+    fn test_detect_pe_with_nt_signature() {
+        // Complete PE file with NT signature
+        let mut data = vec![0x4D, 0x5A]; // MZ
+        data.resize(0x3C, 0x00);
+        data.extend_from_slice(&[0x40, 0x00, 0x00, 0x00]); // e_lfanew = 0x40
+        data.resize(0x40, 0x00);
+        data.extend_from_slice(&[0x50, 0x45, 0x00, 0x00]); // "PE\0\0" signature
+
+        let reader = TestReader::new(data);
+        let format = detect_format(&reader).unwrap();
+        assert_eq!(format, FileFormat::PE);
+    }
+
+    #[test]
+    fn test_detect_non_pe_mz_file() {
+        // Old DOS executable without PE signature
+        let mut data = vec![0x4D, 0x5A]; // MZ
+        data.resize(64, 0x00); // DOS header but no PE
+
+        let reader = TestReader::new(data);
+        let format = detect_format(&reader).unwrap();
+        // Should be Unknown since no valid PE signature
+        assert_eq!(format, FileFormat::Unknown);
     }
 }
