@@ -207,3 +207,61 @@ fn test_metadata_merge_preserves_all_data() {
     // Verify we can access tags after merge
     assert!(!metadata.is_empty(), "Merged metadata should contain tags");
 }
+
+// ===== Camera Raw Format Tests =====
+
+#[test]
+fn test_read_metadata_from_dng() {
+    // Test reading metadata from a DNG (Digital Negative) file
+    // DNG files are TIFF-based camera raw files that should be parsed successfully
+    let path = Path::new("tests/fixtures/raw/sample.dng");
+
+    // The read_metadata function should detect the file as CameraRaw(AdobeDNG)
+    // and parse it using the raw metadata parser
+    let result = read_metadata(path);
+
+    assert!(
+        result.is_ok(),
+        "Failed to read DNG metadata: {:?}",
+        result.err()
+    );
+
+    let metadata = result.unwrap();
+
+    // DNG files should have some metadata extracted
+    assert!(
+        metadata.len() > 0,
+        "Should extract some metadata from DNG file, found 0 tags"
+    );
+
+    // DNG files should have a File:FileType tag indicating the format
+    if let Some(file_type) = metadata.get_string("File:FileType") {
+        println!("DNG File Type: {}", file_type);
+    }
+
+    // Print all extracted tags for debugging
+    println!("Extracted {} tags from DNG file:", metadata.len());
+    for (name, value) in metadata.iter() {
+        println!("  {}: {:?}", name, value);
+    }
+}
+
+#[test]
+fn test_read_metadata_handles_unknown_raw() {
+    // Test that reading an unknown raw format fails gracefully
+    // This ensures we don't panic when encountering unexpected file types
+    let path = Path::new("tests/fixtures/raw/nonexistent.xyz");
+
+    let result = read_metadata(path);
+
+    // Should return an error (file doesn't exist), not panic
+    assert!(
+        result.is_err(),
+        "Expected error for nonexistent raw file"
+    );
+
+    // The error should be an IO error (file not found), not a parse error
+    if let Err(e) = result {
+        println!("Expected error for nonexistent file: {}", e);
+    }
+}

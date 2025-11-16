@@ -84,7 +84,29 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
     let reader = MMapReader::new(path)?;
 
     // Step 3: Detect format via magic bytes
-    let format = detect_format(&reader)?;
+    let mut format = detect_format(&reader)?;
+
+    // Step 3b: Check for camera raw formats using filename + magic bytes
+    // Many raw formats are TIFF-based and need filename context for proper detection
+    // (e.g., DNG, NEF, ARW all have TIFF magic bytes but different file extensions)
+    if format == FileFormat::TIFF {
+        // Get filename for raw format detection
+        let filename = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+
+        // Read first 32 bytes for raw format detection
+        if let Ok(magic_bytes) = reader.read(0, 32) {
+            // Check if this is a camera raw format
+            if let Some(raw_format) =
+                crate::parsers::raw::detect_raw_format(magic_bytes, filename)
+            {
+                // Override TIFF detection with specific raw format
+                format = FileFormat::CameraRaw(raw_format);
+            }
+        }
+    }
 
     // Step 4: Route to appropriate parser based on detected format and extract format-specific metadata
     let format_metadata = match format {
@@ -100,6 +122,13 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             // QuickTime parser returns Result<MetadataMap, String>, need to convert
             parse_quicktime_metadata(&reader)
                 .map_err(|e| ExifToolError::parse_error(format!("QuickTime parse error: {}", e)))
+        }
+        FileFormat::CameraRaw(raw_format) => {
+            // Parse camera raw format using raw metadata parser
+            // Read entire file for raw parsing (raw formats need full file access)
+            let size = reader.size() as usize;
+            let data = reader.read(0, size)?;
+            crate::parsers::raw::parse_raw_metadata(data, raw_format)
         }
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
