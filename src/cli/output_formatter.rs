@@ -120,6 +120,14 @@ impl OutputFormatter for HumanReadableFormatter {
         }
 
         for (tag_name, tag_value) in tags {
+            // Skip large binary data fields to prevent terminal corruption
+            if let TagValue::Binary(bytes) = tag_value {
+                if bytes.len() > 256 {
+                    // Skip large binary fields in human-readable output
+                    continue;
+                }
+            }
+
             let formatted_value = format_tag_value(tag_name, tag_value);
             output.push_str(&format!("{}: {}\n", tag_name, formatted_value));
         }
@@ -316,6 +324,14 @@ impl OutputFormatter for CsvFormatter {
 
         // Write data rows
         for (tag_name, tag_value) in tags {
+            // Skip large binary data fields to prevent CSV corruption
+            if let TagValue::Binary(bytes) = tag_value {
+                if bytes.len() > 256 {
+                    // Skip large binary fields in CSV output
+                    continue;
+                }
+            }
+
             let formatted_value = format_tag_value(tag_name, tag_value);
             if wtr.write_record([tag_name, &formatted_value]).is_err() {
                 // Skip this record if write fails, but continue
