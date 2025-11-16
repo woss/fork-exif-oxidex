@@ -9,7 +9,7 @@
 //! directly in the compiled binary, eliminating the ~40ms cold start penalty
 //! from parsing YAML files on first access.
 
-pub use exiftool_tags_core::types::*;
+pub use oxidex_tags_core::types::*;
 use std::sync::LazyLock;
 
 // Include pre-compiled binary tag data generated at build time
