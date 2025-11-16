@@ -1,16 +1,16 @@
-//! ExifTool-RS Command Line Interface
+//! OxiDex Command Line Interface
 //!
-//! Main entry point for the exiftool-rs command-line application.
+//! Main entry point for the oxidex command-line application.
 
-use exiftool_rs::cli::args::CliArgs;
-use exiftool_rs::cli::batch_processor;
-use exiftool_rs::cli::output_formatter::{
+use oxidex::cli::args::CliArgs;
+use oxidex::cli::batch_processor;
+use oxidex::cli::output_formatter::{
     CsvFormatter, HumanReadableFormatter, JsonFormatter, OutputFormatter,
 };
-use exiftool_rs::cli::rename;
-use exiftool_rs::core::date_shift::{shift_metadata_dates, ShiftOperation};
-use exiftool_rs::core::operations::{copy_metadata, modify_tag, read_metadata};
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::cli::rename;
+use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
+use oxidex::core::operations::{copy_metadata, modify_tag, read_metadata};
+use oxidex::core::tag_value::TagValue;
 use std::process;
 
 fn main() {
@@ -34,7 +34,7 @@ fn main() {
         Some(path) => path,
         None => {
             eprintln!("Error: No file or directory specified");
-            eprintln!("Usage: exiftool-rs [OPTIONS] [-TAG=VALUE ...] FILE|DIRECTORY");
+            eprintln!("Usage: oxidex [OPTIONS] [-TAG=VALUE ...] FILE|DIRECTORY");
             process::exit(1);
         }
     };

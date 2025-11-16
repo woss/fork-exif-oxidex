@@ -118,7 +118,7 @@ fn print_help() {
 struct BaselineMetadata {
     version: String,
     exiftool_version: String,
-    exiftool_rs_version: String,
+    oxidex_version: String,
     generated_at: String,
     images: Vec<ImageBaseline>,
     overall_match_rate: f64,
@@ -190,7 +190,7 @@ fn get_perl_exiftool_output(file_path: &Path) -> Result<String, String> {
 }
 
 /// Executes ExifTool-RS and captures JSON output
-fn get_exiftool_rs_output(file_path: &Path) -> Result<String, String> {
+fn get_oxidex_output(file_path: &Path) -> Result<String, String> {
     // Find the exiftool-rs binary in target directory
     let cargo_target_dir =
         std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
@@ -391,8 +391,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Perl ExifTool version: {}", exiftool_version);
 
     // Get ExifTool-RS version
-    let exiftool_rs_version = env!("CARGO_PKG_VERSION").to_string();
-    println!("ExifTool-RS version: {}", exiftool_rs_version);
+    let oxidex_version = env!("CARGO_PKG_VERSION").to_string();
+    println!("ExifTool-RS version: {}", oxidex_version);
 
     // Create output directory
     fs::create_dir_all(&output_dir)?;
@@ -462,7 +462,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let baseline = BaselineMetadata {
         version: "1.0.0".to_string(),
         exiftool_version,
-        exiftool_rs_version,
+        oxidex_version,
         generated_at: chrono::Utc::now().to_rfc3339(),
         images: image_baselines,
         overall_match_rate,
@@ -491,7 +491,7 @@ fn process_image(
     let perl_json = get_perl_exiftool_output(image_path)?;
 
     // Get ExifTool-RS output
-    let rust_json = get_exiftool_rs_output(image_path)?;
+    let rust_json = get_oxidex_output(image_path)?;
 
     // Save outputs to baseline directory
     let image_output_dir =

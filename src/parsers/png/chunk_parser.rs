@@ -80,7 +80,7 @@ impl PngChunk {
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::png::chunk_parser::{parse_png_signature, PNG_SIGNATURE};
+/// use oxidex::parsers::png::chunk_parser::{parse_png_signature, PNG_SIGNATURE};
 ///
 /// let data = [PNG_SIGNATURE.as_slice(), &[0x00, 0x01, 0x02]].concat();
 /// let result = parse_png_signature(&data);

@@ -8,7 +8,7 @@
 
 #[test]
 fn test_sigma_lens_database_art_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma Art series prime lenses
     assert_eq!(
@@ -39,7 +39,7 @@ fn test_sigma_lens_database_art_primes() {
 
 #[test]
 fn test_sigma_lens_database_art_telephoto() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma Art series telephoto primes
     assert_eq!(
@@ -55,7 +55,7 @@ fn test_sigma_lens_database_art_telephoto() {
 
 #[test]
 fn test_sigma_lens_database_art_macro() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma Art series macro lenses
     assert_eq!(
@@ -71,7 +71,7 @@ fn test_sigma_lens_database_art_macro() {
 
 #[test]
 fn test_sigma_lens_database_art_zooms() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma Art series zoom lenses
     assert_eq!(
@@ -97,7 +97,7 @@ fn test_sigma_lens_database_art_zooms() {
 
 #[test]
 fn test_sigma_lens_database_contemporary_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma Contemporary series primes
     assert_eq!(
@@ -123,7 +123,7 @@ fn test_sigma_lens_database_contemporary_primes() {
 
 #[test]
 fn test_sigma_lens_database_contemporary_zooms() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma Contemporary series zoom lenses
     assert_eq!(
@@ -144,7 +144,7 @@ fn test_sigma_lens_database_contemporary_zooms() {
 
 #[test]
 fn test_sigma_lens_database_sports_series() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma Sports series lenses
     assert_eq!(
@@ -165,7 +165,7 @@ fn test_sigma_lens_database_sports_series() {
 
 #[test]
 fn test_sigma_lens_database_legacy_sa_mount_zooms() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test legacy SA-mount zoom lenses
     assert_eq!(
@@ -186,7 +186,7 @@ fn test_sigma_lens_database_legacy_sa_mount_zooms() {
 
 #[test]
 fn test_sigma_lens_database_legacy_sa_mount_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test legacy SA-mount prime lenses
     assert_eq!(
@@ -207,7 +207,7 @@ fn test_sigma_lens_database_legacy_sa_mount_primes() {
 
 #[test]
 fn test_sigma_lens_database_dg_dn_mirrorless() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test Sigma DG DN mirrorless lenses
     assert_eq!(
@@ -233,7 +233,7 @@ fn test_sigma_lens_database_dg_dn_mirrorless() {
 
 #[test]
 fn test_sigma_lens_database_not_found() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sigma_lens_database::lookup_lens_name;
 
     // Test that unknown lens IDs return None
     assert_eq!(lookup_lens_name(9999), None);
@@ -243,8 +243,8 @@ fn test_sigma_lens_database_not_found() {
 
 #[test]
 fn test_sigma_makernote_parser_trait_implementation() {
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
 
     let parser = SigmaMakerNoteParser;
 
@@ -265,7 +265,7 @@ fn test_sigma_makernote_parser_trait_implementation() {
 
 #[test]
 fn test_sigma_header_validation_sigma() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma::is_sigma_makernote;
+    use oxidex::parsers::tiff::makernotes::sigma::is_sigma_makernote;
 
     // Test valid SIGMA header
     let valid_header = b"SIGMA\0\0\0\x00\x10\x00\x00";
@@ -282,7 +282,7 @@ fn test_sigma_header_validation_sigma() {
 
 #[test]
 fn test_sigma_header_validation_foveon() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma::is_sigma_makernote;
+    use oxidex::parsers::tiff::makernotes::sigma::is_sigma_makernote;
 
     // Test valid FOVEON header (for Foveon X3 sensor cameras)
     let valid_header = b"FOVEON\0\0\x00\x10\x00\x00";
@@ -291,7 +291,7 @@ fn test_sigma_header_validation_foveon() {
 
 #[test]
 fn test_sigma_header_validation_no_header() {
-    use exiftool_rs::parsers::tiff::makernotes::sigma::is_sigma_makernote;
+    use oxidex::parsers::tiff::makernotes::sigma::is_sigma_makernote;
 
     // Test data with no header but valid IFD entry count (10 entries)
     let no_header = b"\x0A\x00\x00\x00\x00\x00\x00\x00";
@@ -304,9 +304,9 @@ fn test_sigma_header_validation_no_header() {
 
 #[test]
 fn test_sigma_makernote_parse_basic() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
     use std::collections::HashMap;
 
     let parser = SigmaMakerNoteParser;
@@ -343,9 +343,9 @@ fn test_sigma_makernote_parse_basic() {
 
 #[test]
 fn test_sigma_makernote_parse_lens_id() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
     use std::collections::HashMap;
 
     let parser = SigmaMakerNoteParser;
@@ -375,9 +375,9 @@ fn test_sigma_makernote_parse_lens_id() {
 
 #[test]
 fn test_sigma_makernote_parse_camera_settings() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
     use std::collections::HashMap;
 
     let parser = SigmaMakerNoteParser;
@@ -429,9 +429,9 @@ fn test_sigma_makernote_parse_camera_settings() {
 
 #[test]
 fn test_sigma_makernote_parse_image_processing() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
     use std::collections::HashMap;
 
     let parser = SigmaMakerNoteParser;
@@ -480,9 +480,9 @@ fn test_sigma_makernote_parse_image_processing() {
 
 #[test]
 fn test_sigma_makernote_parse_error_too_short() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
     use std::collections::HashMap;
 
     let parser = SigmaMakerNoteParser;
@@ -496,9 +496,9 @@ fn test_sigma_makernote_parse_error_too_short() {
 
 #[test]
 fn test_sigma_makernote_parse_error_invalid_entry_count() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::sigma::SigmaMakerNoteParser;
     use std::collections::HashMap;
 
     let parser = SigmaMakerNoteParser;

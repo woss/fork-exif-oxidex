@@ -53,8 +53,8 @@ use crate::error::Result;
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::core::{FormatParser, FileReader, FileFormat, MetadataMap};
-/// use exiftool_rs::error::{ExifToolError, Result};
+/// use oxidex::core::{FormatParser, FileReader, FileFormat, MetadataMap};
+/// use oxidex::error::{ExifToolError, Result};
 ///
 /// struct MockJpegParser;
 ///
@@ -125,8 +125,8 @@ pub trait FormatParser {
     /// # Examples
     ///
     /// ```no_run
-    /// # use exiftool_rs::core::{FormatParser, FileReader};
-    /// # use exiftool_rs::error::ExifToolError;
+    /// # use oxidex::core::{FormatParser, FileReader};
+    /// # use oxidex::error::ExifToolError;
     /// # fn example(parser: &dyn FormatParser, reader: &dyn FileReader) -> Result<(), ExifToolError> {
     /// // Parse metadata from file
     /// let metadata = parser.parse(reader)?;
@@ -164,7 +164,7 @@ pub trait FormatParser {
     /// # Examples
     ///
     /// ```no_run
-    /// # use exiftool_rs::core::{FormatParser, FileFormat};
+    /// # use oxidex::core::{FormatParser, FileFormat};
     /// # fn example(parser: &dyn FormatParser) {
     /// if parser.supports_format(FileFormat::JPEG) {
     ///     println!("Parser supports JPEG files");

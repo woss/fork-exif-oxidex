@@ -8,7 +8,7 @@
 
 #[test]
 fn test_pentax_lens_database_classic_k_mount() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test classic SMC Pentax-K manual focus lenses
     assert_eq!(
@@ -29,7 +29,7 @@ fn test_pentax_lens_database_classic_k_mount() {
 
 #[test]
 fn test_pentax_lens_database_m_series() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test SMC Pentax-M series (compact manual focus)
     assert_eq!(
@@ -50,7 +50,7 @@ fn test_pentax_lens_database_m_series() {
 
 #[test]
 fn test_pentax_lens_database_a_series_af() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test SMC Pentax-A autofocus lenses
     assert_eq!(
@@ -71,7 +71,7 @@ fn test_pentax_lens_database_a_series_af() {
 
 #[test]
 fn test_pentax_lens_database_fa_limited() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test legendary FA Limited series
     assert_eq!(
@@ -92,7 +92,7 @@ fn test_pentax_lens_database_fa_limited() {
 
 #[test]
 fn test_pentax_lens_database_fa_standard() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test standard FA lenses
     assert_eq!(
@@ -113,7 +113,7 @@ fn test_pentax_lens_database_fa_standard() {
 
 #[test]
 fn test_pentax_lens_database_hd_da_limited() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test modern HD DA Limited lenses (APS-C)
     assert_eq!(
@@ -134,7 +134,7 @@ fn test_pentax_lens_database_hd_da_limited() {
 
 #[test]
 fn test_pentax_lens_database_da_standard() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test SMC Pentax-DA lenses
     assert_eq!(
@@ -155,7 +155,7 @@ fn test_pentax_lens_database_da_standard() {
 
 #[test]
 fn test_pentax_lens_database_da_star() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test DA* (Star) professional APS-C lenses
     assert_eq!(
@@ -176,7 +176,7 @@ fn test_pentax_lens_database_da_star() {
 
 #[test]
 fn test_pentax_lens_database_d_fa_modern() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test modern HD Pentax-D FA full-frame lenses
     assert_eq!(
@@ -202,7 +202,7 @@ fn test_pentax_lens_database_d_fa_modern() {
 
 #[test]
 fn test_pentax_lens_database_fisheye() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test fisheye lenses
     assert_eq!(
@@ -218,7 +218,7 @@ fn test_pentax_lens_database_fisheye() {
 
 #[test]
 fn test_pentax_lens_database_third_party() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test popular third-party K-mount lenses
 
@@ -248,7 +248,7 @@ fn test_pentax_lens_database_third_party() {
 
 #[test]
 fn test_pentax_lens_database_unknown() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Test unknown lens IDs
     assert_eq!(lookup_lens_name(65000), None);
@@ -258,8 +258,8 @@ fn test_pentax_lens_database_unknown() {
 
 #[test]
 fn test_pentax_parser_trait_implementation() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = PentaxParser;
     assert_eq!(parser.manufacturer_name(), "Pentax");
@@ -268,8 +268,8 @@ fn test_pentax_parser_trait_implementation() {
 
 #[test]
 fn test_pentax_validate_header_aoc() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = PentaxParser;
 
@@ -288,8 +288,8 @@ fn test_pentax_validate_header_aoc() {
 
 #[test]
 fn test_pentax_validate_header_pentax() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = PentaxParser;
 
@@ -300,8 +300,8 @@ fn test_pentax_validate_header_pentax() {
 
 #[test]
 fn test_pentax_lens_lookup() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = PentaxParser;
 
@@ -332,9 +332,9 @@ fn test_pentax_lens_lookup() {
 
 #[test]
 fn test_pentax_parser_empty_data() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PentaxParser;
@@ -348,9 +348,9 @@ fn test_pentax_parser_empty_data() {
 
 #[test]
 fn test_pentax_parser_invalid_header() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PentaxParser;
@@ -366,8 +366,8 @@ fn test_pentax_parser_invalid_header() {
 
 #[test]
 fn test_pentax_decode_quality() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     // This test verifies that the quality decoder functions work correctly
     // through the parser implementation
@@ -377,8 +377,8 @@ fn test_pentax_decode_quality() {
 
 #[test]
 fn test_pentax_decode_picture_modes() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax::PentaxParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::pentax::PentaxParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     // Verify parser is correctly instantiated for picture mode decoding
     let parser = PentaxParser;
@@ -387,7 +387,7 @@ fn test_pentax_decode_picture_modes() {
 
 #[test]
 fn test_pentax_database_size() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Count how many lenses are in the database by testing known IDs
     let mut count = 0;
@@ -409,7 +409,7 @@ fn test_pentax_database_size() {
 
 #[test]
 fn test_pentax_comprehensive_lens_coverage() {
-    use exiftool_rs::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::pentax_lens_database::lookup_lens_name;
 
     // Verify we have lenses across all major categories
 

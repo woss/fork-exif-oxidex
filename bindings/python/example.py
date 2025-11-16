@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example script demonstrating ExifTool-RS Python bindings.
+Example script demonstrating OxiDex Python bindings.
 
 This script shows how to:
 1. Load a JPEG file and read its metadata
@@ -11,7 +11,7 @@ This script shows how to:
 
 import sys
 from pathlib import Path
-from exiftool_rs import ExifTool, ExifToolError
+from oxidex import Oxidex, OxidexError
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     script_dir = Path(__file__).parent
     sample_file = script_dir / ".." / ".." / "tests" / "fixtures" / "jpeg" / "sample_with_exif.jpg"
 
-    print("ExifTool-RS Python Bindings Example")
+    print("OxiDex Python Bindings Example")
     print("=" * 50)
     print()
 
@@ -30,7 +30,7 @@ def main():
     print()
 
     try:
-        with ExifTool() as et:
+        with Oxidex() as et:
             # Read metadata from file
             et.read_file(str(sample_file))
 
@@ -68,7 +68,7 @@ def main():
 
             print()
 
-    except ExifToolError as e:
+    except OxidexError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
@@ -77,7 +77,7 @@ def main():
     print("-" * 50)
 
     try:
-        with ExifTool() as et:
+        with Oxidex() as et:
             et.read_file(str(sample_file))
 
             tag_count = et.get_tag_count()
@@ -101,7 +101,7 @@ def main():
 
             print()
 
-    except ExifToolError as e:
+    except OxidexError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
@@ -110,10 +110,10 @@ def main():
     print("-" * 50)
 
     try:
-        with ExifTool() as et:
+        with Oxidex() as et:
             # Try to read a non-existent file
             et.read_file("/nonexistent/file.jpg")
-    except ExifToolError as e:
+    except OxidexError as e:
         print(f"Expected error caught: {e}")
         print()
 
@@ -122,7 +122,7 @@ def main():
     print("-" * 50)
 
     try:
-        with ExifTool() as et:
+        with Oxidex() as et:
             et.read_file(str(sample_file))
 
             all_tags = et.get_all_tags()
@@ -144,7 +144,7 @@ def main():
 
             print()
 
-    except ExifToolError as e:
+    except OxidexError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 

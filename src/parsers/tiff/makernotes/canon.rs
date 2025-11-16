@@ -211,7 +211,7 @@ pub enum CanonTagValue {
 ///
 /// # Example
 /// ```
-/// use exiftool_rs::parsers::tiff::makernotes::canon::canon_tag_to_name;
+/// use oxidex::parsers::tiff::makernotes::canon::canon_tag_to_name;
 /// assert_eq!(canon_tag_to_name(0x0001), "Canon:CameraSettings");
 /// ```
 pub fn canon_tag_to_name(tag_id: u16) -> String {
@@ -687,7 +687,7 @@ fn parse_canon_makernote_impl(
 /// # Example
 /// ```ignore
 /// use std::collections::HashMap;
-/// use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
+/// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
 ///
 /// let mut tags = HashMap::new();
 /// parse_canon_makernotes(&data, ByteOrder::LittleEndian, &mut tags);

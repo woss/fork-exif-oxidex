@@ -61,8 +61,8 @@ use std::path::Path;
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::io::BufferedReader;
-/// use exiftool_rs::core::FileReader;
+/// use oxidex::io::BufferedReader;
+/// use oxidex::core::FileReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> std::io::Result<()> {
@@ -112,8 +112,8 @@ impl BufferedReader {
     /// # Examples
     ///
     /// ```no_run
-    /// use exiftool_rs::core::FileReader;
-    /// use exiftool_rs::io::BufferedReader;
+    /// use oxidex::core::FileReader;
+    /// use oxidex::io::BufferedReader;
     /// use std::path::Path;
     ///
     /// # fn example() -> std::io::Result<()> {

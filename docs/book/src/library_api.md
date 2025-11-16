@@ -1,10 +1,10 @@
 # Library API
 
-This chapter covers how to use ExifTool-RS as a Rust library in your own applications.
+This chapter covers how to use OxiDex as a Rust library in your own applications.
 
 ## Overview
 
-ExifTool-RS provides a Rust library API for reading and writing metadata in various image and media file formats. The library offers both high-level ergonomic APIs (planned) and low-level APIs (currently implemented) for fine-grained control over metadata manipulation.
+OxiDex provides a Rust library API for reading and writing metadata in various image and media file formats. The library offers both high-level ergonomic APIs (planned) and low-level APIs (currently implemented) for fine-grained control over metadata manipulation.
 
 **Important Note**: This chapter documents both the **planned high-level API** (for future reference) and the **current low-level API** (available now). Many code examples use the planned API and are marked with `rust,ignore`. Working examples using the current API are provided in the [Working Examples](#working-examples-current-api) section.
 
@@ -20,7 +20,7 @@ ExifTool-RS provides a Rust library API for reading and writing metadata in vari
 
 ### Tag Naming Convention
 
-All metadata tags in ExifTool-RS follow a standardized naming convention:
+All metadata tags in OxiDex follow a standardized naming convention:
 
 ```
 <FormatFamily>:<TagName>
@@ -54,7 +54,7 @@ All metadata tags in ExifTool-RS follow a standardized naming convention:
 
 ### Synchronous API Design
 
-ExifTool-RS uses a **synchronous, blocking API** design:
+OxiDex uses a **synchronous, blocking API** design:
 
 - All operations complete before returning
 - No async/await or futures
@@ -95,9 +95,9 @@ The high-level API is designed to provide an ergonomic, builder-pattern interfac
 ### Reading Metadata (Planned)
 
 ```rust,ignore
-use exiftool_rs::Metadata;
+use oxidex::Metadata;
 
-fn main() -> exiftool_rs::Result<()> {
+fn main() -> oxidex::Result<()> {
     // Open file and extract all metadata
     let metadata = Metadata::from_path("photo.jpg")?;
 
@@ -117,9 +117,9 @@ fn main() -> exiftool_rs::Result<()> {
 ### Writing Metadata (Planned)
 
 ```rust,ignore
-use exiftool_rs::Metadata;
+use oxidex::Metadata;
 
-fn main() -> exiftool_rs::Result<()> {
+fn main() -> oxidex::Result<()> {
     // Load, modify, and write metadata using builder pattern
     Metadata::from_path("input.jpg")?
         .set_tag("EXIF:Artist", "John Doe")?
@@ -135,9 +135,9 @@ fn main() -> exiftool_rs::Result<()> {
 ### Copying Metadata (Planned)
 
 ```rust,ignore
-use exiftool_rs::Metadata;
+use oxidex::Metadata;
 
-fn main() -> exiftool_rs::Result<()> {
+fn main() -> oxidex::Result<()> {
     // Copy all metadata from source to destination
     Metadata::from_path("source.jpg")?
         .copy_tags_to("dest.jpg")?
@@ -166,7 +166,7 @@ The low-level API provides direct access to the core data structures. Use this f
 `MetadataMap` is a wrapper around `HashMap<String, TagValue>` that stores metadata tags:
 
 ```rust
-use exiftool_rs::core::metadata_map::MetadataMap;
+use oxidex::core::metadata_map::MetadataMap;
 
 // Create a new metadata map
 let mut metadata = MetadataMap::new();
@@ -191,7 +191,7 @@ for (name, value) in metadata.iter() {
 `TagValue` enum represents different metadata value types:
 
 ```rust
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::tag_value::TagValue;
 use chrono::{Utc, TimeZone};
 
 // String
@@ -216,17 +216,17 @@ let datetime = TagValue::new_datetime(dt);
 
 ### Core Operations
 
-The `exiftool_rs::core::operations` module provides the main metadata operations:
+The `oxidex::core::operations` module provides the main metadata operations:
 
 #### read_metadata
 
 Read all metadata from a file:
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
-fn main() -> exiftool_rs::Result<()> {
+fn main() -> oxidex::Result<()> {
     let path = Path::new("photo.jpg");
     let metadata = read_metadata(path)?;
 
@@ -245,11 +245,11 @@ fn main() -> exiftool_rs::Result<()> {
 Modify a single tag in a file:
 
 ```rust
-use exiftool_rs::core::operations::modify_tag;
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::operations::modify_tag;
+use oxidex::core::tag_value::TagValue;
 use std::path::Path;
 
-fn main() -> exiftool_rs::Result<()> {
+fn main() -> oxidex::Result<()> {
     let path = Path::new("photo.jpg");
     let tag_name = "EXIF:Artist";
     let tag_value = TagValue::new_string("John Doe".to_string());
@@ -266,10 +266,10 @@ fn main() -> exiftool_rs::Result<()> {
 Copy metadata from one file to another:
 
 ```rust
-use exiftool_rs::core::operations::copy_metadata;
+use oxidex::core::operations::copy_metadata;
 use std::path::Path;
 
-fn main() -> exiftool_rs::Result<()> {
+fn main() -> oxidex::Result<()> {
     let source = Path::new("source.jpg");
     let dest = Path::new("dest.jpg");
 
@@ -289,7 +289,7 @@ fn main() -> exiftool_rs::Result<()> {
 ### Example 1: Read and Display All Metadata
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 fn main() {
@@ -301,13 +301,13 @@ fn main() {
             for (name, value) in metadata.iter() {
                 // Display tag name and value
                 match value {
-                    exiftool_rs::core::tag_value::TagValue::String(s) => {
+                    oxidex::core::tag_value::TagValue::String(s) => {
                         println!("  {}: {}", name, s);
                     }
-                    exiftool_rs::core::tag_value::TagValue::Integer(i) => {
+                    oxidex::core::tag_value::TagValue::Integer(i) => {
                         println!("  {}: {}", name, i);
                     }
-                    exiftool_rs::core::tag_value::TagValue::Float(f) => {
+                    oxidex::core::tag_value::TagValue::Float(f) => {
                         println!("  {}: {}", name, f);
                     }
                     _ => {
@@ -326,8 +326,8 @@ fn main() {
 ### Example 2: Extract Specific Camera Settings
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::operations::read_metadata;
+use oxidex::core::tag_value::TagValue;
 use std::path::Path;
 
 fn main() {
@@ -367,8 +367,8 @@ fn main() {
 ### Example 3: Modify Metadata
 
 ```rust
-use exiftool_rs::core::operations::modify_tag;
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::operations::modify_tag;
+use oxidex::core::tag_value::TagValue;
 use std::path::Path;
 
 fn main() {
@@ -401,7 +401,7 @@ fn main() {
 ### Example 4: Batch Processing with Rayon
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use rayon::prelude::*;
 use std::path::{Path, PathBuf};
 
@@ -445,7 +445,7 @@ fn process_file(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 ### Example 5: Copy Metadata Between Files
 
 ```rust
-use exiftool_rs::core::operations::copy_metadata;
+use oxidex::core::operations::copy_metadata;
 use std::path::Path;
 
 fn main() {
@@ -474,10 +474,10 @@ fn main() {
 
 ## Error Handling
 
-ExifTool-RS provides comprehensive error types through the `ExifToolError` enum:
+OxiDex provides comprehensive error types through the `ExifToolError` enum:
 
 ```rust
-use exiftool_rs::ExifToolError;
+use oxidex::ExifToolError;
 
 // Handle different error types
 match read_metadata(path) {
@@ -508,7 +508,7 @@ match read_metadata(path) {
 Use `rayon` for efficient parallel processing of multiple files:
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use rayon::prelude::*;
 use std::path::PathBuf;
 
@@ -534,7 +534,7 @@ fn process_directory(dir: &str) -> Vec<(PathBuf, Result<usize, String>)> {
 
 ### Memory-Mapped I/O
 
-ExifTool-RS automatically uses memory-mapped I/O for efficient processing of large files. This is handled internally and requires no configuration.
+OxiDex automatically uses memory-mapped I/O for efficient processing of large files. This is handled internally and requires no configuration.
 
 ### Custom Tag Definitions
 
@@ -552,8 +552,8 @@ This will generate and open the full Rust API documentation in your browser.
 
 ## Additional Resources
 
-- **[Command-Line Usage](cli_usage.md)**: CLI interface for ExifTool-RS
-- **[C FFI Integration](ffi.md)**: Use ExifTool-RS from C, Python, or other languages
+- **[Command-Line Usage](cli_usage.md)**: CLI interface for OxiDex
+- **[C FFI Integration](ffi.md)**: Use OxiDex from C, Python, or other languages
 - **[Troubleshooting](troubleshooting.md)**: Common issues and solutions
 - **[Full API Reference](../api/library_api.md)**: Comprehensive API documentation (1400+ lines)
 

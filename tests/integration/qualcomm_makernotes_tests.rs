@@ -1,8 +1,8 @@
 //! Integration tests for Qualcomm MakerNotes parser
 
-use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-use exiftool_rs::parsers::tiff::makernotes::qualcomm::QualcommParser;
-use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+use oxidex::parsers::tiff::makernotes::qualcomm::QualcommParser;
+use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 use std::collections::HashMap;
 
 #[test]

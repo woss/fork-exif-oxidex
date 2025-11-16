@@ -1126,7 +1126,7 @@ Find the Canon MakerNotes section and update:
 
 Example:
 ```bash
-exiftool-rs -Canon:Quality -Canon:ExposureMode -Canon:ISO canon_photo.jpg
+oxidex -Canon:Quality -Canon:ExposureMode -Canon:ISO canon_photo.jpg
 ```
 ```
 

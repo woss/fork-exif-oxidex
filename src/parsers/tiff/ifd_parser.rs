@@ -35,8 +35,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
+//! use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+//! use oxidex::io::buffered_reader::BufferedReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -143,8 +143,8 @@ pub struct IfdEntry {
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

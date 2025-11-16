@@ -1,6 +1,6 @@
-# ExifTool-RS Python Bindings
+# OxiDex Python Bindings
 
-Python bindings for ExifTool-RS using ctypes to interface with the C FFI.
+Python bindings for OxiDex using ctypes to interface with the C FFI.
 
 > **Note**: This is a minimal reference implementation to demonstrate the C FFI works. It is not a production-quality binding and lacks many features like metadata writing, comprehensive error handling, and advanced functionality.
 
@@ -15,22 +15,22 @@ Python bindings for ExifTool-RS using ctypes to interface with the C FFI.
 ## Prerequisites
 
 - Python 3.7 or higher
-- ExifTool-RS library compiled as a shared library
+- OxiDex library compiled as a shared library
 
 ## Building the Library
 
-Before using the Python bindings, you must build the ExifTool-RS shared library:
+Before using the Python bindings, you must build the OxiDex shared library:
 
 ```bash
 # From the repository root
-cd /path/to/exiftool-rs
+cd /path/to/oxidex
 cargo build --lib --release
 ```
 
 This will generate the shared library in `target/release/`:
-- Linux: `libexiftool_rs.so`
-- macOS: `libexiftool_rs.dylib`
-- Windows: `exiftool_rs.dll`
+- Linux: `liboxidex.so`
+- macOS: `liboxidex.dylib`
+- Windows: `oxidex.dll`
 
 ## Installation
 
@@ -47,22 +47,22 @@ Simply ensure the shared library is findable by one of these methods:
 2. **Set library path environment variable**:
    ```bash
    # Linux
-   export LD_LIBRARY_PATH=/path/to/exiftool-rs/target/release:$LD_LIBRARY_PATH
+   export LD_LIBRARY_PATH=/path/to/oxidex/target/release:$LD_LIBRARY_PATH
 
    # macOS
-   export DYLD_LIBRARY_PATH=/path/to/exiftool-rs/target/release:$DYLD_LIBRARY_PATH
+   export DYLD_LIBRARY_PATH=/path/to/oxidex/target/release:$DYLD_LIBRARY_PATH
 
    # Windows
-   set PATH=C:\path\to\exiftool-rs\target\release;%PATH%
+   set PATH=C:\path\to\oxidex\target\release;%PATH%
    ```
 
 3. **Copy library to system location**:
    ```bash
    # Linux
-   sudo cp target/release/libexiftool_rs.so /usr/local/lib/
+   sudo cp target/release/liboxidex.so /usr/local/lib/
 
    # macOS
-   sudo cp target/release/libexiftool_rs.dylib /usr/local/lib/
+   sudo cp target/release/liboxidex.dylib /usr/local/lib/
    ```
 
 ## Usage
@@ -70,34 +70,34 @@ Simply ensure the shared library is findable by one of these methods:
 ### Basic Example
 
 ```python
-from exiftool_rs import ExifTool, ExifToolError
+from oxidex import Oxidex, OxidexError
 
 try:
     # Use context manager for automatic cleanup
-    with ExifTool() as et:
+    with Oxidex() as ox:
         # Read metadata from file
-        et.read_file("photo.jpg")
+        ox.read_file("photo.jpg")
 
         # Get specific tags
-        make = et.get_tag("EXIF:Make")
-        model = et.get_tag("EXIF:Model")
+        make = ox.get_tag("EXIF:Make")
+        model = ox.get_tag("EXIF:Model")
 
         print(f"Camera: {make} {model}")
 
-except ExifToolError as e:
+except OxidexError as e:
     print(f"Error: {e}")
 ```
 
 ### Getting All Tags
 
 ```python
-from exiftool_rs import ExifTool
+from oxidex import Oxidex
 
-with ExifTool() as et:
-    et.read_file("photo.jpg")
+with Oxidex() as ox:
+    ox.read_file("photo.jpg")
 
     # Get all tags as a dictionary
-    all_tags = et.get_all_tags()
+    all_tags = ox.get_all_tags()
 
     for tag_name, tag_value in all_tags.items():
         print(f"{tag_name}: {tag_value}")
@@ -106,50 +106,50 @@ with ExifTool() as et:
 ### Iterating Through Tags
 
 ```python
-from exiftool_rs import ExifTool
+from oxidex import Oxidex
 
-with ExifTool() as et:
-    et.read_file("photo.jpg")
+with Oxidex() as ox:
+    ox.read_file("photo.jpg")
 
     # Get tag count
-    count = et.get_tag_count()
+    count = ox.get_tag_count()
     print(f"Found {count} tags")
 
     # Iterate by index
     for i in range(count):
-        tag_name = et.get_tag_name_at(i)
+        tag_name = ox.get_tag_name_at(i)
         if tag_name:
-            tag_value = et.get_tag(tag_name)
+            tag_value = ox.get_tag(tag_name)
             print(f"{tag_name}: {tag_value}")
 ```
 
 ### Error Handling
 
 ```python
-from exiftool_rs import ExifTool, ExifToolError
+from oxidex import Oxidex, OxidexError
 
-with ExifTool() as et:
+with Oxidex() as ox:
     try:
-        et.read_file("nonexistent.jpg")
-    except ExifToolError as e:
+        ox.read_file("nonexistent.jpg")
+    except OxidexError as e:
         print(f"Failed to read file: {e}")
 ```
 
 ### Manual Resource Management
 
 ```python
-from exiftool_rs import ExifTool
+from oxidex import Oxidex
 
 # Create handle
-et = ExifTool()
+ox = Oxidex()
 
 try:
-    et.read_file("photo.jpg")
-    make = et.get_tag("EXIF:Make")
+    ox.read_file("photo.jpg")
+    make = ox.get_tag("EXIF:Make")
     print(make)
 finally:
     # Manually clean up (not needed with context manager)
-    del et
+    del ox
 ```
 
 ## Running the Example
@@ -165,12 +165,12 @@ This will read metadata from the sample JPEG in `tests/fixtures/jpeg/sample_with
 
 ## API Reference
 
-### ExifTool Class
+### Oxidex Class
 
 #### `__init__()`
-Create a new ExifTool handle.
+Create a new Oxidex handle.
 
-**Raises**: `ExifToolError` if handle creation fails (out of memory).
+**Raises**: `OxidexError` if handle creation fails (out of memory).
 
 #### `read_file(filepath: str) -> None`
 Read metadata from a file.
@@ -178,7 +178,7 @@ Read metadata from a file.
 **Args**:
 - `filepath`: Path to the image file
 
-**Raises**: `ExifToolError` if reading fails (file not found, parse error, unsupported format, etc.).
+**Raises**: `OxidexError` if reading fails (file not found, parse error, unsupported format, etc.).
 
 #### `get_tag(tag_name: str) -> Optional[str]`
 Get tag value as a string.
@@ -223,11 +223,11 @@ Get all tags as a dictionary.
 
 ### Context Manager Support
 
-The `ExifTool` class supports Python's context manager protocol:
+The `Oxidex` class supports Python's context manager protocol:
 
 ```python
-with ExifTool() as et:
-    # Use et here
+with Oxidex() as ox:
+    # Use ox here
     pass
 # Handle is automatically destroyed
 ```
@@ -257,7 +257,7 @@ For a production-quality Python binding, consider:
 
 If you see an error like:
 ```
-OSError: Could not find libexiftool_rs.so
+OSError: Could not find liboxidex.so
 ```
 
 **Solution**: Ensure the library is built and in a searchable location:
@@ -292,24 +292,24 @@ The bindings use proper resource management:
 - **With context manager**: Resources are automatically freed when exiting the `with` block
 - **Without context manager**: Resources are freed when the object is garbage collected
 
-**Best practice**: Always use the context manager (`with ExifTool() as et:`) to ensure deterministic cleanup.
+**Best practice**: Always use the context manager (`with Oxidex() as ox:`) to ensure deterministic cleanup.
 
 ## Thread Safety
 
 The C FFI follows these thread safety rules:
 
-- **Handle creation** (`exiftool_create`): Thread-safe, each call returns an independent handle
+- **Handle creation** (`oxidex_create`): Thread-safe, each call returns an independent handle
 - **Handle operations**: Not thread-safe - do not use the same handle from multiple threads
 - **Error messages**: Thread-safe - each thread has its own error message storage
 
-**Recommendation**: Create one `ExifTool` instance per thread.
+**Recommendation**: Create one `Oxidex` instance per thread.
 
 ## License
 
-This Python binding follows the same license as the ExifTool-RS project.
+This Python binding follows the same license as the OxiDex project.
 
 ## See Also
 
-- [ExifTool-RS C FFI Documentation](../../docs/api/ffi_api.md)
-- [C Header File](../../api/exiftool_rs.h)
+- [OxiDex C FFI Documentation](../../docs/api/ffi_api.md)
+- [C Header File](../../include/oxidex.h)
 - [Rust FFI Implementation](../../src/ffi/c_api.rs)

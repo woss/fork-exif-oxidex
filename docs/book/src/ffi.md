@@ -1,10 +1,10 @@
 # C FFI Integration
 
-This chapter covers how to use ExifTool-RS from C, C++, Python, and other languages through the C Foreign Function Interface (FFI).
+This chapter covers how to use OxiDex from C, C++, Python, and other languages through the C Foreign Function Interface (FFI).
 
 ## Overview
 
-ExifTool-RS provides a C-compatible Foreign Function Interface (FFI) for reading and writing metadata. This allows integration with:
+OxiDex provides a C-compatible Foreign Function Interface (FFI) for reading and writing metadata. This allows integration with:
 
 - **C/C++ applications**: Direct FFI usage
 - **Python**: Via ctypes bindings (example provided)
@@ -19,7 +19,7 @@ ExifTool-RS provides a C-compatible Foreign Function Interface (FFI) for reading
 
 ## Building the Shared Library
 
-Before using the FFI, build ExifTool-RS as a shared library:
+Before using the FFI, build OxiDex as a shared library:
 
 ```bash
 # From the repository root
@@ -27,18 +27,18 @@ cargo build --lib --release
 ```
 
 This generates the shared library in `target/release/`:
-- **Linux**: `libexiftool_rs.so`
-- **macOS**: `libexiftool_rs.dylib`
-- **Windows**: `exiftool_rs.dll`
+- **Linux**: `liboxidex.so`
+- **macOS**: `liboxidex.dylib`
+- **Windows**: `oxidex.dll`
 
-The header file is available at: `include/exiftool_rs.h`
+The header file is available at: `include/oxidex.h`
 
 ## Quick Start (C)
 
 Here's a minimal working C example:
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -74,13 +74,13 @@ int main() {
 
 ```bash
 # Linux
-gcc -o example example.c -lexiftool_rs -L./target/release
+gcc -o example example.c -loxidex -L./target/release
 
 # macOS
-gcc -o example example.c -lexiftool_rs -L./target/release
+gcc -o example example.c -loxidex -L./target/release
 
 # Windows (MSVC)
-cl example.c exiftool_rs.lib
+cl example.c oxidex.lib
 ```
 
 ## Core Concepts
@@ -390,7 +390,7 @@ if (result != EXIFTOOL_OK) {
 Complete example extracting camera metadata:
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 
 int main(int argc, char** argv) {
@@ -441,7 +441,7 @@ int main(int argc, char** argv) {
 ### Example 2: Iterate All Tags
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 
 int main(int argc, char** argv) {
@@ -497,7 +497,7 @@ int main(int argc, char** argv) {
 
 ## Python Bindings
 
-ExifTool-RS includes a reference Python binding implementation using ctypes.
+OxiDex includes a reference Python binding implementation using ctypes.
 
 ### Installation
 
@@ -505,18 +505,18 @@ No pip install needed. Ensure the shared library is findable:
 
 ```bash
 # Option 1: Set library path
-export LD_LIBRARY_PATH=/path/to/exiftool-rs/target/release:$LD_LIBRARY_PATH  # Linux
-export DYLD_LIBRARY_PATH=/path/to/exiftool-rs/target/release:$DYLD_LIBRARY_PATH  # macOS
+export LD_LIBRARY_PATH=/path/to/oxidex/target/release:$LD_LIBRARY_PATH  # Linux
+export DYLD_LIBRARY_PATH=/path/to/oxidex/target/release:$DYLD_LIBRARY_PATH  # macOS
 
 # Option 2: Copy to system location
-sudo cp target/release/libexiftool_rs.so /usr/local/lib/  # Linux
-sudo cp target/release/libexiftool_rs.dylib /usr/local/lib/  # macOS
+sudo cp target/release/liboxidex.so /usr/local/lib/  # Linux
+sudo cp target/release/liboxidex.dylib /usr/local/lib/  # macOS
 ```
 
 ### Python Usage Example
 
 ```python
-from exiftool_rs import ExifTool, ExifToolError
+from oxidex import ExifTool, ExifToolError
 
 try:
     # Use context manager for automatic cleanup
@@ -576,7 +576,7 @@ with ExifTool() as et:
 **Linking:**
 
 ```bash
-gcc -o app app.c -lexiftool_rs -L./target/release
+gcc -o app app.c -loxidex -L./target/release
 ```
 
 **Runtime Library Path:**
@@ -591,7 +591,7 @@ export LD_LIBRARY_PATH=/path/to/lib:$LD_LIBRARY_PATH
 **Linking:**
 
 ```bash
-gcc -o app app.c -lexiftool_rs -L./target/release
+gcc -o app app.c -loxidex -L./target/release
 ```
 
 **Runtime Library Path:**
@@ -608,19 +608,19 @@ export DYLD_LIBRARY_PATH=/path/to/lib:$DYLD_LIBRARY_PATH
 **MSVC Linking:**
 
 ```batch
-cl app.c exiftool_rs.lib
+cl app.c oxidex.lib
 ```
 
 **Runtime DLL:**
 
-Ensure `exiftool_rs.dll` is in:
+Ensure `oxidex.dll` is in:
 - Same directory as executable
 - Or in system PATH
 
 **MinGW/GNU:**
 
 ```bash
-gcc -o app.exe app.c -lexiftool_rs -L./target/release
+gcc -o app.exe app.c -loxidex -L./target/release
 ```
 
 ## Best Practices
@@ -707,7 +707,7 @@ void* thread_func(void* arg) {
 
 To create bindings for other languages:
 
-1. **Study the C API**: Header file at `include/exiftool_rs.h`
+1. **Study the C API**: Header file at `include/oxidex.h`
 2. **Use the pattern**: Most languages support C FFI (JNI for Java, cffi for Python, cgo for Go)
 3. **Follow Python example**: See `bindings/python/` for a complete reference
 4. **Handle errors properly**: Convert C error codes to native exceptions

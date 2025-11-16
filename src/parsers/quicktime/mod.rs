@@ -10,8 +10,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::core::FileReader;
-//! use exiftool_rs::parsers::quicktime::parse_quicktime_metadata;
+//! use oxidex::core::FileReader;
+//! use oxidex::parsers::quicktime::parse_quicktime_metadata;
 //!
 //! # fn example(reader: &dyn FileReader) -> Result<(), String> {
 //! let metadata = parse_quicktime_metadata(reader)?;
@@ -68,8 +68,8 @@ pub use atom_parser::{Atom, FourCC};
 /// # Example
 ///
 /// ```no_run
-/// # use exiftool_rs::core::FileReader;
-/// # use exiftool_rs::parsers::quicktime::parse_quicktime_metadata;
+/// # use oxidex::core::FileReader;
+/// # use oxidex::parsers::quicktime::parse_quicktime_metadata;
 /// # fn example(reader: &dyn FileReader) -> Result<(), String> {
 /// let metadata = parse_quicktime_metadata(reader)?;
 ///

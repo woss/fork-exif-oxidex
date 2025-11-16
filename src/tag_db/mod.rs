@@ -8,7 +8,7 @@ pub mod generated_tags;
 pub mod tag_registry;
 
 // Re-export everything from exiftool-tags crate
-pub use exiftool_tags::*;
+pub use oxidex_tags::*;
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -170,7 +170,7 @@ static TAG_ID_TO_NAME_INDEX: LazyLock<HashMap<(u16, FormatFamily), String>> = La
 /// # Examples
 ///
 /// ```
-/// use exiftool_rs::tag_db::lookup_tag_name;
+/// use oxidex::tag_db::lookup_tag_name;
 ///
 /// assert_eq!(lookup_tag_name(0x010F, "IFD0"), "IFD0:Make");
 /// assert_eq!(lookup_tag_name(0x0110, "IFD0"), "IFD0:Model");

@@ -16,10 +16,10 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
-//! use exiftool_rs::core::metadata_map::MetadataMap;
-//! use exiftool_rs::core::tag_value::TagValue;
-//! use exiftool_rs::writers::pdf_writer::write_pdf_file;
+//! use oxidex::io::buffered_reader::BufferedReader;
+//! use oxidex::core::metadata_map::MetadataMap;
+//! use oxidex::core::tag_value::TagValue;
+//! use oxidex::writers::pdf_writer::write_pdf_file;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -77,10 +77,10 @@ use std::str;
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
-/// use exiftool_rs::writers::pdf_writer::write_pdf_file;
+/// use oxidex::io::buffered_reader::BufferedReader;
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
+/// use oxidex::writers::pdf_writer::write_pdf_file;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

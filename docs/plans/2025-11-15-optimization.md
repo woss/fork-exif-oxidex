@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Optimize runtime performance of exiftool-rs through compiler optimizations, profiling, and targeted hot path improvements.
+**Goal:** Optimize runtime performance of oxidex through compiler optimizations, profiling, and targeted hot path improvements.
 
 **Architecture:** Multi-phase approach: (1) Low-hanging compiler flags → (2) Profile to identify hotspots → (3) Optimize string/Vec allocations in hot paths → (4) Verify improvements via benchmarks
 
@@ -16,7 +16,7 @@
 
 ### Current State
 
-The exiftool-rs project is already highly optimized with:
+The oxidex project is already highly optimized with:
 - Multi-crate workspace for parallel compilation (8 crates)
 - Runtime performance 13-65x faster than Perl ExifTool
 - LTO already enabled in release profile
@@ -73,7 +73,7 @@ From `benches/parse_benchmarks.rs` and `benches/integration_benchmarks.rs`:
 
 **Step 1: Establish baseline binary size**
 
-Run: `cargo build --release && ls -lh target/release/exiftool-rs`
+Run: `cargo build --release && ls -lh target/release/oxidex`
 Expected: Record current binary size (approximately 4.0 MB)
 
 **Step 2: Add panic = 'abort' to release profile**
@@ -91,7 +91,7 @@ panic = 'abort'
 
 **Step 3: Rebuild and measure binary size**
 
-Run: `cargo clean && cargo build --release && ls -lh target/release/exiftool-rs`
+Run: `cargo clean && cargo build --release && ls -lh target/release/oxidex`
 Expected: Binary size reduced by 3-10% (approximately 3.6-3.9 MB)
 
 **Step 4: Verify benchmarks still pass**
@@ -313,7 +313,7 @@ Add to `benches/parse_benchmarks.rs`:
 
 ```rust
 fn bench_iptc_tag_name_generation(c: &mut Criterion) {
-    use exiftool_rs::parsers::jpeg::iptc_parser::dataset_to_tag_name;
+    use oxidex::parsers::jpeg::iptc_parser::dataset_to_tag_name;
 
     c.bench_function("iptc_tag_name_generation", |b| {
         b.iter(|| {
@@ -420,7 +420,7 @@ Add to `tests/integration/operations_test.rs`:
 ```rust
 #[test]
 fn test_metadata_merge_preserves_all_data() {
-    use exiftool_rs::core::operations::read_metadata;
+    use oxidex::core::operations::read_metadata;
     use std::path::Path;
 
     let path = Path::new("tests/fixtures/jpeg/sample_with_exif.jpg");
@@ -523,7 +523,7 @@ Add to `tests/unit/tiff_parser_test.rs`:
 #[test]
 fn test_ifd_parsing_preserves_all_entries() {
     // This test verifies that pre-allocating Vec doesn't lose any entries
-    use exiftool_rs::parsers::tiff::ifd_parser::parse_ifd;
+    use oxidex::parsers::tiff::ifd_parser::parse_ifd;
 
     // Use a real TIFF file with known entry count
     let path = std::path::Path::new("tests/fixtures/tiff/sample.tif");
@@ -697,7 +697,7 @@ Expected: New flamegraph showing reduced time in allocation hotspots
 
 **Step 3: Measure final binary size**
 
-Run: `ls -lh target/release/exiftool-rs`
+Run: `ls -lh target/release/oxidex`
 Expected: Binary size reduced by 3-10% from original baseline
 
 **Step 4: Run ExifTool comparison benchmark**
@@ -779,7 +779,7 @@ In `README.md`, find the performance section and update:
 ```markdown
 ## Performance
 
-exiftool-rs is **13-65x faster** than Perl ExifTool:
+oxidex is **13-65x faster** than Perl ExifTool:
 
 - Single JPEG read: **16x faster** (2.3ms vs 37.5ms) → **[Updated: X.Xms]**
 - Batch processing (1000 files): **65x faster** (14.1ms vs 916.4ms) → **[Updated: X.Xms]**

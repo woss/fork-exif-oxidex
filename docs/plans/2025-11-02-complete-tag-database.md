@@ -728,7 +728,7 @@ test test_tag_database_target_coverage ... ok
 Create test file `tests/tag_lookup_verification.rs`:
 
 ```rust
-use exiftool_rs::tag_db::generated_tags::{lookup_tag, generated_tag_count};
+use oxidex::tag_db::generated_tags::{lookup_tag, generated_tag_count};
 
 #[test]
 fn test_exif_tag_lookup() {
@@ -832,7 +832,7 @@ All 140+ ExifTool format families including:
 ## Tag Lookup
 
 ```rust
-use exiftool_rs::tag_db::generated_tags::lookup_tag;
+use oxidex::tag_db::generated_tags::lookup_tag;
 
 // Look up EXIF Make tag
 if let Some(tag) = lookup_tag(0x010F, "EXIF") {
@@ -885,7 +885,7 @@ git commit -m "docs: document 100% tag coverage achievement
 
 ```rust
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use exiftool_rs::tag_db::generated_tags::lookup_tag;
+use oxidex::tag_db::generated_tags::lookup_tag;
 
 fn bench_exif_tag_lookup(c: &mut Criterion) {
     c.bench_function("lookup_exif_make", |b| {

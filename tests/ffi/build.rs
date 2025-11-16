@@ -21,10 +21,10 @@ fn main() {
 
         // Tell cargo to link the Rust library
         println!("cargo:rustc-link-search=native={}", out_dir);
-        println!("cargo:rustc-link-lib=static=exiftool_rs");
+        println!("cargo:rustc-link-lib=static=oxidex");
 
         // Rebuild if the C source changes
         println!("cargo:rerun-if-changed=tests/ffi/c_integration_test.c");
-        println!("cargo:rerun-if-changed=include/exiftool_rs.h");
+        println!("cargo:rerun-if-changed=include/oxidex.h");
     }
 }

@@ -4,7 +4,7 @@
 
 ### 1.1 Purpose
 
-This document defines the comprehensive integration testing strategy for ExifTool-RS. Integration tests validate end-to-end workflows, CLI operations, and behavioral parity with the reference Perl ExifTool implementation.
+This document defines the comprehensive integration testing strategy for OxiDex. Integration tests validate end-to-end workflows, CLI operations, and behavioral parity with the reference Perl ExifTool implementation.
 
 ### 1.2 Scope
 
@@ -184,10 +184,10 @@ exiftool -json -a -G1 -struct tests/fixtures/jpeg/simple/canon_eos_5d.jpg > perl
 - `-G1`: Include group names (EXIF, GPS, IPTC, etc.)
 - `-struct`: Preserve structure for nested tags (XMP, maker notes)
 
-#### 3.2.2 ExifTool-RS Command
+#### 3.2.2 OxiDex Command
 
 ```bash
-exiftool-rs -json tests/fixtures/jpeg/simple/canon_eos_5d.jpg > rust_output.json
+oxidex -json tests/fixtures/jpeg/simple/canon_eos_5d.jpg > rust_output.json
 ```
 
 **Expected JSON Format**:
@@ -297,7 +297,7 @@ fn values_match(perl_val: &Value, rust_val: &Value) -> bool {
 
 **Vendor-Specific Tag Names**:
 - Perl ExifTool: `"MakerNotes:CanonModelID"`
-- ExifTool-RS: May use `"Canon:ModelID"` (shorter group name)
+- OxiDex: May use `"Canon:ModelID"` (shorter group name)
 - Solution: Tag name normalization mapping
 
 ### 3.4 Match Rate Calculation
@@ -317,7 +317,7 @@ Match Rate (%) = (Matched Tags / Total Tags in Reference) × 100
 
 ```
 Perl ExifTool: 87 tags
-ExifTool-RS:   85 tags (84 match Perl, 1 unique to Rust)
+OxiDex:   85 tags (84 match Perl, 1 unique to Rust)
 Match Rate = 84 / 87 × 100 = 96.6%
 ```
 
@@ -376,7 +376,7 @@ For malformed files (`tests/fixtures/{format}/malformed/`):
 ```rust
 #[test]
 fn test_malformed_truncated_jpeg() {
-    let result = exiftool_rs::extract_metadata("tests/fixtures/jpeg/malformed/truncated.jpg");
+    let result = oxidex::extract_metadata("tests/fixtures/jpeg/malformed/truncated.jpg");
 
     // PASS: Returns specific error (no panic)
     assert!(result.is_err());
@@ -531,7 +531,7 @@ git push origin main
 2. **Selective Checkout** (for developers):
    ```bash
    # Clone without downloading LFS files
-   GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/yourorg/exiftool-rs.git
+   GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/yourorg/oxidex.git
 
    # Download only specific format
    git lfs fetch --include="tests/fixtures/jpeg/**"
@@ -565,7 +565,7 @@ git lfs status
 
 ```bash
 # Fresh clone
-git clone https://github.com/yourorg/exiftool-rs.git test-clone
+git clone https://github.com/yourorg/oxidex.git test-clone
 cd test-clone
 
 # Verify LFS files are downloaded (not pointers)
@@ -667,7 +667,7 @@ jobs:
 
 ### 5.3 Baseline Management
 
-**Problem**: As ExifTool-RS evolves, some tag values may intentionally differ from Perl ExifTool (e.g., better precision, bug fixes).
+**Problem**: As OxiDex evolves, some tag values may intentionally differ from Perl ExifTool (e.g., better precision, bug fixes).
 
 **Solution**: Version-controlled baseline of expected outputs.
 
@@ -731,7 +731,7 @@ cargo run --bin generate_baseline -- \
 #### 5.3.2 Baseline Updates
 
 **When to Update**:
-- ExifTool-RS implements new tag decoder (improves match rate)
+- OxiDex implements new tag decoder (improves match rate)
 - Perl ExifTool releases new version with breaking changes
 - Intentional divergence (e.g., fixing a Perl ExifTool bug)
 
@@ -885,7 +885,7 @@ fn test_no_infinite_loop() {
 
 ### 6.4 Performance Benchmarks
 
-**Objective**: Ensure ExifTool-RS is competitive with Perl ExifTool.
+**Objective**: Ensure OxiDex is competitive with Perl ExifTool.
 
 **Benchmark Categories**:
 
@@ -910,7 +910,7 @@ fn bench_single_extraction(c: &mut Criterion) {
         let file = format!("tests/fixtures/{}/simple/sample.{}", format, format);
 
         group.bench_with_input(
-            BenchmarkId::new("exiftool-rs", format),
+            BenchmarkId::new("oxidex", format),
             &file,
             |b, path| {
                 b.iter(|| extract_metadata(path).unwrap())
@@ -942,14 +942,14 @@ criterion_main!(benches);
 # Compare wall-clock time
 hyperfine --warmup 3 \
   'exiftool tests/fixtures/jpeg/simple/*.jpg' \
-  'exiftool-rs tests/fixtures/jpeg/simple/*.jpg'
+  'oxidex tests/fixtures/jpeg/simple/*.jpg'
 
 # Expected output:
 # Benchmark 1: exiftool ...
 #   Time (mean ± σ):     120.5 ms ±   3.2 ms
-# Benchmark 2: exiftool-rs ...
+# Benchmark 2: oxidex ...
 #   Time (mean ± σ):      58.3 ms ±   2.1 ms
-# Summary: exiftool-rs is 2.07x faster
+# Summary: oxidex is 2.07x faster
 ```
 
 **Regression Detection**:
@@ -1072,9 +1072,9 @@ hyperfine --warmup 3 \
 ### Appendix C: Contact & Support
 
 **Questions or Issues**:
-- GitHub Issues: [https://github.com/yourorg/exiftool-rs/issues](https://github.com/yourorg/exiftool-rs/issues)
-- Discussions: [https://github.com/yourorg/exiftool-rs/discussions](https://github.com/yourorg/exiftool-rs/discussions)
-- Matrix Chat: `#exiftool-rs:matrix.org`
+- GitHub Issues: [https://github.com/yourorg/oxidex/issues](https://github.com/yourorg/oxidex/issues)
+- Discussions: [https://github.com/yourorg/oxidex/discussions](https://github.com/yourorg/oxidex/discussions)
+- Matrix Chat: `#oxidex:matrix.org`
 
 **Maintainers**:
 - Test Infrastructure: @test-lead

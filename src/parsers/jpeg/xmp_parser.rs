@@ -14,9 +14,9 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-//! use exiftool_rs::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
+//! use oxidex::parsers::jpeg::segment_parser::parse_segments;
+//! use oxidex::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
+//! use oxidex::io::buffered_reader::BufferedReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -65,9 +65,9 @@ const XMP_IDENTIFIER: &[u8] = b"http://ns.adobe.com/xap/1.0/\0";
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-/// use exiftool_rs::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::parsers::jpeg::segment_parser::parse_segments;
+/// use oxidex::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -131,9 +131,9 @@ pub fn extract_xmp_from_segments(segments: &[Segment]) -> Result<Vec<(String, St
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-/// use exiftool_rs::parsers::jpeg::xmp_parser::is_xmp_segment;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::parsers::jpeg::segment_parser::parse_segments;
+/// use oxidex::parsers::jpeg::xmp_parser::is_xmp_segment;
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

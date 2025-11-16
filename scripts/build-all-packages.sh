@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quick Package Building Script for ExifTool-RS
+# Quick Package Building Script for OxiDex
 # This script builds all package types in the correct order
 #
 # Usage: ./scripts/build-all-packages.sh [VERSION]
@@ -32,7 +32,7 @@ if [[ -z "$VERSION" ]]; then
     log_info "Using version from Cargo.toml: $VERSION"
 fi
 
-log_info "Building all packages for ExifTool-RS v$VERSION"
+log_info "Building all packages for OxiDex v$VERSION"
 log_info "================================================"
 echo ""
 
@@ -75,8 +75,8 @@ build_release_binary() {
     log_info "Step 1: Building release binary..."
     if cargo build --release; then
         log_info "✓ Release binary built successfully"
-        log_info "  Binary location: target/release/exiftool-rs"
-        local binary_size=$(du -h target/release/exiftool-rs | cut -f1)
+        log_info "  Binary location: target/release/oxidex"
+        local binary_size=$(du -h target/release/oxidex | cut -f1)
         log_info "  Binary size: $binary_size"
     else
         log_error "Failed to build release binary"
@@ -147,7 +147,7 @@ build_rpm_package() {
 verify_homebrew_formula() {
     log_info "Step 4: Verifying Homebrew formula..."
 
-    local formula_path="packaging/homebrew/exiftool-rs.rb"
+    local formula_path="packaging/homebrew/oxidex.rb"
 
     if [[ ! -f "$formula_path" ]]; then
         log_error "Homebrew formula not found at $formula_path"
@@ -159,7 +159,7 @@ verify_homebrew_formula() {
     # Check if formula needs SHA256 update
     if grep -q "UPDATE_THIS_SHA256_AFTER_RELEASE" "$formula_path"; then
         log_warn "  Homebrew formula SHA256 needs to be updated after creating a GitHub release"
-        log_info "  Run: curl -sL https://github.com/exiftool-rs/exiftool-rs/archive/refs/tags/v$VERSION.tar.gz | shasum -a 256"
+        log_info "  Run: curl -sL https://github.com/oxidex/oxidex/archive/refs/tags/v$VERSION.tar.gz | shasum -a 256"
     fi
 
     # Audit formula if brew is available
@@ -215,8 +215,8 @@ print_summary() {
     log_info "Artifacts created:"
 
     # Release binary
-    if [[ -f "target/release/exiftool-rs" ]]; then
-        echo "  ✓ Release binary: target/release/exiftool-rs ($(du -h target/release/exiftool-rs | cut -f1))"
+    if [[ -f "target/release/oxidex" ]]; then
+        echo "  ✓ Release binary: target/release/oxidex ($(du -h target/release/oxidex | cut -f1))"
     fi
 
     # Debian package
@@ -236,8 +236,8 @@ print_summary() {
     fi
 
     # Homebrew formula
-    if [[ -f "packaging/homebrew/exiftool-rs.rb" ]]; then
-        echo "  ✓ Homebrew formula: packaging/homebrew/exiftool-rs.rb"
+    if [[ -f "packaging/homebrew/oxidex.rb" ]]; then
+        echo "  ✓ Homebrew formula: packaging/homebrew/oxidex.rb"
     fi
 
     # Checksums

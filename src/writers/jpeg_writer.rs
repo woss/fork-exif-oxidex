@@ -24,10 +24,10 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::writers::jpeg_writer::write_exif_to_jpeg;
-//! use exiftool_rs::core::metadata_map::MetadataMap;
-//! use exiftool_rs::core::tag_value::TagValue;
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
+//! use oxidex::writers::jpeg_writer::write_exif_to_jpeg;
+//! use oxidex::core::metadata_map::MetadataMap;
+//! use oxidex::core::tag_value::TagValue;
+//! use oxidex::io::buffered_reader::BufferedReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -109,10 +109,10 @@ const RST7_MARKER: u16 = 0xFFD7;
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::writers::jpeg_writer::write_exif_to_jpeg;
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::writers::jpeg_writer::write_exif_to_jpeg;
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

@@ -263,7 +263,7 @@ const ALL_DATES_TAGS: &[&str] = &[
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::core::date_shift::{shift_metadata_dates, ShiftOperation};
+/// use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

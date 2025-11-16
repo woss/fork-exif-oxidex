@@ -1,4 +1,4 @@
-# Cross-compilation configuration for exiftool-rs
+# Cross-compilation configuration for oxidex
 # See: https://github.com/cross-rs/cross
 
 # Linux x86_64 with musl (static linking, no glibc dependency)

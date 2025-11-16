@@ -1,10 +1,10 @@
 # Installation
 
-This chapter covers the different ways to install ExifTool-RS on your system. Choose the method that best fits your needs.
+This chapter covers the different ways to install OxiDex on your system. Choose the method that best fits your needs.
 
 ## Prerequisites
 
-Before installing ExifTool-RS, ensure you have:
+Before installing OxiDex, ensure you have:
 
 - **Rust 1.75 or later** (for building from source or using cargo install)
 - **cargo** (Rust's package manager, comes with Rust)
@@ -16,7 +16,7 @@ Before installing ExifTool-RS, ensure you have:
 
 **Status**: 🔄 Coming Soon
 
-Pre-built binaries for ExifTool-RS will be available on the [GitHub Releases](https://github.com/exiftool-rs/exiftool-rs/releases) page once v1.0 is released.
+Pre-built binaries for OxiDex will be available on the [GitHub Releases](https://github.com/oxidex/oxidex/releases) page once v1.0 is released.
 
 **Planned Platform Support:**
 - Linux (x86_64, ARM64)
@@ -25,33 +25,33 @@ Pre-built binaries for ExifTool-RS will be available on the [GitHub Releases](ht
 
 **Download Instructions (Future):**
 
-1. Visit the [Releases page](https://github.com/exiftool-rs/exiftool-rs/releases)
+1. Visit the [Releases page](https://github.com/oxidex/oxidex/releases)
 2. Download the binary for your platform
 3. Extract the archive
 4. Move the binary to a location in your `PATH`
 
 ```bash
 # Linux/macOS example (future)
-wget https://github.com/exiftool-rs/exiftool-rs/releases/download/v1.0.0/exiftool-rs-linux-x86_64.tar.gz
-tar -xzf exiftool-rs-linux-x86_64.tar.gz
-sudo mv exiftool-rs /usr/local/bin/
+wget https://github.com/oxidex/oxidex/releases/download/v1.0.0/oxidex-linux-x86_64.tar.gz
+tar -xzf oxidex-linux-x86_64.tar.gz
+sudo mv oxidex /usr/local/bin/
 ```
 
 ### Method 2: Cargo Install
 
 **Status**: 🔄 In Development
 
-Once ExifTool-RS is published to [crates.io](https://crates.io), you'll be able to install it using cargo:
+Once OxiDex is published to [crates.io](https://crates.io), you'll be able to install it using cargo:
 
 ```bash
 # Install from crates.io (future)
-cargo install exiftool-rs
+cargo install oxidex
 
 # Install from git (current)
-cargo install --git https://github.com/exiftool-rs/exiftool-rs
+cargo install --git https://github.com/oxidex/oxidex
 ```
 
-This will compile and install the latest version of ExifTool-RS to `~/.cargo/bin/` (or your configured cargo bin directory). Make sure this directory is in your `PATH`.
+This will compile and install the latest version of OxiDex to `~/.cargo/bin/` (or your configured cargo bin directory). Make sure this directory is in your `PATH`.
 
 ### Method 3: Build from Source (Recommended for Development)
 
@@ -83,8 +83,8 @@ cargo --version
 #### Step 2: Clone the Repository
 
 ```bash
-git clone https://github.com/exiftool-rs/exiftool-rs.git
-cd exiftool-rs
+git clone https://github.com/oxidex/oxidex.git
+cd oxidex
 ```
 
 #### Step 3: Build the Project
@@ -95,7 +95,7 @@ cd exiftool-rs
 cargo build
 ```
 
-The binary will be located at `target/debug/exiftool-rs`.
+The binary will be located at `target/debug/oxidex`.
 
 **Release Build** (slower compilation, optimized execution):
 
@@ -103,16 +103,16 @@ The binary will be located at `target/debug/exiftool-rs`.
 cargo build --release
 ```
 
-The optimized binary will be located at `target/release/exiftool-rs`.
+The optimized binary will be located at `target/release/oxidex`.
 
 #### Step 4: Run the Binary
 
 ```bash
 # Development build
-./target/debug/exiftool-rs --help
+./target/debug/oxidex --help
 
 # Release build
-./target/release/exiftool-rs --help
+./target/release/oxidex --help
 ```
 
 #### Step 5: Optional - Install to System
@@ -127,15 +127,15 @@ Or manually copy it to a system location:
 
 ```bash
 # Linux/macOS
-sudo cp target/release/exiftool-rs /usr/local/bin/
+sudo cp target/release/oxidex /usr/local/bin/
 
 # Verify installation
-exiftool-rs --version
+oxidex --version
 ```
 
 ## Tag Database Generation
 
-ExifTool-RS automatically generates its comprehensive tag database from the official ExifTool Perl source during the build process. This ensures compatibility with ExifTool's extensive metadata tag definitions.
+OxiDex automatically generates its comprehensive tag database from the official ExifTool Perl source during the build process. This ensures compatibility with ExifTool's extensive metadata tag definitions.
 
 ### How It Works
 
@@ -192,7 +192,7 @@ The build script caches downloaded ExifTool source in the build directory for fa
 
 ## Development Setup
 
-If you're contributing to ExifTool-RS development, follow these additional setup steps:
+If you're contributing to OxiDex development, follow these additional setup steps:
 
 ### Install Development Tools
 
@@ -238,7 +238,7 @@ cargo clippy -- -D warnings
 
 ### Benchmarking
 
-ExifTool-RS includes performance benchmarks using Criterion:
+OxiDex includes performance benchmarks using Criterion:
 
 ```bash
 # Run all benchmarks
@@ -272,7 +272,7 @@ start target/criterion/report/index.html
 
 ### Fuzzing
 
-ExifTool-RS includes continuous fuzzing targets for security-critical parsers:
+OxiDex includes continuous fuzzing targets for security-critical parsers:
 
 **Prerequisites**: Fuzzing requires nightly Rust:
 
@@ -356,7 +356,7 @@ For building from source:
 
 ### Windows
 
-**MSVC Toolchain**: ExifTool-RS requires the MSVC build tools.
+**MSVC Toolchain**: OxiDex requires the MSVC build tools.
 
 Install [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) or full Visual Studio with C++ support.
 
@@ -369,46 +369,46 @@ cargo build --target x86_64-pc-windows-gnu
 
 ## Verifying Installation
 
-After installation, verify ExifTool-RS is working correctly:
+After installation, verify OxiDex is working correctly:
 
 ```bash
 # Check version
-exiftool-rs --version
+oxidex --version
 
 # Display help
-exiftool-rs --help
+oxidex --help
 
 # Test with a sample image (if you have one)
-exiftool-rs path/to/image.jpg
+oxidex path/to/image.jpg
 ```
 
 If everything is working, you should see the version number or help output.
 
-## Updating ExifTool-RS
+## Updating OxiDex
 
 ### Binary Installation
 
-Download the latest binary from the [Releases page](https://github.com/exiftool-rs/exiftool-rs/releases) and replace your existing binary.
+Download the latest binary from the [Releases page](https://github.com/oxidex/oxidex/releases) and replace your existing binary.
 
 ### Cargo Install
 
 ```bash
 # Update from crates.io (future)
-cargo install exiftool-rs
+cargo install oxidex
 
 # Update from git
-cargo install --git https://github.com/exiftool-rs/exiftool-rs --force
+cargo install --git https://github.com/oxidex/oxidex --force
 ```
 
 ### Source Build
 
 ```bash
-cd exiftool-rs
+cd oxidex
 git pull origin main
 cargo build --release
 ```
 
-## Uninstalling ExifTool-RS
+## Uninstalling OxiDex
 
 ### Binary Installation
 
@@ -416,16 +416,16 @@ Simply delete the binary:
 
 ```bash
 # Linux/macOS
-sudo rm /usr/local/bin/exiftool-rs
+sudo rm /usr/local/bin/oxidex
 
 # Or wherever you installed it
-rm ~/.local/bin/exiftool-rs
+rm ~/.local/bin/oxidex
 ```
 
 ### Cargo Install
 
 ```bash
-cargo uninstall exiftool-rs
+cargo uninstall oxidex
 ```
 
 ## Troubleshooting Installation
@@ -440,7 +440,7 @@ This usually indicates a network issue downloading the ExifTool source. The buil
 
 ### Rust Version Too Old
 
-ExifTool-RS requires Rust 1.75 or later. Update Rust:
+OxiDex requires Rust 1.75 or later. Update Rust:
 
 ```bash
 rustup update stable
@@ -466,8 +466,8 @@ cargo build  # Instead of cargo build --release
 
 ## Next Steps
 
-Now that ExifTool-RS is installed, continue to:
+Now that OxiDex is installed, continue to:
 
 - **[Command-Line Usage](cli_usage.md)**: Learn how to use the CLI
-- **[Library API](library_api.md)**: Integrate ExifTool-RS into your Rust code
+- **[Library API](library_api.md)**: Integrate OxiDex into your Rust code
 - **[Troubleshooting](troubleshooting.md)**: Common issues and solutions

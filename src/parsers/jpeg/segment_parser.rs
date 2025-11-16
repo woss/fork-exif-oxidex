@@ -16,8 +16,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
+//! use oxidex::parsers::jpeg::segment_parser::parse_segments;
+//! use oxidex::io::buffered_reader::BufferedReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -135,8 +135,8 @@ impl<'a> Segment<'a> {
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::parsers::jpeg::segment_parser::parse_segments;
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

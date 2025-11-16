@@ -3,7 +3,7 @@
 //! This module tests the integration of vendor-specific MakerNote parsers
 //! (Canon, Nikon, etc.) into the main TIFF/EXIF metadata extraction pipeline.
 
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::io::Write;
 use tempfile::NamedTempFile;
 

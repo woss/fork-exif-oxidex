@@ -1,19 +1,19 @@
 [package]
-name = "exiftool-tags-image"
+name = "oxidex-tags-specialty"
 version = "1.0.4"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Image format metadata tags for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Specialty format tag definitions for OxiDex"
 license = "GPL-3.0"
 
 [lib]
-name = "exiftool_tags_image"
+name = "oxidex_tags_specialty"
 path = "src/lib.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 bincode = { version = "2.0", features = ["serde"] }
-exiftool-tags-core = { path = "../exiftool-tags-core" }
+oxidex-tags-core = { path = "../oxidex-tags-core" }
 
 [build-dependencies]
 bincode = { version = "2.0", features = ["serde"] }

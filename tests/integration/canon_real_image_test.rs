@@ -56,7 +56,7 @@
 //! - `Canon:FocalType` - e.g., "2" (Phase 2)
 //! - `Canon:FocalLength` - e.g., "50 mm" (Phase 2)
 
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 /// Test Canon MakerNote extraction from a real Canon camera image.

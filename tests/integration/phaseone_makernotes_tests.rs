@@ -8,7 +8,7 @@
 
 #[test]
 fn test_phaseone_lens_database_schneider_wide() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Schneider Kreuznach wide-angle lenses
     assert_eq!(
@@ -29,7 +29,7 @@ fn test_phaseone_lens_database_schneider_wide() {
 
 #[test]
 fn test_phaseone_lens_database_schneider_standard() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Schneider Kreuznach standard and portrait lenses
     assert_eq!(
@@ -55,7 +55,7 @@ fn test_phaseone_lens_database_schneider_standard() {
 
 #[test]
 fn test_phaseone_lens_database_schneider_telephoto() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Schneider Kreuznach telephoto lenses
     assert_eq!(
@@ -71,7 +71,7 @@ fn test_phaseone_lens_database_schneider_telephoto() {
 
 #[test]
 fn test_phaseone_lens_database_mamiya_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Mamiya Sekor prime lenses
     assert_eq!(
@@ -97,7 +97,7 @@ fn test_phaseone_lens_database_mamiya_primes() {
 
 #[test]
 fn test_phaseone_lens_database_mamiya_macro() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Mamiya macro lenses
     assert_eq!(
@@ -108,7 +108,7 @@ fn test_phaseone_lens_database_mamiya_macro() {
 
 #[test]
 fn test_phaseone_lens_database_mamiya_telephoto() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Mamiya telephoto lenses
     assert_eq!(
@@ -129,7 +129,7 @@ fn test_phaseone_lens_database_mamiya_telephoto() {
 
 #[test]
 fn test_phaseone_lens_database_mamiya_zooms() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Mamiya zoom lenses
     assert_eq!(
@@ -145,7 +145,7 @@ fn test_phaseone_lens_database_mamiya_zooms() {
 
 #[test]
 fn test_phaseone_lens_database_rodenstock() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Rodenstock HR Digaron lenses
     assert_eq!(
@@ -171,7 +171,7 @@ fn test_phaseone_lens_database_rodenstock() {
 
 #[test]
 fn test_phaseone_lens_database_blue_ring() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Phase One Blue Ring series
     assert_eq!(
@@ -197,7 +197,7 @@ fn test_phaseone_lens_database_blue_ring() {
 
 #[test]
 fn test_phaseone_lens_database_leaf_shutter() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test Phase One AF LS (Leaf Shutter) lenses
     assert_eq!(
@@ -213,7 +213,7 @@ fn test_phaseone_lens_database_leaf_shutter() {
 
 #[test]
 fn test_phaseone_lens_database_not_found() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::phaseone_lens_database::lookup_lens_name;
 
     // Test that unknown lens IDs return None
     assert_eq!(lookup_lens_name(9999), None);
@@ -223,8 +223,8 @@ fn test_phaseone_lens_database_not_found() {
 
 #[test]
 fn test_phaseone_makernote_parser_trait_implementation() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = PhaseOneMakerNoteParser;
 
@@ -245,7 +245,7 @@ fn test_phaseone_makernote_parser_trait_implementation() {
 
 #[test]
 fn test_phaseone_header_validation_with_header() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::is_phaseone_makernote;
+    use oxidex::parsers::tiff::makernotes::phaseone::is_phaseone_makernote;
 
     // Test valid "Phase One" header
     let valid_header = b"Phase One\x00\x10\x00\x00";
@@ -258,7 +258,7 @@ fn test_phaseone_header_validation_with_header() {
 
 #[test]
 fn test_phaseone_header_validation_no_header() {
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::is_phaseone_makernote;
+    use oxidex::parsers::tiff::makernotes::phaseone::is_phaseone_makernote;
 
     // Test data with no header but valid IFD entry count (8 entries)
     let no_header = b"\x08\x00\x00\x00\x00\x00\x00\x00";
@@ -275,9 +275,9 @@ fn test_phaseone_header_validation_no_header() {
 
 #[test]
 fn test_phaseone_makernote_parse_basic() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PhaseOneMakerNoteParser;
@@ -315,9 +315,9 @@ fn test_phaseone_makernote_parse_basic() {
 
 #[test]
 fn test_phaseone_makernote_parse_lens_id() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PhaseOneMakerNoteParser;
@@ -346,9 +346,9 @@ fn test_phaseone_makernote_parse_lens_id() {
 
 #[test]
 fn test_phaseone_makernote_parse_exposure_settings() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PhaseOneMakerNoteParser;
@@ -393,9 +393,9 @@ fn test_phaseone_makernote_parse_exposure_settings() {
 
 #[test]
 fn test_phaseone_makernote_parse_sensor_info() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PhaseOneMakerNoteParser;
@@ -440,9 +440,9 @@ fn test_phaseone_makernote_parse_sensor_info() {
 
 #[test]
 fn test_phaseone_makernote_parse_capture_settings() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PhaseOneMakerNoteParser;
@@ -487,9 +487,9 @@ fn test_phaseone_makernote_parse_capture_settings() {
 
 #[test]
 fn test_phaseone_makernote_parse_error_too_short() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PhaseOneMakerNoteParser;
@@ -503,9 +503,9 @@ fn test_phaseone_makernote_parse_error_too_short() {
 
 #[test]
 fn test_phaseone_makernote_parse_error_invalid_entry_count() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::phaseone::PhaseOneMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = PhaseOneMakerNoteParser;

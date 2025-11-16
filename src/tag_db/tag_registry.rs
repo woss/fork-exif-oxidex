@@ -6,12 +6,12 @@
 //! generation in build.rs (task I5.T5).
 
 use crate::core::{FormatFamily, TagDescriptor, TagId, ValueType};
-use exiftool_tags::GENERATED_TAG_REGISTRY;
+use oxidex_tags::GENERATED_TAG_REGISTRY;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
 // Import YAML tag databases for fallback lookup
-use exiftool_tags::{camera, core, document, image, media, specialty};
+use oxidex_tags::{camera, core, document, image, media, specialty};
 
 /// Static registry containing all 500+ registered metadata tags.
 /// Uses lazy initialization for zero-cost abstraction until first access.
@@ -6875,7 +6875,7 @@ static YAML_TAG_DESCRIPTORS: LazyLock<HashMap<String, TagDescriptor>> = LazyLock
 ///
 /// # Examples
 /// ```
-/// use exiftool_rs::tag_db::tag_registry::get_tag_descriptor;
+/// use oxidex::tag_db::tag_registry::get_tag_descriptor;
 ///
 /// let tag = get_tag_descriptor("EXIF:Make");
 /// assert!(tag.is_some());

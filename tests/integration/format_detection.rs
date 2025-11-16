@@ -3,9 +3,9 @@
 //! These tests verify that the format detection system correctly identifies
 //! camera raw formats and integrates them into the main FileFormat enum.
 
-use exiftool_rs::core::FileFormat;
-use exiftool_rs::parsers::detect_format;
-use exiftool_rs::parsers::raw::RawFormat;
+use oxidex::core::FileFormat;
+use oxidex::parsers::detect_format;
+use oxidex::parsers::raw::RawFormat;
 
 /// Test helper to create a simple FileReader from byte data
 struct TestReader {
@@ -18,7 +18,7 @@ impl TestReader {
     }
 }
 
-impl exiftool_rs::core::FileReader for TestReader {
+impl oxidex::core::FileReader for TestReader {
     fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
         let start = offset as usize;
         let end = start.saturating_add(length).min(self.data.len());

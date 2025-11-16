@@ -22,10 +22,10 @@
 //! - No memory leaks (Rust ownership system)
 //! - No panics (all errors are `Result<T, E>`)
 
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::format_detector::detect_format;
-use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-use exiftool_rs::parsers::tiff::file_parser::parse_tiff_file;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::format_detector::detect_format;
+use oxidex::parsers::jpeg::segment_parser::parse_segments;
+use oxidex::parsers::tiff::file_parser::parse_tiff_file;
 use std::io;
 use std::path::Path;
 use std::time::{Duration, Instant};

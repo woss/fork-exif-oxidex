@@ -25,8 +25,8 @@
 //! # Examples
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::format_detector::detect_format;
-//! use exiftool_rs::io::MMapReader;
+//! use oxidex::parsers::format_detector::detect_format;
+//! use oxidex::io::MMapReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> std::io::Result<()> {
@@ -75,9 +75,9 @@ use std::io;
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::format_detector::detect_format;
-/// use exiftool_rs::io::MMapReader;
-/// use exiftool_rs::core::FileFormat;
+/// use oxidex::parsers::format_detector::detect_format;
+/// use oxidex::io::MMapReader;
+/// use oxidex::core::FileFormat;
 /// use std::path::Path;
 ///
 /// # fn example() -> std::io::Result<()> {

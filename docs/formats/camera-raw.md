@@ -1,6 +1,6 @@
 # Camera Raw Format Support
 
-ExifTool-RS provides comprehensive support for 40+ camera raw file formats from major manufacturers. Camera raw files contain unprocessed sensor data along with extensive metadata including camera settings, lens information, and manufacturer-specific MakerNotes.
+OxiDex provides comprehensive support for 40+ camera raw file formats from major manufacturers. Camera raw files contain unprocessed sensor data along with extensive metadata including camera settings, lens information, and manufacturer-specific MakerNotes.
 
 ## Overview
 
@@ -12,7 +12,7 @@ Camera raw formats are predominantly TIFF-based containers that store:
 - Color calibration profiles
 - Lens correction data
 
-Most raw formats leverage TIFF/EXIF structure, allowing ExifTool-RS to use its existing TIFF parser infrastructure with manufacturer-specific extensions.
+Most raw formats leverage TIFF/EXIF structure, allowing OxiDex to use its existing TIFF parser infrastructure with manufacturer-specific extensions.
 
 ## Supported Formats
 
@@ -220,7 +220,7 @@ Some manufacturers use proprietary container formats:
 
 ## Metadata Extraction
 
-ExifTool-RS extracts comprehensive metadata from raw files:
+OxiDex extracts comprehensive metadata from raw files:
 
 ### Standard EXIF Tags
 
@@ -312,64 +312,64 @@ DNG:BaselineExposure      - Baseline exposure compensation
 #### Extract All Metadata
 ```bash
 # Read metadata from Canon CR2
-exiftool-rs photo.cr2
+oxidex photo.cr2
 
 # Read metadata from Nikon NEF
-exiftool-rs image.nef
+oxidex image.nef
 
 # Read metadata from Sony ARW
-exiftool-rs shot.arw
+oxidex shot.arw
 ```
 
 #### Extract Specific Tags
 ```bash
 # Camera information
-exiftool-rs -EXIF:Make -EXIF:Model -EXIF:SerialNumber photo.cr2
+oxidex -EXIF:Make -EXIF:Model -EXIF:SerialNumber photo.cr2
 
 # Shooting parameters
-exiftool-rs -EXIF:ExposureTime -EXIF:FNumber -EXIF:ISO image.nef
+oxidex -EXIF:ExposureTime -EXIF:FNumber -EXIF:ISO image.nef
 
 # Canon-specific tags
-exiftool-rs -Canon:FirmwareVersion -Canon:OwnerName -Canon:LensModel photo.cr2
+oxidex -Canon:FirmwareVersion -Canon:OwnerName -Canon:LensModel photo.cr2
 
 # GPS coordinates
-exiftool-rs -GPS:GPSLatitude -GPS:GPSLongitude -GPS:GPSAltitude photo.dng
+oxidex -GPS:GPSLatitude -GPS:GPSLongitude -GPS:GPSAltitude photo.dng
 ```
 
 #### Batch Processing
 ```bash
 # Process all raw files in directory
-exiftool-rs -r /path/to/raw/photos/
+oxidex -r /path/to/raw/photos/
 
 # Process specific raw format
-exiftool-rs *.nef
+oxidex *.nef
 
 # Recursive processing with specific format
-exiftool-rs -r -ext cr2 /path/to/canon/photos/
+oxidex -r -ext cr2 /path/to/canon/photos/
 ```
 
 #### Output Formats
 ```bash
 # JSON output
-exiftool-rs -json photo.cr2
+oxidex -json photo.cr2
 
 # CSV output for batch analysis
-exiftool-rs -csv -r /path/to/raw/photos/ > metadata.csv
+oxidex -csv -r /path/to/raw/photos/ > metadata.csv
 
 # Human-readable output (default)
-exiftool-rs photo.nef
+oxidex photo.nef
 ```
 
 #### Advanced Queries
 ```bash
 # Find all photos with specific lens
-exiftool-rs -if '$EXIF:LensModel =~ /24-70/' -r /photos/
+oxidex -if '$EXIF:LensModel =~ /24-70/' -r /photos/
 
 # Extract photos by camera model
-exiftool-rs -if '$EXIF:Model eq "Canon EOS 5D Mark IV"' -r /photos/
+oxidex -if '$EXIF:Model eq "Canon EOS 5D Mark IV"' -r /photos/
 
 # Find high ISO shots
-exiftool-rs -if '$EXIF:ISO > 3200' -r /photos/
+oxidex -if '$EXIF:ISO > 3200' -r /photos/
 ```
 
 ### Library API Usage
@@ -377,7 +377,7 @@ exiftool-rs -if '$EXIF:ISO > 3200' -r /photos/
 #### Basic Metadata Reading
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -413,7 +413,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### Format Detection
 
 ```rust
-use exiftool_rs::parsers::raw::{detect_raw_format, RawFormat};
+use oxidex::parsers::raw::{detect_raw_format, RawFormat};
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -438,7 +438,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### Batch Processing Raw Files
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::fs;
 use std::path::Path;
 
@@ -512,7 +512,7 @@ Most raw files contain embedded JPEG previews/thumbnails:
 
 ### Format Detection
 
-ExifTool-RS uses efficient magic byte detection:
+OxiDex uses efficient magic byte detection:
 1. Check first 16 bytes for format signatures
 2. Fall back to file extension if magic bytes are ambiguous
 3. Minimal file I/O (only header needed)
@@ -553,7 +553,7 @@ Raw files are large (20-100MB), but metadata parsing is efficient:
 **Solution**:
 1. Standard EXIF tags are always available
 2. File a feature request for specific camera model support
-3. Use `exiftool-rs -a -G1` to see all available tag groups
+3. Use `oxidex -a -G1` to see all available tag groups
 
 ### Issue: Incorrect Date/Time
 
@@ -694,8 +694,8 @@ All parsers undergo rigorous testing:
 ## Support
 
 For issues, questions, or feature requests related to camera raw format support:
-- [GitHub Issues](https://github.com/exiftool-rs/exiftool-rs/issues)
-- [Documentation](https://exiftool-rs.github.io/exiftool-rs/)
+- [GitHub Issues](https://github.com/oxidex/oxidex/issues)
+- [Documentation](https://oxidex.github.io/oxidex/)
 
 ---
 

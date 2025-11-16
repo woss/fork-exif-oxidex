@@ -1,6 +1,6 @@
-//! Integration tests comparing ExifTool-RS output against Perl ExifTool
+//! Integration tests comparing OxiDex output against Perl ExifTool
 //!
-//! These tests validate that ExifTool-RS produces metadata output compatible with
+//! These tests validate that OxiDex produces metadata output compatible with
 //! the reference Perl ExifTool implementation. Tests require Perl ExifTool to be
 //! installed on the system and are conditionally compiled with the
 //! `exiftool-comparison` feature flag.
@@ -54,7 +54,7 @@
 //! ## Known Discrepancies
 //!
 //! See `tests/integration/KNOWN_DISCREPANCIES.md` for documented differences
-//! between ExifTool-RS and Perl ExifTool (e.g., maker notes, TagValue enum
+//! between OxiDex and Perl ExifTool (e.g., maker notes, TagValue enum
 //! serialization, floating-point tolerances)
 
 use serde_json::Value;
@@ -62,7 +62,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 
-/// Report of comparison results between Perl ExifTool and ExifTool-RS outputs
+/// Report of comparison results between Perl ExifTool and OxiDex outputs
 #[derive(Debug)]
 struct MatchReport {
     total_tags: usize,
@@ -137,33 +137,33 @@ fn get_perl_exiftool_output(file_path: &Path) -> Result<String, String> {
         .map_err(|e| format!("Invalid UTF-8 in Perl ExifTool output: {}", e))
 }
 
-/// Executes ExifTool-RS binary and captures JSON output
-fn get_exiftool_rs_output(file_path: &Path) -> Result<String, String> {
+/// Executes OxiDex binary and captures JSON output
+fn get_oxidex_output(file_path: &Path) -> Result<String, String> {
     if !file_path.exists() {
         return Err(format!("Test fixture not found: {:?}", file_path));
     }
 
     // Use the binary compiled by cargo test
-    let rust_binary = env!("CARGO_BIN_EXE_exiftool-rs");
+    let rust_binary = env!("CARGO_BIN_EXE_oxidex");
 
     let output = Command::new(rust_binary)
         .arg("--json") // Use double-dash for clap compatibility (--json, not -json)
         .arg(file_path)
         .output()
-        .map_err(|e| format!("Failed to execute ExifTool-RS: {}", e))?;
+        .map_err(|e| format!("Failed to execute OxiDex: {}", e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("ExifTool-RS failed: {}", stderr));
+        return Err(format!("OxiDex failed: {}", stderr));
     }
 
     String::from_utf8(output.stdout)
-        .map_err(|e| format!("Invalid UTF-8 in ExifTool-RS output: {}", e))
+        .map_err(|e| format!("Invalid UTF-8 in OxiDex output: {}", e))
 }
 
 /// Extracts the actual value from a potentially nested JSON structure
 ///
-/// ExifTool-RS may serialize TagValue enum as nested objects like:
+/// OxiDex may serialize TagValue enum as nested objects like:
 /// {"String": "Canon"} instead of just "Canon"
 ///
 /// This function unwraps such structures to get the actual value.
@@ -185,9 +185,9 @@ fn extract_value(val: &Value) -> Value {
     val.clone()
 }
 
-/// Normalizes tag names to handle namespace differences between Perl ExifTool and ExifTool-RS
+/// Normalizes tag names to handle namespace differences between Perl ExifTool and OxiDex
 ///
-/// ExifTool-RS uses fully qualified tag names with chunk/segment prefixes (e.g., "PNG:tEXt:Author"),
+/// OxiDex uses fully qualified tag names with chunk/segment prefixes (e.g., "PNG:tEXt:Author"),
 /// while Perl ExifTool often simplifies these to just the namespace and tag (e.g., "PNG:Author").
 /// This function normalizes both formats to enable comparison.
 fn normalize_tag_name(tag_name: &str) -> String {
@@ -239,7 +239,7 @@ fn normalize_tag_name(tag_name: &str) -> String {
 /// - SourceFile: the input file path
 ///
 /// These tags are added by Perl ExifTool for convenience but are not extracted from the file.
-/// ExifTool-RS only extracts actual embedded metadata, so we skip these tags in comparisons.
+/// OxiDex only extracts actual embedded metadata, so we skip these tags in comparisons.
 fn should_skip_tag(tag_name: &str) -> bool {
     // Skip System: namespace (filesystem metadata)
     if tag_name.starts_with("System:") {
@@ -379,7 +379,7 @@ fn values_match(perl_val: &Value, rust_val: &Value) -> bool {
     }
 }
 
-/// Compares JSON outputs from Perl ExifTool and ExifTool-RS
+/// Compares JSON outputs from Perl ExifTool and OxiDex
 ///
 /// Returns a MatchReport with:
 /// - Total number of tags compared
@@ -397,7 +397,7 @@ fn compare_json_outputs(perl_json: &str, rust_json: &str) -> Result<MatchReport,
 
     let rust_data: Vec<HashMap<String, Value>> = serde_json::from_str(rust_json).map_err(|e| {
         format!(
-            "Failed to parse ExifTool-RS JSON: {}\nOutput:\n{}",
+            "Failed to parse OxiDex JSON: {}\nOutput:\n{}",
             e, rust_json
         )
     })?;
@@ -407,7 +407,7 @@ fn compare_json_outputs(perl_json: &str, rust_json: &str) -> Result<MatchReport,
         return Err("Perl ExifTool returned empty array".to_string());
     }
     if rust_data.is_empty() {
-        return Err("ExifTool-RS returned empty array".to_string());
+        return Err("OxiDex returned empty array".to_string());
     }
 
     let perl_tags = &perl_data[0];
@@ -463,7 +463,7 @@ fn compare_json_outputs(perl_json: &str, rust_json: &str) -> Result<MatchReport,
     for (normalized_key, (original_rust_key, _)) in rust_normalized.iter() {
         if !perl_normalized.contains_key(normalized_key) {
             eprintln!(
-                "Warning: ExifTool-RS has additional tag not in Perl ExifTool: {} (normalized: {})",
+                "Warning: OxiDex has additional tag not in Perl ExifTool: {} (normalized: {})",
                 original_rust_key, normalized_key
             );
         }
@@ -498,7 +498,7 @@ fn test_comparison_jpeg_with_exif() {
     // Execute both tools
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     // Compare outputs
     let report =
@@ -550,7 +550,7 @@ fn test_comparison_jpeg_with_exif_xmp() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -599,7 +599,7 @@ fn test_comparison_tiff() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -648,7 +648,7 @@ fn test_comparison_pdf() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -697,7 +697,7 @@ fn test_comparison_mp4() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -735,7 +735,7 @@ fn test_comparison_mp4() {
 //
 // These tests validate write operations by:
 // 1. Using Perl ExifTool to perform write/copy/rename/date-shift operations
-// 2. Reading back the modified file with both Perl ExifTool and ExifTool-RS
+// 2. Reading back the modified file with both Perl ExifTool and OxiDex
 // 3. Comparing outputs to verify our tool can correctly READ files after operations
 // 4. Verifying specific operation results (e.g., Artist tag was written correctly)
 //
@@ -790,7 +790,7 @@ fn test_write_roundtrip_jpeg_artist() {
     let perl_readback =
         get_perl_exiftool_output(temp_path).expect("Failed to read back with Perl ExifTool");
     let rust_readback =
-        get_exiftool_rs_output(temp_path).expect("Failed to read back with ExifTool-RS");
+        get_oxidex_output(temp_path).expect("Failed to read back with OxiDex");
 
     // Step 3: Compare outputs
     let report = compare_json_outputs(&perl_readback, &rust_readback)
@@ -905,7 +905,7 @@ fn test_copy_metadata_jpeg_to_jpeg() {
     let perl_output =
         get_perl_exiftool_output(temp_dest_path).expect("Failed to read with Perl ExifTool");
     let rust_output =
-        get_exiftool_rs_output(temp_dest_path).expect("Failed to read with ExifTool-RS");
+        get_oxidex_output(temp_dest_path).expect("Failed to read with OxiDex");
 
     let report =
         compare_json_outputs(&perl_output, &rust_output).expect("Failed to compare JSON outputs");
@@ -1048,7 +1048,7 @@ fn test_rename_file_pattern() {
         let perl_output =
             get_perl_exiftool_output(&file_path).expect("Failed to read with Perl ExifTool");
         let rust_output =
-            get_exiftool_rs_output(&file_path).expect("Failed to read with ExifTool-RS");
+            get_oxidex_output(&file_path).expect("Failed to read with OxiDex");
 
         let report = compare_json_outputs(&perl_output, &rust_output)
             .expect("Failed to compare JSON outputs");
@@ -1132,7 +1132,7 @@ fn test_date_shift_all_dates() {
     // Read shifted dates with both tools
     let perl_output =
         get_perl_exiftool_output(temp_path).expect("Failed to read with Perl ExifTool");
-    let rust_output = get_exiftool_rs_output(temp_path).expect("Failed to read with ExifTool-RS");
+    let rust_output = get_oxidex_output(temp_path).expect("Failed to read with OxiDex");
 
     println!("\nShifted dates (Perl ExifTool):");
     let perl_json: Vec<HashMap<String, Value>> =
@@ -1199,7 +1199,7 @@ fn test_comparison_png_with_text() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -1244,7 +1244,7 @@ fn test_comparison_png_with_exif() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -1289,7 +1289,7 @@ fn test_comparison_tiff_multipage() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -1334,7 +1334,7 @@ fn test_comparison_jpeg_with_gps() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");
@@ -1380,7 +1380,7 @@ fn test_comparison_tiff_big_endian() {
 
     let perl_json =
         get_perl_exiftool_output(test_file).expect("Failed to get Perl ExifTool output");
-    let rust_json = get_exiftool_rs_output(test_file).expect("Failed to get ExifTool-RS output");
+    let rust_json = get_oxidex_output(test_file).expect("Failed to get OxiDex output");
 
     let report =
         compare_json_outputs(&perl_json, &rust_json).expect("Failed to compare JSON outputs");

@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::xmp::namespace_resolver::NamespaceResolver;
+//! use oxidex::parsers::xmp::namespace_resolver::NamespaceResolver;
 //!
 //! let mut resolver = NamespaceResolver::new();
 //! resolver.register_namespace("xmp", "http://ns.adobe.com/xap/1.0/");
@@ -51,7 +51,7 @@ impl NamespaceResolver {
     /// # Example
     ///
     /// ```no_run
-    /// use exiftool_rs::parsers::xmp::namespace_resolver::NamespaceResolver;
+    /// use oxidex::parsers::xmp::namespace_resolver::NamespaceResolver;
     ///
     /// let resolver = NamespaceResolver::new();
     /// assert_eq!(resolver.resolve_prefix("xmp"), Some("http://ns.adobe.com/xap/1.0/"));
@@ -87,7 +87,7 @@ impl NamespaceResolver {
     /// # Example
     ///
     /// ```no_run
-    /// use exiftool_rs::parsers::xmp::namespace_resolver::NamespaceResolver;
+    /// use oxidex::parsers::xmp::namespace_resolver::NamespaceResolver;
     ///
     /// let mut resolver = NamespaceResolver::new();
     /// resolver.register_namespace("custom", "http://example.com/ns/custom/");
@@ -112,7 +112,7 @@ impl NamespaceResolver {
     /// # Example
     ///
     /// ```no_run
-    /// use exiftool_rs::parsers::xmp::namespace_resolver::NamespaceResolver;
+    /// use oxidex::parsers::xmp::namespace_resolver::NamespaceResolver;
     ///
     /// let resolver = NamespaceResolver::new();
     /// assert_eq!(resolver.resolve_prefix("xmp"), Some("http://ns.adobe.com/xap/1.0/"));
@@ -135,7 +135,7 @@ impl NamespaceResolver {
     /// # Example
     ///
     /// ```no_run
-    /// use exiftool_rs::parsers::xmp::namespace_resolver::NamespaceResolver;
+    /// use oxidex::parsers::xmp::namespace_resolver::NamespaceResolver;
     ///
     /// let resolver = NamespaceResolver::new();
     /// assert_eq!(resolver.resolve_uri("http://ns.adobe.com/xap/1.0/"), Some("xmp"));
@@ -160,7 +160,7 @@ impl NamespaceResolver {
     /// # Example
     ///
     /// ```no_run
-    /// use exiftool_rs::parsers::xmp::namespace_resolver::NamespaceResolver;
+    /// use oxidex::parsers::xmp::namespace_resolver::NamespaceResolver;
     ///
     /// assert_eq!(NamespaceResolver::extract_prefix("xmp:Creator"), Some("xmp"));
     /// assert_eq!(NamespaceResolver::extract_prefix("Creator"), None);
@@ -185,7 +185,7 @@ impl NamespaceResolver {
     /// # Example
     ///
     /// ```no_run
-    /// use exiftool_rs::parsers::xmp::namespace_resolver::NamespaceResolver;
+    /// use oxidex::parsers::xmp::namespace_resolver::NamespaceResolver;
     ///
     /// assert_eq!(NamespaceResolver::extract_local_name("xmp:Creator"), "Creator");
     /// assert_eq!(NamespaceResolver::extract_local_name("Creator"), "Creator");

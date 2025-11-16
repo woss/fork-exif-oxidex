@@ -1,5 +1,5 @@
-use exiftool_rs::parsers::raw::detect_raw_format;
-use exiftool_rs::parsers::raw::RawFormat;
+use oxidex::parsers::raw::detect_raw_format;
+use oxidex::parsers::raw::RawFormat;
 
 #[test]
 fn test_detect_canon_cr2() {

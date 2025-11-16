@@ -8,7 +8,7 @@
 
 #[test]
 fn test_panasonic_lens_database_m43_standard_zoom() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Test common M43 kit lens
     assert_eq!(
@@ -31,7 +31,7 @@ fn test_panasonic_lens_database_m43_standard_zoom() {
 
 #[test]
 fn test_panasonic_lens_database_m43_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Test popular Lumix G primes
     assert_eq!(
@@ -52,7 +52,7 @@ fn test_panasonic_lens_database_m43_primes() {
 
 #[test]
 fn test_panasonic_lens_database_leica_dg() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Test Leica DG Summilux lenses
     assert_eq!(
@@ -80,7 +80,7 @@ fn test_panasonic_lens_database_leica_dg() {
 
 #[test]
 fn test_panasonic_lens_database_l_mount_pro() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Test Lumix S Pro lenses
     assert_eq!(
@@ -101,7 +101,7 @@ fn test_panasonic_lens_database_l_mount_pro() {
 
 #[test]
 fn test_panasonic_lens_database_l_mount_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Test Lumix S prime lenses
     assert_eq!(
@@ -122,7 +122,7 @@ fn test_panasonic_lens_database_l_mount_primes() {
 
 #[test]
 fn test_panasonic_lens_database_olympus_compatibility() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Test Olympus M.Zuiko lenses (compatible with Panasonic M43)
     assert_eq!(
@@ -138,7 +138,7 @@ fn test_panasonic_lens_database_olympus_compatibility() {
 
 #[test]
 fn test_panasonic_lens_database_unknown() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Unknown lens ID should return None
     assert_eq!(lookup_lens_name(65000), None);
@@ -147,8 +147,8 @@ fn test_panasonic_lens_database_unknown() {
 
 #[test]
 fn test_panasonic_parser_trait() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::PanasonicParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::panasonic::PanasonicParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = PanasonicParser;
 
@@ -169,8 +169,8 @@ fn test_panasonic_parser_trait() {
 
 #[test]
 fn test_panasonic_parser_lens_lookup() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::PanasonicParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::panasonic::PanasonicParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = PanasonicParser;
 
@@ -191,7 +191,7 @@ fn test_panasonic_parser_lens_lookup() {
 
 #[test]
 fn test_panasonic_is_panasonic_makernote() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::is_panasonic_makernote;
+    use oxidex::parsers::tiff::makernotes::panasonic::is_panasonic_makernote;
 
     // Valid Panasonic header
     assert!(is_panasonic_makernote(b"Panasonic\0\0\0"));
@@ -211,8 +211,8 @@ fn test_panasonic_is_panasonic_makernote() {
 
 #[test]
 fn test_panasonic_parse_basic_tags() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
     use std::collections::HashMap;
 
     // Create minimal Panasonic MakerNote
@@ -252,8 +252,8 @@ fn test_panasonic_parse_basic_tags() {
 
 #[test]
 fn test_panasonic_parse_enumerated_values() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -314,8 +314,8 @@ fn test_panasonic_parse_enumerated_values() {
 
 #[test]
 fn test_panasonic_parse_lens_type() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -347,8 +347,8 @@ fn test_panasonic_parse_lens_type() {
 
 #[test]
 fn test_panasonic_parse_photo_style() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -382,8 +382,8 @@ fn test_panasonic_parse_photo_style() {
 
 #[test]
 fn test_panasonic_parse_empty_data() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
     use std::collections::HashMap;
 
     let mut tags = HashMap::new();
@@ -400,8 +400,8 @@ fn test_panasonic_parse_empty_data() {
 
 #[test]
 fn test_panasonic_parser_big_endian() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -428,7 +428,7 @@ fn test_panasonic_parser_big_endian() {
 
 #[test]
 fn test_panasonic_lens_database_coverage() {
-    use exiftool_rs::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::panasonic_lens_database::lookup_lens_name;
 
     // Count how many lenses we have in database
     let mut count = 0;
@@ -448,8 +448,8 @@ fn test_panasonic_lens_database_coverage() {
 
 #[test]
 fn test_panasonic_intelligent_features() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::panasonic::parse_panasonic_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();

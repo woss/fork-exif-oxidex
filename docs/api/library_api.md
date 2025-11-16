@@ -1,4 +1,4 @@
-# ExifTool-RS Library API Reference
+# OxiDex Library API Reference
 
 **Version:** 0.1.0
 **Last Updated:** 2025-10-29
@@ -38,7 +38,7 @@
 
 ## Introduction
 
-ExifTool-RS is a Rust library for reading and writing metadata in various image and media file formats. The library provides both a high-level ergonomic API for common operations and a low-level API for fine-grained control over metadata manipulation.
+OxiDex is a Rust library for reading and writing metadata in various image and media file formats. The library provides both a high-level ergonomic API for common operations and a low-level API for fine-grained control over metadata manipulation.
 
 This document covers the **Rust library API** only. For CLI usage, see the [CLI Documentation](../cli/usage.md). For C FFI bindings, see the [FFI Documentation](../ffi/c_api.md).
 
@@ -56,7 +56,7 @@ This document covers the **Rust library API** only. For CLI usage, see the [CLI 
 
 ### Tag Naming Convention
 
-All metadata tags in ExifTool-RS follow a standardized naming convention:
+All metadata tags in OxiDex follow a standardized naming convention:
 
 ```
 <FormatFamily>:<TagName>
@@ -93,7 +93,7 @@ All metadata tags in ExifTool-RS follow a standardized naming convention:
 
 ### Synchronous API Design
 
-ExifTool-RS uses a **synchronous, blocking API** design:
+OxiDex uses a **synchronous, blocking API** design:
 
 - All operations complete before returning
 - No async/await or futures
@@ -134,7 +134,7 @@ let make = metadata.get_string("EXIF:Make")?;  // Option<&str>
 **Note:** The `Metadata` struct is the primary entry point for the high-level API. This API is **planned for implementation** and represents the future public interface.
 
 ```rust,ignore
-use exiftool_rs::Metadata;
+use oxidex::Metadata;
 
 pub struct Metadata {
     // Internal fields (not public)
@@ -150,7 +150,7 @@ The `Metadata` struct wraps the lower-level `MetadataMap` and provides convenien
 Opens a file and extracts all metadata tags.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn main() -> Result<()> {
     let metadata = Metadata::from_path("photo.jpg")?;
@@ -180,7 +180,7 @@ fn main() -> Result<()> {
 Parses metadata from a byte buffer.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, FileFormat};
+use oxidex::{Metadata, FileFormat};
 
 let file_data = std::fs::read("image.jpg")?;
 let metadata = Metadata::from_bytes(&file_data, Some(FileFormat::JPEG))?;
@@ -199,10 +199,10 @@ let metadata = Metadata::from_bytes(&file_data, Some(FileFormat::JPEG))?;
 
 #### Builder Pattern for Modifications
 
-ExifTool-RS uses a **builder pattern** for metadata write operations, enabling fluent, chainable API calls:
+OxiDex uses a **builder pattern** for metadata write operations, enabling fluent, chainable API calls:
 
 ```rust,ignore
-use exiftool_rs::Metadata;
+use oxidex::Metadata;
 
 Metadata::from_path("input.jpg")?
     .set_tag("EXIF:Artist", "John Doe")?
@@ -256,7 +256,7 @@ Metadata::from_path("photo.jpg")?
 #### Copy Metadata Between Files
 
 ```rust,ignore
-use exiftool_rs::Metadata;
+use oxidex::Metadata;
 
 // Copy all tags from source to destination
 Metadata::from_path("source.jpg")?
@@ -305,8 +305,8 @@ The low-level API provides direct access to the core data structures. Use this w
 **Location:** `src/core/metadata_map.rs:19`
 
 ```rust
-use exiftool_rs::core::metadata_map::MetadataMap;
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::metadata_map::MetadataMap;
+use oxidex::core::tag_value::TagValue;
 
 let mut metadata = MetadataMap::new();
 metadata.insert("EXIF:Make", TagValue::new_string("Canon"));
@@ -548,7 +548,7 @@ let metadata: MetadataMap = serde_json::from_str(&json)?;
 **Location:** `src/core/tag_value.rs:17`
 
 ```rust
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::tag_value::TagValue;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 
@@ -678,7 +678,7 @@ pub enum ExifToolError {
 Wraps standard I/O errors (file not found, permission denied, etc.).
 
 ```rust
-use exiftool_rs::{Metadata, ExifToolError};
+use oxidex::{Metadata, ExifToolError};
 
 match Metadata::from_path("missing.jpg") {
     Err(ExifToolError::IoError(e)) => {
@@ -776,7 +776,7 @@ match Metadata::from_path("document.bmp") {
 The `ExifToolError` enum provides convenient constructor methods:
 
 ```rust
-use exiftool_rs::error::ExifToolError;
+use oxidex::error::ExifToolError;
 
 // Create errors
 let err1 = ExifToolError::parse_error("Invalid marker");
@@ -790,7 +790,7 @@ let err5 = ExifToolError::unsupported_format("BMP not supported");
 
 ### Result Type
 
-ExifTool-RS defines a type alias for convenience:
+OxiDex defines a type alias for convenience:
 
 ```rust
 pub type Result<T> = std::result::Result<T, ExifToolError>;
@@ -799,7 +799,7 @@ pub type Result<T> = std::result::Result<T, ExifToolError>;
 **Usage:**
 
 ```rust
-use exiftool_rs::error::Result;
+use oxidex::error::Result;
 
 fn extract_camera_info(path: &str) -> Result<String> {
     let metadata = Metadata::from_path(path)?;
@@ -823,7 +823,7 @@ fn extract_camera_info(path: &str) -> Result<String> {
 The most idiomatic approach for functions returning `Result`:
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn process_image(path: &str) -> Result<()> {
     let metadata = Metadata::from_path(path)?;
@@ -842,7 +842,7 @@ fn process_image(path: &str) -> Result<()> {
 When you need to handle different error types differently:
 
 ```rust,ignore
-use exiftool_rs::{Metadata, ExifToolError};
+use oxidex::{Metadata, ExifToolError};
 
 fn process_with_fallback(path: &str) {
     match Metadata::from_path(path) {
@@ -869,7 +869,7 @@ fn process_with_fallback(path: &str) {
 Add context to errors as they propagate:
 
 ```rust,ignore
-use exiftool_rs::{Metadata, ExifToolError, Result};
+use oxidex::{Metadata, ExifToolError, Result};
 
 fn batch_process(paths: &[&str]) -> Result<()> {
     for path in paths {
@@ -888,7 +888,7 @@ fn batch_process(paths: &[&str]) -> Result<()> {
 Convert `Option` to `Result` when needed:
 
 ```rust,ignore
-use exiftool_rs::{Metadata, ExifToolError, Result};
+use oxidex::{Metadata, ExifToolError, Result};
 
 fn get_required_tag(metadata: &Metadata, tag: &str) -> Result<String> {
     metadata.get_string(tag)
@@ -922,7 +922,7 @@ fn set_iso(metadata: &mut Metadata, iso: i64) -> Result<()> {
 Extract and display all metadata tags from an image file.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn main() -> Result<()> {
     // Open file and extract metadata
@@ -961,7 +961,7 @@ Found 47 metadata tags:
 Extract specific metadata fields with type safety.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn main() -> Result<()> {
     let metadata = Metadata::from_path("photo.jpg")?;
@@ -1019,7 +1019,7 @@ Location: 37.7749, -122.4194
 Modify existing metadata and write to a new file.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn main() -> Result<()> {
     // Load metadata from source file
@@ -1044,7 +1044,7 @@ fn main() -> Result<()> {
 **In-Place Modification:**
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn add_copyright(path: &str, owner: &str) -> Result<()> {
     Metadata::from_path(path)?
@@ -1061,7 +1061,7 @@ fn add_copyright(path: &str, owner: &str) -> Result<()> {
 Copy metadata from one file to another.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn main() -> Result<()> {
     // Copy all metadata from source to destination
@@ -1104,7 +1104,7 @@ fn main() -> Result<()> {
 Process multiple files in parallel with comprehensive error handling.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, ExifToolError, Result};
+use oxidex::{Metadata, ExifToolError, Result};
 use rayon::prelude::*;
 use std::path::PathBuf;
 
@@ -1193,8 +1193,8 @@ fn process_single_file_robust(path: &str) -> Result<String> {
 Demonstrate handling all TagValue variants.
 
 ```rust,ignore
-use exiftool_rs::core::metadata_map::MetadataMap;
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::metadata_map::MetadataMap;
+use oxidex::core::tag_value::TagValue;
 use chrono::{Utc, TimeZone};
 use std::collections::HashMap;
 
@@ -1250,7 +1250,7 @@ fn main() {
 Serialize and deserialize metadata to/from JSON.
 
 ```rust,ignore
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 use serde_json;
 
 fn main() -> Result<()> {
@@ -1318,7 +1318,7 @@ fn main() -> Result<()> {
 
 ### Memory-Mapped File Access
 
-For large files, ExifTool-RS uses memory-mapped I/O to avoid loading entire files into RAM:
+For large files, OxiDex uses memory-mapped I/O to avoid loading entire files into RAM:
 
 ```rust,ignore
 use memmap2::Mmap;
@@ -1346,7 +1346,7 @@ Use `rayon` for CPU-bound parallel processing:
 
 ```rust,ignore
 use rayon::prelude::*;
-use exiftool_rs::{Metadata, Result};
+use oxidex::{Metadata, Result};
 
 fn batch_extract(paths: &[String]) -> Vec<Result<String>> {
     paths.par_iter()
@@ -1387,7 +1387,7 @@ fn main() {
 
 ## Additional Resources
 
-- **Source Code:** [https://github.com/yourusername/exiftool-rs](https://github.com/yourusername/exiftool-rs)
+- **Source Code:** [https://github.com/yourusername/oxidex](https://github.com/yourusername/oxidex)
 - **CLI Documentation:** [CLI Usage Guide](../cli/usage.md)
 - **FFI Documentation:** [C API Reference](../ffi/c_api.md)
 - **Tag Database:** [Supported Tags](../tags/tag_database.md)

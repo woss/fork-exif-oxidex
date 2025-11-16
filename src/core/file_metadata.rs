@@ -26,7 +26,7 @@
 //!
 //! ```no_run
 //! use std::path::Path;
-//! use exiftool_rs::core::file_metadata::extract_file_metadata;
+//! use oxidex::core::file_metadata::extract_file_metadata;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let path = Path::new("/path/to/document.pdf");
@@ -74,7 +74,7 @@ use std::os::unix::fs::PermissionsExt;
 ///
 /// ```no_run
 /// use std::path::Path;
-/// use exiftool_rs::core::file_metadata::extract_file_metadata;
+/// use oxidex::core::file_metadata::extract_file_metadata;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let path = Path::new("document.pdf");

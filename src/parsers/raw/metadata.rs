@@ -46,7 +46,7 @@ use crate::tag_db::lookup_tag_name;
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::raw::{parse_raw_metadata, RawFormat};
+/// use oxidex::parsers::raw::{parse_raw_metadata, RawFormat};
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("photo.dng")?;

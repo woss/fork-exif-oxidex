@@ -1,6 +1,6 @@
-//! Camera manufacturer metadata tags
+//! Audio/video format metadata tags
 //!
-//! Contains tags for Canon, Nikon, Sony, Panasonic, Olympus, Fujifilm, etc.
+//! Contains tags for QuickTime, Matroska, MPEG, FLAC, AAC, etc.
 //!
 //! ## Performance Note
 //!
@@ -9,20 +9,20 @@
 //! directly in the compiled binary, eliminating the ~40ms cold start penalty
 //! from parsing YAML files on first access.
 
-pub use exiftool_tags_core::types::*;
+pub use oxidex_tags_core::types::*;
 use std::sync::LazyLock;
 
 // Include pre-compiled binary tag data generated at build time
 // This is significantly faster than parsing YAML at runtime
-const CAMERA_TAGS_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/camera_tags.bin"));
+const MEDIA_TAGS_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/media_tags.bin"));
 
-/// Lazily-initialized camera tag database
+/// Lazily-initialized media tag database
 ///
 /// Uses binary deserialization (bincode 2.0 serde API) instead of YAML parsing for faster initialization.
 /// The Lazy wrapper ensures thread-safe initialization on first access.
-pub static CAMERA_TAGS: LazyLock<TagDatabase> = LazyLock::new(|| {
-    bincode::serde::decode_from_slice(CAMERA_TAGS_BIN, bincode::config::legacy())
-        .expect("Failed to deserialize pre-compiled camera tags binary data")
+pub static MEDIA_TAGS: LazyLock<TagDatabase> = LazyLock::new(|| {
+    bincode::serde::decode_from_slice(MEDIA_TAGS_BIN, bincode::config::legacy())
+        .expect("Failed to deserialize pre-compiled media tags binary data")
         .0 // decode_from_slice returns (T, usize), extract the decoded value
 });
 
@@ -30,13 +30,13 @@ pub static CAMERA_TAGS: LazyLock<TagDatabase> = LazyLock::new(|| {
 ///
 /// # Arguments
 ///
-/// * `name` - The name of the tag table to retrieve (e.g., "Canon::Main", "Nikon::Main")
+/// * `name` - The name of the tag table to retrieve (e.g., "QuickTime::Main")
 ///
 /// # Returns
 ///
 /// An Option containing a reference to the TagTable if found, or None if not found
 pub fn get_tag_table(name: &str) -> Option<&'static TagTable> {
-    CAMERA_TAGS.tables.iter().find(|t| t.name == name)
+    MEDIA_TAGS.tables.iter().find(|t| t.name == name)
 }
 
 #[cfg(test)]
@@ -44,9 +44,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_camera_tags_loads() {
+    fn test_media_tags_loads() {
         // Force initialization and verify tags loaded successfully
-        let _tags = &*CAMERA_TAGS;
-        assert!(!CAMERA_TAGS.tables.is_empty());
+        let _tags = &*MEDIA_TAGS;
+        assert!(!MEDIA_TAGS.tables.is_empty());
     }
 }

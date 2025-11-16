@@ -2,8 +2,8 @@
 //!
 //! These tests verify PNG metadata extraction with real PNG files.
 
-use exiftool_rs::core::FileReader;
-use exiftool_rs::parsers::png::parse_png_metadata;
+use oxidex::core::FileReader;
+use oxidex::parsers::png::parse_png_metadata;
 use std::io;
 
 /// Simple in-memory FileReader for testing

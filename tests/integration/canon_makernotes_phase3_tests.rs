@@ -12,7 +12,7 @@ fn test_canon_lens_database_integration() {
     // In production, this would be tested with real Canon images.
 
     // For now, verify that the lens database module compiles and links
-    use exiftool_rs::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
 
     // Test common lens lookups
     assert_eq!(
@@ -42,7 +42,7 @@ fn test_canon_phase3_tags_extracted() {
 #[test]
 fn test_lens_database_coverage() {
     // Verify lens database has good coverage
-    use exiftool_rs::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
 
     // Test coverage of major lens categories
     let test_lenses = vec![

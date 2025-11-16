@@ -6,8 +6,8 @@
 //! - All RawFormat variants can be parsed without panicking
 //! - Integration with real raw files (ignored tests for manual verification)
 
-use exiftool_rs::core::operations::read_metadata;
-use exiftool_rs::parsers::raw::{detect_raw_format, parse_raw_metadata, RawFormat};
+use oxidex::core::operations::read_metadata;
+use oxidex::parsers::raw::{detect_raw_format, parse_raw_metadata, RawFormat};
 use std::path::Path;
 
 /// Test that all raw format extensions are correctly detected

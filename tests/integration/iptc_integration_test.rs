@@ -1,6 +1,6 @@
 //! End-to-end integration tests for IPTC metadata extraction
 
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 #[test]

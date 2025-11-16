@@ -9,7 +9,7 @@
 
 #[test]
 fn test_sony_lens_database_a_mount() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Test Minolta AF legacy lens
     assert_eq!(
@@ -38,7 +38,7 @@ fn test_sony_lens_database_a_mount() {
 
 #[test]
 fn test_sony_lens_database_e_mount_fe() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Test FE prime lens
     assert_eq!(
@@ -67,7 +67,7 @@ fn test_sony_lens_database_e_mount_fe() {
 
 #[test]
 fn test_sony_lens_database_e_mount_aps_c() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Test E-mount APS-C wide angle
     assert_eq!(
@@ -90,7 +90,7 @@ fn test_sony_lens_database_e_mount_aps_c() {
 
 #[test]
 fn test_sony_lens_database_g_master() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Test G Master lenses (premium line)
     assert_eq!(
@@ -111,7 +111,7 @@ fn test_sony_lens_database_g_master() {
 
 #[test]
 fn test_sony_lens_database_zeiss() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Test Zeiss Batis
     assert_eq!(
@@ -134,7 +134,7 @@ fn test_sony_lens_database_zeiss() {
 
 #[test]
 fn test_sony_lens_database_third_party() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Test Sigma Contemporary
     assert_eq!(
@@ -157,7 +157,7 @@ fn test_sony_lens_database_third_party() {
 
 #[test]
 fn test_sony_lens_database_unknown() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Unknown lens ID should return None
     assert_eq!(lookup_lens_name(65000), None);
@@ -166,7 +166,7 @@ fn test_sony_lens_database_unknown() {
 
 #[test]
 fn test_sony_is_sony_makernote() {
-    use exiftool_rs::parsers::tiff::makernotes::sony::is_sony_makernote;
+    use oxidex::parsers::tiff::makernotes::sony::is_sony_makernote;
 
     // Valid Sony header with signature
     assert!(is_sony_makernote(b"SONY\x05\x00"));
@@ -189,8 +189,8 @@ fn test_sony_is_sony_makernote() {
 
 #[test]
 fn test_sony_parse_basic_tags() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::sony::parse_sony_makernote;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::sony::parse_sony_makernote;
     use std::collections::HashMap;
 
     // Create minimal Sony MakerNote
@@ -237,8 +237,8 @@ fn test_sony_parse_basic_tags() {
 
 #[test]
 fn test_sony_parse_lens_id_lookup() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::sony::parse_sony_makernote;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::sony::parse_sony_makernote;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -267,8 +267,8 @@ fn test_sony_parse_lens_id_lookup() {
 
 #[test]
 fn test_sony_parse_camera_settings_array() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::sony::parse_sony_makernote;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::sony::parse_sony_makernote;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -356,8 +356,8 @@ fn test_sony_parse_camera_settings_array() {
 
 #[test]
 fn test_sony_parse_af_info_array() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::sony::parse_sony_makernote;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::sony::parse_sony_makernote;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -398,8 +398,8 @@ fn test_sony_parse_af_info_array() {
 
 #[test]
 fn test_sony_parse_shot_info_array() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::sony::parse_sony_makernote;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::sony::parse_sony_makernote;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -452,8 +452,8 @@ fn test_sony_parse_shot_info_array() {
 
 #[test]
 fn test_sony_parse_empty_data() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::sony::parse_sony_makernote;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::sony::parse_sony_makernote;
     use std::collections::HashMap;
 
     // Empty data should not crash
@@ -470,8 +470,8 @@ fn test_sony_parse_empty_data() {
 
 #[test]
 fn test_sony_parse_with_signature() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::sony::parse_sony_makernote;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::sony::parse_sony_makernote;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -499,7 +499,7 @@ fn test_sony_parse_with_signature() {
 
 #[test]
 fn test_sony_lens_database_coverage() {
-    use exiftool_rs::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::sony_lens_database::lookup_lens_name;
 
     // Count how many lenses we have in database
     let mut count = 0;

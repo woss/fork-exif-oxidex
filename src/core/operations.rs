@@ -46,7 +46,7 @@ use std::path::Path;
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::core::operations::read_metadata;
+/// use oxidex::core::operations::read_metadata;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -1267,8 +1267,8 @@ impl<'a> FileReader for TiffSubReader<'a> {
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::core::operations::{read_metadata, write_metadata};
-/// use exiftool_rs::core::tag_value::TagValue;
+/// use oxidex::core::operations::{read_metadata, write_metadata};
+/// use oxidex::core::tag_value::TagValue;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -1372,8 +1372,8 @@ pub fn write_metadata(path: &Path, metadata: &MetadataMap) -> Result<()> {
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::core::operations::modify_tag;
-/// use exiftool_rs::core::tag_value::TagValue;
+/// use oxidex::core::operations::modify_tag;
+/// use oxidex::core::tag_value::TagValue;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -1431,7 +1431,7 @@ pub fn modify_tag(path: &Path, tag_name: &str, new_value: TagValue) -> Result<()
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::core::operations::copy_metadata;
+/// use oxidex::core::operations::copy_metadata;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

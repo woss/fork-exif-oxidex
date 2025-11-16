@@ -1,9 +1,9 @@
 //! Integration tests for date/time shifting operations
 
 use chrono::{Datelike, Timelike, Utc};
-use exiftool_rs::core::date_shift::{shift_metadata_dates, ShiftOperation};
-use exiftool_rs::core::operations::{read_metadata, write_metadata};
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
+use oxidex::core::operations::{read_metadata, write_metadata};
+use oxidex::core::tag_value::TagValue;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::NamedTempFile;
@@ -256,7 +256,7 @@ fn test_shift_dates_preserves_other_tags() {
 fn test_parse_offset_and_apply() {
     // Test the core date shift logic with a programmatically created DateTime
     use chrono::TimeZone;
-    use exiftool_rs::core::date_shift::{apply_shift, parse_offset};
+    use oxidex::core::date_shift::{apply_shift, parse_offset};
 
     // Create a known DateTime
     let dt = Utc.with_ymd_and_hms(2025, 1, 15, 10, 30, 0).unwrap();

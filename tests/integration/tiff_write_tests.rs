@@ -14,12 +14,12 @@
 //! - Byte order preservation
 //! - Compatibility with other TIFF parsers
 
-use exiftool_rs::core::metadata_map::MetadataMap;
-use exiftool_rs::core::tag_value::TagValue;
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::tiff::file_parser::{parse_tiff_file, parse_tiff_header};
-use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-use exiftool_rs::writers::tiff_writer::write_tiff_file;
+use oxidex::core::metadata_map::MetadataMap;
+use oxidex::core::tag_value::TagValue;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::tiff::file_parser::{parse_tiff_file, parse_tiff_header};
+use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+use oxidex::writers::tiff_writer::write_tiff_file;
 use std::path::Path;
 use tempfile::TempDir;
 

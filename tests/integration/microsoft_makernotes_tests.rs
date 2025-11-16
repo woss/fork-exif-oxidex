@@ -1,8 +1,8 @@
 //! Integration tests for Microsoft (Lumia) MakerNotes parser
 
-use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-use exiftool_rs::parsers::tiff::makernotes::microsoft::MicrosoftParser;
-use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+use oxidex::parsers::tiff::makernotes::microsoft::MicrosoftParser;
+use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 use std::collections::HashMap;
 
 #[test]

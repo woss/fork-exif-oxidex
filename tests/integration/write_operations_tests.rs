@@ -3,8 +3,8 @@
 //! These tests verify the end-to-end functionality of write_metadata() and
 //! modify_tag() operations, including validation, JPEG writing, and atomic operations.
 
-use exiftool_rs::core::operations::{modify_tag, read_metadata, write_metadata};
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::operations::{modify_tag, read_metadata, write_metadata};
+use oxidex::core::tag_value::TagValue;
 use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -125,7 +125,7 @@ fn test_write_metadata_validation_fails_for_invalid_type() {
 
     // Verify error is InvalidTagValue
     match result {
-        Err(exiftool_rs::error::ExifToolError::InvalidTagValue { tag_name, reason }) => {
+        Err(oxidex::error::ExifToolError::InvalidTagValue { tag_name, reason }) => {
             assert_eq!(tag_name, "IFD0:Make");
             assert!(
                 reason.contains("Type mismatch"),
@@ -160,7 +160,7 @@ fn test_write_metadata_validation_fails_for_rational_zero_denominator() {
 
     // Verify error is InvalidTagValue with denominator message
     match result {
-        Err(exiftool_rs::error::ExifToolError::InvalidTagValue { tag_name, reason }) => {
+        Err(oxidex::error::ExifToolError::InvalidTagValue { tag_name, reason }) => {
             assert_eq!(tag_name, "ExifIFD:ExposureTime");
             assert!(
                 reason.contains("denominator"),

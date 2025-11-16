@@ -3,9 +3,9 @@
 //! These tests verify the PDF parser's ability to extract metadata from
 //! real PDF files, including Info dictionary fields and XMP packets.
 
-use exiftool_rs::core::tag_value::TagValue;
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::pdf::parse_pdf_metadata;
+use oxidex::core::tag_value::TagValue;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::pdf::parse_pdf_metadata;
 use std::path::PathBuf;
 
 /// Helper function to get path to test fixture

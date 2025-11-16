@@ -5,9 +5,9 @@
 //! # Examples
 //!
 //! ```
-//! use exiftool_rs::cli::output_formatter::{OutputFormatter, HumanReadableFormatter, JsonFormatter};
-//! use exiftool_rs::core::metadata_map::MetadataMap;
-//! use exiftool_rs::core::tag_value::TagValue;
+//! use oxidex::cli::output_formatter::{OutputFormatter, HumanReadableFormatter, JsonFormatter};
+//! use oxidex::core::metadata_map::MetadataMap;
+//! use oxidex::core::tag_value::TagValue;
 //!
 //! let mut metadata = MetadataMap::new();
 //! metadata.insert("EXIF:Make", TagValue::new_string("Canon"));
@@ -55,9 +55,9 @@ pub trait OutputFormatter {
 /// # Examples
 ///
 /// ```
-/// use exiftool_rs::cli::output_formatter::{OutputFormatter, HumanReadableFormatter};
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
+/// use oxidex::cli::output_formatter::{OutputFormatter, HumanReadableFormatter};
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
 ///
 /// let mut metadata = MetadataMap::new();
 /// metadata.insert("EXIF:Make", TagValue::new_string("Canon"));
@@ -158,9 +158,9 @@ impl OutputFormatter for HumanReadableFormatter {
 /// # Examples
 ///
 /// ```
-/// use exiftool_rs::cli::output_formatter::{OutputFormatter, JsonFormatter};
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
+/// use oxidex::cli::output_formatter::{OutputFormatter, JsonFormatter};
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
 ///
 /// let mut metadata = MetadataMap::new();
 /// metadata.insert("EXIF:Make", TagValue::new_string("Canon"));
@@ -291,9 +291,9 @@ fn tag_value_to_json(tag_name: Option<&str>, value: &TagValue) -> serde_json::Va
 /// # Examples
 ///
 /// ```
-/// use exiftool_rs::cli::output_formatter::{OutputFormatter, CsvFormatter};
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
+/// use oxidex::cli::output_formatter::{OutputFormatter, CsvFormatter};
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
 ///
 /// let mut metadata = MetadataMap::new();
 /// metadata.insert("EXIF:Make", TagValue::new_string("Canon"));

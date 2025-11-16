@@ -1,6 +1,6 @@
-# Packaging Guide for ExifTool-RS
+# Packaging Guide for OxiDex
 
-This document provides comprehensive instructions for creating and distributing packages for ExifTool-RS across multiple platforms.
+This document provides comprehensive instructions for creating and distributing packages for OxiDex across multiple platforms.
 
 ## Table of Contents
 
@@ -47,12 +47,12 @@ sudo yum install rpm-build
 
 ## Package Types
 
-ExifTool-RS supports three primary package distribution formats:
+OxiDex supports three primary package distribution formats:
 
 | Package Type | Platform | Tool | Output |
 |--------------|----------|------|--------|
-| **Debian (.deb)** | Ubuntu, Debian, Linux Mint | `cargo-deb` | `target/debian/exiftool-rs_VERSION_amd64.deb` |
-| **RPM (.rpm)** | Fedora, RHEL, CentOS, openSUSE | `cargo-generate-rpm` | `target/generate-rpm/exiftool-rs-VERSION-1.x86_64.rpm` |
+| **Debian (.deb)** | Ubuntu, Debian, Linux Mint | `cargo-deb` | `target/debian/oxidex_VERSION_amd64.deb` |
+| **RPM (.rpm)** | Fedora, RHEL, CentOS, openSUSE | `cargo-generate-rpm` | `target/generate-rpm/oxidex-VERSION-1.x86_64.rpm` |
 | **Homebrew (.rb)** | macOS | Homebrew formula | Source or binary installation |
 
 ## Building Packages
@@ -64,8 +64,8 @@ The Debian package configuration is defined in `Cargo.toml` under `[package.meta
 #### Configuration
 
 Key settings:
-- **Binary location**: `/usr/bin/exiftool-rs`
-- **Documentation**: `/usr/share/doc/exiftool-rs/`
+- **Binary location**: `/usr/bin/oxidex`
+- **Documentation**: `/usr/share/doc/oxidex/`
 - **Section**: `utils`
 - **Priority**: `optional`
 
@@ -79,7 +79,7 @@ cargo build --release
 cargo deb
 
 # Output location
-ls -lh target/debian/exiftool-rs_*.deb
+ls -lh target/debian/oxidex_*.deb
 ```
 
 #### Architecture-Specific Builds
@@ -97,21 +97,21 @@ cargo deb --target x86_64-unknown-linux-gnu
 #### Package Contents
 
 The `.deb` package includes:
-- Statically linked binary: `/usr/bin/exiftool-rs`
-- Documentation: `/usr/share/doc/exiftool-rs/README.md`
-- License: `/usr/share/doc/exiftool-rs/LICENSE`
+- Statically linked binary: `/usr/bin/oxidex`
+- Documentation: `/usr/share/doc/oxidex/README.md`
+- License: `/usr/share/doc/oxidex/LICENSE`
 
 #### Manual Installation
 
 ```bash
 # Install
-sudo dpkg -i target/debian/exiftool-rs_0.1.0_amd64.deb
+sudo dpkg -i target/debian/oxidex_0.1.0_amd64.deb
 
 # Verify
-exiftool-rs --version
+oxidex --version
 
 # Uninstall
-sudo dpkg -r exiftool-rs
+sudo dpkg -r oxidex
 ```
 
 ### 2. RPM Package (.rpm)
@@ -121,8 +121,8 @@ The RPM package configuration is defined in `Cargo.toml` under `[package.metadat
 #### Configuration
 
 Key settings:
-- **Binary location**: `/usr/bin/exiftool-rs`
-- **Documentation**: `/usr/share/doc/exiftool-rs/`
+- **Binary location**: `/usr/bin/oxidex`
+- **Documentation**: `/usr/share/doc/oxidex/`
 - **License**: GPL-3.0 (inherited from `[package]` section)
 - **Release number**: 1 (first build of this version)
 
@@ -136,7 +136,7 @@ cargo build --release
 cargo generate-rpm
 
 # Output location
-ls -lh target/generate-rpm/exiftool-rs-*.rpm
+ls -lh target/generate-rpm/oxidex-*.rpm
 ```
 
 **Important**: Unlike `cargo-deb`, `cargo-generate-rpm` does NOT build the binary automatically. You MUST run `cargo build --release` first.
@@ -144,32 +144,32 @@ ls -lh target/generate-rpm/exiftool-rs-*.rpm
 #### Package Contents
 
 The `.rpm` package includes:
-- Statically linked binary: `/usr/bin/exiftool-rs`
-- Documentation: `/usr/share/doc/exiftool-rs/README.md`
-- License: `/usr/share/doc/exiftool-rs/LICENSE`
+- Statically linked binary: `/usr/bin/oxidex`
+- Documentation: `/usr/share/doc/oxidex/README.md`
+- License: `/usr/share/doc/oxidex/LICENSE`
 
 #### Manual Installation
 
 ```bash
 # Install (Fedora/RHEL 8+)
-sudo dnf install target/generate-rpm/exiftool-rs-0.1.0-1.x86_64.rpm
+sudo dnf install target/generate-rpm/oxidex-0.1.0-1.x86_64.rpm
 
 # Install (older RHEL/CentOS)
-sudo yum install target/generate-rpm/exiftool-rs-0.1.0-1.x86_64.rpm
+sudo yum install target/generate-rpm/oxidex-0.1.0-1.x86_64.rpm
 
 # Install (using rpm directly)
-sudo rpm -i target/generate-rpm/exiftool-rs-0.1.0-1.x86_64.rpm
+sudo rpm -i target/generate-rpm/oxidex-0.1.0-1.x86_64.rpm
 
 # Verify
-exiftool-rs --version
+oxidex --version
 
 # Uninstall
-sudo rpm -e exiftool-rs
+sudo rpm -e oxidex
 ```
 
 ### 3. Homebrew Formula (macOS)
 
-The Homebrew formula is located at `packaging/homebrew/exiftool-rs.rb`.
+The Homebrew formula is located at `packaging/homebrew/oxidex.rb`.
 
 #### Configuration
 
@@ -185,25 +185,25 @@ After creating a GitHub release:
 
 ```bash
 # Calculate SHA256 of the release tarball
-curl -sL https://github.com/exiftool-rs/exiftool-rs/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
+curl -sL https://github.com/oxidex/oxidex/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
 
-# Update the sha256 field in packaging/homebrew/exiftool-rs.rb
+# Update the sha256 field in packaging/homebrew/oxidex.rb
 ```
 
 #### Testing the Formula
 
 ```bash
 # Test local installation
-brew install --build-from-source ./packaging/homebrew/exiftool-rs.rb
+brew install --build-from-source ./packaging/homebrew/oxidex.rb
 
 # Verify
-exiftool-rs --version
+oxidex --version
 
 # Test formula syntax
-brew audit --strict ./packaging/homebrew/exiftool-rs.rb
+brew audit --strict ./packaging/homebrew/oxidex.rb
 
 # Uninstall
-brew uninstall exiftool-rs
+brew uninstall oxidex
 ```
 
 #### Publishing to Homebrew
@@ -211,7 +211,7 @@ brew uninstall exiftool-rs
 To make the formula available via official Homebrew:
 
 1. Fork [homebrew/homebrew-core](https://github.com/Homebrew/homebrew-core)
-2. Add `Formula/exiftool-rs.rb` to your fork
+2. Add `Formula/oxidex.rb` to your fork
 3. Submit a Pull Request following [Homebrew's guidelines](https://docs.brew.sh/How-To-Open-a-Homebrew-Pull-Request)
 
 Requirements for homebrew-core:
@@ -266,8 +266,8 @@ For each package type, verify:
 - [ ] Package file exists and is non-zero size
 - [ ] Package installs without errors
 - [ ] Binary is executable and in PATH
-- [ ] `exiftool-rs --version` outputs correct version
-- [ ] `exiftool-rs --help` displays help text
+- [ ] `oxidex --version` outputs correct version
+- [ ] `oxidex --help` displays help text
 - [ ] Package uninstalls cleanly
 - [ ] No files left behind after uninstall
 
@@ -276,36 +276,36 @@ For each package type, verify:
 **Debian/Ubuntu:**
 ```bash
 # Inspect package
-dpkg-deb --info target/debian/exiftool-rs_0.1.0_amd64.deb
-dpkg-deb --contents target/debian/exiftool-rs_0.1.0_amd64.deb
+dpkg-deb --info target/debian/oxidex_0.1.0_amd64.deb
+dpkg-deb --contents target/debian/oxidex_0.1.0_amd64.deb
 
 # Test installation
-sudo dpkg -i target/debian/exiftool-rs_0.1.0_amd64.deb
-which exiftool-rs
-exiftool-rs --version
+sudo dpkg -i target/debian/oxidex_0.1.0_amd64.deb
+which oxidex
+oxidex --version
 ```
 
 **Fedora/RHEL:**
 ```bash
 # Inspect package
-rpm -qip target/generate-rpm/exiftool-rs-0.1.0-1.x86_64.rpm
-rpm -qlp target/generate-rpm/exiftool-rs-0.1.0-1.x86_64.rpm
+rpm -qip target/generate-rpm/oxidex-0.1.0-1.x86_64.rpm
+rpm -qlp target/generate-rpm/oxidex-0.1.0-1.x86_64.rpm
 
 # Test installation
-sudo dnf install target/generate-rpm/exiftool-rs-0.1.0-1.x86_64.rpm
-which exiftool-rs
-exiftool-rs --version
+sudo dnf install target/generate-rpm/oxidex-0.1.0-1.x86_64.rpm
+which oxidex
+oxidex --version
 ```
 
 **macOS:**
 ```bash
 # Audit formula
-brew audit --strict ./packaging/homebrew/exiftool-rs.rb
+brew audit --strict ./packaging/homebrew/oxidex.rb
 
 # Test installation (builds from source)
-brew install --build-from-source --verbose ./packaging/homebrew/exiftool-rs.rb
-which exiftool-rs
-exiftool-rs --version
+brew install --build-from-source --verbose ./packaging/homebrew/oxidex.rb
+which oxidex
+oxidex --version
 ```
 
 ## Publishing Releases
@@ -353,8 +353,8 @@ cargo build --release
 cargo generate-rpm
 
 # Update Homebrew formula SHA256
-curl -sL https://github.com/exiftool-rs/exiftool-rs/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
-# Update packaging/homebrew/exiftool-rs.rb with the hash
+curl -sL https://github.com/oxidex/oxidex/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
+# Update packaging/homebrew/oxidex.rb with the hash
 ```
 
 ### 5. Upload Packages to GitHub Release
@@ -362,8 +362,8 @@ curl -sL https://github.com/exiftool-rs/exiftool-rs/archive/refs/tags/v0.1.0.tar
 ```bash
 # Using GitHub CLI (gh)
 gh release upload v0.1.0 \
-  target/debian/exiftool-rs_0.1.0_amd64.deb \
-  target/generate-rpm/exiftool-rs-0.1.0-1.x86_64.rpm
+  target/debian/oxidex_0.1.0_amd64.deb \
+  target/generate-rpm/oxidex-0.1.0-1.x86_64.rpm
 
 # Or upload manually via GitHub web interface
 ```
@@ -394,7 +394,7 @@ Check that the GitHub Release includes:
 **Solution**: Ensure you have a valid `[[bin]]` section in `Cargo.toml`:
 ```toml
 [[bin]]
-name = "exiftool-rs"
+name = "oxidex"
 path = "src/main.rs"
 ```
 
@@ -414,8 +414,8 @@ cargo generate-rpm
 
 **Solution**: Recalculate and update the SHA256 hash:
 ```bash
-curl -sL https://github.com/exiftool-rs/exiftool-rs/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
-# Update sha256 in packaging/homebrew/exiftool-rs.rb
+curl -sL https://github.com/oxidex/oxidex/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
+# Update sha256 in packaging/homebrew/oxidex.rb
 ```
 
 #### Package won't install: Permission denied
@@ -434,7 +434,7 @@ sudo dnf install package.rpm
 **Solution**: Packages install to `/usr/bin/`, which should be in PATH. Verify:
 ```bash
 echo $PATH
-which exiftool-rs
+which oxidex
 
 # If needed, manually add to PATH
 export PATH="/usr/bin:$PATH"
@@ -462,7 +462,7 @@ rpm -qRp package.rpm
 
 **Verify binary is statically linked (no external dependencies):**
 ```bash
-ldd target/release/exiftool-rs
+ldd target/release/oxidex
 # Should show "not a dynamic executable" or minimal system libs
 ```
 
@@ -475,7 +475,7 @@ Potential improvements for the packaging system:
    - Automatically upload packages to GitHub Releases
 
 2. **Homebrew Tap Repository**
-   - Create `homebrew-exiftool-rs` tap for easier installation
+   - Create `homebrew-oxidex` tap for easier installation
    - Maintain binary bottles for faster installation
 
 3. **Additional Package Formats**
@@ -501,10 +501,10 @@ Potential improvements for the packaging system:
 - **Homebrew Formula Cookbook**: https://docs.brew.sh/Formula-Cookbook
 - **Debian Policy Manual**: https://www.debian.org/doc/debian-policy/
 - **RPM Packaging Guide**: https://rpm-packaging-guide.github.io/
-- **ExifTool-RS Project**: https://github.com/exiftool-rs/exiftool-rs
+- **OxiDex Project**: https://github.com/oxidex/oxidex
 
 ---
 
-**Maintained by**: ExifTool-RS Contributors
+**Maintained by**: OxiDex Contributors
 **Last Updated**: 2025-10-30
 **Version**: 0.1.0

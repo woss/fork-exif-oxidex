@@ -25,7 +25,7 @@
 //! ```
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use exiftool_rs::parsers::raw::{detect_raw_format, parse_raw_metadata, RawFormat};
+use oxidex::parsers::raw::{detect_raw_format, parse_raw_metadata, RawFormat};
 
 /// Benchmark for raw format detection
 ///

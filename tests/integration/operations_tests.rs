@@ -3,7 +3,7 @@
 //! These tests verify the complete end-to-end workflow of reading
 //! metadata from real files using the read_metadata() orchestration function.
 
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 #[test]

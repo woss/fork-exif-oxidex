@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package Testing Script for exiftool-rs
+# Package Testing Script for oxidex
 # Tests .deb, .rpm, and Homebrew packages
 #
 # Usage: ./scripts/test-packages.sh [deb|rpm|brew|all]
@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-BINARY_NAME="exiftool-rs"
+BINARY_NAME="oxidex"
 EXPECTED_VERSION="0.1.0"
 
 # Helper functions
@@ -259,8 +259,8 @@ test_homebrew_package() {
 main() {
     local test_type="${1:-all}"
 
-    log_info "ExifTool-RS Package Testing Script"
-    log_info "===================================="
+    log_info "OxiDex Package Testing Script"
+    log_info "=============================="
 
     case "$test_type" in
         deb)

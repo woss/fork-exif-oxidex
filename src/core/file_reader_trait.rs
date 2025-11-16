@@ -42,7 +42,7 @@ use std::io;
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::core::FileReader;
+/// use oxidex::core::FileReader;
 /// use std::io;
 ///
 /// struct InMemoryReader {
@@ -100,7 +100,7 @@ pub trait FileReader {
     /// # Examples
     ///
     /// ```no_run
-    /// # use exiftool_rs::core::FileReader;
+    /// # use oxidex::core::FileReader;
     /// # fn example(reader: &dyn FileReader) -> std::io::Result<()> {
     /// // Read JPEG SOI marker (0xFFD8) at start of file
     /// let header = reader.read(0, 2)?;
@@ -123,7 +123,7 @@ pub trait FileReader {
     /// # Examples
     ///
     /// ```no_run
-    /// # use exiftool_rs::core::FileReader;
+    /// # use oxidex::core::FileReader;
     /// # fn example(reader: &dyn FileReader) {
     /// let size = reader.size();
     /// println!("File size: {} bytes", size);

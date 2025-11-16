@@ -1,4 +1,4 @@
-//! ExifTool-RS: A modern, high-performance Rust reimplementation of ExifTool
+//! OxiDex: A modern, high-performance Rust reimplementation of ExifTool
 //!
 //! This library provides comprehensive metadata extraction, editing, and writing
 //! capabilities for 300+ file formats. It follows a hexagonal architecture pattern
@@ -17,7 +17,7 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! use exiftool_rs::core::MetadataMap;
+//! use oxidex::core::MetadataMap;
 //!
 //! // Future API example - not yet implemented
 //! let metadata = MetadataMap::from_file("photo.jpg")?;

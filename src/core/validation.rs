@@ -39,9 +39,9 @@ fn descriptor_allows_datetime(descriptor: &TagDescriptor) -> bool {
 /// # Examples
 ///
 /// ```
-/// use exiftool_rs::core::{TagDescriptor, TagId, FormatFamily, ValueType};
-/// use exiftool_rs::core::tag_value::TagValue;
-/// use exiftool_rs::core::validation::validate_tag_value;
+/// use oxidex::core::{TagDescriptor, TagId, FormatFamily, ValueType};
+/// use oxidex::core::tag_value::TagValue;
+/// use oxidex::core::validation::validate_tag_value;
 ///
 /// // Example: Validate a String tag value
 /// let descriptor = TagDescriptor::new(
