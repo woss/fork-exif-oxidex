@@ -8,6 +8,7 @@
 
 pub mod structures;
 pub mod dos_parser;
+pub mod coff_parser;
 
 use crate::core::{FileReader, MetadataMap};
 use crate::error::{ExifToolError, Result};
