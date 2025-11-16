@@ -1,9 +1,9 @@
 [package]
-name = "exiftool-tags"
+name = "oxidex-tags"
 version = "1.0.4"
 edition = "2021"
 authors = ["ExifTool-RS Contributors"]
-description = "Facade crate re-exporting all tag databases for exiftool-rs"
+description = "Tag database for OxiDex metadata extraction library"
 license = "GPL-3.0"
 
 [lib]
@@ -11,12 +11,12 @@ name = "exiftool_tags"
 path = "src/lib.rs"
 
 [dependencies]
-exiftool-tags-core = { path = "../exiftool-tags-core" }
-exiftool-tags-camera = { path = "../exiftool-tags-camera" }
-exiftool-tags-media = { path = "../exiftool-tags-media" }
-exiftool-tags-image = { path = "../exiftool-tags-image" }
-exiftool-tags-document = { path = "../exiftool-tags-document" }
-exiftool-tags-specialty = { path = "../exiftool-tags-specialty" }
+oxidex-tags-core = { path = "../oxidex-tags-core" }
+oxidex-tags-camera = { path = "../oxidex-tags-camera" }
+oxidex-tags-media = { path = "../oxidex-tags-media" }
+oxidex-tags-image = { path = "../oxidex-tags-image" }
+oxidex-tags-document = { path = "../oxidex-tags-document" }
+oxidex-tags-specialty = { path = "../oxidex-tags-specialty" }
 
 # Re-export common dependencies
 serde = { version = "1.0", features = ["derive"] }
