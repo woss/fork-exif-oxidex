@@ -2,7 +2,7 @@
 
 ## Overview
 
-The ExifTool-RS tag database is split into 6 domain-specific crates for faster compilation:
+The OxiDex tag database is split into 6 domain-specific crates for faster compilation:
 
 - `exiftool-tags-core` - Universal standards (EXIF, XMP, IPTC, GPS)
 - `exiftool-tags-camera` - Camera manufacturers (Canon, Nikon, Sony, etc.)

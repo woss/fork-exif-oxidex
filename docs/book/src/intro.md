@@ -1,6 +1,6 @@
 # Introduction
 
-Welcome to the ExifTool-RS User Guide! This comprehensive documentation will help you get started with ExifTool-RS, a modern, high-performance Rust reimplementation of the industry-standard ExifTool metadata management library and command-line application.
+Welcome to the OxiDex User Guide! This comprehensive documentation will help you get started with OxiDex, a modern, high-performance Rust reimplementation of the industry-standard ExifTool metadata management library and command-line application.
 
 ## Project Status
 
@@ -8,7 +8,7 @@ Welcome to the ExifTool-RS User Guide! This comprehensive documentation will hel
 
 **Current Version**: 1.0.0
 
-ExifTool-RS has reached its first stable release! The project is now production-ready with comprehensive features, extensive testing, and exceptional performance.
+OxiDex has reached its first stable release! The project is now production-ready with comprehensive features, extensive testing, and exceptional performance.
 
 ### v1.0.0 Features
 
@@ -50,13 +50,13 @@ ExifTool-RS has reached its first stable release! The project is now production-
 - ⏳ Optional GUI (egui framework)
 - ⏳ Streaming API for real-time processing
 
-## What is ExifTool-RS?
+## What is OxiDex?
 
-ExifTool-RS is a complete reimplementation of [ExifTool](https://exiftool.org/) in Rust, designed to provide the same powerful metadata management capabilities while leveraging Rust's memory safety guarantees, zero-cost abstractions, and modern development ecosystem.
+OxiDex is a complete reimplementation of [ExifTool](https://exiftool.org/) in Rust, designed to provide the same powerful metadata management capabilities while leveraging Rust's memory safety guarantees, zero-cost abstractions, and modern development ecosystem.
 
 ### Project Vision
 
-ExifTool-RS aims to provide a memory-safe, zero-cost abstraction alternative to the Perl-based ExifTool while maintaining full compatibility with its extensive metadata tag support. The goal is to deliver superior performance, native cross-compilation capabilities, and seamless integration into modern software ecosystems.
+OxiDex aims to provide a memory-safe, zero-cost abstraction alternative to the Perl-based ExifTool while maintaining full compatibility with its extensive metadata tag support. The goal is to deliver superior performance, native cross-compilation capabilities, and seamless integration into modern software ecosystems.
 
 ## Why Rust?
 
@@ -78,7 +78,7 @@ Rust enables high-performance code through:
 - **Efficient Memory Layout**: Fine-grained control over data structures
 - **Native Compilation**: Direct compilation to machine code without runtime overhead
 
-Benchmarks show ExifTool-RS achieves 13-65x performance improvements over the Perl implementation for common operations.
+Benchmarks show OxiDex achieves 13-65x performance improvements over the Perl implementation for common operations.
 
 ### Modern Ecosystem
 Rust provides excellent tooling and ecosystem:
@@ -97,7 +97,7 @@ Rust produces self-contained static binaries with no runtime dependencies, makin
 
 ## Key Features
 
-ExifTool-RS provides comprehensive metadata management capabilities:
+OxiDex provides comprehensive metadata management capabilities:
 
 ### Feature Parity (Planned)
 - **300+ File Formats**: Support for reading and writing metadata in images, videos, documents, and more
@@ -141,7 +141,7 @@ ExifTool-RS provides comprehensive metadata management capabilities:
 
 ## Architecture
 
-ExifTool-RS follows a **Hexagonal Architecture** (Ports and Adapters) pattern with three main layers:
+OxiDex follows a **Hexagonal Architecture** (Ports and Adapters) pattern with three main layers:
 
 ### Application Layer
 - **CLI Interface**: Command-line application for interactive and scripted use
@@ -168,7 +168,7 @@ This architecture ensures:
 
 ## Technology Stack
 
-ExifTool-RS is built on modern, production-ready Rust libraries:
+OxiDex is built on modern, production-ready Rust libraries:
 
 **Language**: Rust 1.75+ (2021 Edition)
 
@@ -194,7 +194,7 @@ ExifTool-RS is built on modern, production-ready Rust libraries:
 
 ## Use Cases
 
-ExifTool-RS is designed for a wide range of metadata management tasks:
+OxiDex is designed for a wide range of metadata management tasks:
 
 ### Photography Workflow
 - Extract camera settings from photos (camera model, lens, exposure, ISO)
@@ -218,7 +218,7 @@ ExifTool-RS is designed for a wide range of metadata management tasks:
 - Remove sensitive metadata before publication
 
 ### Software Integration
-- Embed ExifTool-RS as a library in Rust applications
+- Embed OxiDex as a library in Rust applications
 - Call from Python, C, or other languages via FFI
 - Build web services that process metadata
 - Create custom CLI tools on top of the library
@@ -226,18 +226,18 @@ ExifTool-RS is designed for a wide range of metadata management tasks:
 
 ## Getting Started
 
-Ready to start using ExifTool-RS? Continue to the next sections:
+Ready to start using OxiDex? Continue to the next sections:
 
 1. **[Installation](installation.md)**: Download binaries or build from source
 2. **[Command-Line Usage](cli_usage.md)**: Learn CLI commands and options
-3. **[Library API](library_api.md)**: Integrate ExifTool-RS into your Rust applications
-4. **[C FFI Integration](ffi.md)**: Use ExifTool-RS from C, Python, or other languages
+3. **[Library API](library_api.md)**: Integrate OxiDex into your Rust applications
+4. **[C FFI Integration](ffi.md)**: Use OxiDex from C, Python, or other languages
 5. **[Supported Formats](formats.md)**: See what file formats are currently supported
 6. **[Troubleshooting](troubleshooting.md)**: Common issues and performance tips
 
 ## Contributing
 
-ExifTool-RS is open source and welcomes contributions! Visit the [GitHub repository](https://github.com/exiftool-rs/exiftool-rs) to:
+OxiDex is open source and welcomes contributions! Visit the [GitHub repository](https://github.com/oxidex/oxidex) to:
 - Report bugs and request features
 - Submit pull requests
 - Review architectural decision records (ADRs)
@@ -245,10 +245,10 @@ ExifTool-RS is open source and welcomes contributions! Visit the [GitHub reposit
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the [LICENSE](https://github.com/exiftool-rs/exiftool-rs/blob/main/LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the [LICENSE](https://github.com/oxidex/oxidex/blob/main/LICENSE) file for details.
 
 ## Acknowledgments
 
-This project is inspired by and aims to be compatible with [ExifTool](https://exiftool.org/) by Phil Harvey. ExifTool-RS is an independent reimplementation and is not affiliated with or endorsed by the original ExifTool project.
+This project is inspired by and aims to be compatible with [ExifTool](https://exiftool.org/) by Phil Harvey. OxiDex is an independent reimplementation and is not affiliated with or endorsed by the original ExifTool project.
 
 We are grateful to Phil Harvey for creating ExifTool and maintaining the comprehensive tag database that serves as the foundation for metadata management across the industry.

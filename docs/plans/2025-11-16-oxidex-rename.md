@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Rename the entire project from "exiftool-rs" to "oxidex" including all crates, documentation, CI/CD, and package metadata.
+**Goal:** Rename the entire project from "oxidex" to "oxidex" including all crates, documentation, CI/CD, and package metadata.
 
 **Architecture:** Big Bang approach - all changes in one PR for clean transition. Rename 8 crates (main + 7 tag crates), update all imports, documentation, and infrastructure. Preserve git history and GitHub URLs.
 
@@ -128,7 +128,7 @@ description = "A modern, high-performance Rust implementation of ExifTool for re
 Keep line 13 as-is (GitHub URL stays the same):
 
 ```toml
-repository = "https://github.com/exiftool-rs/exiftool-rs"
+repository = "https://github.com/oxidex/oxidex"
 ```
 
 **Step 5: Update authors**
@@ -507,18 +507,18 @@ git commit -m "refactor: update oxidex-tags-specialty Cargo.toml"
 **Files:**
 - Modify: All `.rs` files in `src/` and subdirectories
 
-**Step 1: Find all exiftool_rs references in source code**
+**Step 1: Find all oxidex references in source code**
 
 ```bash
-rg "exiftool_rs" --type rust src/
+rg "oxidex" --type rust src/
 ```
 
 Expected: List of files with references
 
-**Step 2: Replace exiftool_rs with oxidex in src/**
+**Step 2: Replace oxidex with oxidex in src/**
 
 ```bash
-find src/ -name "*.rs" -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
+find src/ -name "*.rs" -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
 ```
 
 **Step 3: Find all exiftool_tags references**
@@ -533,7 +533,7 @@ rg "exiftool_tags" --type rust src/
 find src/ -name "*.rs" -type f -exec sed -i '' 's/exiftool_tags/oxidex_tags/g' {} +
 ```
 
-**Step 5: Verify no exiftool_rs references remain**
+**Step 5: Verify no oxidex references remain**
 
 ```bash
 rg "exiftool_(rs|tags)" --type rust src/
@@ -545,7 +545,7 @@ Expected: No matches (only "exiftool" without underscore should remain for ExifT
 
 ```bash
 git add src/
-git commit -m "refactor: update Rust imports from exiftool_rs to oxidex"
+git commit -m "refactor: update Rust imports from oxidex to oxidex"
 ```
 
 ---
@@ -622,7 +622,7 @@ git commit -m "refactor: update tag crate imports to oxidex_tags"
 **Step 1: Update test imports**
 
 ```bash
-find tests/ -name "*.rs" -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
+find tests/ -name "*.rs" -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
 find tests/ -name "*.rs" -type f -exec sed -i '' 's/exiftool_tags/oxidex_tags/g' {} +
 ```
 
@@ -651,7 +651,7 @@ git commit -m "refactor: update test imports to oxidex"
 **Step 1: Update benchmark imports**
 
 ```bash
-find benches/ -name "*.rs" -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
+find benches/ -name "*.rs" -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
 find benches/ -name "*.rs" -type f -exec sed -i '' 's/exiftool_tags/oxidex_tags/g' {} +
 ```
 
@@ -695,20 +695,20 @@ include_guard = "OXIDEX_H"
 **Step 3: Update function prefixes in C bindings**
 
 ```bash
-find bindings/ -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
-find include/ -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
+find bindings/ -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
+find include/ -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
 ```
 
 **Step 4: Rename header file if exists**
 
 ```bash
-if [ -f include/exiftool_rs.h ]; then git mv include/exiftool_rs.h include/oxidex.h; fi
+if [ -f include/oxidex.h ]; then git mv include/oxidex.h include/oxidex.h; fi
 ```
 
 **Step 5: Verify**
 
 ```bash
-rg "exiftool_rs" bindings/ include/ cbindgen.toml
+rg "oxidex" bindings/ include/ cbindgen.toml
 ```
 
 Expected: No matches
@@ -736,8 +736,8 @@ rg -i "exiftool.?rs" build.rs
 **Step 2: Replace any references**
 
 ```bash
-sed -i '' 's/exiftool-rs/oxidex/g' build.rs
-sed -i '' 's/exiftool_rs/oxidex/g' build.rs
+sed -i '' 's/oxidex/oxidex/g' build.rs
+sed -i '' 's/oxidex/oxidex/g' build.rs
 ```
 
 **Step 3: Verify**
@@ -775,8 +775,8 @@ Replace line 1:
 Update GitHub Actions badge URLs (lines 3-4) - keep repo URL as-is:
 
 ```markdown
-[![CI](https://github.com/exiftool-rs/exiftool-rs/workflows/CI/badge.svg)](https://github.com/exiftool-rs/exiftool-rs/actions)
-[![Integration Tests](https://github.com/exiftool-rs/exiftool-rs/workflows/Integration%20Tests%20(ExifTool%20Comparison)/badge.svg)](https://github.com/exiftool-rs/exiftool-rs/actions)
+[![CI](https://github.com/oxidex/oxidex/workflows/CI/badge.svg)](https://github.com/oxidex/oxidex/actions)
+[![Integration Tests](https://github.com/oxidex/oxidex/workflows/Integration%20Tests%20(ExifTool%20Comparison)/badge.svg)](https://github.com/oxidex/oxidex/actions)
 ```
 
 **Step 3: Update project description**
@@ -800,8 +800,8 @@ OxiDex aims to provide a memory-safe, zero-cost abstraction alternative to the P
 **Step 5: Update installation instructions**
 
 Replace all instances of:
-- `cargo install exiftool-rs` → `cargo install oxidex`
-- `exiftool-rs` command → `oxidex`
+- `cargo install oxidex` → `cargo install oxidex`
+- `oxidex` command → `oxidex`
 - Binary names in download URLs
 
 **Step 6: Update usage examples**
@@ -878,7 +878,7 @@ And example:
 
 ```bash
 # Example: Install on Linux (x86_64)
-wget https://github.com/exiftool-rs/exiftool-rs/releases/download/v1.0.0/oxidex-x86_64-linux-musl.tar.gz
+wget https://github.com/oxidex/oxidex/releases/download/v1.0.0/oxidex-x86_64-linux-musl.tar.gz
 tar xzf oxidex-x86_64-linux-musl.tar.gz
 sudo mv oxidex /usr/local/bin/
 oxidex --version
@@ -888,7 +888,7 @@ oxidex --version
 
 ```bash
 # Install from Homebrew formula (source build)
-brew install --build-from-source https://raw.githubusercontent.com/exiftool-rs/exiftool-rs/main/packaging/homebrew/oxidex.rb
+brew install --build-from-source https://raw.githubusercontent.com/oxidex/oxidex/main/packaging/homebrew/oxidex.rb
 
 # Or install from local formula file
 brew install --build-from-source ./packaging/homebrew/oxidex.rb
@@ -920,8 +920,8 @@ Keep ExifTool reference but update project name context as needed.
 **Status**: Stable Release
 **Current Version**: 1.0.0
 **License**: GPL-3.0
-**Documentation**: [User Guide](https://exiftool-rs.github.io/exiftool-rs/) | [API Docs](https://docs.rs/oxidex)
-**Issues**: [GitHub Issues](https://github.com/exiftool-rs/exiftool-rs/issues)
+**Documentation**: [User Guide](https://oxidex.github.io/oxidex/) | [API Docs](https://docs.rs/oxidex)
+**Issues**: [GitHub Issues](https://github.com/oxidex/oxidex/issues)
 ```
 
 **Step 13: Commit**
@@ -946,24 +946,24 @@ Add new section after header:
 ## [Unreleased]
 
 ### Changed
-- **BREAKING**: Project renamed from `exiftool-rs` to `oxidex`
-  - Binary renamed: `exiftool-rs` → `oxidex`
-  - Library renamed: `exiftool_rs` → `oxidex`
+- **BREAKING**: Project renamed from `oxidex` to `oxidex`
+  - Binary renamed: `oxidex` → `oxidex`
+  - Library renamed: `oxidex` → `oxidex`
   - All crates renamed: `exiftool-tags*` → `oxidex-tags*`
   - Install with: `cargo install oxidex`
-  - GitHub repository URL unchanged: `exiftool-rs/exiftool-rs`
+  - GitHub repository URL unchanged: `oxidex/oxidex`
 
 ---
 ```
 
 **Step 2: Update historical references**
 
-Keep historical references to "exiftool-rs" in older changelog entries for accuracy, but add a note at the top:
+Keep historical references to "oxidex" in older changelog entries for accuracy, but add a note at the top:
 
 ```markdown
 # Changelog
 
-> **Note**: This project was renamed from `exiftool-rs` to `oxidex`. Historical entries below use the old name.
+> **Note**: This project was renamed from `oxidex` to `oxidex`. Historical entries below use the old name.
 ```
 
 **Step 3: Commit**
@@ -983,25 +983,25 @@ git commit -m "docs: add rename entry to CHANGELOG"
 **Step 1: Update PACKAGING.md**
 
 ```bash
-sed -i '' 's/exiftool-rs/oxidex/g' PACKAGING.md
-sed -i '' 's/exiftool_rs/oxidex/g' PACKAGING.md
-sed -i '' 's/ExifTool-RS/OxiDex/g' PACKAGING.md
+sed -i '' 's/oxidex/oxidex/g' PACKAGING.md
+sed -i '' 's/oxidex/oxidex/g' PACKAGING.md
+sed -i '' 's/OxiDex/OxiDex/g' PACKAGING.md
 ```
 
 **Step 2: Update RELEASE_CHECKLIST.md**
 
 ```bash
-sed -i '' 's/exiftool-rs/oxidex/g' RELEASE_CHECKLIST.md
-sed -i '' 's/exiftool_rs/oxidex/g' RELEASE_CHECKLIST.md
-sed -i '' 's/ExifTool-RS/OxiDex/g' RELEASE_CHECKLIST.md
+sed -i '' 's/oxidex/oxidex/g' RELEASE_CHECKLIST.md
+sed -i '' 's/oxidex/oxidex/g' RELEASE_CHECKLIST.md
+sed -i '' 's/OxiDex/OxiDex/g' RELEASE_CHECKLIST.md
 ```
 
 **Step 3: Update RELEASE_ANNOUNCEMENT.md**
 
 ```bash
-sed -i '' 's/exiftool-rs/oxidex/g' RELEASE_ANNOUNCEMENT.md
-sed -i '' 's/exiftool_rs/oxidex/g' RELEASE_ANNOUNCEMENT.md
-sed -i '' 's/ExifTool-RS/OxiDex/g' RELEASE_ANNOUNCEMENT.md
+sed -i '' 's/oxidex/oxidex/g' RELEASE_ANNOUNCEMENT.md
+sed -i '' 's/oxidex/oxidex/g' RELEASE_ANNOUNCEMENT.md
+sed -i '' 's/OxiDex/OxiDex/g' RELEASE_ANNOUNCEMENT.md
 ```
 
 **Step 4: Verify**
@@ -1032,12 +1032,12 @@ git commit -m "docs: update packaging and release docs to OxiDex"
 find docs/ -name "*.md" -type f
 ```
 
-**Step 2: Replace exiftool-rs references**
+**Step 2: Replace oxidex references**
 
 ```bash
-find docs/ -name "*.md" -type f -exec sed -i '' 's/exiftool-rs/oxidex/g' {} +
-find docs/ -name "*.md" -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
-find docs/ -name "*.md" -type f -exec sed -i '' 's/ExifTool-RS/OxiDex/g' {} +
+find docs/ -name "*.md" -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
+find docs/ -name "*.md" -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
+find docs/ -name "*.md" -type f -exec sed -i '' 's/OxiDex/OxiDex/g' {} +
 ```
 
 **Step 3: Verify**
@@ -1064,7 +1064,7 @@ git commit -m "docs: update docs/ to OxiDex branding"
 
 **Step 1: Update binary artifact names**
 
-Find and replace all instances of `exiftool-rs` with `oxidex` in artifact names and paths.
+Find and replace all instances of `oxidex` with `oxidex` in artifact names and paths.
 
 **Step 2: Update job names and descriptions**
 
@@ -1089,11 +1089,11 @@ git commit -m "ci: update CI workflow for oxidex rename"
 **Step 1: Update binary output names**
 
 Replace all artifact names:
-- `exiftool-rs-x86_64-linux-musl` → `oxidex-x86_64-linux-musl`
-- `exiftool-rs-aarch64-linux-musl` → `oxidex-aarch64-linux-musl`
-- `exiftool-rs-x86_64-macos` → `oxidex-x86_64-macos`
-- `exiftool-rs-aarch64-macos` → `oxidex-aarch64-macos`
-- `exiftool-rs-x86_64-windows` → `oxidex-x86_64-windows`
+- `oxidex-x86_64-linux-musl` → `oxidex-x86_64-linux-musl`
+- `oxidex-aarch64-linux-musl` → `oxidex-aarch64-linux-musl`
+- `oxidex-x86_64-macos` → `oxidex-x86_64-macos`
+- `oxidex-aarch64-macos` → `oxidex-aarch64-macos`
+- `oxidex-x86_64-windows` → `oxidex-x86_64-windows`
 
 **Step 2: Update release asset names**
 
@@ -1122,13 +1122,13 @@ ls .github/workflows/
 **Step 2: Update each workflow file**
 
 ```bash
-find .github/workflows/ -name "*.yml" -type f -exec sed -i '' 's/exiftool-rs/oxidex/g' {} +
+find .github/workflows/ -name "*.yml" -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
 ```
 
 **Step 3: Verify**
 
 ```bash
-rg "exiftool-rs" .github/workflows/
+rg "oxidex" .github/workflows/
 ```
 
 Expected: No matches (only repository URL should remain)
@@ -1145,13 +1145,13 @@ git commit -m "ci: update all workflows for oxidex rename"
 ## Task 23: Update Homebrew Formula
 
 **Files:**
-- Rename: `packaging/homebrew/exiftool-rs.rb` → `packaging/homebrew/oxidex.rb`
+- Rename: `packaging/homebrew/oxidex.rb` → `packaging/homebrew/oxidex.rb`
 - Modify: `packaging/homebrew/oxidex.rb`
 
 **Step 1: Rename formula file**
 
 ```bash
-git mv packaging/homebrew/exiftool-rs.rb packaging/homebrew/oxidex.rb
+git mv packaging/homebrew/oxidex.rb packaging/homebrew/oxidex.rb
 ```
 
 **Step 2: Update formula class name**
@@ -1166,7 +1166,7 @@ desc "Modern, high-performance Rust implementation of ExifTool for metadata extr
 
 **Step 4: Update binary installation**
 
-Change binary name from `exiftool-rs` to `oxidex`
+Change binary name from `oxidex` to `oxidex`
 
 **Step 5: Update homepage if needed**
 
@@ -1195,8 +1195,8 @@ find packaging/ -type f ! -name "*.rb"
 **Step 2: Update references in all packaging files**
 
 ```bash
-find packaging/ -type f -exec sed -i '' 's/exiftool-rs/oxidex/g' {} +
-find packaging/ -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
+find packaging/ -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
+find packaging/ -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
 ```
 
 **Step 3: Verify**
@@ -1230,8 +1230,8 @@ find scripts/ -type f
 **Step 2: Update script contents**
 
 ```bash
-find scripts/ -type f -exec sed -i '' 's/exiftool-rs/oxidex/g' {} +
-find scripts/ -type f -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
+find scripts/ -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
+find scripts/ -type f -exec sed -i '' 's/oxidex/oxidex/g' {} +
 ```
 
 **Step 3: Verify**
@@ -1259,8 +1259,8 @@ git commit -m "build: update scripts for oxidex rename"
 **Step 1: Update binary references**
 
 ```bash
-sed -i '' 's/exiftool-rs/oxidex/g' justfile
-sed -i '' 's/exiftool_rs/oxidex/g' justfile
+sed -i '' 's/oxidex/oxidex/g' justfile
+sed -i '' 's/oxidex/oxidex/g' justfile
 ```
 
 **Step 2: Verify**
@@ -1294,7 +1294,7 @@ rg -i "exiftool" Cross.toml
 **Step 2: Update if needed**
 
 ```bash
-sed -i '' 's/exiftool-rs/oxidex/g' Cross.toml
+sed -i '' 's/oxidex/oxidex/g' Cross.toml
 ```
 
 **Step 3: Commit if changed**
@@ -1314,14 +1314,14 @@ git commit -m "build: update Cross.toml for oxidex"
 **Step 1: Update fuzz Cargo.toml**
 
 ```bash
-sed -i '' 's/exiftool-rs/oxidex/g' fuzz/Cargo.toml
-sed -i '' 's/exiftool_rs/oxidex/g' fuzz/Cargo.toml
+sed -i '' 's/oxidex/oxidex/g' fuzz/Cargo.toml
+sed -i '' 's/oxidex/oxidex/g' fuzz/Cargo.toml
 ```
 
 **Step 2: Update fuzz target sources**
 
 ```bash
-find fuzz/fuzz_targets/ -name "*.rs" -exec sed -i '' 's/exiftool_rs/oxidex/g' {} +
+find fuzz/fuzz_targets/ -name "*.rs" -exec sed -i '' 's/oxidex/oxidex/g' {} +
 ```
 
 **Step 3: Verify**
@@ -1420,7 +1420,7 @@ Search for and update help text that mentions the old name.
 ./target/debug/oxidex --version
 ```
 
-Expected: Shows "oxidex" not "exiftool-rs"
+Expected: Shows "oxidex" not "oxidex"
 
 **Step 5: Commit**
 
@@ -1558,7 +1558,7 @@ Expected: Documentation displays correctly with OxiDex branding
 **Files:**
 - Verify: All files
 
-**Step 1: Search for exiftool-rs in all files**
+**Step 1: Search for oxidex in all files**
 
 ```bash
 rg -i "exiftool.?rs" --type-not lock
@@ -1580,7 +1580,7 @@ Update any files that slipped through.
 
 ```bash
 git add -A
-git commit -m "refactor: fix remaining exiftool-rs references"
+git commit -m "refactor: fix remaining oxidex references"
 ```
 
 ---
@@ -1636,7 +1636,7 @@ After completing all tasks:
 - [ ] Release binary builds and runs
 - [ ] CI/CD workflows updated
 - [ ] Package metadata updated
-- [ ] No remaining "exiftool-rs" or "exiftool_rs" references (except approved locations)
+- [ ] No remaining "oxidex" or "oxidex" references (except approved locations)
 - [ ] Git history clean with logical commits
 
 ## Next Steps
@@ -1647,14 +1647,14 @@ After merge to main:
 2. Push tag: `git push origin v1.1.0`
 3. Verify GitHub Actions release workflow runs
 4. Publish crates to crates.io in dependency order
-5. Deprecate old `exiftool-rs` crate on crates.io
+5. Deprecate old `oxidex` crate on crates.io
 6. Update project documentation/website
 7. Announce rename to community
 
 ## Notes
 
 - **IMPORTANT**: Keep all references to "ExifTool" (the Perl tool) - we're compatible with it
-- **IMPORTANT**: Keep GitHub repository URL as `exiftool-rs/exiftool-rs`
+- **IMPORTANT**: Keep GitHub repository URL as `oxidex/oxidex`
 - **IMPORTANT**: Verify each change doesn't break functionality
 - Test thoroughly at each major milestone
 - Commit frequently with clear messages

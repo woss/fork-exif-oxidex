@@ -763,8 +763,8 @@ Add to `tests/integration/jpeg_tests.rs`:
 ```rust
 #[test]
 fn test_jpeg_with_iptc_metadata() {
-    use exiftool_rs::parsers::jpeg::iptc_parser::extract_iptc_from_segments;
-    use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
+    use oxidex::parsers::jpeg::iptc_parser::extract_iptc_from_segments;
+    use oxidex::parsers::jpeg::segment_parser::parse_segments;
 
     // Create minimal JPEG with APP13 (IPTC) segment
     let mut jpeg_data = Vec::new();
@@ -916,7 +916,7 @@ Create `tests/integration/iptc_integration_test.rs`:
 ```rust
 //! End-to-end integration tests for IPTC metadata extraction
 
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 #[test]
@@ -1044,7 +1044,7 @@ Download IPTC samples and test:
 mkdir -p /tmp/iptc_samples
 cd /tmp/iptc_samples
 
-# Run exiftool-rs on samples
+# Run oxidex on samples
 for file in *.jpg; do
     echo "=== Testing: $file ==="
     cargo run --release -- "$file" | grep IPTC
@@ -1062,7 +1062,7 @@ for file in /tmp/iptc_samples/*.jpg; do
     echo "Perl ExifTool:"
     exiftool -IPTC:all "$file"
     echo ""
-    echo "exiftool-rs:"
+    echo "oxidex:"
     cargo run --release -- "$file" | grep IPTC
     echo "---"
 done

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Implement comprehensive integration testing infrastructure comparing ExifTool-RS against Perl ExifTool with automated baseline generation, error handling tests, performance benchmarks, and CI regression detection.
+**Goal:** Implement comprehensive integration testing infrastructure comparing OxiDex against Perl ExifTool with automated baseline generation, error handling tests, performance benchmarks, and CI regression detection.
 
 **Architecture:** Multi-phase approach covering infrastructure setup (Git LFS, CI), test corpus validation, test implementation (comparison, error handling), benchmarking (Criterion + Hyperfine), and documentation. Uses existing 102+ test fixtures with manifest tracking.
 
@@ -60,10 +60,10 @@ Run: `mkdir -p src/bin`
 **Step 2: Write baseline generation tool**
 
 ```rust
-//! Baseline Generation Tool for ExifTool-RS Integration Tests
+//! Baseline Generation Tool for OxiDex Integration Tests
 //!
 //! Generates baseline metadata outputs by executing both Perl ExifTool
-//! and ExifTool-RS on all test fixtures, comparing outputs, and creating
+//! and OxiDex on all test fixtures, comparing outputs, and creating
 //! baseline_metadata.json with match rates and discrepancies.
 
 use serde::{Deserialize, Serialize};
@@ -77,7 +77,7 @@ use std::process::Command;
 struct BaselineMetadata {
     version: String,
     exiftool_version: String,
-    exiftool_rs_version: String,
+    oxidex_version: String,
     generated_at: String,
     images: Vec<ImageBaseline>,
     overall_match_rate: f64,
@@ -137,17 +137,17 @@ fn get_perl_exiftool_output(file_path: &Path) -> Result<String, String> {
         .map_err(|e| format!("Invalid UTF-8: {}", e))
 }
 
-fn get_exiftool_rs_output(file_path: &Path) -> Result<String, String> {
+fn get_oxidex_output(file_path: &Path) -> Result<String, String> {
     let cargo_target_dir = std::env::var("CARGO_TARGET_DIR")
         .unwrap_or_else(|_| "target".to_string());
 
     let binary_path = PathBuf::from(&cargo_target_dir)
         .join("release")
-        .join("exiftool-rs");
+        .join("oxidex");
 
     if !binary_path.exists() {
         return Err(format!(
-            "ExifTool-RS binary not found at {:?}. Run 'cargo build --release' first.",
+            "OxiDex binary not found at {:?}. Run 'cargo build --release' first.",
             binary_path
         ));
     }
@@ -156,10 +156,10 @@ fn get_exiftool_rs_output(file_path: &Path) -> Result<String, String> {
         .arg("--json")
         .arg(file_path)
         .output()
-        .map_err(|e| format!("Failed to execute ExifTool-RS: {}", e))?;
+        .map_err(|e| format!("Failed to execute OxiDex: {}", e))?;
 
     if !output.status.success() {
-        return Err(format!("ExifTool-RS failed on {:?}", file_path));
+        return Err(format!("OxiDex failed on {:?}", file_path));
     }
 
     String::from_utf8(output.stdout)
@@ -282,7 +282,7 @@ fn find_test_images(dir: &Path) -> Result<Vec<PathBuf>, String> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("ExifTool-RS Baseline Generation Tool");
+    println!("OxiDex Baseline Generation Tool");
     println!("====================================\n");
 
     if !is_exiftool_available() {
@@ -313,7 +313,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         print!("[{}/{}] Processing: {} ... ", idx + 1, test_images.len(), relative_path);
 
-        match (get_perl_exiftool_output(image_path), get_exiftool_rs_output(image_path)) {
+        match (get_perl_exiftool_output(image_path), get_oxidex_output(image_path)) {
             (Ok(perl_json), Ok(rust_json)) => {
                 match compare_outputs(&perl_json, &rust_json) {
                     Ok((perl_tags, _, match_rate, discrepancies)) => {
@@ -347,7 +347,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let baseline = BaselineMetadata {
         version: "1.0.0".to_string(),
         exiftool_version,
-        exiftool_rs_version: env!("CARGO_PKG_VERSION").to_string(),
+        oxidex_version: env!("CARGO_PKG_VERSION").to_string(),
         generated_at: chrono::Utc::now().to_rfc3339(),
         images: image_baselines,
         overall_match_rate,
@@ -393,9 +393,9 @@ git commit -m "feat: add baseline generation tool for integration tests"
 //!
 //! Validates graceful degradation for invalid inputs per integration test plan.
 
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::format_detector::detect_format;
-use exiftool_rs::parsers::tiff::file_parser::parse_tiff_file;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::format_detector::detect_format;
+use oxidex::parsers::tiff::file_parser::parse_tiff_file;
 use std::io;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -553,7 +553,7 @@ git commit -m "test: add comprehensive error handling integration tests"
 //! End-to-end performance tests per integration test plan Section 6.4
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 fn bench_single_extraction(c: &mut Criterion) {
@@ -739,7 +739,7 @@ cargo bench
 ```bash
 # Get detailed comparison
 exiftool -json -a -G1 tests/fixtures/failing/image.jpg > perl.json
-target/release/exiftool-rs --json tests/fixtures/failing/image.jpg > rust.json
+target/release/oxidex --json tests/fixtures/failing/image.jpg > rust.json
 
 # Visual diff
 diff -u perl.json rust.json

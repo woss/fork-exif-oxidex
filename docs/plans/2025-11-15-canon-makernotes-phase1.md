@@ -463,7 +463,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 Create or modify `tests/integration/exif_makernotes_tests.rs`:
 
 ```rust
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::io::Cursor;
 
 #[test]
@@ -587,7 +587,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ```rust
 //! Real-world Canon MakerNote extraction test
 
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 #[test]

@@ -7,14 +7,14 @@
 ## Overview & Scope
 
 ### Objective
-Complete rebrand from "exiftool-rs" to "oxidex" while maintaining ExifTool compatibility messaging and preserving git history.
+Complete rebrand from "oxidex" to "oxidex" while maintaining ExifTool compatibility messaging and preserving git history.
 
 ### Scope of Changes
 
 **Crate Renaming**:
-- Main crate: `exiftool-rs` → `oxidex`
-- Library name: `exiftool_rs` → `oxidex`
-- Binary name: `exiftool-rs` → `oxidex`
+- Main crate: `oxidex` → `oxidex`
+- Library name: `oxidex` → `oxidex`
+- Binary name: `oxidex` → `oxidex`
 - Tag crates: `exiftool-tags*` → `oxidex-tags*`
 
 **What Changes**:
@@ -26,7 +26,7 @@ Complete rebrand from "exiftool-rs" to "oxidex" while maintaining ExifTool compa
 - Build scripts and configuration files
 
 **What Stays the Same**:
-- GitHub repository URL: `exiftool-rs/exiftool-rs` (no change)
+- GitHub repository URL: `oxidex/oxidex` (no change)
 - Git history (fully preserved)
 - License (GPL-3.0)
 - Core functionality and API design
@@ -40,10 +40,10 @@ Complete rebrand from "exiftool-rs" to "oxidex" while maintaining ExifTool compa
 The project has 8 crates total that need renaming:
 
 **Main Crate**:
-- `exiftool-rs` → `oxidex`
+- `oxidex` → `oxidex`
   - Package name: `oxidex`
-  - Library name: `oxidex` (was `exiftool_rs`)
-  - Binary name: `oxidex` (was `exiftool-rs`)
+  - Library name: `oxidex` (was `oxidex`)
+  - Binary name: `oxidex` (was `oxidex`)
 
 **Tag Database Crates** (7 crates):
 - `exiftool-tags` → `oxidex-tags`
@@ -117,24 +117,24 @@ The subdirectory names should match the crate names:
 ### Rust Source Code Updates
 
 **Module and Crate Names**:
-- All `use exiftool_rs::*` → `use oxidex::*`
+- All `use oxidex::*` → `use oxidex::*`
 - All `use exiftool_tags::*` → `use oxidex_tags::*`
 - Any `extern crate` declarations (if any exist)
 - Doc comments that reference the crate name
 
 **FFI/C Bindings** (`bindings/` directory):
-- Function prefixes: `exiftool_rs_*` → `oxidex_*`
-- Header file names: `exiftool_rs.h` → `oxidex.h`
+- Function prefixes: `oxidex_*` → `oxidex_*`
+- Header file names: `oxidex.h` → `oxidex.h`
 - Generated binding code and examples
 
 **String Literals and Constants**:
 - Version strings and banners in CLI output
-- Error messages mentioning "exiftool-rs"
+- Error messages mentioning "oxidex"
 - User-facing help text and usage information
 - Any hardcoded paths or identifiers
 
 **Comments and Documentation**:
-- Inline code comments mentioning "exiftool-rs"
+- Inline code comments mentioning "oxidex"
 - Doc comments (`///` and `//!`)
 - Module-level documentation
 - Example code in documentation
@@ -144,18 +144,18 @@ The subdirectory names should match the crate names:
 - Integration test references
 - Benchmark names and descriptions
 
-**Important Note**: We keep references to "ExifTool" (the original Perl tool) for compatibility messaging, but remove references to "exiftool-rs" (our old name).
+**Important Note**: We keep references to "ExifTool" (the original Perl tool) for compatibility messaging, but remove references to "oxidex" (our old name).
 
 ## Documentation Updates
 
 ### User-Facing Documentation
 
 **README.md** (comprehensive rewrite):
-- Title: "ExifTool-RS" → "OxiDex"
+- Title: "OxiDex" → "OxiDex"
 - Badges: Update GitHub workflow badge URLs (keep repo URL as-is)
-- Installation instructions: `cargo install exiftool-rs` → `cargo install oxidex`
-- CLI examples: `exiftool-rs photo.jpg` → `oxidex photo.jpg`
-- Library examples: `use exiftool_rs::*` → `use oxidex::*`
+- Installation instructions: `cargo install oxidex` → `cargo install oxidex`
+- CLI examples: `oxidex photo.jpg` → `oxidex photo.jpg`
+- Library examples: `use oxidex::*` → `use oxidex::*`
 - Download URLs: Update binary artifact names
 - Project description: Maintain ExifTool compatibility messaging
 
@@ -164,7 +164,7 @@ The subdirectory names should match the crate names:
 - `PACKAGING.md` - Update package names and paths
 - `RELEASE_CHECKLIST.md` - Update release procedures
 - `RELEASE_ANNOUNCEMENT.md` - Rewrite for oxidex branding
-- `LICENSE` - Update copyright holder if needed (currently "ExifTool-RS Contributors")
+- `LICENSE` - Update copyright holder if needed (currently "OxiDex Contributors")
 
 **docs/ Directory**:
 - All markdown files in `docs/` referencing the project name
@@ -185,13 +185,13 @@ Keep ExifTool compatibility messaging prominent:
 
 **CI Workflow** (`ci.yml`):
 - Job names and descriptions
-- Binary artifact names: `exiftool-rs` → `oxidex`
+- Binary artifact names: `oxidex` → `oxidex`
 - Cache keys (may include crate names)
 - Test commands and benchmark names
 - Coverage report titles
 
 **Release Workflow** (`release.yml`):
-- Binary output names: `exiftool-rs-x86_64-linux-musl` → `oxidex-x86_64-linux-musl`
+- Binary output names: `oxidex-x86_64-linux-musl` → `oxidex-x86_64-linux-musl`
 - Artifact upload names
 - Release asset naming
 - Checksum file names (SHA256SUMS)
@@ -203,17 +203,17 @@ Keep ExifTool compatibility messaging prominent:
 ### Package Metadata
 
 **Debian Package** (`Cargo.toml` metadata.deb section):
-- Package name: `exiftool-rs` → `oxidex`
-- Binary path: `/usr/bin/exiftool-rs` → `/usr/bin/oxidex`
-- Documentation paths: `/usr/share/doc/exiftool-rs/` → `/usr/share/doc/oxidex/`
-- Maintainer email: `exiftool-rs@example.com` → update as needed
+- Package name: `oxidex` → `oxidex`
+- Binary path: `/usr/bin/oxidex` → `/usr/bin/oxidex`
+- Documentation paths: `/usr/share/doc/oxidex/` → `/usr/share/doc/oxidex/`
+- Maintainer email: `oxidex@example.com` → update as needed
 
 **RPM Package** (metadata.generate-rpm section):
 - Same changes as Debian package
 - Asset paths and destinations
 
 **Homebrew Formula** (`packaging/homebrew/`):
-- Formula file: `exiftool-rs.rb` → `oxidex.rb`
+- Formula file: `oxidex.rb` → `oxidex.rb`
 - Formula class name: `ExiftoolRs` → `Oxidex`
 - Binary installation paths
 - Repository URLs (keep as-is since GitHub URLs don't change)
@@ -239,7 +239,7 @@ Keep ExifTool compatibility messaging prominent:
 3. Publish `oxidex` main crate (depends on `oxidex-tags`)
 
 **Old Crate Deprecation**:
-1. Publish final version of `exiftool-rs` with deprecation notice:
+1. Publish final version of `oxidex` with deprecation notice:
    - Update README: "⚠️ This crate has been renamed to `oxidex`. Please update your dependencies."
    - Add deprecation to crate description
    - Point to new crate in all documentation
@@ -282,9 +282,9 @@ Keep ExifTool compatibility messaging prominent:
 **Documentation Verification**:
 1. Run `cargo doc --all --no-deps` - verify docs build
 2. Check for broken internal links
-3. Search for remaining "exiftool-rs" or "exiftool_rs" references:
+3. Search for remaining "oxidex" or "oxidex" references:
    - `rg -i "exiftool.?rs" --type md`
-   - `rg "exiftool_rs" --type rust`
+   - `rg "oxidex" --type rust`
    - Exclude legitimate references to "ExifTool" (the Perl tool)
 
 **CI/CD Validation**:
@@ -306,7 +306,7 @@ Keep ExifTool compatibility messaging prominent:
 
 ## Decision Log
 
-1. **GitHub URLs**: Keep repository URL as `exiftool-rs/exiftool-rs` to preserve links and history
+1. **GitHub URLs**: Keep repository URL as `oxidex/oxidex` to preserve links and history
 2. **Crates.io**: Publish new crates with oxidex names, deprecate old ones
 3. **CLI Command**: Rename to `oxidex` (no backwards compatibility alias)
 4. **Documentation**: Complete rebrand to oxidex in all documentation

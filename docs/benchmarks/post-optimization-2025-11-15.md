@@ -194,7 +194,7 @@ TagValue::Byte(Cow::Borrowed(data))
 
 **Note:** The project structure uses a library crate pattern without standalone examples. Future flamegraph analysis should:
 1. Create a minimal example binary for profiling
-2. Use `cargo flamegraph --bin exiftool-rs` if a binary target is added
+2. Use `cargo flamegraph --bin oxidex` if a binary target is added
 3. Profile against representative workloads (JPEG, TIFF, PNG files)
 
 **Expected improvements from optimizations:**
@@ -266,7 +266,7 @@ cargo bench --bench integration_benchmarks -- --baseline pre-optimization
 cargo build --release
 
 # Measure size
-ls -lh target/release/exiftool-rs
+ls -lh target/release/oxidex
 ```
 
 ### Test Verification

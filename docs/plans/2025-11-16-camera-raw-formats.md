@@ -170,8 +170,8 @@ git commit -m "feat: add support for 40+ camera raw file extensions
 Create `tests/raw_format_detection.rs`:
 
 ```rust
-use exiftool_rs::parsers::raw::detect_raw_format;
-use exiftool_rs::parsers::raw::RawFormat;
+use oxidex::parsers::raw::detect_raw_format;
+use oxidex::parsers::raw::RawFormat;
 
 #[test]
 fn test_detect_canon_cr2() {
@@ -486,7 +486,7 @@ Add to `tests/integration/format_detection.rs`:
 ```rust
 #[test]
 fn test_detect_camera_raw_formats() {
-    use exiftool_rs::parsers::detect_format;
+    use oxidex::parsers::detect_format;
 
     // Canon CR2
     let cr2_data = b"II\x2a\x00\x10\x00\x00\x00CR\x02\x00";
@@ -596,8 +596,8 @@ git commit -m "feat: integrate raw format detection into main format detection
 Create `tests/raw_metadata_parsing.rs`:
 
 ```rust
-use exiftool_rs::parsers::raw::parse_raw_metadata;
-use exiftool_rs::core::MetadataMap;
+use oxidex::parsers::raw::parse_raw_metadata;
+use oxidex::core::MetadataMap;
 use std::fs;
 
 #[test]
@@ -924,7 +924,7 @@ Add to `tests/integration/read_metadata.rs`:
 ```rust
 #[test]
 fn test_read_metadata_from_dng() {
-    use exiftool_rs::core::operations::read_metadata;
+    use oxidex::core::operations::read_metadata;
     use std::path::Path;
 
     let path = Path::new("tests/fixtures/raw/sample.dng");
@@ -936,7 +936,7 @@ fn test_read_metadata_from_dng() {
 
 #[test]
 fn test_read_metadata_handles_unknown_raw() {
-    use exiftool_rs::core::operations::read_metadata;
+    use oxidex::core::operations::read_metadata;
     use std::path::Path;
 
     // Non-existent raw format should fail gracefully
@@ -1038,7 +1038,7 @@ git commit -m "feat: integrate raw format parsing into read_metadata
 
 ```bash
 cargo build --release
-./target/release/exiftool-rs tests/fixtures/raw/sample.dng
+./target/release/oxidex tests/fixtures/raw/sample.dng
 ```
 
 Expected: Should display metadata (verify it works)
@@ -1075,7 +1075,7 @@ impl OutputFormatter for HumanReadableFormatter {
 **Step 3: Test CLI output**
 
 ```bash
-./target/release/exiftool-rs tests/fixtures/raw/sample.dng
+./target/release/oxidex tests/fixtures/raw/sample.dng
 ```
 
 Expected: Should show "Camera Raw File" header
@@ -1133,7 +1133,7 @@ Create `docs/formats/camera-raw.md`:
 ```markdown
 # Camera Raw Format Support
 
-ExifTool-RS supports 40+ camera raw file formats from major manufacturers.
+OxiDex supports 40+ camera raw file formats from major manufacturers.
 
 ## Supported Formats
 
@@ -1158,7 +1158,7 @@ ExifTool-RS supports 40+ camera raw file formats from major manufacturers.
 
 ## Technical Details
 
-Most camera raw formats are based on TIFF/EXIF structure with manufacturer-specific extensions in MakerNote fields. ExifTool-RS leverages the existing TIFF parser and adds format-specific handling for each manufacturer.
+Most camera raw formats are based on TIFF/EXIF structure with manufacturer-specific extensions in MakerNote fields. OxiDex leverages the existing TIFF parser and adds format-specific handling for each manufacturer.
 
 ## Metadata Extraction
 
@@ -1174,16 +1174,16 @@ Raw files typically contain:
 
 \`\`\`bash
 # Read metadata from Canon CR2
-exiftool-rs photo.cr2
+oxidex photo.cr2
 
 # Extract specific tags
-exiftool-rs -EXIF:Make -EXIF:Model -Canon:SerialNumber photo.cr2
+oxidex -EXIF:Make -EXIF:Model -Canon:SerialNumber photo.cr2
 
 # Batch process raw files
-exiftool-rs -r /path/to/raw/photos/
+oxidex -r /path/to/raw/photos/
 
 # JSON output
-exiftool-rs -json photo.nef
+oxidex -json photo.nef
 \`\`\`
 ```
 
@@ -1212,8 +1212,8 @@ Create `tests/raw_comprehensive.rs`:
 ```rust
 //! Comprehensive tests for camera raw format support
 
-use exiftool_rs::parsers::raw::{detect_raw_format, RawFormat};
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::parsers::raw::{detect_raw_format, RawFormat};
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 #[test]
@@ -1265,7 +1265,7 @@ fn test_all_formats_handled_gracefully() {
 
     for format in formats {
         let data = b"II\x2a\x00\x08\x00\x00\x00"; // Minimal TIFF
-        let result = exiftool_rs::parsers::raw::parse_raw_metadata(data, format);
+        let result = oxidex::parsers::raw::parse_raw_metadata(data, format);
 
         // Should either succeed or fail gracefully (not panic)
         assert!(result.is_ok() || result.is_err(),
@@ -1331,7 +1331,7 @@ Create `benches/raw_parsing_bench.rs`:
 
 ```rust
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use exiftool_rs::parsers::raw::{detect_raw_format, parse_raw_metadata, RawFormat};
+use oxidex::parsers::raw::{detect_raw_format, parse_raw_metadata, RawFormat};
 
 fn bench_format_detection(c: &mut Criterion) {
     let cr2_data = b"II\x2a\x00\x10\x00\x00\x00CR\x02\x00\x00\x00\x00\x00";
@@ -1379,13 +1379,13 @@ Expected: All tests pass
 
 ```bash
 # Test with DNG
-./target/release/exiftool-rs tests/fixtures/raw/sample.dng
+./target/release/oxidex tests/fixtures/raw/sample.dng
 
 # Test recursive processing
-./target/release/exiftool-rs -r tests/fixtures/raw/
+./target/release/oxidex -r tests/fixtures/raw/
 
 # Test JSON output
-./target/release/exiftool-rs -json tests/fixtures/raw/sample.dng
+./target/release/oxidex -json tests/fixtures/raw/sample.dng
 ```
 
 Expected: All commands work correctly
@@ -1435,9 +1435,9 @@ After completing all tasks:
 
 3. **CLI verification:**
    ```bash
-   ./target/release/exiftool-rs --help | grep -A 5 "Supported"
-   ./target/release/exiftool-rs tests/fixtures/raw/sample.dng
-   ./target/release/exiftool-rs -r tests/fixtures/
+   ./target/release/oxidex --help | grep -A 5 "Supported"
+   ./target/release/oxidex tests/fixtures/raw/sample.dng
+   ./target/release/oxidex -r tests/fixtures/
    ```
 
 4. **Documentation verification:**

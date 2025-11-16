@@ -701,7 +701,7 @@ Create `tests/integration/canon_makernotes_phase3_tests.rs`:
 //!
 //! Tests lens database, AFInfo, and FileInfo array parsing
 
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::core::operations::read_metadata;
 use std::path::Path;
 
 #[test]
@@ -714,7 +714,7 @@ fn test_canon_lens_database_integration() {
     // In production, this would be tested with real Canon images.
 
     // For now, verify that the lens database module compiles and links
-    use exiftool_rs::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
 
     // Test common lens lookups
     assert_eq!(
@@ -744,7 +744,7 @@ fn test_canon_phase3_tags_extracted() {
 #[test]
 fn test_lens_database_coverage() {
     // Verify lens database has good coverage
-    use exiftool_rs::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::canon_lens_database::lookup_lens_name;
 
     // Test coverage of major lens categories
     let test_lenses = vec![

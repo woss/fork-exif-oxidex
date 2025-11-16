@@ -1,6 +1,6 @@
 # Test Failure Triage Process
 
-This document provides a systematic process for investigating and resolving test failures in ExifTool-RS, particularly integration tests comparing against Perl ExifTool.
+This document provides a systematic process for investigating and resolving test failures in OxiDex, particularly integration tests comparing against Perl ExifTool.
 
 ## Quick Reference
 
@@ -36,7 +36,7 @@ cargo test --test integration error_handling
 ```bash
 # Get detailed comparison
 exiftool -json -a -G1 tests/fixtures/path/to/failing/image.jpg > perl.json
-target/release/exiftool-rs --json tests/fixtures/path/to/failing/image.jpg > rust.json
+target/release/oxidex --json tests/fixtures/path/to/failing/image.jpg > rust.json
 
 # Visual diff
 diff -u perl.json rust.json

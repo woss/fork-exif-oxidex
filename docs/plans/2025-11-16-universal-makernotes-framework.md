@@ -925,7 +925,7 @@ pub mod nikon_lens_database;
 ```rust
 #[test]
 fn test_nikon_lens_database_integration() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
 
     assert_eq!(
         lookup_lens_name(147),
@@ -939,8 +939,8 @@ fn test_nikon_lens_database_integration() {
 
 #[test]
 fn test_nikon_parser_trait() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon::NikonParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::nikon::NikonParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = NikonParser;
     assert_eq!(parser.manufacturer_name(), "Nikon");

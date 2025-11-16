@@ -1,6 +1,6 @@
 # Troubleshooting
 
-This chapter covers common issues, error messages, performance tips, and debugging strategies for ExifTool-RS.
+This chapter covers common issues, error messages, performance tips, and debugging strategies for OxiDex.
 
 ## Common Errors
 
@@ -13,12 +13,12 @@ This chapter covers common issues, error messages, performance tips, and debuggi
 1. **Verify the path**:
    ```bash
    ls photo.jpg  # Check file exists
-   exiftool-rs photo.jpg
+   oxidex photo.jpg
    ```
 
 2. **Use absolute paths** if relative paths aren't working:
    ```bash
-   exiftool-rs /full/path/to/photo.jpg
+   oxidex /full/path/to/photo.jpg
    ```
 
 3. **Check file permissions**:
@@ -30,7 +30,7 @@ This chapter covers common issues, error messages, performance tips, and debuggi
 
 ### "Error: Unsupported file format"
 
-**Cause**: The file format is not yet implemented in ExifTool-RS.
+**Cause**: The file format is not yet implemented in OxiDex.
 
 **Solutions:**
 
@@ -45,10 +45,10 @@ This chapter covers common issues, error messages, performance tips, and debuggi
    ```bash
    # Example: Convert HEIC to JPEG
    sips -s format jpeg photo.heic --out photo.jpg
-   exiftool-rs photo.jpg
+   oxidex photo.jpg
    ```
 
-4. **Request format support**: [Open a GitHub issue](https://github.com/exiftool-rs/exiftool-rs/issues) to request the format.
+4. **Request format support**: [Open a GitHub issue](https://github.com/oxidex/oxidex/issues) to request the format.
 
 ### "Error: File is read-only"
 
@@ -60,24 +60,24 @@ This chapter covers common issues, error messages, performance tips, and debuggi
    ```bash
    # Linux/macOS
    chmod u+w photo.jpg
-   exiftool-rs -EXIF:Artist="John Doe" photo.jpg
+   oxidex -EXIF:Artist="John Doe" photo.jpg
    ```
 
    ```powershell
    # Windows PowerShell
    attrib -r photo.jpg
-   exiftool-rs -EXIF:Artist="John Doe" photo.jpg
+   oxidex -EXIF:Artist="John Doe" photo.jpg
    ```
 
 2. **Use `--readonly` flag** if you only want to read metadata:
    ```bash
-   exiftool-rs --readonly photo.jpg
+   oxidex --readonly photo.jpg
    ```
 
 3. **Work on a copy**:
    ```bash
    cp photo.jpg photo_copy.jpg
-   exiftool-rs -EXIF:Artist="John Doe" photo_copy.jpg
+   oxidex -EXIF:Artist="John Doe" photo_copy.jpg
    ```
 
 ### "Error: Invalid value for TAG"
@@ -95,19 +95,19 @@ This chapter covers common issues, error messages, performance tips, and debuggi
 2. **Use correct format**:
    ```bash
    # Wrong
-   exiftool-rs -EXIF:ISO="four hundred" photo.jpg  # Error
+   oxidex -EXIF:ISO="four hundred" photo.jpg  # Error
 
    # Correct
-   exiftool-rs -EXIF:ISO=400 photo.jpg  # Success
+   oxidex -EXIF:ISO=400 photo.jpg  # Success
    ```
 
 3. **Check date/time format**:
    ```bash
    # Wrong
-   exiftool-rs -EXIF:DateTime="2025-01-15 14:30" photo.jpg
+   oxidex -EXIF:DateTime="2025-01-15 14:30" photo.jpg
 
    # Correct (EXIF uses ":" separator)
-   exiftool-rs -EXIF:DateTime="2025:01:15 14:30:00" photo.jpg
+   oxidex -EXIF:DateTime="2025:01:15 14:30:00" photo.jpg
    ```
 
 ### "Error: Cannot modify file in read-only mode"
@@ -120,10 +120,10 @@ Remove the `--readonly` flag:
 
 ```bash
 # Wrong
-exiftool-rs --readonly -EXIF:Artist="John" photo.jpg  # Error
+oxidex --readonly -EXIF:Artist="John" photo.jpg  # Error
 
 # Correct
-exiftool-rs -EXIF:Artist="John" photo.jpg  # Success
+oxidex -EXIF:Artist="John" photo.jpg  # Success
 ```
 
 ### "Error: Failed to create backup file"
@@ -145,7 +145,7 @@ exiftool-rs -EXIF:Artist="John" photo.jpg  # Success
 
 3. **Don't use `--backup`** if backups aren't needed:
    ```bash
-   exiftool-rs -EXIF:Artist="John" photo.jpg  # No backup
+   oxidex -EXIF:Artist="John" photo.jpg  # No backup
    ```
 
 ### "Error: Parse error at offset X"
@@ -208,11 +208,11 @@ Debug builds are 2-5x slower than release builds:
 ```bash
 # Slow (debug build)
 cargo build
-./target/debug/exiftool-rs photo.jpg
+./target/debug/oxidex photo.jpg
 
 # Fast (release build)
 cargo build --release
-./target/release/exiftool-rs photo.jpg
+./target/release/oxidex photo.jpg
 ```
 
 **Release Build Optimizations:**
@@ -228,29 +228,29 @@ Process multiple files in parallel:
 ```bash
 # Slow (sequential)
 for file in *.jpg; do
-  exiftool-rs "$file"
+  oxidex "$file"
 done
 
 # Fast (parallel with -r flag)
-exiftool-rs -r .
+oxidex -r .
 ```
 
-ExifTool-RS automatically uses all CPU cores for batch processing.
+OxiDex automatically uses all CPU cores for batch processing.
 
 #### 3. Memory-Mapped I/O
 
-ExifTool-RS automatically uses memory-mapped I/O for files > 1MB. No configuration needed!
+OxiDex automatically uses memory-mapped I/O for files > 1MB. No configuration needed!
 
 #### 4. Avoid Unnecessary Operations
 
 ```bash
 # Slow (reads file twice)
-exiftool-rs photo.jpg > metadata.txt
-exiftool-rs -j photo.jpg > metadata.json
+oxidex photo.jpg > metadata.txt
+oxidex -j photo.jpg > metadata.json
 
 # Fast (read once, output both formats)
-exiftool-rs photo.jpg | tee metadata.txt
-exiftool-rs -j photo.jpg > metadata.json
+oxidex photo.jpg | tee metadata.txt
+oxidex -j photo.jpg > metadata.json
 ```
 
 ### High Memory Usage
@@ -265,7 +265,7 @@ exiftool-rs -j photo.jpg > metadata.json
 
 2. **Many files**: Processing thousands of files in parallel
    - **Solution**: Limit parallelism or process in batches
-   - ExifTool-RS automatically limits parallel threads
+   - OxiDex automatically limits parallel threads
 
 3. **Memory leaks**: Rare, but possible
    - **Solution**: Report issue with reproduction steps
@@ -274,13 +274,13 @@ exiftool-rs -j photo.jpg > metadata.json
 
 ```bash
 # Linux
-top -p $(pgrep exiftool-rs)
+top -p $(pgrep oxidex)
 
 # macOS
-top | grep exiftool-rs
+top | grep oxidex
 
 # Windows Task Manager
-# Look for exiftool-rs.exe
+# Look for oxidex.exe
 ```
 
 ### Slow Compilation
@@ -316,7 +316,7 @@ top | grep exiftool-rs
 
 ### Enable Verbose Output
 
-ExifTool-RS doesn't have a verbose flag yet, but you can use:
+OxiDex doesn't have a verbose flag yet, but you can use:
 
 ```bash
 # Check file exists
@@ -326,22 +326,22 @@ ls -lh photo.jpg
 file photo.jpg
 
 # Try reading
-exiftool-rs photo.jpg
+oxidex photo.jpg
 ```
 
 ### Compare with Original ExifTool
 
-If ExifTool-RS produces unexpected results:
+If OxiDex produces unexpected results:
 
 ```bash
 # Original ExifTool
 exiftool photo.jpg > exiftool_output.txt
 
-# ExifTool-RS
-exiftool-rs photo.jpg > exiftool_rs_output.txt
+# OxiDex
+oxidex photo.jpg > oxidex_output.txt
 
 # Compare
-diff exiftool_output.txt exiftool_rs_output.txt
+diff exiftool_output.txt oxidex_output.txt
 ```
 
 Report differences as issues (this helps improve compatibility).
@@ -367,9 +367,9 @@ Expected magic numbers:
 Use test fixtures from the repository:
 
 ```bash
-cd exiftool-rs
-exiftool-rs tests/fixtures/jpeg/sample_with_exif.jpg
-exiftool-rs tests/fixtures/png/sample_with_metadata.png
+cd oxidex
+oxidex tests/fixtures/jpeg/sample_with_exif.jpg
+oxidex tests/fixtures/png/sample_with_metadata.png
 ```
 
 If test files work but your file doesn't, the file may be:
@@ -399,47 +399,47 @@ If tests pass but your file fails, please report an issue with the file (if poss
 1. **Use Release Builds**:
    ```bash
    cargo build --release
-   ./target/release/exiftool-rs
+   ./target/release/oxidex
    ```
 
 2. **Batch Process with `-r`**:
    ```bash
-   exiftool-rs -r /photos/  # Parallel processing
+   oxidex -r /photos/  # Parallel processing
    ```
 
 3. **Output to File** (avoid terminal I/O overhead):
    ```bash
-   exiftool-rs -j photos/ > metadata.json
+   oxidex -j photos/ > metadata.json
    ```
 
 4. **Use CSV for Large Datasets**:
    ```bash
-   exiftool-rs --csv -r photos/ > metadata.csv
+   oxidex --csv -r photos/ > metadata.csv
    ```
 
 5. **Process Locally** (avoid network drives):
    ```bash
    # Slow
-   exiftool-rs /mnt/network_drive/photos/
+   oxidex /mnt/network_drive/photos/
 
    # Fast
    rsync -av /mnt/network_drive/photos/ /local/photos/
-   exiftool-rs -r /local/photos/
+   oxidex -r /local/photos/
    ```
 
 ### Benchmarking Performance
 
-Compare ExifTool-RS vs original ExifTool:
+Compare OxiDex vs original ExifTool:
 
 ```bash
 # Original ExifTool
 time exiftool -r photos/ > /dev/null
 
-# ExifTool-RS
-time exiftool-rs -r photos/ > /dev/null
+# OxiDex
+time oxidex -r photos/ > /dev/null
 ```
 
-Expected results: ExifTool-RS should be 2-5x faster.
+Expected results: OxiDex should be 2-5x faster.
 
 If not, report the issue with:
 - System info (OS, CPU, RAM)
@@ -493,9 +493,9 @@ See [Supported Formats](formats.md) for the complete list.
 
 - **Path separators**: Use forward slashes or escape backslashes:
   ```bash
-  exiftool-rs C:/photos/image.jpg  # OK
-  exiftool-rs "C:\\photos\\image.jpg"  # OK
-  exiftool-rs C:\photos\image.jpg  # May fail
+  oxidex C:/photos/image.jpg  # OK
+  oxidex "C:\\photos\\image.jpg"  # OK
+  oxidex C:\photos\image.jpg  # May fail
   ```
 
 #### macOS
@@ -503,14 +503,14 @@ See [Supported Formats](formats.md) for the complete list.
 - **Gatekeeper**: First run may require explicit permission:
   ```bash
   # If blocked by Gatekeeper
-  xattr -d com.apple.quarantine ./target/release/exiftool-rs
+  xattr -d com.apple.quarantine ./target/release/oxidex
   ```
 
 #### Linux
 
 - **Permissions**: Ensure execute permission:
   ```bash
-  chmod +x ./target/release/exiftool-rs
+  chmod +x ./target/release/oxidex
   ```
 
 ## Getting Help
@@ -518,10 +518,10 @@ See [Supported Formats](formats.md) for the complete list.
 ### Community Resources
 
 1. **GitHub Issues**: Report bugs and request features
-   - [https://github.com/exiftool-rs/exiftool-rs/issues](https://github.com/exiftool-rs/exiftool-rs/issues)
+   - [https://github.com/oxidex/oxidex/issues](https://github.com/oxidex/oxidex/issues)
 
 2. **GitHub Discussions**: Ask questions and discuss
-   - [https://github.com/exiftool-rs/exiftool-rs/discussions](https://github.com/exiftool-rs/exiftool-rs/discussions)
+   - [https://github.com/oxidex/oxidex/discussions](https://github.com/oxidex/oxidex/discussions)
 
 3. **Documentation**: This user guide
    - [Introduction](intro.md)
@@ -533,9 +533,9 @@ See [Supported Formats](formats.md) for the complete list.
 
 When reporting bugs, include:
 
-1. **ExifTool-RS version**:
+1. **OxiDex version**:
    ```bash
-   exiftool-rs --version
+   oxidex --version
    ```
 
 2. **System information**:
@@ -551,7 +551,7 @@ When reporting bugs, include:
 
 4. **Full error message**:
    ```bash
-   exiftool-rs photo.jpg 2>&1 | tee error.log
+   oxidex photo.jpg 2>&1 | tee error.log
    ```
 
 5. **Steps to reproduce**:
@@ -576,13 +576,13 @@ When requesting features:
 
 ```bash
 # Version
-exiftool-rs --version
+oxidex --version
 
 # Help
-exiftool-rs --help
+oxidex --help
 
 # Test with known good file
-exiftool-rs tests/fixtures/jpeg/sample_with_exif.jpg
+oxidex tests/fixtures/jpeg/sample_with_exif.jpg
 ```
 
 ### Check File Integrity
@@ -665,11 +665,11 @@ diskutil info /dev/disk0
 
 ```bash
 # CPU profiling with perf (Linux)
-perf record --call-graph dwarf exiftool-rs -r photos/
+perf record --call-graph dwarf oxidex -r photos/
 perf report
 
 # Memory profiling with valgrind
-valgrind --tool=massif exiftool-rs photo.jpg
+valgrind --tool=massif oxidex photo.jpg
 ms_print massif.out.*
 ```
 
@@ -683,7 +683,7 @@ ms_print massif.out.*
 
 ## Emergency Fallback
 
-If ExifTool-RS isn't working for your use case, you can always fall back to the original ExifTool:
+If OxiDex isn't working for your use case, you can always fall back to the original ExifTool:
 
 ```bash
 # Install original ExifTool
@@ -697,4 +697,4 @@ sudo apt install libimage-exiftool-perl
 exiftool photo.jpg
 ```
 
-ExifTool-RS aims for compatibility, but the original ExifTool has 20+ years of development and supports 300+ formats. Use the best tool for the job!
+OxiDex aims for compatibility, but the original ExifTool has 20+ years of development and supports 300+ formats. Use the best tool for the job!

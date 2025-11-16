@@ -1,17 +1,17 @@
 # Command-Line Usage
 
-This chapter covers how to use ExifTool-RS from the command line to read, write, and manipulate metadata in your files.
+This chapter covers how to use OxiDex from the command line to read, write, and manipulate metadata in your files.
 
 ## Overview
 
-ExifTool-RS provides a powerful command-line interface for metadata operations. The CLI is designed to be compatible with the original ExifTool's argument syntax, making it easy to migrate existing scripts and workflows.
+OxiDex provides a powerful command-line interface for metadata operations. The CLI is designed to be compatible with the original ExifTool's argument syntax, making it easy to migrate existing scripts and workflows.
 
 **Current Status**: The CLI is fully functional with support for reading, writing, batch processing, file renaming, and date shifting operations.
 
 ## Basic Syntax
 
 ```bash
-exiftool-rs [OPTIONS] [TAG_MODIFICATIONS...] FILE|DIRECTORY
+oxidex [OPTIONS] [TAG_MODIFICATIONS...] FILE|DIRECTORY
 ```
 
 - **OPTIONS**: Flags and settings (e.g., `-j` for JSON output, `-r` for recursive)
@@ -25,7 +25,7 @@ exiftool-rs [OPTIONS] [TAG_MODIFICATIONS...] FILE|DIRECTORY
 Display all metadata tags from a file:
 
 ```bash
-exiftool-rs photo.jpg
+oxidex photo.jpg
 ```
 
 **Example Output:**
@@ -53,7 +53,7 @@ XMP:Copyright                   : 2025 John Doe
 Export metadata in JSON format (machine-readable):
 
 ```bash
-exiftool-rs -j photo.jpg
+oxidex -j photo.jpg
 ```
 
 **Example Output:**
@@ -76,7 +76,7 @@ exiftool-rs -j photo.jpg
 Export metadata in CSV format (for spreadsheets):
 
 ```bash
-exiftool-rs --csv photo.jpg
+oxidex --csv photo.jpg
 ```
 
 **Example Output:**
@@ -98,7 +98,7 @@ EXIF:ISO,400
 Set the value of a specific metadata tag:
 
 ```bash
-exiftool-rs -EXIF:Artist="John Doe" photo.jpg
+oxidex -EXIF:Artist="John Doe" photo.jpg
 ```
 
 **Output:**
@@ -112,7 +112,7 @@ exiftool-rs -EXIF:Artist="John Doe" photo.jpg
 Set multiple tags in a single command:
 
 ```bash
-exiftool-rs \
+oxidex \
   -EXIF:Artist="John Doe" \
   -EXIF:Copyright="Copyright 2025 John Doe" \
   -IPTC:Caption-Abstract="Beautiful sunset" \
@@ -121,7 +121,7 @@ exiftool-rs \
 
 ### Tag Naming Convention
 
-ExifTool-RS uses the **family:tag** naming convention:
+OxiDex uses the **family:tag** naming convention:
 
 - `EXIF:Make` - Camera manufacturer (EXIF family)
 - `GPS:GPSLatitude` - GPS latitude (GPS family)
@@ -144,7 +144,7 @@ Common families:
 Always create a backup copy before modifying files:
 
 ```bash
-exiftool-rs --backup -EXIF:Artist="John Doe" photo.jpg
+oxidex --backup -EXIF:Artist="John Doe" photo.jpg
 ```
 
 This creates `photo.jpg.bak` with the original file contents.
@@ -154,7 +154,7 @@ This creates `photo.jpg.bak` with the original file contents.
 Maintain the original file modification time after writing metadata:
 
 ```bash
-exiftool-rs --preserve-file-times -EXIF:Artist="John Doe" photo.jpg
+oxidex --preserve-file-times -EXIF:Artist="John Doe" photo.jpg
 ```
 
 The file's mtime will be restored after metadata is written.
@@ -164,7 +164,7 @@ The file's mtime will be restored after metadata is written.
 Prevent accidental modifications with read-only mode:
 
 ```bash
-exiftool-rs --readonly photo.jpg
+oxidex --readonly photo.jpg
 ```
 
 This displays metadata but refuses any write operations.
@@ -174,7 +174,7 @@ This displays metadata but refuses any write operations.
 Use multiple safety flags together:
 
 ```bash
-exiftool-rs --backup --preserve-file-times \
+oxidex --backup --preserve-file-times \
   -EXIF:Artist="John Doe" \
   -EXIF:Copyright="Copyright 2025" \
   photo.jpg
@@ -187,7 +187,7 @@ exiftool-rs --backup --preserve-file-times \
 Process all JPEG files in a directory:
 
 ```bash
-exiftool-rs -r *.jpg
+oxidex -r *.jpg
 ```
 
 ### Recursive Directory Processing
@@ -195,7 +195,7 @@ exiftool-rs -r *.jpg
 Process all files in a directory and subdirectories:
 
 ```bash
-exiftool-rs -r /path/to/photos/
+oxidex -r /path/to/photos/
 ```
 
 **Example Output:**
@@ -216,7 +216,7 @@ Batch Processing Statistics:
 Modify metadata for all files in a directory:
 
 ```bash
-exiftool-rs -r -EXIF:Copyright="Copyright 2025 John Doe" /path/to/photos/
+oxidex -r -EXIF:Copyright="Copyright 2025 John Doe" /path/to/photos/
 ```
 
 ### Output Batch Results as JSON
@@ -224,7 +224,7 @@ exiftool-rs -r -EXIF:Copyright="Copyright 2025 John Doe" /path/to/photos/
 Process multiple files and output results as JSON:
 
 ```bash
-exiftool-rs -r -j /path/to/photos/ > metadata.json
+oxidex -r -j /path/to/photos/ > metadata.json
 ```
 
 ## Copying Metadata
@@ -234,7 +234,7 @@ exiftool-rs -r -j /path/to/photos/ > metadata.json
 Copy all metadata from one file to another:
 
 ```bash
-exiftool-rs --TagsFromFile source.jpg dest.jpg
+oxidex --TagsFromFile source.jpg dest.jpg
 ```
 
 This reads all tags from `source.jpg` and writes them to `dest.jpg`.
@@ -244,7 +244,7 @@ This reads all tags from `source.jpg` and writes them to `dest.jpg`.
 Copy only specific tags:
 
 ```bash
-exiftool-rs --TagsFromFile source.jpg \
+oxidex --TagsFromFile source.jpg \
   -EXIF:Artist \
   -EXIF:Copyright \
   -IPTC:Keywords \
@@ -258,7 +258,7 @@ This copies only the Artist, Copyright, and Keywords tags.
 Use backup and preserve timestamps when copying:
 
 ```bash
-exiftool-rs --TagsFromFile source.jpg \
+oxidex --TagsFromFile source.jpg \
   --backup \
   --preserve-file-times \
   dest.jpg
@@ -268,14 +268,14 @@ exiftool-rs --TagsFromFile source.jpg \
 
 ### Rename Based on Metadata
 
-ExifTool-RS can rename files based on metadata patterns using the `-FileName<PATTERN` syntax.
+OxiDex can rename files based on metadata patterns using the `-FileName<PATTERN` syntax.
 
 #### Rename Using Date/Time
 
 Rename files based on the DateTimeOriginal tag:
 
 ```bash
-exiftool-rs '-FileName<DateTimeOriginal' photo.jpg
+oxidex '-FileName<DateTimeOriginal' photo.jpg
 ```
 
 By default, this uses the format: `YYYYMMDD_HHMMSS.jpg`
@@ -289,7 +289,7 @@ By default, this uses the format: `YYYYMMDD_HHMMSS.jpg`
 Specify a custom date format with the `-d` option:
 
 ```bash
-exiftool-rs -d '%Y-%m-%d_%H%M%S' '-FileName<DateTimeOriginal' photo.jpg
+oxidex -d '%Y-%m-%d_%H%M%S' '-FileName<DateTimeOriginal' photo.jpg
 ```
 
 **Format Specifiers:**
@@ -308,7 +308,7 @@ exiftool-rs -d '%Y-%m-%d_%H%M%S' '-FileName<DateTimeOriginal' photo.jpg
 Combine multiple metadata tags in the filename pattern:
 
 ```bash
-exiftool-rs '-FileName<${EXIF:Make}_${EXIF:Model}_${DateTimeOriginal}' photo.jpg
+oxidex '-FileName<${EXIF:Make}_${EXIF:Model}_${DateTimeOriginal}' photo.jpg
 ```
 
 **Example:**
@@ -320,7 +320,7 @@ exiftool-rs '-FileName<${EXIF:Make}_${EXIF:Model}_${DateTimeOriginal}' photo.jpg
 Preview renames without actually changing files:
 
 ```bash
-exiftool-rs -n '-FileName<DateTimeOriginal' photo.jpg
+oxidex -n '-FileName<DateTimeOriginal' photo.jpg
 ```
 
 **Output:**
@@ -336,19 +336,19 @@ No files are actually renamed; you just see what would happen.
 Rename all photos in a directory:
 
 ```bash
-exiftool-rs -r -d '%Y%m%d_%H%M%S' '-FileName<DateTimeOriginal' /path/to/photos/
+oxidex -r -d '%Y%m%d_%H%M%S' '-FileName<DateTimeOriginal' /path/to/photos/
 ```
 
 ## Date/Time Shifting
 
-ExifTool-RS can shift date/time tags by adding or subtracting time offsets, or setting absolute values.
+OxiDex can shift date/time tags by adding or subtracting time offsets, or setting absolute values.
 
 ### Add Time Offset
 
 Add 1 year to all date tags:
 
 ```bash
-exiftool-rs '-AllDates+=1:0:0 0:0:0' photo.jpg
+oxidex '-AllDates+=1:0:0 0:0:0' photo.jpg
 ```
 
 Offset format: `Y:M:D H:M:S` (years:months:days hours:minutes:seconds)
@@ -364,7 +364,7 @@ Offset format: `Y:M:D H:M:S` (years:months:days hours:minutes:seconds)
 Subtract 1 hour from all date tags:
 
 ```bash
-exiftool-rs '-AllDates-=0:0:0 1:0:0' photo.jpg
+oxidex '-AllDates-=0:0:0 1:0:0' photo.jpg
 ```
 
 **Use Case**: Fix incorrect camera clock that was set 1 hour ahead.
@@ -374,7 +374,7 @@ exiftool-rs '-AllDates-=0:0:0 1:0:0' photo.jpg
 Set a specific date/time value:
 
 ```bash
-exiftool-rs '-EXIF:DateTime=2025:01:15 10:30:00' photo.jpg
+oxidex '-EXIF:DateTime=2025:01:15 10:30:00' photo.jpg
 ```
 
 Format: `YYYY:MM:DD HH:MM:SS`
@@ -384,7 +384,7 @@ Format: `YYYY:MM:DD HH:MM:SS`
 Shift only a specific date tag instead of all dates:
 
 ```bash
-exiftool-rs '-EXIF:DateTimeOriginal+=0:0:1 0:0:0' photo.jpg
+oxidex '-EXIF:DateTimeOriginal+=0:0:1 0:0:0' photo.jpg
 ```
 
 This adds 1 day to only the DateTimeOriginal tag.
@@ -394,7 +394,7 @@ This adds 1 day to only the DateTimeOriginal tag.
 Shift dates for all photos in a directory (useful for timezone corrections):
 
 ```bash
-exiftool-rs -r '-AllDates+=0:0:0 8:0:0' /path/to/photos/
+oxidex -r '-AllDates+=0:0:0 8:0:0' /path/to/photos/
 ```
 
 This adds 8 hours to all photos (e.g., UTC to PST conversion).
@@ -405,70 +405,70 @@ This adds 8 hours to all photos (e.g., UTC to PST conversion).
 Output metadata in JSON format (machine-readable).
 
 ```bash
-exiftool-rs -j photo.jpg
+oxidex -j photo.jpg
 ```
 
 ### `--csv`
 Output metadata in CSV format (for spreadsheets).
 
 ```bash
-exiftool-rs --csv photo.jpg
+oxidex --csv photo.jpg
 ```
 
 ### `-r`
 Enable recursive directory processing.
 
 ```bash
-exiftool-rs -r /path/to/photos/
+oxidex -r /path/to/photos/
 ```
 
 ### `--backup`
 Create a backup copy before modifying files (adds `.bak` extension).
 
 ```bash
-exiftool-rs --backup -EXIF:Artist="John Doe" photo.jpg
+oxidex --backup -EXIF:Artist="John Doe" photo.jpg
 ```
 
 ### `--preserve-file-times`
 Restore the original file modification timestamp after writing metadata.
 
 ```bash
-exiftool-rs --preserve-file-times -EXIF:Copyright="2025" photo.jpg
+oxidex --preserve-file-times -EXIF:Copyright="2025" photo.jpg
 ```
 
 ### `--readonly`
 Enable read-only mode to prevent any file modifications.
 
 ```bash
-exiftool-rs --readonly photo.jpg
+oxidex --readonly photo.jpg
 ```
 
 ### `-d <FORMAT>`
 Specify custom date/time format for filename patterns.
 
 ```bash
-exiftool-rs -d '%Y-%m-%d' '-FileName<DateTimeOriginal' photo.jpg
+oxidex -d '%Y-%m-%d' '-FileName<DateTimeOriginal' photo.jpg
 ```
 
 ### `-n`
 Dry-run mode: show proposed renames without executing.
 
 ```bash
-exiftool-rs -n '-FileName<DateTimeOriginal' photo.jpg
+oxidex -n '-FileName<DateTimeOriginal' photo.jpg
 ```
 
 ### `-h, --help`
 Display help information with all available options.
 
 ```bash
-exiftool-rs --help
+oxidex --help
 ```
 
 ### `-V, --version`
 Display version information.
 
 ```bash
-exiftool-rs --version
+oxidex --version
 ```
 
 ## Practical Examples
@@ -478,7 +478,7 @@ exiftool-rs --version
 **Add copyright to all photos:**
 
 ```bash
-exiftool-rs -r --backup \
+oxidex -r --backup \
   -EXIF:Copyright="Copyright 2025 John Doe" \
   -EXIF:Artist="John Doe" \
   /path/to/photos/
@@ -487,7 +487,7 @@ exiftool-rs -r --backup \
 **Rename photos by capture date:**
 
 ```bash
-exiftool-rs -r -d '%Y/%m/%Y%m%d_%H%M%S' \
+oxidex -r -d '%Y/%m/%Y%m%d_%H%M%S' \
   '-FileName<DateTimeOriginal' \
   /path/to/photos/
 ```
@@ -497,7 +497,7 @@ This organizes photos into year/month folders with dated filenames.
 **Fix timezone (camera was set to wrong timezone):**
 
 ```bash
-exiftool-rs -r --backup '-AllDates-=5:0:0 0:0:0' /path/to/photos/
+oxidex -r --backup '-AllDates-=5:0:0 0:0:0' /path/to/photos/
 ```
 
 Subtracts 5 hours from all dates (e.g., EST to UTC).
@@ -507,7 +507,7 @@ Subtracts 5 hours from all dates (e.g., EST to UTC).
 **Generate CSV report of all metadata:**
 
 ```bash
-exiftool-rs -r --csv /path/to/photos/ > metadata_report.csv
+oxidex -r --csv /path/to/photos/ > metadata_report.csv
 ```
 
 Open the resulting CSV in Excel or Google Sheets for analysis.
@@ -515,7 +515,7 @@ Open the resulting CSV in Excel or Google Sheets for analysis.
 **Generate JSON report:**
 
 ```bash
-exiftool-rs -r -j /path/to/photos/ > metadata_report.json
+oxidex -r -j /path/to/photos/ > metadata_report.json
 ```
 
 Process the JSON with tools like `jq` or import into a database.
@@ -526,7 +526,7 @@ Process the JSON with tools like `jq` or import into a database.
 
 ```bash
 for file in *.jpg; do
-  exiftool-rs --TagsFromFile reference.jpg \
+  oxidex --TagsFromFile reference.jpg \
     -EXIF:Artist \
     -EXIF:Copyright \
     "$file"
@@ -539,14 +539,14 @@ This feature is planned but not yet implemented. For now, use the original ExifT
 
 ```bash
 # Future feature (not yet available)
-# exiftool-rs -all= photo.jpg
+# oxidex -all= photo.jpg
 ```
 
 ## Performance Tips
 
 ### Use Release Builds
 
-For best performance, use release builds of ExifTool-RS:
+For best performance, use release builds of OxiDex:
 
 ```bash
 cargo build --release
@@ -556,11 +556,11 @@ Release builds are 2-5x faster than debug builds due to aggressive optimizations
 
 ### Parallel Batch Processing
 
-ExifTool-RS automatically processes multiple files in parallel using all available CPU cores when using the `-r` flag. No additional configuration needed!
+OxiDex automatically processes multiple files in parallel using all available CPU cores when using the `-r` flag. No additional configuration needed!
 
 ### Memory-Mapped I/O
 
-ExifTool-RS uses memory-mapped I/O for efficient processing of large files. This is automatic and requires no user configuration.
+OxiDex uses memory-mapped I/O for efficient processing of large files. This is automatic and requires no user configuration.
 
 ## Error Handling
 
@@ -572,7 +572,7 @@ The specified file path doesn't exist. Check the path and try again:
 
 ```bash
 ls photo.jpg  # Verify file exists
-exiftool-rs photo.jpg
+oxidex photo.jpg
 ```
 
 **"Error: File is read-only"**
@@ -581,7 +581,7 @@ The file has read-only permissions. Either change permissions or use `--readonly
 
 ```bash
 chmod u+w photo.jpg  # Make writable
-exiftool-rs -EXIF:Artist="John Doe" photo.jpg
+oxidex -EXIF:Artist="John Doe" photo.jpg
 ```
 
 **"Error: Invalid value for TAG"**
@@ -590,19 +590,19 @@ The value provided is not valid for that metadata tag. Check the tag's expected 
 
 ```bash
 # Wrong: FNumber expects a rational number
-exiftool-rs -EXIF:FNumber="invalid" photo.jpg  # Error
+oxidex -EXIF:FNumber="invalid" photo.jpg  # Error
 
 # Correct:
-exiftool-rs -EXIF:FNumber="5.6" photo.jpg  # Success
+oxidex -EXIF:FNumber="5.6" photo.jpg  # Success
 ```
 
 **"Error: Unsupported file format"**
 
-The file format is not yet supported by ExifTool-RS. See [Supported Formats](formats.md) for the current list.
+The file format is not yet supported by OxiDex. See [Supported Formats](formats.md) for the current list.
 
 ### Verbose Error Messages
 
-ExifTool-RS provides detailed error messages to help diagnose issues. Read the error message carefully—it usually indicates exactly what went wrong.
+OxiDex provides detailed error messages to help diagnose issues. Read the error message carefully—it usually indicates exactly what went wrong.
 
 ## Limitations
 
@@ -620,26 +620,26 @@ For these features, use the original ExifTool in the meantime.
 
 ## Compatibility with Original ExifTool
 
-ExifTool-RS aims for CLI compatibility with the original ExifTool. Most common commands should work identically:
+OxiDex aims for CLI compatibility with the original ExifTool. Most common commands should work identically:
 
 **Compatible:**
-- ✅ Reading metadata: `exiftool-rs file.jpg`
-- ✅ JSON output: `exiftool-rs -j file.jpg`
-- ✅ Writing tags: `exiftool-rs -TAG=VALUE file.jpg`
-- ✅ Recursive processing: `exiftool-rs -r directory/`
-- ✅ Backup creation: `exiftool-rs --backup file.jpg`
-- ✅ Date shifting: `exiftool-rs '-AllDates+=1:0:0 0:0:0' file.jpg`
-- ✅ File renaming: `exiftool-rs '-FileName<DateTimeOriginal' file.jpg`
-- ✅ Metadata copying: `exiftool-rs --TagsFromFile src.jpg dest.jpg`
+- ✅ Reading metadata: `oxidex file.jpg`
+- ✅ JSON output: `oxidex -j file.jpg`
+- ✅ Writing tags: `oxidex -TAG=VALUE file.jpg`
+- ✅ Recursive processing: `oxidex -r directory/`
+- ✅ Backup creation: `oxidex --backup file.jpg`
+- ✅ Date shifting: `oxidex '-AllDates+=1:0:0 0:0:0' file.jpg`
+- ✅ File renaming: `oxidex '-FileName<DateTimeOriginal' file.jpg`
+- ✅ Metadata copying: `oxidex --TagsFromFile src.jpg dest.jpg`
 
 **Not Yet Compatible:**
-- ⏳ Tag-specific reading: `exiftool-rs -Make -Model file.jpg`
-- ⏳ Tag deletion: `exiftool-rs -TAG= file.jpg`
-- ⏳ Conditional operations: `exiftool-rs -if '$Make eq "Canon"' file.jpg`
+- ⏳ Tag-specific reading: `oxidex -Make -Model file.jpg`
+- ⏳ Tag deletion: `oxidex -TAG= file.jpg`
+- ⏳ Conditional operations: `oxidex -if '$Make eq "Canon"' file.jpg`
 
 ## Next Steps
 
-- **[Library API](library_api.md)**: Use ExifTool-RS as a Rust library
+- **[Library API](library_api.md)**: Use OxiDex as a Rust library
 - **[C FFI Integration](ffi.md)**: Integrate with C, Python, or other languages
 - **[Supported Formats](formats.md)**: See what file formats are supported
 - **[Troubleshooting](troubleshooting.md)**: Common issues and solutions

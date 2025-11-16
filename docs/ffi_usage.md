@@ -1,6 +1,6 @@
 # C FFI Usage Guide
 
-This guide provides quick examples for using the ExifTool-RS C FFI bindings.
+This guide provides quick examples for using the OxiDex C FFI bindings.
 
 ## Building the Library
 
@@ -15,19 +15,19 @@ cargo build --lib --release
 ```
 
 This generates:
-- **Static library**: `target/[debug|release]/libexiftool_rs.a`
-- **Dynamic library**: `target/[debug|release]/libexiftool_rs.dylib` (macOS), `.so` (Linux), `.dll` (Windows)
+- **Static library**: `target/[debug|release]/liboxidex.a`
+- **Dynamic library**: `target/[debug|release]/liboxidex.dylib` (macOS), `.so` (Linux), `.dll` (Windows)
 
 ## Files
 
-- **Header file**: `include/exiftool_rs.h` - C function declarations
+- **Header file**: `include/oxidex.h` - C function declarations
 - **Test file**: `tests/ffi/c_integration_test.c` - Example usage
 - **API documentation**: `docs/api/ffi_api.md` - Complete API reference
 
 ## Quick Example
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 
 int main() {
@@ -69,12 +69,12 @@ int main() {
 
 ```bash
 # Using dynamic library
-clang -o myapp myapp.c -lexiftool_rs -L./target/release -I./include
+clang -o myapp myapp.c -loxidex -L./target/release -I./include
 export DYLD_LIBRARY_PATH=./target/release:$DYLD_LIBRARY_PATH
 ./myapp
 
 # Using static library
-clang -o myapp myapp.c ./target/release/libexiftool_rs.a -I./include
+clang -o myapp myapp.c ./target/release/liboxidex.a -I./include
 ./myapp
 ```
 
@@ -82,12 +82,12 @@ clang -o myapp myapp.c ./target/release/libexiftool_rs.a -I./include
 
 ```bash
 # Using dynamic library
-gcc -o myapp myapp.c -lexiftool_rs -L./target/release -I./include
+gcc -o myapp myapp.c -loxidex -L./target/release -I./include
 export LD_LIBRARY_PATH=./target/release:$LD_LIBRARY_PATH
 ./myapp
 
 # Using static library
-gcc -o myapp myapp.c ./target/release/libexiftool_rs.a -lpthread -ldl -lm -I./include
+gcc -o myapp myapp.c ./target/release/liboxidex.a -lpthread -ldl -lm -I./include
 ./myapp
 ```
 
@@ -95,11 +95,11 @@ gcc -o myapp myapp.c ./target/release/libexiftool_rs.a -lpthread -ldl -lm -I./in
 
 ```cmd
 REM Using dynamic library
-cl /MD myapp.c /I.\include exiftool_rs.lib /link /LIBPATH:.\target\release
+cl /MD myapp.c /I.\include oxidex.lib /link /LIBPATH:.\target\release
 myapp.exe
 
 REM Using static library
-cl /MT myapp.c .\target\release\libexiftool_rs.a /I.\include
+cl /MT myapp.c .\target\release\liboxidex.a /I.\include
 myapp.exe
 ```
 
@@ -112,7 +112,7 @@ The C integration test can be compiled and run manually:
 gcc -o test_ffi tests/ffi/c_integration_test.c \
     -I./include \
     -L./target/debug \
-    -lexiftool_rs
+    -loxidex
 
 # Run test
 ./test_ffi
@@ -121,7 +121,7 @@ gcc -o test_ffi tests/ffi/c_integration_test.c \
 Expected output:
 ```
 ========================================
-ExifTool-RS C FFI Integration Tests
+OxiDex C FFI Integration Tests
 ========================================
 
 Test 1: Handle Lifecycle
@@ -227,4 +227,4 @@ The C FFI can be used to create bindings for other languages:
 
 For complete API documentation, see:
 - **API Reference**: `docs/api/ffi_api.md`
-- **Header File**: `include/exiftool_rs.h`
+- **Header File**: `include/oxidex.h`

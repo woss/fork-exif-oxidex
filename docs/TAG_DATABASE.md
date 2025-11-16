@@ -14,7 +14,7 @@ The tag database is implemented as a **separate workspace crate** (`exiftool-tag
 
 **Crate Structure:**
 - `exiftool-tags/` - Tag database crate (always optimized)
-- `exiftool-rs/` - Main crate (debug mode for fast iteration)
+- `oxidex/` - Main crate (debug mode for fast iteration)
 
 **Profile Configuration:**
 ```toml
@@ -78,7 +78,7 @@ All 140+ ExifTool format families including:
 ## Tag Lookup
 
 ```rust
-use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
 // Look up EXIF Make tag
 if let Some(tag) = get_generated_tag_descriptor("EXIF:Make") {
@@ -159,7 +159,7 @@ The Perl tag definition parser handles:
 
 ### Known Limitations
 
-- **Memory usage during compilation**: The 32K tag file can cause rustc to use significant memory (20-100GB) without optimizations. The Cargo.toml includes a profile override (`[profile.dev.package.exiftool-rs]`) to compile this module with opt-level=2 even in debug builds, which reduces memory usage to ~2-5GB.
+- **Memory usage during compilation**: The 32K tag file can cause rustc to use significant memory (20-100GB) without optimizations. The Cargo.toml includes a profile override (`[profile.dev.package.oxidex]`) to compile this module with opt-level=2 even in debug builds, which reduces memory usage to ~2-5GB.
 - Some ExifTool composite tags are excluded (calculated values, not stored in files)
 - Shortcut tags are excluded (aliases to other tags)
 

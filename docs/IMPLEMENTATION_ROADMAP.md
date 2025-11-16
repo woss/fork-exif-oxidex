@@ -1,4 +1,4 @@
-# Implementation Roadmap - exiftool-rs
+# Implementation Roadmap - oxidex
 
 > **Last Updated:** November 16, 2025
 > **Current Version:** v1.0.6
@@ -6,12 +6,12 @@
 
 ## Executive Summary
 
-exiftool-rs has achieved **excellent parity** with Perl ExifTool for basic use cases (web, video, documents, hobbyist photography). However, **two critical features** are blocking professional adoption:
+oxidex has achieved **excellent parity** with Perl ExifTool for basic use cases (web, video, documents, hobbyist photography). However, **two critical features** are blocking professional adoption:
 
 1. **IPTC Metadata** - Required for journalism and stock photography
 2. **MakerNotes** - Required for professional photography (camera-specific data)
 
-With these features implemented, exiftool-rs will be **production-ready for professional workflows**.
+With these features implemented, oxidex will be **production-ready for professional workflows**.
 
 ---
 
@@ -528,7 +528,7 @@ Script to detect regressions:
 
 FILE=$1
 PERL_OUT=$(exiftool -a -G1 "$FILE")
-RUST_OUT=$(target/release/exiftool-rs "$FILE")
+RUST_OUT=$(target/release/oxidex "$FILE")
 
 # Compare field counts
 PERL_COUNT=$(echo "$PERL_OUT" | wc -l)

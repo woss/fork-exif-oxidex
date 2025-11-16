@@ -1,10 +1,10 @@
 # Supported Formats
 
-This chapter lists the file formats and metadata standards currently supported by ExifTool-RS.
+This chapter lists the file formats and metadata standards currently supported by OxiDex.
 
 ## Implementation Status
 
-ExifTool-RS is actively being developed. The current implementation (v0.1.0) focuses on core formats with comprehensive metadata support. Additional formats will be added in future releases.
+OxiDex is actively being developed. The current implementation (v0.1.0) focuses on core formats with comprehensive metadata support. Additional formats will be added in future releases.
 
 **Legend:**
 - ✅ **Fully Implemented**: Read and write support with comprehensive tag coverage
@@ -267,7 +267,7 @@ ExifTool-RS is actively being developed. The current implementation (v0.1.0) foc
 
 ## Tag Database Statistics
 
-ExifTool-RS automatically generates its tag database from the official ExifTool source during build:
+OxiDex automatically generates its tag database from the official ExifTool source during build:
 
 **Current Tag Count**: 731 tags (v0.1.0)
 
@@ -335,7 +335,7 @@ The following formats are on the roadmap for future releases:
 To check if a file format is supported, use the CLI:
 
 ```bash
-exiftool-rs photo.unknown
+oxidex photo.unknown
 ```
 
 If the format is not supported, you'll see:
@@ -348,7 +348,7 @@ Supported formats will display metadata or indicate no metadata was found.
 
 ## Format Detection
 
-ExifTool-RS uses **magic number detection** to identify file formats:
+OxiDex uses **magic number detection** to identify file formats:
 
 1. Reads the first few bytes of the file (magic number)
 2. Matches against known format signatures
@@ -383,7 +383,7 @@ All formats process typical files in < 10ms on modern hardware.
 
 ## Contributing New Format Support
 
-Interested in adding support for a new format? See the [Contributing Guide](https://github.com/exiftool-rs/exiftool-rs/blob/main/CONTRIBUTING.md) for:
+Interested in adding support for a new format? See the [Contributing Guide](https://github.com/oxidex/oxidex/blob/main/CONTRIBUTING.md) for:
 
 - Parser implementation guidelines
 - Format-specific testing requirements

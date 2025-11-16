@@ -1,6 +1,6 @@
-# ExifTool-RS User Guide (mdBook)
+# OxiDex User Guide (mdBook)
 
-This directory contains the comprehensive user guide for ExifTool-RS, built with [mdBook](https://rust-lang.github.io/mdBook/).
+This directory contains the comprehensive user guide for OxiDex, built with [mdBook](https://rust-lang.github.io/mdBook/).
 
 ## Building the Book
 
@@ -104,7 +104,7 @@ The documentation is automatically deployed to GitHub Pages via GitHub Actions w
 
 **Workflow**: `.github/workflows/docs.yml`
 
-**Published URL**: https://exiftool-rs.github.io/exiftool-rs/ (once repository is public)
+**Published URL**: https://oxidex.github.io/oxidex/ (once repository is public)
 
 ## Contributing
 
@@ -123,4 +123,4 @@ Follow these guidelines:
 
 ## License
 
-This documentation is licensed under the same license as ExifTool-RS (GPL-3.0).
+This documentation is licensed under the same license as OxiDex (GPL-3.0).

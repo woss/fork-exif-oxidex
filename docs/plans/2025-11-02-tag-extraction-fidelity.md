@@ -144,7 +144,7 @@ Create test file: `tests/tag_database_coverage.rs`
 ```rust
 //! Integration tests for tag database coverage
 
-use exiftool_rs::tag_db::generated_tags::generated_tag_count;
+use oxidex::tag_db::generated_tags::generated_tag_count;
 
 #[test]
 fn test_tag_database_has_minimum_coverage() {
@@ -387,7 +387,7 @@ Add to `tests/tag_database_coverage.rs`:
 ```rust
 #[test]
 fn test_makernotes_canon_present() {
-    use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+    use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
     // Canon has 2000+ tags, test a few common ones
     assert!(
@@ -402,7 +402,7 @@ fn test_makernotes_canon_present() {
 
 #[test]
 fn test_makernotes_nikon_present() {
-    use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+    use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
     assert!(
         get_generated_tag_descriptor("Nikon:ISOSetting").is_some(),
@@ -412,7 +412,7 @@ fn test_makernotes_nikon_present() {
 
 #[test]
 fn test_makernotes_sony_present() {
-    use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+    use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
     assert!(
         get_generated_tag_descriptor("Sony:ColorTemperature").is_some(),
@@ -543,7 +543,7 @@ Add to `tests/tag_database_coverage.rs`:
 ```rust
 #[test]
 fn test_all_makernotes_manufacturers() {
-    use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+    use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
     // Test presence of tags from various manufacturers
     let test_tags = vec![
@@ -689,7 +689,7 @@ Create `tests/xmp_namespace_coverage.rs`:
 ```rust
 //! Tests for XMP namespace tag coverage
 
-use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
 #[test]
 fn test_xmp_dublin_core_tags() {
@@ -909,7 +909,7 @@ Create `tests/composite_tags_coverage.rs`:
 ```rust
 //! Tests for Composite and Shortcut tag coverage
 
-use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
 #[test]
 fn test_composite_tags_present() {
@@ -1005,7 +1005,7 @@ cargo clean
 time cargo build --release
 
 # Measure binary size
-ls -lh target/release/exiftool-rs
+ls -lh target/release/oxidex
 ```
 
 Document baseline:
@@ -1084,7 +1084,7 @@ Run:
 ```bash
 cargo clean
 time cargo build --release
-ls -lh target/release/exiftool-rs
+ls -lh target/release/oxidex
 ```
 
 Compare to baseline. Expect:
@@ -1133,7 +1133,7 @@ Create `docs/tag_database.md`:
 
 ## Overview
 
-ExifTool-RS includes a comprehensive tag database with 28,853+ tag definitions automatically generated from the official ExifTool Perl source. This ensures compatibility with ExifTool's extensive metadata tag support.
+OxiDex includes a comprehensive tag database with 28,853+ tag definitions automatically generated from the official ExifTool Perl source. This ensures compatibility with ExifTool's extensive metadata tag support.
 
 ## Coverage
 
@@ -1174,7 +1174,7 @@ The tag database is generated during `cargo build` by the `build.rs` script:
 Tags are loaded lazily using per-family static registries:
 
 ```rust
-use exiftool_rs::tag_db::generated_tags::get_generated_tag_descriptor;
+use oxidex::tag_db::generated_tags::get_generated_tag_descriptor;
 
 // Look up a tag
 if let Some(descriptor) = get_generated_tag_descriptor("EXIF:Make") {
@@ -1193,7 +1193,7 @@ See `examples/list_all_tags.rs`
 ### Search Tags by Pattern
 
 ```rust
-use exiftool_rs::tag_db::generated_tags::*;
+use oxidex::tag_db::generated_tags::*;
 
 // This requires adding an iterator function - see Task 9
 ```
@@ -1230,12 +1230,12 @@ Create `examples/list_all_tags.rs`:
 //!
 //! Usage: cargo run --example list_all_tags
 
-use exiftool_rs::tag_db::generated_tags::generated_tag_count;
+use oxidex::tag_db::generated_tags::generated_tag_count;
 
 fn main() {
     let total = generated_tag_count();
 
-    println!("ExifTool-RS Tag Database");
+    println!("OxiDex Tag Database");
     println!("========================");
     println!();
     println!("Total tags: {}", total);
@@ -1256,7 +1256,7 @@ Modify `README.md` around line 304 (after "Tag Database Generation" section):
 ```markdown
 ### Tag Database Coverage
 
-ExifTool-RS now supports **28,853+ metadata tags** from the official ExifTool source, achieving full feature parity with the Perl implementation.
+OxiDex now supports **28,853+ metadata tags** from the official ExifTool source, achieving full feature parity with the Perl implementation.
 
 #### Supported Tag Families
 
@@ -1285,7 +1285,7 @@ cargo run --example list_all_tags
 
 Expected output:
 ```
-ExifTool-RS Tag Database
+OxiDex Tag Database
 ========================
 
 Total tags: 28853
@@ -1325,7 +1325,7 @@ Create `tests/tag_query_api.rs`:
 ```rust
 //! Tests for tag query API
 
-use exiftool_rs::tag_db::generated_tags::*;
+use oxidex::tag_db::generated_tags::*;
 
 #[test]
 fn test_get_tags_by_family() {
@@ -1428,7 +1428,7 @@ Create `examples/search_tags.rs`:
 //!
 //! Usage: cargo run --example search_tags -- <pattern>
 
-use exiftool_rs::tag_db::generated_tags::*;
+use oxidex::tag_db::generated_tags::*;
 use std::env;
 
 fn main() {
@@ -1527,7 +1527,7 @@ Create `scripts/compare_tags_with_exiftool.sh`:
 
 ```bash
 #!/bin/bash
-# Compare tag coverage between ExifTool-RS and Perl ExifTool
+# Compare tag coverage between OxiDex and Perl ExifTool
 
 set -e
 
@@ -1559,8 +1559,8 @@ PERL_TAG_COUNT=$(wc -l < /tmp/exiftool_tagnames.txt)
 echo "Perl ExifTool tags: $PERL_TAG_COUNT"
 echo
 
-# Get ExifTool-RS tag count
-echo "Building ExifTool-RS..."
+# Get OxiDex tag count
+echo "Building OxiDex..."
 cargo build --release --quiet
 
 echo "Comparing tag counts..."
@@ -1598,7 +1598,7 @@ Create `tests/exiftool_comparison_tags.rs`:
 //! Integration test: Compare tag extraction with ExifTool
 
 use std::process::Command;
-use exiftool_rs::tag_db::generated_tags::*;
+use oxidex::tag_db::generated_tags::*;
 
 #[test]
 #[ignore] // Requires exiftool binary installed

@@ -32,8 +32,8 @@ Create `exiftool-tags-core/Cargo.toml`:
 name = "exiftool-tags-core"
 version = "1.0.0"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Core metadata tags (EXIF, XMP, IPTC, GPS) for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Core metadata tags (EXIF, XMP, IPTC, GPS) for oxidex"
 license = "GPL-3.0"
 
 [lib]
@@ -92,7 +92,7 @@ pub struct TagDatabase {
 
 Create `exiftool-tags-core/src/lib.rs`:
 ```rust
-//! Core metadata tags for exiftool-rs
+//! Core metadata tags for oxidex
 //!
 //! Contains universal metadata standards: EXIF, XMP, IPTC, GPS, ICC Profile
 
@@ -189,8 +189,8 @@ Create `exiftool-tags-camera/Cargo.toml`:
 name = "exiftool-tags-camera"
 version = "1.0.0"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Camera manufacturer metadata tags for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Camera manufacturer metadata tags for oxidex"
 license = "GPL-3.0"
 
 [lib]
@@ -292,8 +292,8 @@ Create `exiftool-tags-media/Cargo.toml`:
 name = "exiftool-tags-media"
 version = "1.0.0"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Audio/video format metadata tags for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Audio/video format metadata tags for oxidex"
 license = "GPL-3.0"
 
 [lib]
@@ -379,8 +379,8 @@ Create `exiftool-tags-image/Cargo.toml`:
 name = "exiftool-tags-image"
 version = "1.0.0"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Image format metadata tags for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Image format metadata tags for oxidex"
 license = "GPL-3.0"
 
 [lib]
@@ -466,8 +466,8 @@ Create `exiftool-tags-document/Cargo.toml`:
 name = "exiftool-tags-document"
 version = "1.0.0"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Document format metadata tags for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Document format metadata tags for oxidex"
 license = "GPL-3.0"
 
 [lib]
@@ -553,8 +553,8 @@ Create `exiftool-tags-specialty/Cargo.toml`:
 name = "exiftool-tags-specialty"
 version = "1.0.0"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Specialty format metadata tags (medical, scientific, etc.) for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Specialty format metadata tags (medical, scientific, etc.) for oxidex"
 license = "GPL-3.0"
 
 [lib]
@@ -641,8 +641,8 @@ Create `exiftool-tags-new/Cargo.toml`:
 name = "exiftool-tags"
 version = "1.0.0"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
-description = "Facade crate re-exporting all tag databases for exiftool-rs"
+authors = ["OxiDex Contributors"]
+description = "Facade crate re-exporting all tag databases for oxidex"
 license = "GPL-3.0"
 
 [lib]
@@ -666,7 +666,7 @@ serde = { version = "1.0", features = ["derive"] }
 
 Create `exiftool-tags-new/src/lib.rs`:
 ```rust
-//! ExifTool-RS Tag Database
+//! OxiDex Tag Database
 //!
 //! Facade crate that re-exports all domain-specific tag databases.
 //! Contains 32,677+ metadata tags for 300+ file formats.
@@ -892,7 +892,7 @@ let output_path = Path::new(&format!("exiftool-tags-{}/src", domain))
 **Step 5: Test build script compiles**
 
 ```bash
-cargo build --bin exiftool-rs 2>&1 | head -20
+cargo build --bin oxidex 2>&1 | head -20
 ```
 
 Expected: build.rs compiles without errors (generation may fail, that's ok for now)
@@ -997,7 +997,7 @@ fn main() -> Result<()> {
 
 ```bash
 cargo clean
-cargo build --bin exiftool-rs 2>&1 | grep "Generated"
+cargo build --bin oxidex 2>&1 | grep "Generated"
 ```
 
 Expected: See "Generated exiftool-tags-*/src/*_tags.yaml" messages
@@ -1045,7 +1045,7 @@ exiftool-tags = { path = "exiftool-tags-new" }
 **Step 2: Test main crate compiles**
 
 ```bash
-cargo check -p exiftool-rs
+cargo check -p oxidex
 ```
 
 Expected: SUCCESS (main crate compiles with new tag structure)
@@ -1198,7 +1198,7 @@ Create `docs/architecture/multi-crate-tags.md`:
 
 ## Overview
 
-The ExifTool-RS tag database is split into 6 domain-specific crates for faster compilation:
+The OxiDex tag database is split into 6 domain-specific crates for faster compilation:
 
 - `exiftool-tags-core` - Universal standards (EXIF, XMP, IPTC, GPS)
 - `exiftool-tags-camera` - Camera manufacturers (Canon, Nikon, Sony, etc.)
@@ -1383,8 +1383,8 @@ Expected: SUCCESS
 **Step 3: Smoke test binary**
 
 ```bash
-./target/release/exiftool-rs --version
-./target/release/exiftool-rs test-files/sample.jpg 2>&1 | head -20
+./target/release/oxidex --version
+./target/release/oxidex test-files/sample.jpg 2>&1 | head -20
 ```
 
 Expected: Binary works correctly

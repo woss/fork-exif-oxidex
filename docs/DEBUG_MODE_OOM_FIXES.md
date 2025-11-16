@@ -247,7 +247,7 @@ cargo build --release
 
 ## Pull Request
 
-**PR #1:** https://github.com/swackhamer/exiftool-rs/pull/1
+**PR #1:** https://github.com/swackhamer/oxidex/pull/1
 **Title:** feat: Comprehensive tag database expansion and debug build OOM fix
 **Branch:** `more-exifdata`
 **Status:** Ready for review

@@ -1,4 +1,4 @@
-# ExifTool-RS C FFI API Reference
+# OxiDex C FFI API Reference
 
 **Version:** 0.1.0
 **Last Updated:** 2025-10-30
@@ -34,7 +34,7 @@
 
 ## Introduction
 
-ExifTool-RS provides a C-compatible Foreign Function Interface (FFI) for reading and writing metadata in image and media files. This API allows C, C++, and other languages with C interoperability to leverage ExifTool-RS's metadata extraction capabilities.
+OxiDex provides a C-compatible Foreign Function Interface (FFI) for reading and writing metadata in image and media files. This API allows C, C++, and other languages with C interoperability to leverage OxiDex's metadata extraction capabilities.
 
 **Key Design Principles:**
 
@@ -69,7 +69,7 @@ ExifTool-RS provides a C-compatible Foreign Function Interface (FFI) for reading
 Here's a minimal working example to get you started:
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -105,10 +105,10 @@ int main() {
 
 ```bash
 # Linux/macOS
-gcc -o example example.c -lexiftool_rs -L/path/to/lib
+gcc -o example example.c -loxidex -L/path/to/lib
 
 # Windows (MSVC)
-cl example.c exiftool_rs.lib
+cl example.c oxidex.lib
 ```
 
 ---
@@ -944,7 +944,7 @@ int result = exiftool_get_tag_integer(handle, "EXIF:ISO", &iso_int);
 Minimal example demonstrating the complete workflow.
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -1002,7 +1002,7 @@ ISO: 400
 Comprehensive error handling with specific error code checks.
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -1075,7 +1075,7 @@ int main(int argc, char* argv[]) {
 Enumerate all metadata tags in a file.
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -1161,7 +1161,7 @@ Found 32 metadata tags:
 Read metadata, modify tags, and write back to file.
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1230,7 +1230,7 @@ Successfully wrote metadata to photo_modified.jpg
 Demonstrates safe string handling and avoiding common pitfalls.
 
 ```c
-#include "exiftool_rs.h"
+#include "oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1470,46 +1470,46 @@ printf("Tag count: %zu\n", count);  // %zu for size_t
 
 **Compilation:**
 ```bash
-gcc -o myapp myapp.c -lexiftool_rs -L/usr/local/lib
+gcc -o myapp myapp.c -loxidex -L/usr/local/lib
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ./myapp
 ```
 
 **Static Linking:**
 ```bash
-gcc -o myapp myapp.c libexiftool_rs.a -lpthread -ldl -lm
+gcc -o myapp myapp.c liboxidex.a -lpthread -ldl -lm
 ```
 
 ### macOS
 
 **Compilation:**
 ```bash
-clang -o myapp myapp.c -lexiftool_rs -L/usr/local/lib
+clang -o myapp myapp.c -loxidex -L/usr/local/lib
 export DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
 ./myapp
 ```
 
 **Framework Embedding:**
 ```bash
-install_name_tool -change libexiftool_rs.dylib @executable_path/libexiftool_rs.dylib myapp
+install_name_tool -change liboxidex.dylib @executable_path/liboxidex.dylib myapp
 ```
 
 ### Windows
 
 **MSVC Compilation:**
 ```cmd
-cl /MD myapp.c exiftool_rs.lib
+cl /MD myapp.c oxidex.lib
 myapp.exe
 ```
 
 **MinGW Compilation:**
 ```cmd
-gcc -o myapp.exe myapp.c -lexiftool_rs -L. -Wl,-Bdynamic
+gcc -o myapp.exe myapp.c -loxidex -L. -Wl,-Bdynamic
 ```
 
 **DLL Search Path:**
 
-Ensure `exiftool_rs.dll` is in one of:
+Ensure `oxidex.dll` is in one of:
 - Same directory as executable
 - Current directory
 - System PATH
@@ -1534,8 +1534,8 @@ char* wide_path_to_utf8(const wchar_t* wide_path) {
 
 - **Rust Library API**: [library_api.md](library_api.md)
 - **CLI Documentation**: [CLI Usage Guide](../cli/usage.md)
-- **GitHub Repository**: [https://github.com/yourusername/exiftool-rs](https://github.com/yourusername/exiftool-rs)
-- **Issue Tracker**: [https://github.com/yourusername/exiftool-rs/issues](https://github.com/yourusername/exiftool-rs/issues)
+- **GitHub Repository**: [https://github.com/yourusername/oxidex](https://github.com/yourusername/oxidex)
+- **Issue Tracker**: [https://github.com/yourusername/oxidex/issues](https://github.com/yourusername/oxidex/issues)
 
 ---
 
