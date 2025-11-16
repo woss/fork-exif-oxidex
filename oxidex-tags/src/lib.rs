@@ -28,16 +28,16 @@
 
 // Re-export all domain crates at the module level
 // This allows users to access domain-specific functionality via `oxidex_tags::core::`, etc.
-pub use oxidex_tags_camera as camera;
-pub use oxidex_tags_core as core;
-pub use oxidex_tags_document as document;
-pub use oxidex_tags_image as image;
-pub use oxidex_tags_media as media;
-pub use oxidex_tags_specialty as specialty;
+pub use exiftool_tags_camera as camera;
+pub use exiftool_tags_core as core;
+pub use exiftool_tags_document as document;
+pub use exiftool_tags_image as image;
+pub use exiftool_tags_media as media;
+pub use exiftool_tags_specialty as specialty;
 
 // Re-export common types at root level for convenience
 // This maintains backward compatibility with code expecting types at the root
-pub use oxidex_tags_core::types::*;
+pub use exiftool_tags_core::types::*;
 
 // Backward compatibility: stub implementation for old generated tag registry
 // The new YAML-based system doesn't use this, but old code may reference it
