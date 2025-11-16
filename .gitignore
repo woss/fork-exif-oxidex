@@ -31,9 +31,6 @@ Thumbs.db
 Cargo.lock
 **/Cargo.lock
 
-# Generated tag database
-src/tag_db/generated_tags.rs
-
 # Fuzzing artifacts (keep named corpus seed files like *.pdf, *.mp4, exclude fuzzer-generated hash files)
 fuzz/target/
 fuzz/artifacts/
