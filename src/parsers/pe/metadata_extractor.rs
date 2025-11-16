@@ -82,6 +82,11 @@ pub fn extract_optional_metadata(
         )),
     );
 
+    // Code and data sizes
+    metadata.insert("PE:CodeSize".to_string(), TagValue::Integer(std_header.size_of_code as i64));
+    metadata.insert("PE:InitializedDataSize".to_string(), TagValue::Integer(std_header.size_of_initialized_data as i64));
+    metadata.insert("PE:UninitializedDataSize".to_string(), TagValue::Integer(std_header.size_of_uninitialized_data as i64));
+
     // Entry point
     metadata.insert("PE:EntryPoint".to_string(), TagValue::Integer(std_header.address_of_entry_point as i64));
 
