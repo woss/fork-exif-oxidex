@@ -1,13 +1,13 @@
-# ExifTool-RS
+# OxiDex
 
 [![CI](https://github.com/exiftool-rs/exiftool-rs/workflows/CI/badge.svg)](https://github.com/exiftool-rs/exiftool-rs/actions)
 [![Integration Tests](https://github.com/exiftool-rs/exiftool-rs/workflows/Integration%20Tests%20(ExifTool%20Comparison)/badge.svg)](https://github.com/exiftool-rs/exiftool-rs/actions)
 
-A modern, high-performance Rust reimplementation of the industry-standard [ExifTool](https://exiftool.org/) metadata management library and command-line application.
+A modern, high-performance Rust implementation of the industry-standard [ExifTool](https://exiftool.org/) metadata management library and command-line application.
 
 ## Project Vision
 
-ExifTool-RS aims to provide a memory-safe, zero-cost abstraction alternative to the Perl-based ExifTool while maintaining full compatibility with its extensive metadata tag support. The goal is to deliver superior performance, native cross-compilation capabilities, and seamless integration into modern software ecosystems.
+OxiDex aims to provide a memory-safe, zero-cost abstraction alternative to the Perl-based ExifTool while maintaining full compatibility with its extensive metadata tag support. The goal is to deliver superior performance, native cross-compilation capabilities, and seamless integration into modern software ecosystems.
 
 ## Key Features
 
@@ -21,7 +21,7 @@ ExifTool-RS aims to provide a memory-safe, zero-cost abstraction alternative to 
 
 ## Architecture
 
-ExifTool-RS follows a **Hexagonal Architecture** (Ports and Adapters) pattern with three main layers:
+OxiDex follows a **Hexagonal Architecture** (Ports and Adapters) pattern with three main layers:
 
 - **Application Layer**: CLI interface, C FFI bindings
 - **Domain Layer**: Format-agnostic metadata models and operations
@@ -107,12 +107,12 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 - **CPU**: x86_64 (4 cores)
 - **Memory**: 8GB RAM
 - **Perl ExifTool**: version latest
-- **ExifTool-RS**: version 1.0.0
+- **OxiDex**: version 1.0.0
 
 ### Benchmark Results
 
-| Scenario | Perl ExifTool | ExifTool-RS | Speedup |
-|----------|---------------|-------------|---------|
+| Scenario | Perl ExifTool | OxiDex | Speedup |
+|----------|---------------|--------|---------|
 | Single JPEG Read | 105.1ms ± 2.6ms | 14.3ms ± 0.4ms | **7.4x faster** |
 | Batch Processing (1000 files) | 3057.7ms ± 23.0ms | 364.5ms ± 9.9ms | **8.4x faster** |
 | Write Operation (modify EXIF tag) | 287.3ms ± 3.2ms | 17.1ms ± 0.4ms | **16.8x faster** |
@@ -137,7 +137,7 @@ brew install hyperfine exiftool  # macOS
 # or
 sudo apt install hyperfine libimage-exiftool-perl  # Ubuntu
 
-# Build ExifTool-RS in release mode
+# Build OxiDex in release mode
 cargo build --release
 
 # Run the benchmark suite
@@ -156,12 +156,12 @@ cargo bench
 
 ## Installation
 
-ExifTool-RS v1.0.0 is now production-ready! Install via cargo, package managers, or pre-built binaries.
+OxiDex v1.0.0 is now production-ready! Install via cargo, package managers, or pre-built binaries.
 
 ### From crates.io (Recommended)
 
 ```bash
-cargo install exiftool-rs
+cargo install oxidex
 ```
 
 ### From Homebrew (macOS)
@@ -170,13 +170,13 @@ For macOS users with [Homebrew](https://brew.sh):
 
 ```bash
 # Install from Homebrew formula (source build)
-brew install --build-from-source https://raw.githubusercontent.com/exiftool-rs/exiftool-rs/main/packaging/homebrew/exiftool-rs.rb
+brew install --build-from-source https://raw.githubusercontent.com/exiftool-rs/exiftool-rs/main/packaging/homebrew/oxidex.rb
 
 # Or install from local formula file
-brew install --build-from-source ./packaging/homebrew/exiftool-rs.rb
+brew install --build-from-source ./packaging/homebrew/oxidex.rb
 
 # Verify installation
-exiftool-rs --version
+oxidex --version
 ```
 
 **Note**: The Homebrew formula builds from source, which may take 5-10 minutes depending on your system. Future releases will include pre-built bottles for faster installation.
@@ -185,18 +185,18 @@ exiftool-rs --version
 
 Static binaries are available for all major platforms on the [GitHub Releases](https://github.com/exiftool-rs/exiftool-rs/releases) page:
 
-- **Linux** (x86_64): `exiftool-rs-x86_64-linux-musl.tar.gz`
-- **Linux** (ARM64): `exiftool-rs-aarch64-linux-musl.tar.gz`
-- **macOS** (Intel): `exiftool-rs-x86_64-macos.tar.gz`
-- **macOS** (Apple Silicon): `exiftool-rs-aarch64-macos.tar.gz`
-- **Windows** (x86_64): `exiftool-rs-x86_64-windows.zip`
+- **Linux** (x86_64): `oxidex-x86_64-linux-musl.tar.gz`
+- **Linux** (ARM64): `oxidex-aarch64-linux-musl.tar.gz`
+- **macOS** (Intel): `oxidex-x86_64-macos.tar.gz`
+- **macOS** (Apple Silicon): `oxidex-aarch64-macos.tar.gz`
+- **Windows** (x86_64): `oxidex-x86_64-windows.zip`
 
 ```bash
 # Example: Install on Linux (x86_64)
-wget https://github.com/exiftool-rs/exiftool-rs/releases/download/v1.0.0/exiftool-rs-x86_64-linux-musl.tar.gz
-tar xzf exiftool-rs-x86_64-linux-musl.tar.gz
-sudo mv exiftool-rs /usr/local/bin/
-exiftool-rs --version
+wget https://github.com/exiftool-rs/exiftool-rs/releases/download/v1.0.0/oxidex-x86_64-linux-musl.tar.gz
+tar xzf oxidex-x86_64-linux-musl.tar.gz
+sudo mv oxidex /usr/local/bin/
+oxidex --version
 ```
 
 ### From Source
@@ -212,7 +212,7 @@ cd exiftool-rs
 cargo build --release
 
 # Run
-./target/release/exiftool-rs
+./target/release/oxidex
 
 # Optional: Install to system path
 cargo install --path .
@@ -224,37 +224,37 @@ cargo install --path .
 
 ```bash
 # Extract all metadata from a file
-exiftool-rs photo.jpg
+oxidex photo.jpg
 
 # Extract specific tags
-exiftool-rs -Make -Model -DateTimeOriginal photo.jpg
+oxidex -Make -Model -DateTimeOriginal photo.jpg
 
 # Write metadata
-exiftool-rs -Artist="Your Name" photo.jpg
+oxidex -Artist="Your Name" photo.jpg
 
 # Batch processing (recursive)
-exiftool-rs -r /path/to/photos/
+oxidex -r /path/to/photos/
 
 # JSON output
-exiftool-rs -json photo.jpg
+oxidex -json photo.jpg
 
 # CSV output for batch analysis
-exiftool-rs -csv -r /path/to/photos/ > metadata.csv
+oxidex -csv -r /path/to/photos/ > metadata.csv
 
 # Copy metadata between files
-exiftool-rs -TagsFromFile source.jpg target.jpg
+oxidex -TagsFromFile source.jpg target.jpg
 
 # Date shifting (adjust all timestamps by offset)
-exiftool-rs "-DateTimeOriginal+=1:0:0 0:0:0" photo.jpg
+oxidex "-DateTimeOriginal+=1:0:0 0:0:0" photo.jpg
 
 # Extract Canon-specific metadata (for Canon cameras)
-exiftool-rs -Canon:FirmwareVersion -Canon:SerialNumber -Canon:OwnerName canon_photo.jpg
+oxidex -Canon:FirmwareVersion -Canon:SerialNumber -Canon:OwnerName canon_photo.jpg
 ```
 
 ### Library API
 
 ```rust
-use exiftool_rs::core::MetadataMap;
+use oxidex::core::MetadataMap;
 
 // Extract metadata from a file
 let metadata = MetadataMap::from_file("photo.jpg")?;
@@ -303,7 +303,7 @@ cargo build
 
 ### Tag Database Generation
 
-ExifTool-RS automatically generates its comprehensive tag database from the official ExifTool Perl source during the build process. This ensures compatibility with ExifTool's extensive metadata tag definitions.
+OxiDex automatically generates its comprehensive tag database from the official ExifTool Perl source during the build process. This ensures compatibility with ExifTool's extensive metadata tag definitions.
 
 #### How It Works
 
@@ -315,7 +315,7 @@ During `cargo build`, the build script (`build.rs`) performs the following steps
    - Tag names and descriptions
    - Writable status and data types
    - Format family classifications (EXIF, XMP, IPTC, GPS, QuickTime, RIFF, etc.)
-3. **Generates Rust Code**: Creates `src/tag_db/generated_tags.rs` with 700+ tag definitions (731 in current version)
+3. **Generates Rust Code**: Creates tag definitions with 700+ tag definitions (731 in current version)
 4. **Validates Output**: Ensures the generated database meets minimum quality standards
 
 The generated file is excluded from version control (`.gitignore`) and rebuilt automatically when you run `cargo build`.
@@ -422,7 +422,7 @@ cargo fmt -- --check
 
 ### CI/CD Pipeline
 
-ExifTool-RS uses GitHub Actions for continuous integration and automated releases. The CI pipeline includes:
+OxiDex uses GitHub Actions for continuous integration and automated releases. The CI pipeline includes:
 
 #### CI Workflow (`.github/workflows/ci.yml`)
 
@@ -436,11 +436,7 @@ Runs on every push and pull request:
 - **Performance Benchmarks**: Automated benchmark runs with Criterion
 - **Cross-Compilation Tests**: Builds for both ARM64 and x86_64 Linux targets using QEMU emulation
 
-The cross-compilation job uses [cross](https://github.com/cross-rs/cross) with QEMU emulation to test builds for:
-- `aarch64-unknown-linux-musl` (ARM64 Linux)
-- `x86_64-unknown-linux-musl` (x86_64 Linux)
-
-This ensures binaries work correctly across different architectures before release.
+The cross-compilation job uses [cross](https://github.com/cross-rs/cross) with QEMU emulation to test builds for different architectures before release.
 
 #### Release Workflow (`.github/workflows/release.yml`)
 
@@ -464,7 +460,7 @@ git push origin v1.0.3
 
 ### Fuzzing
 
-ExifTool-RS includes continuous fuzzing targets for security-critical parsers to detect crashes, hangs, and memory safety issues.
+OxiDex includes continuous fuzzing targets for security-critical parsers to detect crashes, hangs, and memory safety issues.
 
 #### Prerequisites
 
@@ -544,7 +540,7 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - s
 
 ## Acknowledgments
 
-This project is inspired by and aims to be compatible with [ExifTool](https://exiftool.org/) by Phil Harvey. ExifTool-RS is an independent reimplementation and is not affiliated with or endorsed by the original ExifTool project.
+This project is inspired by and aims to be compatible with [ExifTool](https://exiftool.org/) by Phil Harvey. OxiDex is an independent reimplementation and is not affiliated with or endorsed by the original ExifTool project.
 
 ## Technology Stack
 
@@ -567,5 +563,5 @@ See the [project documentation](docs/) for detailed architectural decisions, imp
 **Status**: Stable Release
 **Current Version**: 1.0.0
 **License**: GPL-3.0
-**Documentation**: [User Guide](https://exiftool-rs.github.io/exiftool-rs/) | [API Docs](https://docs.rs/exiftool-rs)
+**Documentation**: [User Guide](https://exiftool-rs.github.io/exiftool-rs/) | [API Docs](https://docs.rs/oxidex)
 **Issues**: [GitHub Issues](https://github.com/exiftool-rs/exiftool-rs/issues)
