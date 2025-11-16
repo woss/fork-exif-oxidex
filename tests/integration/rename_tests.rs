@@ -7,8 +7,8 @@
 //! - Dry-run mode (-n flag)
 //! - Collision detection
 
-use exiftool_rs::cli::rename::{build_new_filename, rename_file};
-use exiftool_rs::core::operations::read_metadata;
+use oxidex::cli::rename::{build_new_filename, rename_file};
+use oxidex::core::operations::read_metadata;
 use std::fs;
 use tempfile::TempDir;
 

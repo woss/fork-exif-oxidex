@@ -13,7 +13,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::xmp::parse_xmp;
+//! use oxidex::parsers::xmp::parse_xmp;
 //!
 //! let xml = br#"
 //!     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"

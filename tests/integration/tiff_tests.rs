@@ -14,9 +14,9 @@
 //! - EXIF sub-IFD extraction
 //! - Error handling (invalid headers, truncated files)
 
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::tiff::file_parser::{parse_tiff_file, parse_tiff_header};
-use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::tiff::file_parser::{parse_tiff_file, parse_tiff_header};
+use oxidex::parsers::tiff::ifd_parser::ByteOrder;
 use std::path::Path;
 
 #[test]

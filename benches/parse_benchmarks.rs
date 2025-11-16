@@ -25,15 +25,15 @@
 //! ```
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use exiftool_rs::core::operations::read_metadata;
-use exiftool_rs::io::MMapReader;
-use exiftool_rs::parsers::format_detector::detect_format;
-use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-use exiftool_rs::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use oxidex::core::operations::read_metadata;
+use oxidex::io::MMapReader;
+use oxidex::parsers::format_detector::detect_format;
+use oxidex::parsers::jpeg::segment_parser::parse_segments;
+use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use std::path::Path;
 
 // Import IPTC parser for tag name generation benchmark
-use exiftool_rs::parsers::jpeg::iptc_parser;
+use oxidex::parsers::jpeg::iptc_parser;
 
 /// Benchmark for format detection via magic bytes
 ///
@@ -165,7 +165,7 @@ impl<'a> TiffSubReader<'a> {
     }
 }
 
-impl<'a> exiftool_rs::core::FileReader for TiffSubReader<'a> {
+impl<'a> oxidex::core::FileReader for TiffSubReader<'a> {
     fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
         // Adjust offset to be relative to base
         self.reader.read(self.base_offset + offset, length)

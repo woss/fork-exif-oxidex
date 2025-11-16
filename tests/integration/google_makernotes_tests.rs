@@ -9,9 +9,9 @@
 //! - Motion Photos
 //! - Computational photography settings
 
-use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-use exiftool_rs::parsers::tiff::makernotes::google::GoogleParser;
-use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+use oxidex::parsers::tiff::makernotes::google::GoogleParser;
+use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 use std::collections::HashMap;
 
 #[test]

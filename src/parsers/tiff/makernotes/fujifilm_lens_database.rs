@@ -19,7 +19,7 @@ use std::sync::LazyLock;
 ///
 /// # Example
 /// ```
-/// use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+/// use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 ///
 /// let lens_name = lookup_lens_name(35);
 /// assert_eq!(lens_name, Some("XF 35mm f/1.4 R".to_string()));

@@ -17,7 +17,7 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! use exiftool_rs::core::MetadataMap;
+//! use oxidex::core::MetadataMap;
 //!
 //! // Future API example - not yet implemented
 //! let metadata = MetadataMap::from_file("photo.jpg")?;

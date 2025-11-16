@@ -17,7 +17,7 @@ pub mod tag_value;
 pub mod validation;
 
 // Re-export tag descriptor types from exiftool-tags crate
-pub use exiftool_tags::{FormatFamily, TagDescriptor, TagId, ValueType};
+pub use oxidex_tags::{FormatFamily, TagDescriptor, TagId, ValueType};
 
 // Re-export commonly used types for convenience
 pub use file_format::FileFormat;

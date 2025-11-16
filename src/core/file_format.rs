@@ -27,7 +27,7 @@ use crate::parsers::raw::RawFormat;
 /// # Examples
 ///
 /// ```
-/// use exiftool_rs::core::FileFormat;
+/// use oxidex::core::FileFormat;
 ///
 /// let format = FileFormat::JPEG;
 /// assert_eq!(format, FileFormat::JPEG);
@@ -90,7 +90,7 @@ impl FileFormat {
     /// # Examples
     ///
     /// ```
-    /// use exiftool_rs::core::FileFormat;
+    /// use oxidex::core::FileFormat;
     ///
     /// assert_eq!(FileFormat::JPEG.name(), "JPEG");
     /// assert_eq!(FileFormat::PNG.name(), "PNG");
@@ -118,7 +118,7 @@ impl FileFormat {
     /// # Examples
     ///
     /// ```
-    /// use exiftool_rs::core::FileFormat;
+    /// use oxidex::core::FileFormat;
     ///
     /// assert_eq!(FileFormat::JPEG.extensions(), &["jpg", "jpeg"]);
     /// assert_eq!(FileFormat::PNG.extensions(), &["png"]);

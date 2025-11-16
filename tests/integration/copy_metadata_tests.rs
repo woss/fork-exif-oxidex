@@ -3,8 +3,8 @@
 //! These tests verify the end-to-end functionality of copying metadata
 //! from one file to another using the copy_metadata operation.
 
-use exiftool_rs::core::operations::{copy_metadata, read_metadata, write_metadata};
-use exiftool_rs::core::tag_value::TagValue;
+use oxidex::core::operations::{copy_metadata, read_metadata, write_metadata};
+use oxidex::core::tag_value::TagValue;
 use std::io::Write;
 use tempfile::NamedTempFile;
 

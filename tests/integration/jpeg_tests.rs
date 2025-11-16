@@ -3,11 +3,11 @@
 //! This test validates the entire parsing pipeline from file reading through
 //! format detection, segment parsing, and EXIF tag extraction.
 
-use exiftool_rs::core::{FileFormat, FileReader};
-use exiftool_rs::io::MMapReader;
-use exiftool_rs::parsers::format_detector::detect_format;
-use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
-use exiftool_rs::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use oxidex::core::{FileFormat, FileReader};
+use oxidex::io::MMapReader;
+use oxidex::parsers::format_detector::detect_format;
+use oxidex::parsers::jpeg::segment_parser::parse_segments;
+use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use std::io::Write;
 use std::path::Path;
 use tempfile::NamedTempFile;
@@ -492,7 +492,7 @@ fn test_jpeg_exif_extraction_end_to_end() {
 
 #[test]
 fn test_jpeg_xmp_extraction_end_to_end() {
-    use exiftool_rs::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
+    use oxidex::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
 
     // === Step 0: Setup test fixtures ===
     ensure_test_fixtures().expect("Failed to create test fixtures");
@@ -696,7 +696,7 @@ impl TestReader {
     }
 }
 
-impl exiftool_rs::core::FileReader for TestReader {
+impl oxidex::core::FileReader for TestReader {
     fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
         let start = offset as usize;
         let end = start + length;
@@ -718,8 +718,8 @@ impl exiftool_rs::core::FileReader for TestReader {
 
 #[test]
 fn test_jpeg_with_iptc_metadata() {
-    use exiftool_rs::parsers::jpeg::iptc_parser::extract_iptc_from_segments;
-    use exiftool_rs::parsers::jpeg::segment_parser::parse_segments;
+    use oxidex::parsers::jpeg::iptc_parser::extract_iptc_from_segments;
+    use oxidex::parsers::jpeg::segment_parser::parse_segments;
 
     // Create minimal JPEG with APP13 (IPTC) segment
     let mut jpeg_data = Vec::new();

@@ -28,7 +28,7 @@ impl MetadataMap {
     /// # Examples
     ///
     /// ```
-    /// use exiftool_rs::core::metadata_map::MetadataMap;
+    /// use oxidex::core::metadata_map::MetadataMap;
     ///
     /// let metadata = MetadataMap::new();
     /// assert_eq!(metadata.len(), 0);
@@ -56,8 +56,8 @@ impl MetadataMap {
     /// # Examples
     ///
     /// ```
-    /// use exiftool_rs::core::metadata_map::MetadataMap;
-    /// use exiftool_rs::core::tag_value::TagValue;
+    /// use oxidex::core::metadata_map::MetadataMap;
+    /// use oxidex::core::tag_value::TagValue;
     ///
     /// let mut metadata = MetadataMap::new();
     /// metadata.insert("EXIF:Make", TagValue::new_string("Canon"));
@@ -179,8 +179,8 @@ impl FromIterator<(String, TagValue)> for MetadataMap {
 /// # Examples
 ///
 /// ```
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
 ///
 /// let mut map1 = MetadataMap::new();
 /// map1.insert("EXIF:Make", TagValue::new_string("Canon"));

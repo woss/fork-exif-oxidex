@@ -1,6 +1,6 @@
 //! Integration tests for tag database coverage
 
-use exiftool_rs::tag_db::generated_tags::generated_tag_count;
+use oxidex::tag_db::generated_tags::generated_tag_count;
 
 #[test]
 fn test_tag_database_has_minimum_coverage() {

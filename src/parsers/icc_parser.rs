@@ -458,7 +458,7 @@ fn parse_xref_table(xref_data: &[u8]) -> Result<HashMap<u32, u64>> {
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::icc_parser::parse_icc_profile_data;
+/// use oxidex::parsers::icc_parser::parse_icc_profile_data;
 ///
 /// # fn example(icc_data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
 /// let metadata = parse_icc_profile_data(icc_data)?;

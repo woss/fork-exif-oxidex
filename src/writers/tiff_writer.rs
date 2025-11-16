@@ -19,10 +19,10 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::core::metadata_map::MetadataMap;
-//! use exiftool_rs::core::tag_value::TagValue;
-//! use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-//! use exiftool_rs::writers::tiff_writer::serialize_ifd;
+//! use oxidex::core::metadata_map::MetadataMap;
+//! use oxidex::core::tag_value::TagValue;
+//! use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+//! use oxidex::writers::tiff_writer::serialize_ifd;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut metadata = MetadataMap::new();
@@ -76,10 +76,10 @@ const TILE_BYTE_COUNTS: u16 = 0x0145;
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
-/// use exiftool_rs::writers::tiff_writer::write_tiff_file;
+/// use oxidex::io::buffered_reader::BufferedReader;
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
+/// use oxidex::writers::tiff_writer::write_tiff_file;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -327,10 +327,10 @@ impl IfdEntryData {
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
-/// use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-/// use exiftool_rs::writers::tiff_writer::serialize_ifd;
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
+/// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+/// use oxidex::writers::tiff_writer::serialize_ifd;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut metadata = MetadataMap::new();

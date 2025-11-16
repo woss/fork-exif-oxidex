@@ -21,7 +21,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::xmp::rdf_parser::parse_xmp;
+//! use oxidex::parsers::xmp::rdf_parser::parse_xmp;
 //!
 //! let xml = br#"
 //!     <x:xmpmeta xmlns:x="adobe:ns:meta/">
@@ -65,7 +65,7 @@ use quick_xml::Reader;
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::xmp::rdf_parser::parse_xmp;
+/// use oxidex::parsers::xmp::rdf_parser::parse_xmp;
 ///
 /// let xml = br#"
 ///     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"

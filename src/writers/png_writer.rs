@@ -201,10 +201,10 @@ fn serialize_exif_chunk(metadata: &MetadataMap) -> Result<Vec<u8>> {
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::core::metadata_map::MetadataMap;
-/// use exiftool_rs::core::tag_value::TagValue;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
-/// use exiftool_rs::writers::png_writer::write_png_metadata;
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
+/// use oxidex::io::buffered_reader::BufferedReader;
+/// use oxidex::writers::png_writer::write_png_metadata;
 /// use std::path::Path;
 ///
 /// let path = Path::new("image.png");
@@ -212,7 +212,7 @@ fn serialize_exif_chunk(metadata: &MetadataMap) -> Result<Vec<u8>> {
 /// let mut metadata = MetadataMap::new();
 /// metadata.insert("PNG:tEXt:Author", TagValue::new_string("John Doe"));
 /// write_png_metadata(path, &reader, &metadata)?;
-/// # Ok::<(), exiftool_rs::error::ExifToolError>(())
+/// # Ok::<(), oxidex::error::ExifToolError>(())
 /// ```
 pub fn write_png_metadata(
     path: &Path,

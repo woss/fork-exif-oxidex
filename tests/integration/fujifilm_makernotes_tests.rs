@@ -9,7 +9,7 @@
 
 #[test]
 fn test_fujifilm_lens_database_xf_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 
     // Test popular XF prime lenses
     assert_eq!(lookup_lens_name(35), Some("XF 35mm f/1.4 R".to_string()));
@@ -27,7 +27,7 @@ fn test_fujifilm_lens_database_xf_primes() {
 
 #[test]
 fn test_fujifilm_lens_database_xf_zooms() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 
     // Test kit lens
     assert_eq!(
@@ -56,7 +56,7 @@ fn test_fujifilm_lens_database_xf_zooms() {
 
 #[test]
 fn test_fujifilm_lens_database_xc_budget() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 
     // Test budget XC lenses
     assert_eq!(
@@ -74,7 +74,7 @@ fn test_fujifilm_lens_database_xc_budget() {
 
 #[test]
 fn test_fujifilm_lens_database_gfx_medium_format() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 
     // Test GFX medium format lenses
     assert_eq!(lookup_lens_name(63), Some("GF 63mm f/2.8 R WR".to_string()));
@@ -98,7 +98,7 @@ fn test_fujifilm_lens_database_gfx_medium_format() {
 
 #[test]
 fn test_fujifilm_lens_database_teleconverters() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 
     // Test teleconverters
     assert_eq!(lookup_lens_name(286), Some("GF 1.4X TC WR".to_string()));
@@ -110,7 +110,7 @@ fn test_fujifilm_lens_database_teleconverters() {
 
 #[test]
 fn test_fujifilm_lens_database_unknown() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 
     // Unknown lens IDs should return None
     assert_eq!(lookup_lens_name(65000), None);
@@ -120,8 +120,8 @@ fn test_fujifilm_lens_database_unknown() {
 
 #[test]
 fn test_fujifilm_parser_trait() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::FujifilmParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::fujifilm::FujifilmParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = FujifilmParser;
 
@@ -143,8 +143,8 @@ fn test_fujifilm_parser_trait() {
 
 #[test]
 fn test_fujifilm_parser_lens_lookup() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::FujifilmParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::fujifilm::FujifilmParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = FujifilmParser;
 
@@ -161,7 +161,7 @@ fn test_fujifilm_parser_lens_lookup() {
 
 #[test]
 fn test_fujifilm_is_fujifilm_makernote() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::is_fujifilm_makernote;
+    use oxidex::parsers::tiff::makernotes::fujifilm::is_fujifilm_makernote;
 
     // Valid Fujifilm header
     assert!(is_fujifilm_makernote(b"FUJIFILM\x0C\x00\x00\x00test data"));
@@ -181,8 +181,8 @@ fn test_fujifilm_is_fujifilm_makernote() {
 
 #[test]
 fn test_fujifilm_parse_basic_tags() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
     use std::collections::HashMap;
 
     // Create minimal Fujifilm MakerNote
@@ -223,8 +223,8 @@ fn test_fujifilm_parse_basic_tags() {
 
 #[test]
 fn test_fujifilm_parse_film_simulation() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -276,8 +276,8 @@ fn test_fujifilm_parse_film_simulation() {
 
 #[test]
 fn test_fujifilm_parse_focus_and_flash() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -325,8 +325,8 @@ fn test_fujifilm_parse_focus_and_flash() {
 
 #[test]
 fn test_fujifilm_parse_empty_data() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
     use std::collections::HashMap;
 
     let mut tags = HashMap::new();
@@ -343,8 +343,8 @@ fn test_fujifilm_parse_empty_data() {
 
 #[test]
 fn test_fujifilm_parser_big_endian() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -372,7 +372,7 @@ fn test_fujifilm_parser_big_endian() {
 
 #[test]
 fn test_fujifilm_lens_database_coverage() {
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::fujifilm_lens_database::lookup_lens_name;
 
     // Count how many lenses we have in database
     let mut count = 0;
@@ -393,8 +393,8 @@ fn test_fujifilm_lens_database_coverage() {
 
 #[test]
 fn test_fujifilm_parse_advanced_settings() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();

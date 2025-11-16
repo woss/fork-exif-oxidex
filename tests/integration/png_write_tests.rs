@@ -2,12 +2,12 @@
 //!
 //! These tests verify PNG metadata modification with write operations.
 
-use exiftool_rs::core::metadata_map::MetadataMap;
-use exiftool_rs::core::tag_value::TagValue;
-use exiftool_rs::core::FileReader;
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::png::parse_png_metadata;
-use exiftool_rs::writers::png_writer::write_png_metadata;
+use oxidex::core::metadata_map::MetadataMap;
+use oxidex::core::tag_value::TagValue;
+use oxidex::core::FileReader;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::png::parse_png_metadata;
+use oxidex::writers::png_writer::write_png_metadata;
 use std::io;
 use tempfile::TempDir;
 

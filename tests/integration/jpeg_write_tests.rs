@@ -3,12 +3,12 @@
 //! These tests verify the end-to-end functionality of writing modified EXIF
 //! metadata back to JPEG files.
 
-use exiftool_rs::core::metadata_map::MetadataMap;
-use exiftool_rs::core::tag_value::TagValue;
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::jpeg::{parse_segments, Segment};
-use exiftool_rs::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
-use exiftool_rs::writers::jpeg_writer::write_exif_to_jpeg;
+use oxidex::core::metadata_map::MetadataMap;
+use oxidex::core::tag_value::TagValue;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::jpeg::{parse_segments, Segment};
+use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use oxidex::writers::jpeg_writer::write_exif_to_jpeg;
 use std::io::{self, Write};
 use tempfile::NamedTempFile;
 
@@ -23,7 +23,7 @@ impl TestReader {
     }
 }
 
-impl exiftool_rs::core::FileReader for TestReader {
+impl oxidex::core::FileReader for TestReader {
     fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
         let start = offset as usize;
         let end = start + length;

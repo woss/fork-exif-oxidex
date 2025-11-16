@@ -45,7 +45,7 @@ fn test_raw_extensions_supported() {
 
         // Use the actual batch_processor function to verify
         assert!(
-            exiftool_rs::cli::batch_processor::is_supported_file(path),
+            oxidex::cli::batch_processor::is_supported_file(path),
             "Extension '{}' not supported by batch processor",
             ext
         );
@@ -68,7 +68,7 @@ fn test_existing_formats_still_supported() {
         let path = Path::new(&path_str);
 
         assert!(
-            exiftool_rs::cli::batch_processor::is_supported_file(path),
+            oxidex::cli::batch_processor::is_supported_file(path),
             "Extension '{}' should still be supported",
             ext
         );
@@ -85,7 +85,7 @@ fn test_unsupported_extensions_rejected() {
         let path = Path::new(&path_str);
 
         assert!(
-            !exiftool_rs::cli::batch_processor::is_supported_file(path),
+            !oxidex::cli::batch_processor::is_supported_file(path),
             "Extension '{}' should NOT be supported",
             ext
         );
@@ -107,7 +107,7 @@ fn test_case_insensitive_matching() {
     for (filename, should_support) in test_cases {
         let path = Path::new(filename);
         assert_eq!(
-            exiftool_rs::cli::batch_processor::is_supported_file(path),
+            oxidex::cli::batch_processor::is_supported_file(path),
             should_support,
             "File '{}' support status should be {}",
             filename,

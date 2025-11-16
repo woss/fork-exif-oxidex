@@ -13,8 +13,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::png::parse_png_metadata;
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
+//! use oxidex::parsers::png::parse_png_metadata;
+//! use oxidex::io::buffered_reader::BufferedReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -76,8 +76,8 @@ use chunk_parser::{
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::png::parse_png_metadata;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::parsers::png::parse_png_metadata;
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

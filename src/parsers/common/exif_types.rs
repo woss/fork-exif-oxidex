@@ -66,7 +66,7 @@ impl ExifType {
     /// # Examples
     ///
     /// ```
-    /// use exiftool_rs::parsers::common::exif_types::ExifType;
+    /// use oxidex::parsers::common::exif_types::ExifType;
     ///
     /// assert_eq!(ExifType::Byte.size_in_bytes(), 1);
     /// assert_eq!(ExifType::Short.size_in_bytes(), 2);
@@ -97,7 +97,7 @@ impl ExifType {
     /// # Examples
     ///
     /// ```
-    /// use exiftool_rs::parsers::common::exif_types::ExifType;
+    /// use oxidex::parsers::common::exif_types::ExifType;
     ///
     /// assert_eq!(ExifType::from_u16(1), Some(ExifType::Byte));
     /// assert_eq!(ExifType::from_u16(2), Some(ExifType::Ascii));
@@ -126,7 +126,7 @@ impl ExifType {
     /// # Examples
     ///
     /// ```
-    /// use exiftool_rs::parsers::common::exif_types::ExifType;
+    /// use oxidex::parsers::common::exif_types::ExifType;
     ///
     /// assert_eq!(ExifType::Byte.as_u16(), 1);
     /// assert_eq!(ExifType::Ascii.as_u16(), 2);

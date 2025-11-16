@@ -18,7 +18,7 @@
 //!
 //! ```rust,no_run
 //! use std::path::Path;
-//! use exiftool_rs::writers::atomic_writer::write_atomic;
+//! use oxidex::writers::atomic_writer::write_atomic;
 //!
 //! let path = Path::new("/path/to/file.jpg");
 //! let data = b"new file contents";
@@ -75,7 +75,7 @@ use tempfile::NamedTempFile;
 ///
 /// ```rust,no_run
 /// use std::path::Path;
-/// use exiftool_rs::writers::atomic_writer::write_atomic;
+/// use oxidex::writers::atomic_writer::write_atomic;
 ///
 /// let path = Path::new("output.jpg");
 /// let metadata = b"EXIF data...";

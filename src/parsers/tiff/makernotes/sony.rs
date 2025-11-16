@@ -837,7 +837,7 @@ fn parse_sony_makernote_impl(
 /// # Example
 /// ```ignore
 /// use std::collections::HashMap;
-/// use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
+/// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
 ///
 /// let mut tags = HashMap::new();
 /// parse_sony_makernote(&data, ByteOrder::LittleEndian, &mut tags);

@@ -4,8 +4,8 @@
 //! real MP4/MOV files, including iTunes-style metadata, classic QuickTime user data,
 //! and MP4 keys/ilst metadata.
 
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::quicktime::parse_quicktime_metadata;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::quicktime::parse_quicktime_metadata;
 use std::path::PathBuf;
 
 /// Helper function to get path to test fixture

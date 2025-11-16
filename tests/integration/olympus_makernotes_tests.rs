@@ -8,7 +8,7 @@
 
 #[test]
 fn test_olympus_lens_database_four_thirds() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test classic Four Thirds Zuiko Digital lenses
     assert_eq!(
@@ -35,7 +35,7 @@ fn test_olympus_lens_database_four_thirds() {
 
 #[test]
 fn test_olympus_lens_database_mzuiko_standard() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test popular M.Zuiko kit lenses
     assert_eq!(
@@ -56,7 +56,7 @@ fn test_olympus_lens_database_mzuiko_standard() {
 
 #[test]
 fn test_olympus_lens_database_mzuiko_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test M.Zuiko prime lenses
     assert_eq!(
@@ -87,7 +87,7 @@ fn test_olympus_lens_database_mzuiko_primes() {
 
 #[test]
 fn test_olympus_lens_database_pro_series() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test M.Zuiko PRO lenses
     assert_eq!(
@@ -118,7 +118,7 @@ fn test_olympus_lens_database_pro_series() {
 
 #[test]
 fn test_olympus_lens_database_premium_primes() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test M.Zuiko f/1.2 PRO primes
     assert_eq!(
@@ -144,7 +144,7 @@ fn test_olympus_lens_database_premium_primes() {
 
 #[test]
 fn test_olympus_lens_database_specialty() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test specialty lenses
     assert_eq!(
@@ -170,7 +170,7 @@ fn test_olympus_lens_database_specialty() {
 
 #[test]
 fn test_olympus_lens_database_hex_encoded() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test hex-encoded lens IDs (newer cameras)
     assert_eq!(
@@ -196,7 +196,7 @@ fn test_olympus_lens_database_hex_encoded() {
 
 #[test]
 fn test_olympus_lens_database_unknown() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test unknown lens ID
     assert_eq!(lookup_lens_name(9999), None);
@@ -204,7 +204,7 @@ fn test_olympus_lens_database_unknown() {
 
 #[test]
 fn test_olympus_lens_database_size() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test that we have a substantial database
     let mut count = 0;
@@ -224,7 +224,7 @@ fn test_olympus_lens_database_size() {
 
 #[test]
 fn test_olympus_parse_hex_lens_id() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::parse_hex_lens_id;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::parse_hex_lens_id;
 
     // Test hex string parsing
     assert_eq!(parse_hex_lens_id("0x0210"), Some(0x0210));
@@ -235,8 +235,8 @@ fn test_olympus_parse_hex_lens_id() {
 
 #[test]
 fn test_olympus_parser_trait_implementation() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus::OlympusParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::olympus::OlympusParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = OlympusParser;
 
@@ -255,8 +255,8 @@ fn test_olympus_parser_trait_implementation() {
 
 #[test]
 fn test_olympus_header_validation() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus::OlympusParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::olympus::OlympusParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = OlympusParser;
 
@@ -279,9 +279,9 @@ fn test_olympus_header_validation() {
 
 #[test]
 fn test_olympus_parser_empty_data() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::olympus::OlympusParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::olympus::OlympusParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = OlympusParser;
@@ -295,9 +295,9 @@ fn test_olympus_parser_empty_data() {
 
 #[test]
 fn test_olympus_parser_invalid_header() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::olympus::OlympusParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::olympus::OlympusParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = OlympusParser;
@@ -311,7 +311,7 @@ fn test_olympus_parser_invalid_header() {
 
 #[test]
 fn test_olympus_comprehensive_coverage() {
-    use exiftool_rs::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::olympus_lens_database::lookup_lens_name;
 
     // Test comprehensive coverage of major lens categories
     let test_categories = vec![

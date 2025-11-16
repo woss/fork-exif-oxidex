@@ -54,8 +54,8 @@ use std::path::Path;
 /// # Examples
 ///
 /// ```no_run
-/// use exiftool_rs::io::MMapReader;
-/// use exiftool_rs::core::FileReader;
+/// use oxidex::io::MMapReader;
+/// use oxidex::core::FileReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> std::io::Result<()> {
@@ -104,8 +104,8 @@ impl MMapReader {
     /// # Examples
     ///
     /// ```no_run
-    /// use exiftool_rs::core::FileReader;
-    /// use exiftool_rs::io::MMapReader;
+    /// use oxidex::core::FileReader;
+    /// use oxidex::io::MMapReader;
     /// use std::path::Path;
     ///
     /// # fn example() -> std::io::Result<()> {

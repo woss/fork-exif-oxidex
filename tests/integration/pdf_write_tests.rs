@@ -3,12 +3,12 @@
 //! These tests verify the PDF writer's ability to modify Info dictionary metadata,
 //! recalculate xref tables correctly, and produce valid PDF files.
 
-use exiftool_rs::core::metadata_map::MetadataMap;
-use exiftool_rs::core::tag_value::TagValue;
-use exiftool_rs::core::FileReader;
-use exiftool_rs::io::buffered_reader::BufferedReader;
-use exiftool_rs::parsers::pdf::parse_pdf_metadata;
-use exiftool_rs::writers::pdf_writer::write_pdf_file;
+use oxidex::core::metadata_map::MetadataMap;
+use oxidex::core::tag_value::TagValue;
+use oxidex::core::FileReader;
+use oxidex::io::buffered_reader::BufferedReader;
+use oxidex::parsers::pdf::parse_pdf_metadata;
+use oxidex::writers::pdf_writer::write_pdf_file;
 use std::io;
 use std::path::PathBuf;
 

@@ -8,7 +8,7 @@
 
 #[test]
 fn test_nikon_lens_database_f_mount() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
 
     // Test common AF-S DX lens
     assert_eq!(
@@ -37,7 +37,7 @@ fn test_nikon_lens_database_f_mount() {
 
 #[test]
 fn test_nikon_lens_database_z_mount() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
 
     // Test Z-mount standard zoom
     assert_eq!(
@@ -66,7 +66,7 @@ fn test_nikon_lens_database_z_mount() {
 
 #[test]
 fn test_nikon_lens_database_third_party() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
 
     // Test Sigma Art lens
     assert_eq!(
@@ -83,7 +83,7 @@ fn test_nikon_lens_database_third_party() {
 
 #[test]
 fn test_nikon_lens_database_unknown() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
 
     // Unknown lens ID should return None
     assert_eq!(lookup_lens_name(65000), None);
@@ -92,8 +92,8 @@ fn test_nikon_lens_database_unknown() {
 
 #[test]
 fn test_nikon_parser_trait() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon::NikonParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::nikon::NikonParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = NikonParser;
 
@@ -111,8 +111,8 @@ fn test_nikon_parser_trait() {
 
 #[test]
 fn test_nikon_parser_lens_lookup() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon::NikonParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::nikon::NikonParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = NikonParser;
 
@@ -127,7 +127,7 @@ fn test_nikon_parser_lens_lookup() {
 
 #[test]
 fn test_nikon_is_nikon_makernote() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon::is_nikon_makernote;
+    use oxidex::parsers::tiff::makernotes::nikon::is_nikon_makernote;
 
     // Valid Nikon Type 2 header
     assert!(is_nikon_makernote(b"Nikon\0\x02\x10\x00\x00"));
@@ -150,8 +150,8 @@ fn test_nikon_is_nikon_makernote() {
 
 #[test]
 fn test_nikon_parse_basic_tags() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
     use std::collections::HashMap;
 
     // Create minimal Nikon MakerNote with Type 2 header
@@ -191,8 +191,8 @@ fn test_nikon_parse_basic_tags() {
 
 #[test]
 fn test_nikon_parse_enumerated_values() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -234,8 +234,8 @@ fn test_nikon_parse_enumerated_values() {
 
 #[test]
 fn test_nikon_parse_empty_data() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
     use std::collections::HashMap;
 
     let mut tags = HashMap::new();
@@ -252,8 +252,8 @@ fn test_nikon_parse_empty_data() {
 
 #[test]
 fn test_nikon_parser_big_endian() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::nikon::parse_nikon_makernotes;
     use std::collections::HashMap;
 
     let mut data = Vec::new();
@@ -280,7 +280,7 @@ fn test_nikon_parser_big_endian() {
 
 #[test]
 fn test_nikon_lens_database_coverage() {
-    use exiftool_rs::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::nikon_lens_database::lookup_lens_name;
 
     // Count how many lenses we have in database
     let mut count = 0;

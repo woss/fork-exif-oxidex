@@ -42,8 +42,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::tiff::file_parser::parse_tiff_file;
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
+//! use oxidex::parsers::tiff::file_parser::parse_tiff_file;
+//! use oxidex::io::buffered_reader::BufferedReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -103,8 +103,8 @@ const SUB_IFDS: u16 = 0x014A;
 /// # Example
 ///
 /// ```no_run
-/// # use exiftool_rs::parsers::tiff::file_parser::parse_tiff_header;
-/// # use exiftool_rs::io::buffered_reader::BufferedReader;
+/// # use oxidex::parsers::tiff::file_parser::parse_tiff_header;
+/// # use oxidex::io::buffered_reader::BufferedReader;
 /// # use std::path::Path;
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let reader = BufferedReader::new(Path::new("sample.tif"))?;
@@ -272,8 +272,8 @@ fn extract_u32_from_tag_value(value: &[u8], byte_order: ByteOrder) -> Option<u32
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::tiff::file_parser::parse_tiff_file;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::parsers::tiff::file_parser::parse_tiff_file;
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {

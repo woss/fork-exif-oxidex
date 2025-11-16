@@ -144,7 +144,7 @@ pub enum RawFormat {
 ///
 /// # Examples
 /// ```
-/// use exiftool_rs::parsers::raw::{detect_raw_format, RawFormat};
+/// use oxidex::parsers::raw::{detect_raw_format, RawFormat};
 ///
 /// // Canon CR2 has distinctive magic bytes
 /// let cr2_data = b"II\x2a\x00\x10\x00\x00\x00CR\x02\x00";

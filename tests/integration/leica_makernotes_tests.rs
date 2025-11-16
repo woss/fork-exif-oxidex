@@ -8,7 +8,7 @@
 
 #[test]
 fn test_leica_lens_database_m_mount_summilux() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test Leica M-mount Summilux lenses (f/1.4 premium series)
     assert_eq!(
@@ -34,7 +34,7 @@ fn test_leica_lens_database_m_mount_summilux() {
 
 #[test]
 fn test_leica_lens_database_m_mount_noctilux() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test legendary Noctilux ultra-fast lenses
     assert_eq!(
@@ -55,7 +55,7 @@ fn test_leica_lens_database_m_mount_noctilux() {
 
 #[test]
 fn test_leica_lens_database_apo_summicron_m() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test APO-Summicron-M lenses (apochromatic f/2.0)
     assert_eq!(
@@ -81,7 +81,7 @@ fn test_leica_lens_database_apo_summicron_m() {
 
 #[test]
 fn test_leica_lens_database_summicron_m() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test standard Summicron-M lenses (f/2.0)
     assert_eq!(
@@ -102,7 +102,7 @@ fn test_leica_lens_database_summicron_m() {
 
 #[test]
 fn test_leica_lens_database_elmarit_m() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test Elmarit-M compact lenses (f/2.8)
     assert_eq!(
@@ -123,7 +123,7 @@ fn test_leica_lens_database_elmarit_m() {
 
 #[test]
 fn test_leica_lens_database_sl_mount_apo() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test SL-mount APO-Summicron lenses (autofocus)
     assert_eq!(
@@ -144,7 +144,7 @@ fn test_leica_lens_database_sl_mount_apo() {
 
 #[test]
 fn test_leica_lens_database_sl_zoom_lenses() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test SL-mount zoom lenses
     assert_eq!(
@@ -160,7 +160,7 @@ fn test_leica_lens_database_sl_zoom_lenses() {
 
 #[test]
 fn test_leica_lens_database_tl_mount() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test TL/CL mount lenses (APS-C)
     assert_eq!(
@@ -181,7 +181,7 @@ fn test_leica_lens_database_tl_mount() {
 
 #[test]
 fn test_leica_lens_database_r_mount_legacy() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test legacy R-mount SLR lenses
     assert_eq!(
@@ -202,7 +202,7 @@ fn test_leica_lens_database_r_mount_legacy() {
 
 #[test]
 fn test_leica_lens_database_l_mount_alliance() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test L-mount alliance lenses (Sigma, Panasonic compatible)
     assert_eq!(
@@ -223,7 +223,7 @@ fn test_leica_lens_database_l_mount_alliance() {
 
 #[test]
 fn test_leica_lens_database_not_found() {
-    use exiftool_rs::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
+    use oxidex::parsers::tiff::makernotes::leica_lens_database::lookup_lens_name;
 
     // Test that unknown lens IDs return None
     assert_eq!(lookup_lens_name(9999), None);
@@ -233,8 +233,8 @@ fn test_leica_lens_database_not_found() {
 
 #[test]
 fn test_leica_makernote_parser_trait_implementation() {
-    use exiftool_rs::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
 
     let parser = LeicaMakerNoteParser;
 
@@ -255,7 +255,7 @@ fn test_leica_makernote_parser_trait_implementation() {
 
 #[test]
 fn test_leica_header_validation_short() {
-    use exiftool_rs::parsers::tiff::makernotes::leica::is_leica_makernote;
+    use oxidex::parsers::tiff::makernotes::leica::is_leica_makernote;
 
     // Test valid short LEICA header
     let valid_header = b"LEICA\0\0\0\x00\x10\x00\x00";
@@ -272,7 +272,7 @@ fn test_leica_header_validation_short() {
 
 #[test]
 fn test_leica_header_validation_long() {
-    use exiftool_rs::parsers::tiff::makernotes::leica::is_leica_makernote;
+    use oxidex::parsers::tiff::makernotes::leica::is_leica_makernote;
 
     // Test valid long "LEICA CAMERA AG" header
     let valid_header = b"LEICA CAMERA AG\x00\x00\x10";
@@ -281,7 +281,7 @@ fn test_leica_header_validation_long() {
 
 #[test]
 fn test_leica_header_validation_no_header() {
-    use exiftool_rs::parsers::tiff::makernotes::leica::is_leica_makernote;
+    use oxidex::parsers::tiff::makernotes::leica::is_leica_makernote;
 
     // Test data with no header but valid IFD entry count (15 entries)
     let no_header = b"\x0F\x00\x00\x00\x00\x00\x00\x00";
@@ -294,9 +294,9 @@ fn test_leica_header_validation_no_header() {
 
 #[test]
 fn test_leica_makernote_parse_basic() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = LeicaMakerNoteParser;
@@ -333,9 +333,9 @@ fn test_leica_makernote_parse_basic() {
 
 #[test]
 fn test_leica_makernote_parse_lens_id() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = LeicaMakerNoteParser;
@@ -365,9 +365,9 @@ fn test_leica_makernote_parse_lens_id() {
 
 #[test]
 fn test_leica_makernote_parse_camera_settings() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = LeicaMakerNoteParser;
@@ -419,9 +419,9 @@ fn test_leica_makernote_parse_camera_settings() {
 
 #[test]
 fn test_leica_makernote_parse_error_too_short() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = LeicaMakerNoteParser;
@@ -435,9 +435,9 @@ fn test_leica_makernote_parse_error_too_short() {
 
 #[test]
 fn test_leica_makernote_parse_error_invalid_entry_count() {
-    use exiftool_rs::parsers::tiff::ifd_parser::ByteOrder;
-    use exiftool_rs::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
-    use exiftool_rs::parsers::tiff::makernotes::shared::MakerNoteParser;
+    use oxidex::parsers::tiff::ifd_parser::ByteOrder;
+    use oxidex::parsers::tiff::makernotes::leica::LeicaMakerNoteParser;
+    use oxidex::parsers::tiff::makernotes::shared::MakerNoteParser;
     use std::collections::HashMap;
 
     let parser = LeicaMakerNoteParser;

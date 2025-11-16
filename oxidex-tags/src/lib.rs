@@ -16,7 +16,7 @@
 //! # Usage
 //!
 //! ```rust
-//! use exiftool_tags::*;
+//! use oxidex_tags::*;
 //!
 //! // Global search across all domains
 //! let table = get_tag_table("Canon");
@@ -27,17 +27,17 @@
 //! ```
 
 // Re-export all domain crates at the module level
-// This allows users to access domain-specific functionality via `exiftool_tags::core::`, etc.
-pub use exiftool_tags_camera as camera;
-pub use exiftool_tags_core as core;
-pub use exiftool_tags_document as document;
-pub use exiftool_tags_image as image;
-pub use exiftool_tags_media as media;
-pub use exiftool_tags_specialty as specialty;
+// This allows users to access domain-specific functionality via `oxidex_tags::core::`, etc.
+pub use oxidex_tags_camera as camera;
+pub use oxidex_tags_core as core;
+pub use oxidex_tags_document as document;
+pub use oxidex_tags_image as image;
+pub use oxidex_tags_media as media;
+pub use oxidex_tags_specialty as specialty;
 
 // Re-export common types at root level for convenience
 // This maintains backward compatibility with code expecting types at the root
-pub use exiftool_tags_core::types::*;
+pub use oxidex_tags_core::types::*;
 
 // Backward compatibility: stub implementation for old generated tag registry
 // The new YAML-based system doesn't use this, but old code may reference it
@@ -84,7 +84,7 @@ pub fn get_generated_tag_descriptor(_name: &str) -> Option<&'static TagDescripto
 /// # Examples
 ///
 /// ```rust
-/// use exiftool_tags::*;
+/// use oxidex_tags::*;
 ///
 /// // Search for EXIF table (found in core domain)
 /// if let Some(exif) = get_tag_table("EXIF") {

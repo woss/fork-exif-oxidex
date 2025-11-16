@@ -21,8 +21,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use exiftool_rs::parsers::pdf::parse_pdf_metadata;
-//! use exiftool_rs::io::buffered_reader::BufferedReader;
+//! use oxidex::parsers::pdf::parse_pdf_metadata;
+//! use oxidex::io::buffered_reader::BufferedReader;
 //! use std::path::Path;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -86,8 +86,8 @@ const PDF_SIGNATURE: &[u8] = b"%PDF-";
 /// # Example
 ///
 /// ```no_run
-/// use exiftool_rs::parsers::pdf::parse_pdf_metadata;
-/// use exiftool_rs::io::buffered_reader::BufferedReader;
+/// use oxidex::parsers::pdf::parse_pdf_metadata;
+/// use oxidex::io::buffered_reader::BufferedReader;
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
