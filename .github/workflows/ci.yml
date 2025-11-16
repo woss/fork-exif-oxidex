@@ -334,6 +334,7 @@ jobs:
         with:
           cache-on-failure: true
           cache-provider: warpbuild
+          prefix-key: "v1.0.9"
 
       - name: Run benchmarks
         run: cargo bench --bench integration_benchmarks --bench parse_benchmarks
