@@ -128,6 +128,20 @@ impl OutputFormatter for HumanReadableFormatter {
                 }
             }
 
+            // Skip known problematic tags that contain structured binary/text data
+            // These tags are typically very large and not useful in default output
+            if matches!(
+                tag_name.as_str(),
+                "IFD0:LeafData"
+                    | "IFD1:LeafData"
+                    | "EXIF:MakerNoteApple"
+                    | "EXIF:PrintIM"
+                    | "EXIF:ApplicationNotes"
+            ) {
+                // Skip in human-readable output (still available in JSON/CSV if small enough)
+                continue;
+            }
+
             let formatted_value = format_tag_value(tag_name, tag_value);
             output.push_str(&format!("{}: {}\n", tag_name, formatted_value));
         }
