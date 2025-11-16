@@ -230,6 +230,12 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
 
+      - name: Clean cargo to avoid cache corruption
+        run: |
+          cargo clean
+          rm -rf ~/.cargo/registry/cache
+          rm -rf ~/.cargo/git/db
+
       - name: Run benchmarks
         run: cargo bench --bench integration_benchmarks --bench parse_benchmarks
 
