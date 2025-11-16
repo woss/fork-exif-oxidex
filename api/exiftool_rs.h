@@ -49,6 +49,111 @@
 #define EXIFTOOL_ERR_INTERNAL 99
 
 /*
+ Unknown machine type
+ */
+#define IMAGE_FILE_MACHINE_UNKNOWN 0
+
+/*
+ Intel 386+
+ */
+#define IMAGE_FILE_MACHINE_I386 332
+
+/*
+ MIPS R3000
+ */
+#define IMAGE_FILE_MACHINE_R3000 354
+
+/*
+ MIPS R4000
+ */
+#define IMAGE_FILE_MACHINE_R4000 358
+
+/*
+ MIPS R10000
+ */
+#define IMAGE_FILE_MACHINE_R10000 360
+
+/*
+ Alpha AXP
+ */
+#define IMAGE_FILE_MACHINE_ALPHA 388
+
+/*
+ PowerPC
+ */
+#define IMAGE_FILE_MACHINE_POWERPC 496
+
+/*
+ Intel Itanium
+ */
+#define IMAGE_FILE_MACHINE_IA64 512
+
+/*
+ AMD64 (x64)
+ */
+#define IMAGE_FILE_MACHINE_AMD64 34404
+
+/*
+ ARM
+ */
+#define IMAGE_FILE_MACHINE_ARM 448
+
+/*
+ ARM64
+ */
+#define IMAGE_FILE_MACHINE_ARM64 43620
+
+/*
+ Unknown subsystem
+ */
+#define IMAGE_SUBSYSTEM_UNKNOWN 0
+
+/*
+ Native (driver)
+ */
+#define IMAGE_SUBSYSTEM_NATIVE 1
+
+/*
+ Windows GUI
+ */
+#define IMAGE_SUBSYSTEM_WINDOWS_GUI 2
+
+/*
+ Windows Console
+ */
+#define IMAGE_SUBSYSTEM_WINDOWS_CUI 3
+
+/*
+ OS/2 Console
+ */
+#define IMAGE_SUBSYSTEM_OS2_CUI 5
+
+/*
+ POSIX Console
+ */
+#define IMAGE_SUBSYSTEM_POSIX_CUI 7
+
+/*
+ EFI Application
+ */
+#define IMAGE_SUBSYSTEM_EFI_APPLICATION 10
+
+/*
+ EFI Boot Service
+ */
+#define IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER 11
+
+/*
+ EFI Runtime Driver
+ */
+#define IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER 12
+
+/*
+ Xbox
+ */
+#define IMAGE_SUBSYSTEM_XBOX 14
+
+/*
  Opaque handle type for C API.
  C code receives a pointer to this type but cannot access its contents.
  */
