@@ -2,7 +2,7 @@
 name = "oxidex-tags-specialty"
 version = "1.0.4"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
+authors = ["OxiDex Contributors"]
 description = "Specialty format tag definitions for OxiDex"
 license = "GPL-3.0"
 

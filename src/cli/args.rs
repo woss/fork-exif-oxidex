@@ -1,6 +1,6 @@
 //! Command-line argument definitions using lexopt
 //!
-//! This module defines the CLI argument structure for the exiftool-rs application.
+//! This module defines the CLI argument structure for the oxidex application.
 
 use lexopt::prelude::*;
 use std::path::PathBuf;
@@ -41,8 +41,8 @@ pub struct CliArgs {
 
     /// Copy metadata from source file (ExifTool -TagsFromFile syntax).
     /// Use with optional tag names to copy specific tags, or without to copy all tags.
-    /// Example: exiftool-rs -TagsFromFile src.jpg dest.jpg (copy all)
-    /// Example: exiftool-rs -TagsFromFile src.jpg -EXIF:Artist -EXIF:Copyright dest.jpg
+    /// Example: oxidex -TagsFromFile src.jpg dest.jpg (copy all)
+    /// Example: oxidex -TagsFromFile src.jpg -EXIF:Artist -EXIF:Copyright dest.jpg
     pub tags_from_file: Option<String>,
 
     /// Date format string for DateTime tags in filename patterns (using chrono format).
@@ -494,7 +494,7 @@ fn print_help() {
     println!("    # Rename file based on metadata");
     println!("    oxidex '-FileName<DateTimeOriginal' -d %Y%m%d_%H%M%S photo.jpg");
     println!();
-    println!("For more information, visit: https://github.com/exiftool-rs/exiftool-rs");
+    println!("For more information, visit: https://github.com/oxidex/oxidex");
 }
 
 /// Prints version information for the CLI application

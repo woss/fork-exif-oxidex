@@ -2,7 +2,7 @@
 name = "oxidex-tags-core"
 version = "1.0.4"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
+authors = ["OxiDex Contributors"]
 description = "Core tag definitions for OxiDex metadata extraction"
 license = "GPL-3.0"
 

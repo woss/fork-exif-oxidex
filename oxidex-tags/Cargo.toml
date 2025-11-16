@@ -2,7 +2,7 @@
 name = "oxidex-tags"
 version = "1.0.4"
 edition = "2021"
-authors = ["ExifTool-RS Contributors"]
+authors = ["OxiDex Contributors"]
 description = "Tag database for OxiDex metadata extraction library"
 license = "GPL-3.0"
 

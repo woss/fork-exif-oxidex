@@ -1,6 +1,6 @@
-//! ExifTool-RS Command Line Interface
+//! OxiDex Command Line Interface
 //!
-//! Main entry point for the exiftool-rs command-line application.
+//! Main entry point for the oxidex command-line application.
 
 use oxidex::cli::args::CliArgs;
 use oxidex::cli::batch_processor;

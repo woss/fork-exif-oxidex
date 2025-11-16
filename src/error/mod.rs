@@ -7,7 +7,7 @@
 use std::fmt;
 use std::io;
 
-/// The main error type for ExifTool-RS operations.
+/// The main error type for OxiDex operations.
 ///
 /// This enum represents all possible errors that can occur during
 /// metadata extraction, parsing, validation, and file I/O operations.
