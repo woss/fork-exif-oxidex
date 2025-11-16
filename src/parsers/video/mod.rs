@@ -8,8 +8,10 @@ pub mod mkv;
 pub mod flv;
 pub mod avi;
 pub mod mts;
+pub mod webm;
 
 pub use mkv::MkvParser;
 pub use flv::FlvParser;
 pub use avi::AviParser;
 pub use mts::MtsParser;
+pub use webm::WebmParser;
