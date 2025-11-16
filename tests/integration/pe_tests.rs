@@ -95,8 +95,8 @@ fn test_parse_minimal_pe_structure() {
     data.resize(0x80 + 512, 0x00);
 
     // Write to temp file and parse
-    use tempfile::NamedTempFile;
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     let mut temp_file = NamedTempFile::new().unwrap();
     temp_file.write_all(&data).unwrap();
@@ -109,6 +109,9 @@ fn test_parse_minimal_pe_structure() {
     assert_eq!(metadata.get_string("PE:MachineType").unwrap(), "Intel 386");
     assert_eq!(metadata.get_integer("PE:NumberOfSections").unwrap(), 3);
     assert_eq!(metadata.get_string("PE:FileType").unwrap(), "Executable");
-    assert_eq!(metadata.get_string("PE:Subsystem").unwrap(), "Windows Console");
+    assert_eq!(
+        metadata.get_string("PE:Subsystem").unwrap(),
+        "Windows Console"
+    );
     assert_eq!(metadata.get_string("PE:ImageFormat").unwrap(), "PE32");
 }

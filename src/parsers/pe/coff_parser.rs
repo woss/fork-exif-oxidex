@@ -1,7 +1,11 @@
 //! COFF header parser for PE files
 
 use crate::parsers::pe::structures::CoffHeader;
-use nom::{bytes::complete::tag, number::complete::{le_u16, le_u32}, IResult};
+use nom::{
+    bytes::complete::tag,
+    number::complete::{le_u16, le_u32},
+    IResult,
+};
 
 /// Parse COFF header from PE file (after PE signature)
 pub fn parse_coff_header(input: &[u8]) -> IResult<&[u8], CoffHeader> {

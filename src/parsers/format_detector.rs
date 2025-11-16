@@ -454,10 +454,10 @@ mod tests {
         let mut data = vec![0x4D, 0x5A]; // MZ signature
         data.extend_from_slice(&[0x90, 0x00]); // e_cblp
         data.extend_from_slice(&[0x03, 0x00]); // e_cp
-        // Add padding to reach e_lfanew at offset 0x3C
+                                               // Add padding to reach e_lfanew at offset 0x3C
         data.resize(0x3C, 0x00);
         data.extend_from_slice(&[0x80, 0x00, 0x00, 0x00]); // e_lfanew = 0x80
-        // Add padding and PE signature at offset 0x80
+                                                           // Add padding and PE signature at offset 0x80
         data.resize(0x80, 0x00);
         data.extend_from_slice(&[0x50, 0x45, 0x00, 0x00]); // "PE\0\0" signature
 

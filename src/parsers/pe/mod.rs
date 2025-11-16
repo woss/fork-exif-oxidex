@@ -6,11 +6,11 @@
 
 #![allow(dead_code)]
 
-pub mod structures;
-pub mod dos_parser;
 pub mod coff_parser;
-pub mod optional_parser;
+pub mod dos_parser;
 pub mod metadata_extractor;
+pub mod optional_parser;
+pub mod structures;
 
 use crate::core::{FileReader, MetadataMap};
 use crate::error::{ExifToolError, Result};
@@ -21,10 +21,12 @@ const DOS_SIGNATURE: &[u8] = b"MZ";
 
 /// Parses PE file and extracts all metadata.
 pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
-    use dos_parser::parse_dos_header;
     use coff_parser::parse_coff_header;
-    use optional_parser::{parse_optional_header_standard, parse_optional_header_nt};
-    use metadata_extractor::{extract_dos_metadata, extract_coff_metadata, extract_optional_metadata};
+    use dos_parser::parse_dos_header;
+    use metadata_extractor::{
+        extract_coff_metadata, extract_dos_metadata, extract_optional_metadata,
+    };
+    use optional_parser::{parse_optional_header_nt, parse_optional_header_standard};
 
     let mut metadata = MetadataMap::new();
 
@@ -54,12 +56,19 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     // Parse Optional Header if present
     if coff_header.size_of_optional_header > 0 {
-        let (opt_remaining, std_header) = parse_optional_header_standard(remaining)
-            .map_err(|e| ExifToolError::parse_error(format!("Failed to parse Optional Header: {:?}", e)))?;
+        let (opt_remaining, std_header) =
+            parse_optional_header_standard(remaining).map_err(|e| {
+                ExifToolError::parse_error(format!("Failed to parse Optional Header: {:?}", e))
+            })?;
 
         let is_pe32_plus = std_header.magic == 0x020B;
-        let (_, nt_header) = parse_optional_header_nt(opt_remaining, is_pe32_plus)
-            .map_err(|e| ExifToolError::parse_error(format!("Failed to parse Optional Header NT fields: {:?}", e)))?;
+        let (_, nt_header) =
+            parse_optional_header_nt(opt_remaining, is_pe32_plus).map_err(|e| {
+                ExifToolError::parse_error(format!(
+                    "Failed to parse Optional Header NT fields: {:?}",
+                    e
+                ))
+            })?;
 
         extract_optional_metadata(&std_header, &nt_header, &mut metadata);
     }

@@ -7,8 +7,14 @@ use crate::parsers::pe::structures::{
 
 /// Extract metadata from DOS header
 pub fn extract_dos_metadata(header: &DosHeader, metadata: &mut MetadataMap) {
-    metadata.insert("PE:DOSSignature".to_string(), TagValue::String(format!("{:#06X}", header.e_magic)));
-    metadata.insert("PE:PEHeaderOffset".to_string(), TagValue::Integer(header.e_lfanew as i64));
+    metadata.insert(
+        "PE:DOSSignature".to_string(),
+        TagValue::String(format!("{:#06X}", header.e_magic)),
+    );
+    metadata.insert(
+        "PE:PEHeaderOffset".to_string(),
+        TagValue::Integer(header.e_lfanew as i64),
+    );
 }
 
 /// Extract metadata from COFF header
@@ -23,18 +29,30 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
         machine_types::IMAGE_FILE_MACHINE_POWERPC => "PowerPC",
         _ => "Unknown",
     };
-    metadata.insert("PE:MachineType".to_string(), TagValue::String(machine_name.to_string()));
-    metadata.insert("PE:MachineTypeRaw".to_string(), TagValue::Integer(header.machine as i64));
+    metadata.insert(
+        "PE:MachineType".to_string(),
+        TagValue::String(machine_name.to_string()),
+    );
+    metadata.insert(
+        "PE:MachineTypeRaw".to_string(),
+        TagValue::Integer(header.machine as i64),
+    );
 
     // Number of sections
-    metadata.insert("PE:NumberOfSections".to_string(), TagValue::Integer(header.number_of_sections as i64));
+    metadata.insert(
+        "PE:NumberOfSections".to_string(),
+        TagValue::Integer(header.number_of_sections as i64),
+    );
 
     // Timestamp (Unix epoch)
     if header.time_date_stamp > 0 {
-        metadata.insert("PE:TimeStamp".to_string(), TagValue::Integer(header.time_date_stamp as i64));
+        metadata.insert(
+            "PE:TimeStamp".to_string(),
+            TagValue::Integer(header.time_date_stamp as i64),
+        );
 
         // Convert to human-readable date if possible
-        use chrono::{Utc, TimeZone};
+        use chrono::{TimeZone, Utc};
         if let Some(dt) = Utc.timestamp_opt(header.time_date_stamp as i64, 0).single() {
             metadata.insert(
                 "PE:CompileTime".to_string(),
@@ -44,7 +62,10 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
     }
 
     // Characteristics
-    metadata.insert("PE:Characteristics".to_string(), TagValue::Integer(header.characteristics as i64));
+    metadata.insert(
+        "PE:Characteristics".to_string(),
+        TagValue::Integer(header.characteristics as i64),
+    );
 
     // Decode common flags
     let is_executable = (header.characteristics & 0x0002) != 0;
@@ -56,7 +77,10 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
     } else {
         "Object"
     };
-    metadata.insert("PE:FileType".to_string(), TagValue::String(file_type.to_string()));
+    metadata.insert(
+        "PE:FileType".to_string(),
+        TagValue::String(file_type.to_string()),
+    );
 }
 
 /// Extract metadata from Optional Header
@@ -71,7 +95,10 @@ pub fn extract_optional_metadata(
         0x020B => "PE32+",
         _ => "Unknown",
     };
-    metadata.insert("PE:ImageFormat".to_string(), TagValue::String(image_format.to_string()));
+    metadata.insert(
+        "PE:ImageFormat".to_string(),
+        TagValue::String(image_format.to_string()),
+    );
 
     // Linker version
     metadata.insert(
@@ -83,15 +110,30 @@ pub fn extract_optional_metadata(
     );
 
     // Code and data sizes
-    metadata.insert("PE:CodeSize".to_string(), TagValue::Integer(std_header.size_of_code as i64));
-    metadata.insert("PE:InitializedDataSize".to_string(), TagValue::Integer(std_header.size_of_initialized_data as i64));
-    metadata.insert("PE:UninitializedDataSize".to_string(), TagValue::Integer(std_header.size_of_uninitialized_data as i64));
+    metadata.insert(
+        "PE:CodeSize".to_string(),
+        TagValue::Integer(std_header.size_of_code as i64),
+    );
+    metadata.insert(
+        "PE:InitializedDataSize".to_string(),
+        TagValue::Integer(std_header.size_of_initialized_data as i64),
+    );
+    metadata.insert(
+        "PE:UninitializedDataSize".to_string(),
+        TagValue::Integer(std_header.size_of_uninitialized_data as i64),
+    );
 
     // Entry point
-    metadata.insert("PE:EntryPoint".to_string(), TagValue::Integer(std_header.address_of_entry_point as i64));
+    metadata.insert(
+        "PE:EntryPoint".to_string(),
+        TagValue::Integer(std_header.address_of_entry_point as i64),
+    );
 
     // Image base
-    metadata.insert("PE:ImageBase".to_string(), TagValue::Integer(nt_header.image_base as i64));
+    metadata.insert(
+        "PE:ImageBase".to_string(),
+        TagValue::Integer(nt_header.image_base as i64),
+    );
 
     // OS version
     metadata.insert(
@@ -119,8 +161,14 @@ pub fn extract_optional_metadata(
         subsystem_types::IMAGE_SUBSYSTEM_EFI_APPLICATION => "EFI Application",
         _ => "Unknown",
     };
-    metadata.insert("PE:Subsystem".to_string(), TagValue::String(subsystem_name.to_string()));
-    metadata.insert("PE:SubsystemRaw".to_string(), TagValue::Integer(nt_header.subsystem as i64));
+    metadata.insert(
+        "PE:Subsystem".to_string(),
+        TagValue::String(subsystem_name.to_string()),
+    );
+    metadata.insert(
+        "PE:SubsystemRaw".to_string(),
+        TagValue::Integer(nt_header.subsystem as i64),
+    );
 
     // Subsystem version
     metadata.insert(
@@ -133,7 +181,10 @@ pub fn extract_optional_metadata(
 
     // Checksum
     if nt_header.checksum != 0 {
-        metadata.insert("PE:Checksum".to_string(), TagValue::Integer(nt_header.checksum as i64));
+        metadata.insert(
+            "PE:Checksum".to_string(),
+            TagValue::Integer(nt_header.checksum as i64),
+        );
     }
 }
 

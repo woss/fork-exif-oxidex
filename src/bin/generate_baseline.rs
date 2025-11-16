@@ -41,6 +41,7 @@ struct Cli {
     output: PathBuf,
 
     /// Update existing baselines (uses default paths)
+    #[allow(dead_code)]
     update: bool,
 }
 

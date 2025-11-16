@@ -1,8 +1,8 @@
 //! Optional header parser for PE files
 
-use crate::parsers::pe::structures::{OptionalHeaderStandard, OptionalHeaderNT};
+use crate::parsers::pe::structures::{OptionalHeaderNT, OptionalHeaderStandard};
 use nom::{
-    number::complete::{le_u8, le_u16, le_u32, le_u64},
+    number::complete::{le_u16, le_u32, le_u64, le_u8},
     IResult,
 };
 
@@ -33,7 +33,10 @@ pub fn parse_optional_header_standard(input: &[u8]) -> IResult<&[u8], OptionalHe
 }
 
 /// Parse Optional Header NT-Specific Fields (PE32+/PE32)
-pub fn parse_optional_header_nt(input: &[u8], is_pe32_plus: bool) -> IResult<&[u8], OptionalHeaderNT> {
+pub fn parse_optional_header_nt(
+    input: &[u8],
+    is_pe32_plus: bool,
+) -> IResult<&[u8], OptionalHeaderNT> {
     // For PE32+, skip BaseOfData field (doesn't exist)
     // For PE32, read BaseOfData then ImageBase is 32-bit
     let (input, image_base) = if is_pe32_plus {
@@ -60,20 +63,25 @@ pub fn parse_optional_header_nt(input: &[u8], is_pe32_plus: bool) -> IResult<&[u
     let (input, subsystem) = le_u16(input)?;
     let (input, dll_characteristics) = le_u16(input)?;
 
-    let (input, size_of_stack_reserve, size_of_stack_commit, size_of_heap_reserve, size_of_heap_commit) =
-        if is_pe32_plus {
-            let (input, ssr) = le_u64(input)?;
-            let (input, ssc) = le_u64(input)?;
-            let (input, shr) = le_u64(input)?;
-            let (input, shc) = le_u64(input)?;
-            (input, ssr, ssc, shr, shc)
-        } else {
-            let (input, ssr) = le_u32(input)?;
-            let (input, ssc) = le_u32(input)?;
-            let (input, shr) = le_u32(input)?;
-            let (input, shc) = le_u32(input)?;
-            (input, ssr as u64, ssc as u64, shr as u64, shc as u64)
-        };
+    let (
+        input,
+        size_of_stack_reserve,
+        size_of_stack_commit,
+        size_of_heap_reserve,
+        size_of_heap_commit,
+    ) = if is_pe32_plus {
+        let (input, ssr) = le_u64(input)?;
+        let (input, ssc) = le_u64(input)?;
+        let (input, shr) = le_u64(input)?;
+        let (input, shc) = le_u64(input)?;
+        (input, ssr, ssc, shr, shc)
+    } else {
+        let (input, ssr) = le_u32(input)?;
+        let (input, ssc) = le_u32(input)?;
+        let (input, shr) = le_u32(input)?;
+        let (input, shc) = le_u32(input)?;
+        (input, ssr as u64, ssc as u64, shr as u64, shc as u64)
+    };
 
     let (input, loader_flags) = le_u32(input)?;
     let (input, number_of_rva_and_sizes) = le_u32(input)?;
