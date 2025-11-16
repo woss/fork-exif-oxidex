@@ -57,6 +57,28 @@ This design ensures:
 - ✅ **XMP** - 10+ namespaces supported (Dublin Core, IPTC Core, Photoshop, etc.)
 - ✅ **IPTC** - Complete support for IPTC IIM Application Record (journalism/stock photography)
 - ✅ **Canon MakerNotes** - Phase 2: Array tags + basic metadata (CameraSettings, ShotInfo, FocalLength) ⭐ **UPDATED**
+- ✅ **Camera Raw Formats** - 40+ raw formats from major manufacturers:
+  - **Canon**: CR2, CR3, CRW
+  - **Nikon**: NEF, NRW
+  - **Sony**: ARW, SR2, SRF, SRW, ARQ, ARI
+  - **Fujifilm**: RAF
+  - **Olympus**: ORF, ORI
+  - **Pentax**: PEF
+  - **Panasonic**: RW2, RWL
+  - **Hasselblad**: 3FR, FFF
+  - **Phase One**: IIQ
+  - **Mamiya**: MEF
+  - **Leaf**: MOS
+  - **Kodak**: DCR, KDC
+  - **Minolta**: MDC, MRW
+  - **Epson**: ERF
+  - **Sigma**: X3F
+  - **GoPro**: GPR
+  - **Adobe**: DNG (Digital Negative)
+  - **HEIF**: HIF
+  - **Light**: LRI
+  - **Sinar**: STI
+  - **Generic**: RAW, CAM, REV
 - ✅ **JFIF** - JPEG File Interchange Format metadata
 - ✅ **ICC Profiles** - Color profile metadata extraction
 - ✅ **Photoshop IRB** - Adobe Photoshop Image Resource Blocks
