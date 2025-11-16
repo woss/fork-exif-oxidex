@@ -12,6 +12,7 @@ use crate::parsers::format_detector::detect_format;
 use crate::parsers::jpeg::segment_parser::parse_segments;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
 use crate::parsers::pdf::parse_pdf_metadata;
+use crate::parsers::pe::parse_pe_metadata;
 use crate::parsers::png::parse_png_metadata;
 use crate::parsers::quicktime::parse_quicktime_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
@@ -114,6 +115,7 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
                 .map_err(|e| ExifToolError::parse_error(format!("PNG parse error: {}", e)))
         }
         FileFormat::PDF => parse_pdf_metadata(&reader),
+        FileFormat::PE => parse_pe_metadata(&reader),
         FileFormat::QuickTime => {
             // QuickTime parser returns Result<MetadataMap, String>, need to convert
             parse_quicktime_metadata(&reader)

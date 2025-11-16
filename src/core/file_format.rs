@@ -80,6 +80,9 @@ pub enum FileFormat {
     /// (e.g., Canon CR2, Nikon NEF, Sony ARW, etc.)
     CameraRaw(RawFormat),
 
+    /// Portable Executable format (.exe, .dll, .sys)
+    PE,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -109,6 +112,7 @@ impl FileFormat {
             FileFormat::WebP => "WebP",
             FileFormat::RAW => "RAW",
             FileFormat::CameraRaw(_) => "Camera Raw",
+            FileFormat::PE => "PE",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -140,6 +144,7 @@ impl FileFormat {
                 "orf", "ori", "pef", "rw2", "rwl", "3fr", "fff", "iiq", "mef", "mos", "dcr", "kdc",
                 "mdc", "mrw", "erf", "x3f", "gpr", "dng", "hif", "lri", "sti", "raw", "cam", "rev",
             ],
+            FileFormat::PE => &["exe", "dll", "sys"],
             FileFormat::Unknown => &[],
         }
     }
@@ -148,5 +153,20 @@ impl FileFormat {
 impl std::fmt::Display for FileFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pe_format_name() {
+        assert_eq!(FileFormat::PE.name(), "PE");
+    }
+
+    #[test]
+    fn test_pe_format_extensions() {
+        assert_eq!(FileFormat::PE.extensions(), &["exe", "dll", "sys"]);
     }
 }
