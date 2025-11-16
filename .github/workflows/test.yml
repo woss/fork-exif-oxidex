@@ -106,7 +106,7 @@ jobs:
             echo "ExifTool already installed: $(exiftool -ver)"
           fi
 
-      - name: Build ExifTool-RS
+      - name: Build OxiDex
         run: cargo build --release --all-features
 
       - name: Run integration tests with ExifTool comparison

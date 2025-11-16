@@ -52,7 +52,7 @@ jobs:
           bc --version | head -1
           jq --version
 
-      - name: Build ExifTool-RS in release mode
+      - name: Build OxiDex in release mode
         run: cargo build --release --verbose
 
       - name: Run benchmark comparison script
@@ -155,7 +155,7 @@ jobs:
           echo "- **Platform**: Linux (x86_64)" >> $GITHUB_STEP_SUMMARY
           echo "- **Runner**: puzl-ubuntu-latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Perl ExifTool**: $(exiftool -ver)" >> $GITHUB_STEP_SUMMARY
-          echo "- **ExifTool-RS**: $(grep '^version' Cargo.toml | head -1 | cut -d'\"' -f2)" >> $GITHUB_STEP_SUMMARY
+          echo "- **OxiDex**: $(grep '^version' Cargo.toml | head -1 | cut -d'\"' -f2)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.check-changes.outputs.changed }}" = "true" ]; then
             echo "✅ README.md updated with latest benchmark results" >> $GITHUB_STEP_SUMMARY
