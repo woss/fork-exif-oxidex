@@ -27,13 +27,12 @@ Thumbs.db
 **/*.rs.bk
 *.pdb
 
-# Generated tag database (committed for crates.io publishing)
-# Previously excluded, now committed to avoid build-time ExifTool download
-# src/tag_db/generated_tags.rs
+# Cargo lock files (excluded for library crates)
+Cargo.lock
+**/Cargo.lock
 
-# Cargo lock file (keep for binary crates, ignore for libraries)
-# Since this is both, we keep Cargo.lock
-# Cargo.lock
+# Generated tag database
+src/tag_db/generated_tags.rs
 
 # Fuzzing artifacts (keep named corpus seed files like *.pdf, *.mp4, exclude fuzzer-generated hash files)
 fuzz/target/
