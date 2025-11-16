@@ -91,8 +91,34 @@ impl OutputFormatter for HumanReadableFormatter {
         // Sort tags alphabetically by name
         tags.sort_by_key(|(name, _)| *name);
 
+        // Check if this is a raw format by examining File:FileType tag
+        // Raw formats include keywords like "Raw", "DNG", "CR2", "NEF", etc.
+        let is_raw = metadata
+            .get("File:FileType")
+            .and_then(|v| v.as_string())
+            .map(|s| {
+                s.contains("Raw")
+                    || s.contains("DNG")
+                    || s.contains("CR2")
+                    || s.contains("CR3")
+                    || s.contains("NEF")
+                    || s.contains("ARW")
+                    || s.contains("RAF")
+                    || s.contains("ORF")
+                    || s.contains("PEF")
+                    || s.contains("RW2")
+            })
+            .unwrap_or(false);
+
         // Format each tag as "Tag: Value\n"
         let mut output = String::new();
+
+        // Add "Camera Raw File" header for raw formats
+        if is_raw {
+            output.push_str("Camera Raw File\n");
+            output.push_str("---------------\n");
+        }
+
         for (tag_name, tag_value) in tags {
             let formatted_value = format_tag_value(tag_name, tag_value);
             output.push_str(&format!("{}: {}\n", tag_name, formatted_value));
