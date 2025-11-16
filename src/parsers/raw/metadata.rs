@@ -134,6 +134,11 @@ pub fn parse_raw_metadata(data: &[u8], format: RawFormat) -> Result<MetadataMap>
 /// It creates a FileReader adapter, parses the TIFF structure, and enriches the
 /// metadata with format-specific information.
 ///
+/// Special handling for format variants:
+/// - **Fujifilm RAF**: Contains embedded JPEG with EXIF data after proprietary header
+/// - **Panasonic RW2**: TIFF variant with magic number 0x55 instead of 0x2A
+/// - **Olympus ORF**: TIFF variant with "RO" signature instead of magic number 42
+///
 /// # Arguments
 ///
 /// * `data` - Complete file data
@@ -146,12 +151,20 @@ pub fn parse_raw_metadata(data: &[u8], format: RawFormat) -> Result<MetadataMap>
 ///
 /// # Implementation
 ///
-/// 1. Create SliceReader adapter for byte slice access
-/// 2. Parse TIFF header to determine byte order
-/// 3. Parse IFD chain to extract all metadata tags
-/// 4. Convert IFD entries to MetadataMap with proper tag names
-/// 5. Add format-specific tags (e.g., DNG version for DNG files)
+/// 1. Check for format-specific handling (RAF embedded JPEG extraction)
+/// 2. Create SliceReader adapter for byte slice access
+/// 3. Parse TIFF header to determine byte order
+/// 4. Parse IFD chain to extract all metadata tags
+/// 5. Convert IFD entries to MetadataMap with proper tag names
+/// 6. Add format-specific tags (e.g., DNG version for DNG files)
 fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
+    // Special handling for Fujifilm RAF format
+    // RAF files have a proprietary header followed by embedded JPEG with EXIF data
+    // Structure: "FUJIFILMCCD-RAW " (16 bytes) + header info + embedded JPEG at offset
+    if format == RawFormat::FujifilmRAF {
+        return parse_fujifilm_raf(data, format);
+    }
+
     // Validate minimum TIFF header size
     if data.len() < 8 {
         return Err(ExifToolError::parse_error(
@@ -455,13 +468,198 @@ fn parse_canon_crw(_data: &[u8], format: RawFormat) -> Result<MetadataMap> {
     Ok(metadata)
 }
 
+/// Parse Fujifilm RAF format
+///
+/// RAF files use a proprietary container format with embedded JPEG/EXIF data.
+/// The structure is:
+/// - Bytes 0-15: "FUJIFILMCCD-RAW " signature
+/// - Bytes 16-83: Header with version, camera model, and offset information
+/// - Bytes 84-87: JPEG image offset (big-endian u32)
+/// - Bytes 88-91: JPEG image length (big-endian u32)
+/// - At JPEG offset: Standard JPEG file with EXIF data
+///
+/// This implementation extracts metadata from the embedded JPEG/EXIF data.
+///
+/// # Arguments
+///
+/// * `data` - Complete file data
+/// * `format` - RAF format variant
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Extracted metadata from embedded JPEG/EXIF
+/// * `Err(ExifToolError)` - Parse error or invalid RAF structure
+///
+/// # Implementation Strategy
+///
+/// Rather than parsing the proprietary RAF header, we locate and parse the
+/// embedded JPEG data which contains standard EXIF metadata. This approach:
+/// - Reuses existing JPEG/EXIF parsing infrastructure
+/// - Extracts camera settings, timestamps, and other standard metadata
+/// - Avoids need to reverse-engineer proprietary RAF format details
+fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
+    // Validate RAF signature
+    if data.len() < 16 || &data[0..16] != b"FUJIFILMCCD-RAW " {
+        return Err(ExifToolError::parse_error(
+            "Invalid RAF file: missing FUJIFILMCCD-RAW signature",
+        ));
+    }
+
+    // RAF header is 84 bytes, followed by offset table
+    // Bytes 84-87: JPEG image offset (big-endian u32)
+    // Bytes 88-91: JPEG image length (big-endian u32)
+    if data.len() < 92 {
+        return Err(ExifToolError::parse_error(
+            "Invalid RAF file: header too small",
+        ));
+    }
+
+    // Read JPEG offset and length (big-endian)
+    let jpeg_offset = u32::from_be_bytes([data[84], data[85], data[86], data[87]]) as usize;
+    let jpeg_length = u32::from_be_bytes([data[88], data[89], data[90], data[91]]) as usize;
+
+    // Validate JPEG offset and length
+    if jpeg_offset >= data.len() {
+        return Err(ExifToolError::parse_error(format!(
+            "Invalid RAF file: JPEG offset {} exceeds file size {}",
+            jpeg_offset,
+            data.len()
+        )));
+    }
+
+    if jpeg_offset + jpeg_length > data.len() {
+        // JPEG length might be incorrect, try to use remaining file size
+        let remaining = data.len() - jpeg_offset;
+        eprintln!(
+            "Warning: RAF JPEG length {} exceeds remaining file size {}, using remaining size",
+            jpeg_length, remaining
+        );
+    }
+
+    // Extract JPEG data
+    let jpeg_end = (jpeg_offset + jpeg_length).min(data.len());
+    let jpeg_data = &data[jpeg_offset..jpeg_end];
+
+    // Verify JPEG signature (0xFF 0xD8)
+    if jpeg_data.len() < 2 || jpeg_data[0] != 0xFF || jpeg_data[1] != 0xD8 {
+        return Err(ExifToolError::parse_error(
+            "Invalid RAF file: embedded data is not a valid JPEG",
+        ));
+    }
+
+    // Create metadata map with format info
+    let mut metadata = MetadataMap::new();
+    metadata.insert(
+        "File:FileType".to_string(),
+        TagValue::new_string(format!("{:?}", format)),
+    );
+
+    // Parse embedded JPEG to extract EXIF data
+    // Create a SliceReader for the JPEG data
+    let jpeg_reader = SliceReader::new(jpeg_data);
+
+    // Use the existing JPEG segment parser to extract EXIF
+    if let Ok(segments) = crate::parsers::jpeg::segment_parser::parse_segments(&jpeg_reader) {
+        // Look for APP1 segments containing EXIF data
+        for segment in segments {
+            if segment.marker == 0xFFE1 && segment.data.len() > 6 {
+                // Check for EXIF header "Exif\0\0"
+                if &segment.data[0..6] == b"Exif\x00\x00" {
+                    // EXIF data starts at byte 6
+                    let exif_data = &segment.data[6..];
+
+                    // Parse TIFF structure within EXIF data
+                    if let Ok(byte_order) = detect_byte_order(exif_data) {
+                        // Read first IFD offset (bytes 4-7 in TIFF header)
+                        if exif_data.len() >= 8 {
+                            let first_ifd_offset = match byte_order {
+                                ByteOrder::LittleEndian => u32::from_le_bytes([
+                                    exif_data[4],
+                                    exif_data[5],
+                                    exif_data[6],
+                                    exif_data[7],
+                                ]),
+                                ByteOrder::BigEndian => u32::from_be_bytes([
+                                    exif_data[4],
+                                    exif_data[5],
+                                    exif_data[6],
+                                    exif_data[7],
+                                ]),
+                            } as u64;
+
+                            // Create reader for EXIF data
+                            let exif_reader = SliceReader::new(exif_data);
+
+                            // Parse IFD0
+                            if let Ok(tags) = parse_ifd(&exif_reader, first_ifd_offset, byte_order)
+                            {
+                                // Track sub-IFD offsets
+                                let mut exif_ifd_offset = None;
+
+                                // Convert tags to metadata
+                                for (tag_id, field_type, value_count, raw_bytes) in &tags {
+                                    let bytes = raw_bytes.as_ref();
+
+                                    // Check for EXIF Sub-IFD pointer (tag 0x8769)
+                                    if *tag_id == 0x8769 && bytes.len() >= 4 {
+                                        let offset = read_u32(bytes, byte_order);
+                                        exif_ifd_offset = Some(offset as u64);
+                                        continue;
+                                    }
+
+                                    // Convert tag to metadata
+                                    let tag_name = lookup_tag_name(*tag_id, "IFD0");
+                                    let tag_value = raw_bytes_to_simple_tag_value(
+                                        bytes,
+                                        *field_type,
+                                        *value_count,
+                                        byte_order,
+                                    );
+                                    metadata.insert(tag_name, tag_value);
+                                }
+
+                                // Parse EXIF Sub-IFD if present
+                                if let Some(offset) = exif_ifd_offset {
+                                    if let Ok(exif_tags) =
+                                        parse_ifd(&exif_reader, offset, byte_order)
+                                    {
+                                        for (tag_id, field_type, value_count, raw_bytes) in
+                                            exif_tags
+                                        {
+                                            let tag_name = lookup_tag_name(tag_id, "ExifIFD");
+                                            let tag_value = raw_bytes_to_simple_tag_value(
+                                                raw_bytes.as_ref(),
+                                                field_type,
+                                                value_count,
+                                                byte_order,
+                                            );
+                                            metadata.insert(tag_name, tag_value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(metadata)
+}
+
 // ===== Helper Functions =====
 
 /// Detect byte order from TIFF header
 ///
 /// Reads the first 2 bytes to determine endianness:
-/// - "II" (0x4949) = Little-endian
-/// - "MM" (0x4D4D) = Big-endian
+/// - "II" (0x4949) = Little-endian (used by most TIFF and many raw formats)
+/// - "MM" (0x4D4D) = Big-endian (used by some TIFF and raw formats)
+///
+/// This function handles standard TIFF as well as raw format variants:
+/// - Standard TIFF: "II\x2A\x00" or "MM\x00\x2A" (magic number 42)
+/// - Panasonic RW2: "II\x55\x00" (magic number 85 instead of 42)
+/// - Olympus ORF: "IIRO" or "MMOR" (uses "RO" or "OR" instead of magic number)
 ///
 /// # Arguments
 ///

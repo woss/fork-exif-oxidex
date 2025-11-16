@@ -159,7 +159,7 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // Start with 4-byte signatures, then 3-byte signatures
 
     // TIFF Little-Endian: 0x49 0x49 0x2A 0x00 ("II" + 42 in LE)
-    // Note: Many raw formats (NEF, ARW, DNG, PEF, ORF, etc.) are TIFF-based
+    // Note: Many raw formats (NEF, ARW, DNG, PEF, etc.) are TIFF-based
     // and will be detected here. Higher-level code should use filename to distinguish.
     if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00]) {
         return Ok(FileFormat::TIFF);
@@ -168,6 +168,32 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // TIFF Big-Endian: 0x4D 0x4D 0x00 0x2A ("MM" + 42 in BE)
     // Note: NEF and some other raw formats use this signature
     if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x4D, 0x4D, 0x00, 0x2A]) {
+        return Ok(FileFormat::TIFF);
+    }
+
+    // Panasonic RW2: 0x49 0x49 0x55 0x00 ("II" + 0x55 instead of 42)
+    // RW2 files use a TIFF variant with magic number 0x55 (85) instead of 0x2A (42)
+    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x55, 0x00]) {
+        return Ok(FileFormat::TIFF);
+    }
+
+    // Olympus ORF: 0x49 0x49 0x52 0x4F ("II" + "RO" instead of 42)
+    // ORF files use "IIRO" header where "RO" stands for "Raw Olympus"
+    // The "RO" (0x52 0x4F) replaces the standard TIFF magic number 42 (0x2A)
+    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x52, 0x4F]) {
+        return Ok(FileFormat::TIFF);
+    }
+
+    // Olympus ORF (variant): 0x49 0x49 0x52 0x53 ("II" + "RS" instead of 42)
+    // Older Olympus compact cameras (C5050Z, C5060WZ, C7070WZ, SP350, SP500UZ, SP510UZ, SP550UZ, SP565UZ, SP570UZ, C8080WZ)
+    // use "IIRS" header. The "RS" (0x52 0x53) replaces the standard TIFF magic number
+    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x52, 0x53]) {
+        return Ok(FileFormat::TIFF);
+    }
+
+    // Olympus ORF (Big-Endian variant): 0x4D 0x4D 0x4F 0x52 ("MM" + "OR")
+    // Some Olympus cameras use big-endian byte order with "MMOR" header
+    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x4D, 0x4D, 0x4F, 0x52]) {
         return Ok(FileFormat::TIFF);
     }
 
