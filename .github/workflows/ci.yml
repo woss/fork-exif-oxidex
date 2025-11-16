@@ -260,6 +260,9 @@ jobs:
           cache-provider: warpbuild
           prefix-key: "v1.0.9"
 
+      - name: Clean cargo cache to avoid version conflicts
+        run: cargo clean
+
       - name: Install Perl ExifTool
         run: |
           if ! command -v exiftool &> /dev/null; then
