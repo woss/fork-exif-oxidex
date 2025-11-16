@@ -5,6 +5,8 @@
 
 // Submodules
 pub mod format_detection;
+pub mod metadata;
 
 // Re-export the public API
 pub use format_detection::{detect_raw_format, RawFormat};
+pub use metadata::parse_raw_metadata;
