@@ -1,8 +1,8 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use exiftool_rs::parsers::quicktime::parse_quicktime_metadata;
-use exiftool_rs::core::FileReader;
+use oxidex::parsers::quicktime::parse_quicktime_metadata;
+use oxidex::core::FileReader;
 use std::io;
 
 /// In-memory FileReader implementation for fuzzing.
