@@ -91,19 +91,19 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 
 | Scenario | Perl ExifTool | ExifTool-RS | Speedup |
 |----------|---------------|-------------|---------|
-| Single JPEG Read | 40.1ms ± 0.7ms | 6.3ms ± 0.2ms | **6.4x faster** |
-| Batch Processing (1000 files) | 1172.5ms ± 8.5ms | 497.8ms ± 9.2ms | **2.4x faster** |
-| Write Operation (modify EXIF tag) | 110.1ms ± 1.0ms | 7.6ms ± 0.3ms | **14.4x faster** |
-| Format Detection | 40.0ms ± 0.6ms | 6.4ms ± 0.2ms | **6.3x faster** |
+| Single JPEG Read | 41.3ms ± 1.2ms | 6.9ms ± 0.3ms | **6.0x faster** |
+| Batch Processing (1000 files) | 1205.2ms ± 54.5ms | 611.3ms ± 4.8ms | **2.0x faster** |
+| Write Operation (modify EXIF tag) | 114.7ms ± 2.3ms | 8.4ms ± 0.9ms | **13.6x faster** |
+| Format Detection | 41.3ms ± 1.1ms | 6.8ms ± 0.2ms | **6.1x faster** |
 
 *Benchmarks performed using [hyperfine](https://github.com/sharkdp/hyperfine) with multiple runs and warmup periods.*
 
 ### Key Performance Improvements
 
-- **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 6.4x faster metadata extraction
-- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 497.8ms ± 9.2ms vs. 1172.5ms ± 8.5ms for single-threaded Perl
-- **Write operations**: Efficient binary manipulation and atomic file operations provide 14.4x faster EXIF tag modifications
-- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (6.3x faster)
+- **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 6.0x faster metadata extraction
+- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 611.3ms ± 4.8ms vs. 1205.2ms ± 54.5ms for single-threaded Perl
+- **Write operations**: Efficient binary manipulation and atomic file operations provide 13.6x faster EXIF tag modifications
+- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (6.1x faster)
 
 ### Reproducing These Benchmarks
 
