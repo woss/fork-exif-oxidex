@@ -157,8 +157,7 @@ fn get_oxidex_output(file_path: &Path) -> Result<String, String> {
         return Err(format!("OxiDex failed: {}", stderr));
     }
 
-    String::from_utf8(output.stdout)
-        .map_err(|e| format!("Invalid UTF-8 in OxiDex output: {}", e))
+    String::from_utf8(output.stdout).map_err(|e| format!("Invalid UTF-8 in OxiDex output: {}", e))
 }
 
 /// Extracts the actual value from a potentially nested JSON structure
@@ -395,12 +394,8 @@ fn compare_json_outputs(perl_json: &str, rust_json: &str) -> Result<MatchReport,
         )
     })?;
 
-    let rust_data: Vec<HashMap<String, Value>> = serde_json::from_str(rust_json).map_err(|e| {
-        format!(
-            "Failed to parse OxiDex JSON: {}\nOutput:\n{}",
-            e, rust_json
-        )
-    })?;
+    let rust_data: Vec<HashMap<String, Value>> = serde_json::from_str(rust_json)
+        .map_err(|e| format!("Failed to parse OxiDex JSON: {}\nOutput:\n{}", e, rust_json))?;
 
     // Both tools output an array with a single object
     if perl_data.is_empty() {
@@ -789,8 +784,7 @@ fn test_write_roundtrip_jpeg_artist() {
     // Step 2: Read back with both tools
     let perl_readback =
         get_perl_exiftool_output(temp_path).expect("Failed to read back with Perl ExifTool");
-    let rust_readback =
-        get_oxidex_output(temp_path).expect("Failed to read back with OxiDex");
+    let rust_readback = get_oxidex_output(temp_path).expect("Failed to read back with OxiDex");
 
     // Step 3: Compare outputs
     let report = compare_json_outputs(&perl_readback, &rust_readback)
@@ -904,8 +898,7 @@ fn test_copy_metadata_jpeg_to_jpeg() {
     // Read back with both tools and compare
     let perl_output =
         get_perl_exiftool_output(temp_dest_path).expect("Failed to read with Perl ExifTool");
-    let rust_output =
-        get_oxidex_output(temp_dest_path).expect("Failed to read with OxiDex");
+    let rust_output = get_oxidex_output(temp_dest_path).expect("Failed to read with OxiDex");
 
     let report =
         compare_json_outputs(&perl_output, &rust_output).expect("Failed to compare JSON outputs");
@@ -1047,8 +1040,7 @@ fn test_rename_file_pattern() {
         // Read with both tools and compare
         let perl_output =
             get_perl_exiftool_output(&file_path).expect("Failed to read with Perl ExifTool");
-        let rust_output =
-            get_oxidex_output(&file_path).expect("Failed to read with OxiDex");
+        let rust_output = get_oxidex_output(&file_path).expect("Failed to read with OxiDex");
 
         let report = compare_json_outputs(&perl_output, &rust_output)
             .expect("Failed to compare JSON outputs");

@@ -94,11 +94,67 @@ impl CliArgs {
         let mut dry_run = false;
         let mut args = Vec::new();
 
-        // Create parser from environment arguments
-        let mut parser = lexopt::Parser::from_env();
+        // Pre-process arguments to handle tag modifications that look like flags
+        // e.g., "-EXIF:Artist=value" starts with '-' but isn't a regular flag
+        let raw_args: Vec<String> = std::env::args().skip(1).collect();
+        let mut lexopt_args = Vec::new();
+        let mut tag_modifications = Vec::new();
+
+        for arg in raw_args {
+            // Check if this looks like a tag modification or date shift
+            // These start with '-' but aren't double-dash flags, and contain '='
+            if arg.starts_with('-')
+                && !arg.starts_with("--")
+                && (arg.contains('=') || arg.ends_with("+=") || arg.ends_with("-="))
+            {
+                // This is a tag modification or date shift - don't pass to lexopt
+                tag_modifications.push(arg);
+            } else {
+                // Regular argument - pass to lexopt
+                lexopt_args.push(arg);
+            }
+        }
+
+        // Create parser from filtered arguments
+        let mut parser = lexopt::Parser::from_args(lexopt_args);
+
+        // Add pre-identified tag modifications to args list
+        args.extend(tag_modifications);
 
         // Process each argument
-        while let Some(arg) = parser.next()? {
+        loop {
+            // Handle parser.next() errors specially for tag modifications
+            let arg = match parser.next() {
+                Ok(Some(arg)) => arg,
+                Ok(None) => break, // No more arguments
+                Err(e) => {
+                    // Handle lexopt errors - these might be tag modifications or date shifts
+                    // that lexopt tries to parse as flags
+                    let error_msg = e.to_string();
+                    if let Some(arg_str) = extract_arg_from_error(&error_msg) {
+                        args.push(arg_str);
+                    } else {
+                        // If we can't extract the argument, return the error
+                        return Err(e);
+                    }
+                    // Collect remaining arguments
+                    match parser.raw_args() {
+                        Ok(raw) => {
+                            for remaining_arg in raw {
+                                if let Ok(s) = remaining_arg.string() {
+                                    args.push(s);
+                                }
+                            }
+                        }
+                        Err(_) => {
+                            // raw_args() can fail, but we already collected the main arg
+                            // so we can continue
+                        }
+                    }
+                    break;
+                }
+            };
+
             match arg {
                 // Help flag
                 Short('h') | Long("help") => {
@@ -414,6 +470,7 @@ impl CliArgs {
 /// Helper function to extract the actual argument from a lexopt error message
 ///
 /// Lexopt error messages have the format: "unexpected argument '--option'" or "unexpected option '-o'"
+/// or "unexpected argument for option '-E': \"XIF:Artist=TestValue\"" (when a tag looks like a flag)
 /// This function extracts the actual argument string from the error message.
 ///
 /// # Arguments
@@ -424,6 +481,27 @@ impl CliArgs {
 ///
 /// The extracted argument string, or the original string if parsing fails
 fn extract_arg_from_error(error_msg: &str) -> Option<String> {
+    // Handle the "unexpected argument for option '-X': \"value\"" format
+    // This occurs when lexopt parses "-EXIF:Artist=value" as "-E" with unexpected value
+    if error_msg.contains("unexpected argument for option") {
+        // Extract the option part (e.g., '-E')
+        if let Some(start) = error_msg.find('\'') {
+            if let Some(end) = error_msg[start + 1..].find('\'') {
+                let option = &error_msg[start + 1..start + 1 + end];
+
+                // Extract the value part (after the colon and space, between quotes)
+                if let Some(value_start) = error_msg.find(": \"") {
+                    if let Some(value_end) = error_msg[value_start + 3..].find('"') {
+                        let value = &error_msg[value_start + 3..value_start + 3 + value_end];
+                        // Reconstruct the full argument by combining option and value
+                        // e.g., '-E' + 'XIF:Artist=value' = '-EXIF:Artist=value'
+                        return Some(format!("{}{}", option, value));
+                    }
+                }
+            }
+        }
+    }
+
     // Try to find quoted text in the error message
     if let Some(start) = error_msg.find('\'') {
         if let Some(end) = error_msg[start + 1..].find('\'') {
