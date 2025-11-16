@@ -449,11 +449,11 @@ fn extract_arg_from_error(error_msg: &str) -> Option<String> {
 /// - Available options with short and long forms
 /// - Examples of common use cases
 fn print_help() {
-    println!("exiftool-rs {}", env!("CARGO_PKG_VERSION"));
+    println!("oxidex {}", env!("CARGO_PKG_VERSION"));
     println!("A modern, high-performance Rust reimplementation of ExifTool");
     println!();
     println!("USAGE:");
-    println!("    exiftool-rs [OPTIONS] [-TAG=VALUE ...] FILE|DIRECTORY");
+    println!("    oxidex [OPTIONS] [-TAG=VALUE ...] FILE|DIRECTORY");
     println!();
     println!("OPTIONS:");
     println!("    -h, --help                  Print help information");
@@ -480,19 +480,19 @@ fn print_help() {
     println!();
     println!("EXAMPLES:");
     println!("    # Read metadata from a file");
-    println!("    exiftool-rs photo.jpg");
+    println!("    oxidex photo.jpg");
     println!();
     println!("    # Output metadata in JSON format");
-    println!("    exiftool-rs -j photo.jpg");
+    println!("    oxidex -j photo.jpg");
     println!();
     println!("    # Modify a single tag");
-    println!("    exiftool-rs -EXIF:Artist=\"John Doe\" photo.jpg");
+    println!("    oxidex -EXIF:Artist=\"John Doe\" photo.jpg");
     println!();
     println!("    # Copy metadata from one file to another");
-    println!("    exiftool-rs --TagsFromFile source.jpg destination.jpg");
+    println!("    oxidex --TagsFromFile source.jpg destination.jpg");
     println!();
     println!("    # Rename file based on metadata");
-    println!("    exiftool-rs '-FileName<DateTimeOriginal' -d %Y%m%d_%H%M%S photo.jpg");
+    println!("    oxidex '-FileName<DateTimeOriginal' -d %Y%m%d_%H%M%S photo.jpg");
     println!();
     println!("For more information, visit: https://github.com/exiftool-rs/exiftool-rs");
 }
@@ -501,5 +501,5 @@ fn print_help() {
 ///
 /// Displays the application name and version number from Cargo package metadata.
 fn print_version() {
-    println!("exiftool-rs {}", env!("CARGO_PKG_VERSION"));
+    println!("oxidex {}", env!("CARGO_PKG_VERSION"));
 }

@@ -34,7 +34,7 @@ fn main() {
         Some(path) => path,
         None => {
             eprintln!("Error: No file or directory specified");
-            eprintln!("Usage: exiftool-rs [OPTIONS] [-TAG=VALUE ...] FILE|DIRECTORY");
+            eprintln!("Usage: oxidex [OPTIONS] [-TAG=VALUE ...] FILE|DIRECTORY");
             process::exit(1);
         }
     };
