@@ -1,4 +1,4 @@
-//! Build script for exiftool-rs
+//! Build script for OxiDex
 //!
 //! This script automatically generates the tag database from ExifTool Perl source
 //! during the build process. It downloads ExifTool source from GitHub, parses
