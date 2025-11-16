@@ -48,6 +48,9 @@ benches/target/
 # Claude Code config
 .claude/
 
+# Git worktrees
+.worktrees/
+
 # Helper scripts and temporary files
 generate_tags.py
 additional_tags.txt
