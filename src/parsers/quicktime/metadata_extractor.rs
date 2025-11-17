@@ -18,19 +18,20 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
     // Extract file-level metadata from ftyp and mdat atoms
     extract_file_level_metadata(root_atoms, &mut metadata);
 
-    // Find the moov atom (movie container)
+    // Find the moov atom (movie container) - optional for HEIF/HIF files
     let moov = root_atoms
         .iter()
-        .find(|atom| atom.atom_type.matches("moov"))
-        .ok_or("No moov atom found")?;
+        .find(|atom| atom.atom_type.matches("moov"));
 
-    // Extract movie header metadata (mvhd)
-    if let Some(mvhd) = moov.find_child("mvhd") {
-        extract_movie_header(&mvhd, &mut metadata)?;
-    }
+    // If we have a moov atom, extract traditional QuickTime/MP4 metadata
+    if let Some(moov) = moov {
+        // Extract movie header metadata (mvhd)
+        if let Some(mvhd) = moov.find_child("mvhd") {
+            extract_movie_header(&mvhd, &mut metadata)?;
+        }
 
-    // Extract from all possible locations
-    if let Some(udta) = moov.find_child("udta") {
+        // Extract from all possible locations
+        if let Some(udta) = moov.find_child("udta") {
         // Extract handler metadata (hdlr) - may be in udta or udta→meta
         if let Some(meta) = udta.find_child("meta") {
             // Parse meta children (skip version/flags)
@@ -54,15 +55,36 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
         // Extract classic QuickTime user data (©xxx atoms)
         extract_user_data_atoms(&udta, &mut metadata)?;
 
-        // Extract iTunes-style metadata (udta→meta)
-        if let Some(meta) = udta.find_child("meta") {
-            extract_itunes_metadata(&meta, &mut metadata)?;
+            // Extract iTunes-style metadata (udta→meta)
+            if let Some(meta) = udta.find_child("meta") {
+                extract_itunes_metadata(&meta, &mut metadata)?;
+            }
+        }
+
+        // Extract MP4 metadata (moov→meta with keys/ilst)
+        if let Some(meta) = moov.find_child("meta") {
+            extract_mp4_metadata(&meta, &mut metadata)?;
         }
     }
 
-    // Extract MP4 metadata (moov→meta with keys/ilst)
-    if let Some(meta) = moov.find_child("meta") {
-        extract_mp4_metadata(&meta, &mut metadata)?;
+    // HEIF/HIF files have a root-level meta atom instead of moov
+    // Extract metadata from root-level meta atom if present
+    if let Some(meta) = root_atoms.iter().find(|a| a.atom_type.matches("meta")) {
+        // Extract handler metadata from root-level meta
+        let meta_data = if meta.data.len() >= 4 && meta.data[0..4] == [0, 0, 0, 0] {
+            &meta.data[4..]
+        } else {
+            meta.data
+        };
+
+        if let Ok((_, atoms)) = super::atom_parser::parse_atoms(meta_data) {
+            if let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr")) {
+                extract_handler_metadata(hdlr, &mut metadata)?;
+            }
+        }
+
+        // Extract HEIF-specific metadata (iinf, iloc, etc.)
+        extract_heif_metadata(meta, &mut metadata)?;
     }
 
     // If no metadata was extracted, return error
@@ -776,6 +798,83 @@ fn decode_utf16(data: &[u8]) -> Option<String> {
         .collect();
 
     String::from_utf16(&utf16_chars).ok()
+}
+
+/// Extract HEIF-specific metadata from meta atom
+fn extract_heif_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), String> {
+    // Parse meta children (skip version/flags if present)
+    let meta_data = if meta.data.len() >= 4 && meta.data[0..4] == [0, 0, 0, 0] {
+        &meta.data[4..]
+    } else {
+        meta.data
+    };
+
+    let children = match super::atom_parser::parse_atoms(meta_data) {
+        Ok((_, atoms)) => atoms,
+        Err(_) => return Ok(()), // Gracefully handle parsing errors
+    };
+
+    // Extract image information from iinf (item information) atom
+    if let Some(iinf) = children.iter().find(|a| a.atom_type.matches("iinf")) {
+        if iinf.data.len() >= 8 {
+            // Skip version/flags (4 bytes)
+            let entry_count_bytes = &iinf.data[4..8];
+            // Entry count could be 2 or 4 bytes depending on version
+            let entry_count = if iinf.data[0] == 0 {
+                // Version 0: 2-byte entry count
+                u16::from_be_bytes([entry_count_bytes[0], entry_count_bytes[1]]) as u32
+            } else {
+                // Version 1+: 4-byte entry count
+                u32::from_be_bytes([
+                    entry_count_bytes[0],
+                    entry_count_bytes[1],
+                    entry_count_bytes[2],
+                    entry_count_bytes[3],
+                ])
+            };
+
+            metadata.insert(
+                "HEIF:ItemCount".to_string(),
+                TagValue::Integer(entry_count as i64),
+            );
+        }
+    }
+
+    // Extract image properties from ispe (image spatial extents) atoms
+    // HEIF files may have multiple ispe atoms for different items
+    for atom in &children {
+        if atom.atom_type.matches("ispe") {
+            if atom.data.len() >= 12 {
+                // ispe format: version(1) + flags(3) + width(4) + height(4)
+                let width = u32::from_be_bytes([
+                    atom.data[4],
+                    atom.data[5],
+                    atom.data[6],
+                    atom.data[7],
+                ]);
+                let height = u32::from_be_bytes([
+                    atom.data[8],
+                    atom.data[9],
+                    atom.data[10],
+                    atom.data[11],
+                ]);
+
+                // Only set if not already set (use first/primary image)
+                if !metadata.contains_key("HEIF:ImageWidth") {
+                    metadata.insert(
+                        "HEIF:ImageWidth".to_string(),
+                        TagValue::Integer(width as i64),
+                    );
+                    metadata.insert(
+                        "HEIF:ImageHeight".to_string(),
+                        TagValue::Integer(height as i64),
+                    );
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
