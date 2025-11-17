@@ -67,6 +67,28 @@ impl FormatParser for SevenZParser {
     }
 }
 
+/// Standalone function for parsing 7z metadata
+///
+/// This function provides a convenient interface for parsing 7-Zip archive metadata
+/// by instantiating the SevenZParser and calling its parse method.
+///
+/// # Arguments
+///
+/// * `reader` - A FileReader providing access to the 7z file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error description
+pub fn parse_7z_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = SevenZParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("7z parse error: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

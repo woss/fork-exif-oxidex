@@ -76,6 +76,28 @@ impl FormatParser for RARParser {
     }
 }
 
+/// Standalone function for parsing RAR metadata
+///
+/// This function provides a convenient interface for parsing RAR archive metadata
+/// by instantiating the RARParser and calling its parse method.
+///
+/// # Arguments
+///
+/// * `reader` - A FileReader providing access to the RAR file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error description
+pub fn parse_rar_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = RARParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("RAR parse error: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

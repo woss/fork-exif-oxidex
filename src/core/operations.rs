@@ -28,6 +28,11 @@ use crate::parsers::audio::ogg::parse_ogg_metadata;
 use crate::parsers::audio::opus::parse_opus_metadata;
 use crate::parsers::audio::ape::parse_ape_metadata;
 use crate::parsers::archive::zip::parse_zip_metadata;
+use crate::parsers::archive::rar::parse_rar_metadata;
+use crate::parsers::archive::sevenz::parse_7z_metadata;
+use crate::parsers::archive::iso::parse_iso_metadata;
+use crate::parsers::archive::tar::parse_tar_metadata;
+use crate::parsers::archive::gz::parse_gz_metadata;
 use crate::parsers::document::ooxml::parse_docx_metadata;
 use crate::parsers::document::ooxml::parse_xlsx_metadata;
 use crate::parsers::document::ooxml::parse_pptx_metadata;
@@ -186,6 +191,16 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("Keynote parse error: {}", e))),
         FileFormat::EPUB => parse_epub_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("EPUB parse error: {}", e))),
+        FileFormat::RAR => parse_rar_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("RAR parse error: {}", e))),
+        FileFormat::SevenZ => parse_7z_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("7z parse error: {}", e))),
+        FileFormat::ISO => parse_iso_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("ISO parse error: {}", e))),
+        FileFormat::TAR => parse_tar_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("TAR parse error: {}", e))),
+        FileFormat::GZ => parse_gz_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("GZ parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format

@@ -66,6 +66,28 @@ impl FormatParser for ISOParser {
     }
 }
 
+/// Standalone function for parsing ISO metadata
+///
+/// This function provides a convenient interface for parsing ISO 9660 disc image metadata
+/// by instantiating the ISOParser and calling its parse method.
+///
+/// # Arguments
+///
+/// * `reader` - A FileReader providing access to the ISO file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error description
+pub fn parse_iso_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = ISOParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("ISO parse error: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

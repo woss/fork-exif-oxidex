@@ -68,6 +68,28 @@ impl FormatParser for TARParser {
     }
 }
 
+/// Standalone function for parsing TAR metadata
+///
+/// This function provides a convenient interface for parsing TAR archive metadata
+/// by instantiating the TARParser and calling its parse method.
+///
+/// # Arguments
+///
+/// * `reader` - A FileReader providing access to the TAR file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error description
+pub fn parse_tar_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = TARParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("TAR parse error: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
