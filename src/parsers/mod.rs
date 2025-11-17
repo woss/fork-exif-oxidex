@@ -19,6 +19,7 @@ pub mod pe;
 pub mod png;
 pub mod quicktime;
 pub mod raw;
+pub mod specialized;
 pub mod tiff;
 pub mod video;
 pub mod xmp;

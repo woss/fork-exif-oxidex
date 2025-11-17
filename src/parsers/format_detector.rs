@@ -493,6 +493,66 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::AVIF);
     }
 
+    // Phase 6: Specialized formats
+
+    // ELF: 0x7F 0x45 0x4C 0x46 ("\x7FELF")
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x7F, 0x45, 0x4C, 0x46] {
+        return Ok(FileFormat::ELF);
+    }
+
+    // Mach-O: 0xFE 0xED 0xFA 0xCE or reversed variants
+    if magic_bytes.len() >= 4 {
+        let sig = &magic_bytes[0..4];
+        if sig == &[0xFE, 0xED, 0xFA, 0xCE] || sig == &[0xFE, 0xED, 0xFA, 0xCF]
+           || sig == &[0xCE, 0xFA, 0xED, 0xFE] || sig == &[0xCF, 0xFA, 0xED, 0xFE] {
+            return Ok(FileFormat::MachO);
+        }
+    }
+
+    // HDF5: 0x89 0x48 0x44 0x46 (PNG-like signature)
+    if magic_bytes.len() >= 8 && &magic_bytes[0..8] == &[0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A] {
+        return Ok(FileFormat::HDF5);
+    }
+
+    // FITS: "SIMPLE" signature
+    if magic_bytes.len() >= 6 && &magic_bytes[0..6] == b"SIMPLE" {
+        return Ok(FileFormat::FITS);
+    }
+
+    // DWG: "AC10" through "AC32" signatures
+    if magic_bytes.len() >= 6 && &magic_bytes[0..2] == b"AC"
+       && magic_bytes[2] >= b'1' && magic_bytes[3] >= b'0' {
+        return Ok(FileFormat::DWG);
+    }
+
+    // Text-based formats (DXF, OBJ, GLTF, STL ASCII)
+    if magic_bytes.len() >= 100 {
+        if let Ok(text) = std::str::from_utf8(&magic_bytes[0..100]) {
+            // DXF: starts with "0\n" and contains "SECTION"
+            if text.starts_with("0\n") && text.contains("SECTION") {
+                return Ok(FileFormat::DXF);
+            }
+            // OBJ: contains vertex definitions
+            if text.contains("v ") || text.contains("vn ") || text.contains("vt ") {
+                return Ok(FileFormat::OBJ);
+            }
+            // GLTF: JSON with "asset" field
+            if text.contains("\"asset\"") && text.contains("{") {
+                return Ok(FileFormat::GLTF);
+            }
+            // STL ASCII: starts with "solid"
+            if text.starts_with("solid") {
+                return Ok(FileFormat::STL);
+            }
+        }
+    }
+
+    // STL Binary: if not detected as ASCII and has valid size
+    if reader.size() >= 84 {
+        // Binary STL has 80-byte header + 4-byte triangle count
+        return Ok(FileFormat::STL);
+    }
+
     // No known format matched
     Ok(FileFormat::Unknown)
 }

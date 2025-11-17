@@ -199,6 +199,34 @@ pub enum FileFormat {
     /// Adobe Photoshop document (.psd)
     PSD,
 
+    // Phase 6: Specialized formats
+    /// ELF executable format
+    ELF,
+
+    /// Mach-O executable format
+    MachO,
+
+    /// AutoCAD DWG format
+    DWG,
+
+    /// AutoCAD DXF format
+    DXF,
+
+    /// STL 3D model format
+    STL,
+
+    /// Wavefront OBJ 3D model
+    OBJ,
+
+    /// glTF 3D model format
+    GLTF,
+
+    /// FITS astronomy format
+    FITS,
+
+    /// HDF5 data format
+    HDF5,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -266,6 +294,15 @@ impl FileFormat {
             FileFormat::SVG => "SVG",
             FileFormat::ICO => "ICO",
             FileFormat::PSD => "PSD",
+            FileFormat::ELF => "ELF",
+            FileFormat::MachO => "Mach-O",
+            FileFormat::DWG => "DWG",
+            FileFormat::DXF => "DXF",
+            FileFormat::STL => "STL",
+            FileFormat::OBJ => "OBJ",
+            FileFormat::GLTF => "glTF",
+            FileFormat::FITS => "FITS",
+            FileFormat::HDF5 => "HDF5",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -335,6 +372,15 @@ impl FileFormat {
             FileFormat::SVG => &["svg"],
             FileFormat::ICO => &["ico"],
             FileFormat::PSD => &["psd"],
+            FileFormat::ELF => &["elf", "so"],
+            FileFormat::MachO => &["dylib", "bundle"],
+            FileFormat::DWG => &["dwg"],
+            FileFormat::DXF => &["dxf"],
+            FileFormat::STL => &["stl"],
+            FileFormat::OBJ => &["obj"],
+            FileFormat::GLTF => &["gltf", "glb"],
+            FileFormat::FITS => &["fits", "fit"],
+            FileFormat::HDF5 => &["h5", "hdf5"],
             FileFormat::Unknown => &[],
         }
     }
