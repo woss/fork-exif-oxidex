@@ -8,6 +8,19 @@ use super::{FileFormat, FileReader, MetadataMap, TagValue};
 use crate::core::validation::validate_tag_value_with_name;
 use crate::error::{ExifToolError, Result};
 use crate::io::MMapReader;
+use crate::parsers::archive::gz::parse_gz_metadata;
+use crate::parsers::archive::iso::parse_iso_metadata;
+use crate::parsers::archive::rar::parse_rar_metadata;
+use crate::parsers::archive::sevenz::parse_7z_metadata;
+use crate::parsers::archive::tar::parse_tar_metadata;
+use crate::parsers::archive::zip::parse_zip_metadata;
+use crate::parsers::audio::aac::parse_aac_metadata;
+use crate::parsers::audio::ape::parse_ape_metadata;
+use crate::parsers::audio::flac::parse_flac_metadata;
+use crate::parsers::audio::mp3::parse_mp3_metadata;
+use crate::parsers::audio::ogg::parse_ogg_metadata;
+use crate::parsers::audio::opus::parse_opus_metadata;
+use crate::parsers::audio::wav::parse_wav_metadata;
 use crate::parsers::format_detector::detect_format;
 use crate::parsers::jpeg::segment_parser::parse_segments;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
@@ -15,53 +28,41 @@ use crate::parsers::pdf::parse_pdf_metadata;
 use crate::parsers::pe::parse_pe_metadata;
 use crate::parsers::png::parse_png_metadata;
 use crate::parsers::quicktime::parse_quicktime_metadata;
-use crate::parsers::video::mkv::parse_mkv_metadata;
-use crate::parsers::video::webm::parse_webm_metadata;
-use crate::parsers::video::flv::parse_flv_metadata;
 use crate::parsers::video::avi::parse_avi_metadata;
+use crate::parsers::video::flv::parse_flv_metadata;
+use crate::parsers::video::mkv::parse_mkv_metadata;
 use crate::parsers::video::mts::parse_mts_metadata;
-use crate::parsers::audio::mp3::parse_mp3_metadata;
-use crate::parsers::audio::flac::parse_flac_metadata;
-use crate::parsers::audio::aac::parse_aac_metadata;
-use crate::parsers::audio::wav::parse_wav_metadata;
-use crate::parsers::audio::ogg::parse_ogg_metadata;
-use crate::parsers::audio::opus::parse_opus_metadata;
-use crate::parsers::audio::ape::parse_ape_metadata;
-use crate::parsers::archive::zip::parse_zip_metadata;
-use crate::parsers::archive::rar::parse_rar_metadata;
-use crate::parsers::archive::sevenz::parse_7z_metadata;
-use crate::parsers::archive::iso::parse_iso_metadata;
-use crate::parsers::archive::tar::parse_tar_metadata;
-use crate::parsers::archive::gz::parse_gz_metadata;
+use crate::parsers::video::webm::parse_webm_metadata;
 // Font parsers
-use crate::parsers::font::ttf::parse_ttf_metadata;
+use crate::parsers::document::epub::parse_epub_metadata;
+use crate::parsers::document::ooxml::parse_docx_metadata;
+use crate::parsers::document::ooxml::parse_pptx_metadata;
+use crate::parsers::document::ooxml::parse_xlsx_metadata;
 use crate::parsers::font::otf::parse_otf_metadata;
+use crate::parsers::font::ttf::parse_ttf_metadata;
 use crate::parsers::font::woff::parse_woff_metadata;
 use crate::parsers::font::woff2::parse_woff2_metadata;
-use crate::parsers::document::ooxml::parse_docx_metadata;
-use crate::parsers::document::ooxml::parse_xlsx_metadata;
-use crate::parsers::document::ooxml::parse_pptx_metadata;
-use crate::parsers::document::epub::parse_epub_metadata;
 // Advanced image parsers
 use crate::parsers::image::avif::parse_avif_metadata;
-use crate::parsers::image::jxl::parse_jxl_metadata;
 use crate::parsers::image::bpg::parse_bpg_metadata;
 use crate::parsers::image::exr::parse_exr_metadata;
 use crate::parsers::image::flif::parse_flif_metadata;
-use crate::parsers::image::svg::parse_svg_metadata;
 use crate::parsers::image::ico::parse_ico_metadata;
+use crate::parsers::image::jxl::parse_jxl_metadata;
 use crate::parsers::image::psd::parse_psd_metadata;
+use crate::parsers::image::svg::parse_svg_metadata;
 // Specialized parsers
-use crate::parsers::specialized::elf::parse_elf_metadata;
-use crate::parsers::specialized::macho::parse_macho_metadata;
 use crate::parsers::specialized::dwg::parse_dwg_metadata;
 use crate::parsers::specialized::dxf::parse_dxf_metadata;
-use crate::parsers::specialized::stl::parse_stl_metadata;
-use crate::parsers::specialized::obj::parse_obj_metadata;
-use crate::parsers::specialized::gltf::parse_gltf_metadata;
+use crate::parsers::specialized::elf::parse_elf_metadata;
 use crate::parsers::specialized::fits::parse_fits_metadata;
+use crate::parsers::specialized::gltf::parse_gltf_metadata;
 use crate::parsers::specialized::hdf5::parse_hdf5_metadata;
+use crate::parsers::specialized::macho::parse_macho_metadata;
+use crate::parsers::specialized::obj::parse_obj_metadata;
+use crate::parsers::specialized::stl::parse_stl_metadata;
 // Image parsers
+use crate::parsers::image::bmp::parse_bmp_metadata;
 use crate::parsers::image::gif::parse_gif_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
@@ -274,6 +275,8 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("HDF5 parse error: {}", e))),
         FileFormat::GIF => parse_gif_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("GIF parse error: {}", e))),
+        FileFormat::BMP => parse_bmp_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("BMP parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format

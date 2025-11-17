@@ -1,6 +1,7 @@
 //! Advanced image format parsers
 
 pub mod avif;
+pub mod bmp;
 pub mod bpg;
 pub mod exr;
 pub mod flif;
@@ -11,6 +12,7 @@ pub mod psd;
 pub mod svg;
 
 pub use avif::AVIFParser;
+pub use bmp::BMPParser;
 pub use bpg::BPGParser;
 pub use exr::EXRParser;
 pub use flif::FLIFParser;

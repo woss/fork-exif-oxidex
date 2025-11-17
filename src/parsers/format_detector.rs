@@ -212,10 +212,15 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     }
 
     // GIF: "GIF87a" or "GIF89a"
-    if magic_bytes.len() >= 6 {
-        if &magic_bytes[0..6] == b"GIF87a" || &magic_bytes[0..6] == b"GIF89a" {
-            return Ok(FileFormat::GIF);
-        }
+    if magic_bytes.len() >= 6
+        && (&magic_bytes[0..6] == b"GIF87a" || &magic_bytes[0..6] == b"GIF89a")
+    {
+        return Ok(FileFormat::GIF);
+    }
+
+    // BMP: "BM" (0x42 0x4D)
+    if magic_bytes.len() >= 2 && &magic_bytes[0..2] == b"BM" {
+        return Ok(FileFormat::BMP);
     }
 
     // FLAC: "fLaC" signature
