@@ -261,13 +261,8 @@ create-dmg version:
     mkdir -p dist
     create-dmg \
       --volname "OxiDex {{version}}" \
-      --volicon "" \
-      --window-pos 200 120 \
-      --window-size 600 400 \
-      --icon-size 100 \
-      --icon "oxidex" 175 190 \
-      --hide-extension "oxidex" \
-      --app-drop-link 425 190 \
+      --no-internet-enable \
+      --skip-jenkins \
       "dist/oxidex-{{version}}.dmg" \
       "target/release/"
     @echo "DMG created at dist/oxidex-{{version}}.dmg"
