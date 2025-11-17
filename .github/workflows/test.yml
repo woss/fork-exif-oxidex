@@ -4,10 +4,10 @@ on:
   push:
     branches: ["main"]
     paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".gitignore"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,56 +23,27 @@ env:
 jobs:
   test:
     name: Test Suite
-    runs-on: puzl-ubuntu-latest
+    runs-on: arc-runner-set
     timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-        with:
-          lfs: true
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
 
-
-      - name: Build
-        run: cargo build --release --verbose --all-features
-
-      - name: Run tests
-        run: cargo test --verbose --all-features
-
-  clippy:
-    name: Clippy Lints
-    runs-on: puzl-ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-        with:
-          lfs: false
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-
+      - name: Install Deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential
+          rustup component add clippy
 
       - name: Run Clippy
         run: cargo clippy --all-features -- -D warnings
 
-  fmt:
-    name: Code Formatting
-    runs-on: puzl-ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-        with:
-          lfs: false
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-        with:
-          components: rustfmt
+      - name: Run tests
+        run: cargo test --verbose --all-features
 
       - name: Generate build artifacts
         run: cargo check --all-features
@@ -81,30 +52,6 @@ jobs:
 
       - name: Check formatting
         run: cargo fmt --all -- --check
-
-  integration-tests:
-    name: Integration Tests (ExifTool Comparison)
-    runs-on: puzl-ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-        with:
-          lfs: true
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-
-      - name: Install Perl ExifTool
-        run: |
-          if ! command -v exiftool &> /dev/null; then
-            echo "ExifTool not found, installing..."
-            sudo apt-get update -qq
-            sudo apt-get install -y libimage-exiftool-perl
-          else
-            echo "ExifTool already installed: $(exiftool -ver)"
-          fi
 
       - name: Build OxiDex
         run: cargo build --release --all-features
