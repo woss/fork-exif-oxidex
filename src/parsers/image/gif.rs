@@ -66,11 +66,20 @@ impl FormatParser for GIFParser {
         );
 
         let version = Self::read_version(reader)?;
-        metadata.insert("GIFVersion".to_string(), TagValue::String(version.to_string()));
+        metadata.insert(
+            "GIFVersion".to_string(),
+            TagValue::String(version.to_string()),
+        );
 
         let (width, height) = Self::read_dimensions(reader)?;
-        metadata.insert("ImageWidth".to_string(), TagValue::String(width.to_string()));
-        metadata.insert("ImageHeight".to_string(), TagValue::String(height.to_string()));
+        metadata.insert(
+            "ImageWidth".to_string(),
+            TagValue::String(width.to_string()),
+        );
+        metadata.insert(
+            "ImageHeight".to_string(),
+            TagValue::String(height.to_string()),
+        );
 
         Ok(metadata)
     }
