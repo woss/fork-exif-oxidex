@@ -116,19 +116,19 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 
 | Scenario | Perl ExifTool | ExifTool-RS | Speedup |
 |----------|---------------|-------------|---------|
-| Single JPEG Read | 104.4ms ± 1.4ms | 14.3ms ± 0.6ms | **7.3x faster** |
-| Batch Processing (1000 files) | 3084.0ms ± 24.9ms | 412.1ms ± 7.0ms | **7.5x faster** |
-| Write Operation (modify EXIF tag) | 288.0ms ± 2.1ms | 17.3ms ± 0.7ms | **16.7x faster** |
-| Format Detection | 105.3ms ± 2.1ms | 14.7ms ± 0.5ms | **7.2x faster** |
+| Single JPEG Read | 104.6ms ± 2.8ms | 14.2ms ± 0.4ms | **7.3x faster** |
+| Batch Processing (1000 files) | 3047.4ms ± 35.8ms | 373.2ms ± 2.7ms | **8.2x faster** |
+| Write Operation (modify EXIF tag) | 293.6ms ± 5.2ms | 17.4ms ± 1.4ms | **16.9x faster** |
+| Format Detection | 108.3ms ± 4.6ms | 14.6ms ± 1.2ms | **7.4x faster** |
 
 *Benchmarks performed using [hyperfine](https://github.com/sharkdp/hyperfine) with multiple runs and warmup periods.*
 
 ### Key Performance Improvements
 
 - **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 7.3x faster metadata extraction
-- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 412.1ms ± 7.0ms vs. 3084.0ms ± 24.9ms for single-threaded Perl
-- **Write operations**: Efficient binary manipulation and atomic file operations provide 16.7x faster EXIF tag modifications
-- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (7.2x faster)
+- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 373.2ms ± 2.7ms vs. 3047.4ms ± 35.8ms for single-threaded Perl
+- **Write operations**: Efficient binary manipulation and atomic file operations provide 16.9x faster EXIF tag modifications
+- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (7.4x faster)
 
 ### Reproducing These Benchmarks
 
