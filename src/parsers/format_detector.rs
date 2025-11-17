@@ -17,6 +17,7 @@
 //! - TIFF (Little-Endian): 0x49 0x49 0x2A 0x00
 //! - TIFF (Big-Endian): 0x4D 0x4D 0x00 0x2A
 //! - PNG: 0x89 0x50 0x4E 0x47
+//! - FLAC: 0x66 0x4C 0x61 0x43 ("fLaC")
 //! - PDF: 0x25 0x50 0x44 0x46
 //! - QuickTime/MP4: "ftyp" at bytes 4-7
 //!
@@ -200,6 +201,11 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // PNG: 0x89 0x50 0x4E 0x47 (first 4 bytes of 8-byte signature)
     if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
         return Ok(FileFormat::PNG);
+    }
+
+    // FLAC: "fLaC" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"fLaC" {
+        return Ok(FileFormat::FLAC);
     }
 
     // PDF: 0x25 0x50 0x44 0x46 ("%PDF")
