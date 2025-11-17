@@ -62,6 +62,23 @@ const BLOCK_TYPE_PICTURE: u8 = 6;
 /// FLAC parser
 pub struct FlacParser;
 
+/// Parses metadata from a FLAC file.
+///
+/// This is a convenience wrapper that creates a FlacParser instance and calls parse().
+///
+/// # Arguments
+///
+/// * `reader` - File reader providing access to the FLAC file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_flac_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = FlacParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 impl FormatParser for FlacParser {
     fn parse(&self, reader: &dyn FileReader) -> Result<MetadataMap> {
         // Verify file size

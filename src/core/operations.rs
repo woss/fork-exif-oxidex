@@ -20,6 +20,13 @@ use crate::parsers::video::webm::parse_webm_metadata;
 use crate::parsers::video::flv::parse_flv_metadata;
 use crate::parsers::video::avi::parse_avi_metadata;
 use crate::parsers::video::mts::parse_mts_metadata;
+use crate::parsers::audio::mp3::parse_mp3_metadata;
+use crate::parsers::audio::flac::parse_flac_metadata;
+use crate::parsers::audio::aac::parse_aac_metadata;
+use crate::parsers::audio::wav::parse_wav_metadata;
+use crate::parsers::audio::ogg::parse_ogg_metadata;
+use crate::parsers::audio::opus::parse_opus_metadata;
+use crate::parsers::audio::ape::parse_ape_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -144,6 +151,20 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("AVI parse error: {}", e))),
         FileFormat::MTS => parse_mts_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("MTS parse error: {}", e))),
+        FileFormat::MP3 => parse_mp3_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("MP3 parse error: {}", e))),
+        FileFormat::FLAC => parse_flac_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("FLAC parse error: {}", e))),
+        FileFormat::AAC => parse_aac_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("AAC parse error: {}", e))),
+        FileFormat::WAV => parse_wav_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("WAV parse error: {}", e))),
+        FileFormat::OGG => parse_ogg_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("OGG parse error: {}", e))),
+        FileFormat::OPUS => parse_opus_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("Opus parse error: {}", e))),
+        FileFormat::APE => parse_ape_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("APE parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format

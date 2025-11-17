@@ -47,6 +47,23 @@ const VORBIS_COMMENT_HEADER: u8 = 0x03;
 /// OGG parser
 pub struct OggParser;
 
+/// Parses metadata from an Ogg Vorbis file.
+///
+/// This is a convenience wrapper that creates an OggParser instance and calls parse().
+///
+/// # Arguments
+///
+/// * `reader` - File reader providing access to the Ogg file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_ogg_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = OggParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 impl FormatParser for OggParser {
     fn parse(&self, reader: &dyn FileReader) -> Result<MetadataMap> {
         // Verify OGG signature

@@ -57,6 +57,23 @@ const PROFILES: [&str; 4] = [
 /// AAC parser
 pub struct AacParser;
 
+/// Parses metadata from an AAC file.
+///
+/// This is a convenience wrapper that creates an AacParser instance and calls parse().
+///
+/// # Arguments
+///
+/// * `reader` - File reader providing access to the AAC file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_aac_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = AacParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 impl FormatParser for AacParser {
     fn parse(&self, reader: &dyn FileReader) -> Result<MetadataMap> {
         let file_size = reader.size();

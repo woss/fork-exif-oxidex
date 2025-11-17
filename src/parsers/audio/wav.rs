@@ -45,6 +45,23 @@ const WAVE_FORMAT: &[u8] = b"WAVE";
 /// WAV parser
 pub struct WavParser;
 
+/// Parses metadata from a WAV file.
+///
+/// This is a convenience wrapper that creates a WavParser instance and calls parse().
+///
+/// # Arguments
+///
+/// * `reader` - File reader providing access to the WAV file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_wav_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = WavParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 impl FormatParser for WavParser {
     fn parse(&self, reader: &dyn FileReader) -> Result<MetadataMap> {
         // Verify RIFF/WAVE signature

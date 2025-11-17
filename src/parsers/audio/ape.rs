@@ -54,6 +54,23 @@ const APEV2_VERSION: u32 = 2000;
 /// APE parser
 pub struct ApeParser;
 
+/// Parses metadata from an APE (Monkey's Audio) file.
+///
+/// This is a convenience wrapper that creates an ApeParser instance and calls parse().
+///
+/// # Arguments
+///
+/// * `reader` - File reader providing access to the APE file data
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_ape_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = ApeParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 impl FormatParser for ApeParser {
     fn parse(&self, reader: &dyn FileReader) -> Result<MetadataMap> {
         let file_size = reader.size();
