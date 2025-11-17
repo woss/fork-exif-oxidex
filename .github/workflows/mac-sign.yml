@@ -99,19 +99,23 @@ jobs:
           echo "Displaying signature details..."
           codesign --display --verbose=4 "$APP_PATH"
 
-      - name: Notarize app
+          echo "✓ Binary signed successfully"
+
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          just create-dmg v${{ steps.version.outputs.version }}
+
+      - name: Notarize DMG
         env:
           NOTARIZATION_APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
           NOTARIZATION_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
           NOTARIZATION_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
         run: |
-          APP_PATH="./target/release/oxidex"
+          DMG_PATH="dist/oxidex-v${{ steps.version.outputs.version }}.dmg"
 
-          echo "Creating archive for notarization..."
-          ditto -c -k --keepParent "$APP_PATH" "oxidex.zip"
-
-          echo "Submitting for notarization..."
-          SUBMISSION_OUTPUT=$(xcrun notarytool submit oxidex.zip \
+          echo "Submitting DMG for notarization..."
+          SUBMISSION_OUTPUT=$(xcrun notarytool submit "$DMG_PATH" \
             --apple-id "$NOTARIZATION_APPLE_ID" \
             --password "$NOTARIZATION_PASSWORD" \
             --team-id "$NOTARIZATION_TEAM_ID" \
@@ -139,13 +143,13 @@ jobs:
             exit 1
           fi
 
-          echo "✓ Binary notarized successfully"
-          echo "Note: Stapling skipped for raw executable (only works with .app/.dmg/.pkg bundles)"
+          echo "Stapling notarization ticket to DMG..."
+          xcrun stapler staple "$DMG_PATH"
 
-      - name: Create DMG
-        run: |
-          brew install create-dmg
-          just create-dmg v${{ steps.version.outputs.version }}
+          echo "Verifying DMG notarization..."
+          xcrun stapler validate "$DMG_PATH"
+
+          echo "✓ DMG notarized and stapled successfully"
 
       - name: Clean up keychain
         if: always()
