@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Phase 1: Video/Audio Format Support** - Complete parser implementation for 12 new multimedia formats
+  - **Video Formats (5)**:
+    - MKV (Matroska) - Container metadata extraction
+    - WebM - Web-optimized Matroska variant
+    - FLV - Flash Video format
+    - AVI - RIFF-based video container
+    - MTS/M2TS - AVCHD/Blu-ray MPEG transport streams
+  - **Audio Formats (7)**:
+    - MP3 - ID3v2 tag parsing
+    - FLAC - Native metadata blocks
+    - AAC - ADTS header parsing
+    - WAV - RIFF INFO chunks
+    - OGG Vorbis - Vorbis comments
+    - Opus - Ogg Opus metadata
+    - APE - Monkey's Audio format
+  - **Features**:
+    - ExifTool tag namespace parity (Matroska, FLV, RIFF, ID3, FLAC, AAC, Vorbis, Opus, APE)
+    - Comprehensive integration tests for all formats (requires ExifTool)
+    - Full benchmark suite (audio_benchmarks.rs, video_benchmarks.rs)
+    - Format detection support for all 12 new types
+  - **Performance**: Pure Rust parsing with memory-mapped I/O
+
 ### Changed
 - **BREAKING**: Project renamed from `exiftool-rs` to `oxidex`
   - Binary renamed: `exiftool-rs` → `oxidex`

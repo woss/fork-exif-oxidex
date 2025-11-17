@@ -86,6 +86,8 @@ This design ensures:
 - ✅ **PE (Portable Executable)** - Windows executables, DLLs, and drivers (.exe, .dll, .sys)
 - ✅ **PNG** - PNG chunks (tEXt, iTXt, zTXt, etc.)
 - ✅ **QuickTime/MP4** - Video/audio metadata atoms
+- ✅ **Video Formats** (Phase 1) - MKV/WebM (Matroska), FLV, AVI, MTS/M2TS
+- ✅ **Audio Formats** (Phase 1) - MP3 (ID3), FLAC, AAC, WAV, OGG Vorbis, Opus, APE
 - ✅ **File System** - File attributes, permissions, timestamps
 
 **Canon MakerNotes Details:**
