@@ -39,7 +39,7 @@ jobs:
         run: |
           echo "Installing Perl ExifTool..."
           sudo apt-get update -qq
-          sudo apt-get install -y libimage-exiftool-perl bc jq wget cc
+          sudo apt-get install -y libimage-exiftool-perl bc jq wget build-essential pkg-config libssl-dev
 
           echo "Installing hyperfine..."
           wget https://github.com/sharkdp/hyperfine/releases/download/v1.18.0/hyperfine_1.18.0_amd64.deb
