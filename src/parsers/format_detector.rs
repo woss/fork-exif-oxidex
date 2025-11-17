@@ -625,6 +625,11 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         }
     }
 
+    // VCF: "BEGIN:VCARD"
+    if magic_bytes.len() >= 11 && &magic_bytes[0..11] == b"BEGIN:VCARD" {
+        return Ok(FileFormat::VCF);
+    }
+
     // No known format matched
     Ok(FileFormat::Unknown)
 }

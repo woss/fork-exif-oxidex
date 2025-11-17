@@ -230,6 +230,10 @@ pub enum FileFormat {
     /// HDF5 data format
     HDF5,
 
+    // Phase 7: Text-based formats
+    /// vCard contact format (.vcf)
+    VCF,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -307,6 +311,7 @@ impl FileFormat {
             FileFormat::GLTF => "glTF",
             FileFormat::FITS => "FITS",
             FileFormat::HDF5 => "HDF5",
+            FileFormat::VCF => "vCard",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -386,6 +391,7 @@ impl FileFormat {
             FileFormat::GLTF => &["gltf", "glb"],
             FileFormat::FITS => &["fits", "fit"],
             FileFormat::HDF5 => &["h5", "hdf5"],
+            FileFormat::VCF => &["vcf", "vcard"],
             FileFormat::Unknown => &[],
         }
     }

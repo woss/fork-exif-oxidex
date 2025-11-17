@@ -61,6 +61,8 @@ use crate::parsers::specialized::hdf5::parse_hdf5_metadata;
 use crate::parsers::specialized::macho::parse_macho_metadata;
 use crate::parsers::specialized::obj::parse_obj_metadata;
 use crate::parsers::specialized::stl::parse_stl_metadata;
+// Text parsers
+use crate::parsers::text::vcf::parse_vcf_metadata;
 // Image parsers
 use crate::parsers::image::bmp::parse_bmp_metadata;
 use crate::parsers::image::gif::parse_gif_metadata;
@@ -277,6 +279,8 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("FITS parse error: {}", e))),
         FileFormat::HDF5 => parse_hdf5_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("HDF5 parse error: {}", e))),
+        FileFormat::VCF => parse_vcf_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("VCF parse error: {}", e))),
         FileFormat::GIF => parse_gif_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("GIF parse error: {}", e))),
         FileFormat::BMP => parse_bmp_metadata(&reader)
