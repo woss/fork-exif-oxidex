@@ -39,6 +39,9 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectKey: oxidex
+          organization: swack-tools
         
   test:
     name: Test Suite
