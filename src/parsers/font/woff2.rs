@@ -69,6 +69,14 @@ impl FormatParser for WOFF2Parser {
     }
 }
 
+/// Parses metadata from WOFF2 files.
+///
+/// This is a convenience wrapper around WOFF2Parser that provides a functional API.
+pub fn parse_woff2_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = WOFF2Parser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -33,6 +33,11 @@ use crate::parsers::archive::sevenz::parse_7z_metadata;
 use crate::parsers::archive::iso::parse_iso_metadata;
 use crate::parsers::archive::tar::parse_tar_metadata;
 use crate::parsers::archive::gz::parse_gz_metadata;
+// Font parsers
+use crate::parsers::font::ttf::parse_ttf_metadata;
+use crate::parsers::font::otf::parse_otf_metadata;
+use crate::parsers::font::woff::parse_woff_metadata;
+use crate::parsers::font::woff2::parse_woff2_metadata;
 use crate::parsers::document::ooxml::parse_docx_metadata;
 use crate::parsers::document::ooxml::parse_xlsx_metadata;
 use crate::parsers::document::ooxml::parse_pptx_metadata;
@@ -201,6 +206,15 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("TAR parse error: {}", e))),
         FileFormat::GZ => parse_gz_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("GZ parse error: {}", e))),
+        // Font formats
+        FileFormat::TTF => parse_ttf_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("TTF parse error: {}", e))),
+        FileFormat::OTF => parse_otf_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("OTF parse error: {}", e))),
+        FileFormat::WOFF => parse_woff_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("WOFF parse error: {}", e))),
+        FileFormat::WOFF2 => parse_woff2_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("WOFF2 parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format
