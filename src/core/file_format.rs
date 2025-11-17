@@ -161,6 +161,19 @@ pub enum FileFormat {
     /// GZIP compressed file (.gz)
     GZ,
 
+    // Phase 4: Font formats
+    /// TrueType font (.ttf)
+    TTF,
+
+    /// OpenType font (.otf)
+    OTF,
+
+    /// Web Open Font Format (.woff)
+    WOFF,
+
+    /// Web Open Font Format 2 (.woff2)
+    WOFF2,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -216,6 +229,10 @@ impl FileFormat {
             FileFormat::ISO => "ISO",
             FileFormat::TAR => "TAR",
             FileFormat::GZ => "GZIP",
+            FileFormat::TTF => "TTF",
+            FileFormat::OTF => "OTF",
+            FileFormat::WOFF => "WOFF",
+            FileFormat::WOFF2 => "WOFF2",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -273,6 +290,10 @@ impl FileFormat {
             FileFormat::ISO => &["iso"],
             FileFormat::TAR => &["tar"],
             FileFormat::GZ => &["gz"],
+            FileFormat::TTF => &["ttf"],
+            FileFormat::OTF => &["otf"],
+            FileFormat::WOFF => &["woff"],
+            FileFormat::WOFF2 => &["woff2"],
             FileFormat::Unknown => &[],
         }
     }

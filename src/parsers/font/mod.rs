@@ -1,0 +1,11 @@
+//! Font format parsers
+
+pub mod otf;
+pub mod ttf;
+pub mod woff;
+pub mod woff2;
+
+pub use otf::OTFParser;
+pub use ttf::TTFParser;
+pub use woff::WOFFParser;
+pub use woff2::WOFF2Parser;

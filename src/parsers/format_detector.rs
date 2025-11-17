@@ -420,6 +420,30 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::GZ);
     }
 
+    // Phase 4: Font formats
+
+    // OTF: "OTTO" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"OTTO" {
+        return Ok(FileFormat::OTF);
+    }
+
+    // WOFF: "wOFF" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"wOFF" {
+        return Ok(FileFormat::WOFF);
+    }
+
+    // WOFF2: "wOF2" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"wOF2" {
+        return Ok(FileFormat::WOFF2);
+    }
+
+    // TTF: 0x00 0x01 0x00 0x00 or "true"
+    if magic_bytes.len() >= 4
+        && (magic_bytes.starts_with(&[0x00, 0x01, 0x00, 0x00]) || &magic_bytes[0..4] == b"true")
+    {
+        return Ok(FileFormat::TTF);
+    }
+
     // No known format matched
     Ok(FileFormat::Unknown)
 }
