@@ -40,3 +40,11 @@ impl FormatParser for GLTFParser {
         matches!(format, FileFormat::GLTF)
     }
 }
+
+/// Parses metadata from glTF files.
+///
+/// This is a convenience wrapper around GLTFParser that provides a functional API.
+pub fn parse_gltf_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = GLTFParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

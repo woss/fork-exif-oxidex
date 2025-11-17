@@ -41,3 +41,11 @@ impl FormatParser for FITSParser {
         matches!(format, FileFormat::FITS)
     }
 }
+
+/// Parses metadata from FITS files.
+///
+/// This is a convenience wrapper around FITSParser that provides a functional API.
+pub fn parse_fits_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = FITSParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

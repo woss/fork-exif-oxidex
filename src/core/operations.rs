@@ -51,6 +51,16 @@ use crate::parsers::image::flif::parse_flif_metadata;
 use crate::parsers::image::svg::parse_svg_metadata;
 use crate::parsers::image::ico::parse_ico_metadata;
 use crate::parsers::image::psd::parse_psd_metadata;
+// Specialized parsers
+use crate::parsers::specialized::elf::parse_elf_metadata;
+use crate::parsers::specialized::macho::parse_macho_metadata;
+use crate::parsers::specialized::dwg::parse_dwg_metadata;
+use crate::parsers::specialized::dxf::parse_dxf_metadata;
+use crate::parsers::specialized::stl::parse_stl_metadata;
+use crate::parsers::specialized::obj::parse_obj_metadata;
+use crate::parsers::specialized::gltf::parse_gltf_metadata;
+use crate::parsers::specialized::fits::parse_fits_metadata;
+use crate::parsers::specialized::hdf5::parse_hdf5_metadata;
 // Image parsers
 use crate::parsers::image::gif::parse_gif_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
@@ -243,6 +253,25 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("ICO parse error: {}", e))),
         FileFormat::PSD => parse_psd_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("PSD parse error: {}", e))),
+        // Specialized formats
+        FileFormat::ELF => parse_elf_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("ELF parse error: {}", e))),
+        FileFormat::MachO => parse_macho_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("Mach-O parse error: {}", e))),
+        FileFormat::DWG => parse_dwg_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("DWG parse error: {}", e))),
+        FileFormat::DXF => parse_dxf_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("DXF parse error: {}", e))),
+        FileFormat::STL => parse_stl_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("STL parse error: {}", e))),
+        FileFormat::OBJ => parse_obj_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("OBJ parse error: {}", e))),
+        FileFormat::GLTF => parse_gltf_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("glTF parse error: {}", e))),
+        FileFormat::FITS => parse_fits_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("FITS parse error: {}", e))),
+        FileFormat::HDF5 => parse_hdf5_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("HDF5 parse error: {}", e))),
         FileFormat::GIF => parse_gif_metadata(&reader),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",

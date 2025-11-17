@@ -41,3 +41,11 @@ impl FormatParser for HDF5Parser {
         matches!(format, FileFormat::HDF5)
     }
 }
+
+/// Parses metadata from HDF5 files.
+///
+/// This is a convenience wrapper around HDF5Parser that provides a functional API.
+pub fn parse_hdf5_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = HDF5Parser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

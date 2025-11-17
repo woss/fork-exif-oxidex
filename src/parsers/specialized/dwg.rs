@@ -53,3 +53,11 @@ impl FormatParser for DWGParser {
         matches!(format, FileFormat::DWG)
     }
 }
+
+/// Parses metadata from DWG files.
+///
+/// This is a convenience wrapper around DWGParser that provides a functional API.
+pub fn parse_dwg_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = DWGParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

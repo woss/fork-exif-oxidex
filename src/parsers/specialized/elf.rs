@@ -58,3 +58,11 @@ impl FormatParser for ELFParser {
         matches!(format, FileFormat::ELF)
     }
 }
+
+/// Parses metadata from ELF files.
+///
+/// This is a convenience wrapper around ELFParser that provides a functional API.
+pub fn parse_elf_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = ELFParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

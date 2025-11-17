@@ -40,3 +40,11 @@ impl FormatParser for DXFParser {
         matches!(format, FileFormat::DXF)
     }
 }
+
+/// Parses metadata from DXF files.
+///
+/// This is a convenience wrapper around DXFParser that provides a functional API.
+pub fn parse_dxf_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = DXFParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

@@ -40,3 +40,11 @@ impl FormatParser for OBJParser {
         matches!(format, FileFormat::OBJ)
     }
 }
+
+/// Parses metadata from OBJ files.
+///
+/// This is a convenience wrapper around OBJParser that provides a functional API.
+pub fn parse_obj_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = OBJParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
