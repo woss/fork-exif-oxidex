@@ -139,18 +139,13 @@ jobs:
             exit 1
           fi
 
-          echo "Stapling notarization ticket..."
-          xcrun stapler staple "$APP_PATH"
+          echo "✓ Binary notarized successfully"
+          echo "Note: Stapling skipped for raw executable (only works with .app/.dmg/.pkg bundles)"
 
-          echo "Verifying notarization..."
-          xcrun stapler validate "$APP_PATH"
-
-          echo "✓ App notarized successfully"
-
-      - name: Create DMG
-        run: |
-          brew install create-dmg
-          just create-dmg v${{ steps.version.outputs.version }}
+      # - name: Create DMG
+      #   run: |
+      #     brew install create-dmg
+      #     just create-dmg v${{ steps.version.outputs.version }}
 
       - name: Clean up keychain
         if: always()
