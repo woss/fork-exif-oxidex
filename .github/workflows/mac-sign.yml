@@ -142,10 +142,10 @@ jobs:
           echo "✓ Binary notarized successfully"
           echo "Note: Stapling skipped for raw executable (only works with .app/.dmg/.pkg bundles)"
 
-      # - name: Create DMG
-      #   run: |
-      #     brew install create-dmg
-      #     just create-dmg v${{ steps.version.outputs.version }}
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          just create-dmg v${{ steps.version.outputs.version }}
 
       - name: Clean up keychain
         if: always()

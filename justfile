@@ -252,6 +252,26 @@ untag version:
     git tag -d "v{{version}}"
     git push origin :refs/tags/v{{version}}
 
+# macOS packaging
+# ----------------
+
+# Create macOS DMG installer
+create-dmg version:
+    @echo "Creating DMG for {{version}}..."
+    mkdir -p dist
+    create-dmg \
+      --volname "OxiDex {{version}}" \
+      --volicon "" \
+      --window-pos 200 120 \
+      --window-size 600 400 \
+      --icon-size 100 \
+      --icon "oxidex" 175 190 \
+      --hide-extension "oxidex" \
+      --app-drop-link 425 190 \
+      "dist/oxidex-{{version}}.dmg" \
+      "target/release/"
+    @echo "DMG created at dist/oxidex-{{version}}.dmg"
+
 # Release workflow
 # ----------------
 
