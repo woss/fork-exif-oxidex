@@ -174,6 +174,31 @@ pub enum FileFormat {
     /// Web Open Font Format 2 (.woff2)
     WOFF2,
 
+    // Phase 5: Advanced image formats
+    /// AVIF image format (.avif)
+    AVIF,
+
+    /// JPEG XL image format (.jxl)
+    JXL,
+
+    /// Better Portable Graphics (.bpg)
+    BPG,
+
+    /// OpenEXR image format (.exr)
+    EXR,
+
+    /// Free Lossless Image Format (.flif)
+    FLIF,
+
+    /// Scalable Vector Graphics (.svg)
+    SVG,
+
+    /// Windows Icon format (.ico)
+    ICO,
+
+    /// Adobe Photoshop document (.psd)
+    PSD,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -233,6 +258,14 @@ impl FileFormat {
             FileFormat::OTF => "OTF",
             FileFormat::WOFF => "WOFF",
             FileFormat::WOFF2 => "WOFF2",
+            FileFormat::AVIF => "AVIF",
+            FileFormat::JXL => "JXL",
+            FileFormat::BPG => "BPG",
+            FileFormat::EXR => "EXR",
+            FileFormat::FLIF => "FLIF",
+            FileFormat::SVG => "SVG",
+            FileFormat::ICO => "ICO",
+            FileFormat::PSD => "PSD",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -294,6 +327,14 @@ impl FileFormat {
             FileFormat::OTF => &["otf"],
             FileFormat::WOFF => &["woff"],
             FileFormat::WOFF2 => &["woff2"],
+            FileFormat::AVIF => &["avif"],
+            FileFormat::JXL => &["jxl"],
+            FileFormat::BPG => &["bpg"],
+            FileFormat::EXR => &["exr"],
+            FileFormat::FLIF => &["flif"],
+            FileFormat::SVG => &["svg"],
+            FileFormat::ICO => &["ico"],
+            FileFormat::PSD => &["psd"],
             FileFormat::Unknown => &[],
         }
     }

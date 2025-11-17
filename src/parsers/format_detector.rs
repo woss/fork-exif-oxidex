@@ -444,6 +444,55 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::TTF);
     }
 
+    // Phase 5: Advanced image formats
+
+    // PSD: "8BPS" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"8BPS" {
+        return Ok(FileFormat::PSD);
+    }
+
+    // ICO: 0x00 0x00 0x01 0x00
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x00, 0x00, 0x01, 0x00] {
+        return Ok(FileFormat::ICO);
+    }
+
+    // SVG: Check for "<svg" in first 100 bytes
+    if magic_bytes.len() >= 100 {
+        if let Ok(text) = std::str::from_utf8(&magic_bytes[0..100]) {
+            if text.contains("<svg") {
+                return Ok(FileFormat::SVG);
+            }
+        }
+    }
+
+    // FLIF: "FLIF" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"FLIF" {
+        return Ok(FileFormat::FLIF);
+    }
+
+    // EXR: 0x76 0x2F 0x31 0x01
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x76, 0x2F, 0x31, 0x01] {
+        return Ok(FileFormat::EXR);
+    }
+
+    // BPG: 0x42 0x50 0x47 0xFB
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x42, 0x50, 0x47, 0xFB] {
+        return Ok(FileFormat::BPG);
+    }
+
+    // JXL: 0xFF 0x0A or 0x00 0x00 0x00 0x0C 0x4A 0x58 0x4C 0x20
+    if magic_bytes.len() >= 2 && &magic_bytes[0..2] == &[0xFF, 0x0A] {
+        return Ok(FileFormat::JXL);
+    }
+    if magic_bytes.len() >= 12 && &magic_bytes[0..8] == &[0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20] {
+        return Ok(FileFormat::JXL);
+    }
+
+    // AVIF: ISO BMFF with "ftyp" at offset 4 and "avif" brand
+    if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" && &magic_bytes[8..12] == b"avif" {
+        return Ok(FileFormat::AVIF);
+    }
+
     // No known format matched
     Ok(FileFormat::Unknown)
 }

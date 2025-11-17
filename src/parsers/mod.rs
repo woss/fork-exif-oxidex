@@ -12,6 +12,7 @@ pub mod document;
 pub mod font;
 pub mod format_detector;
 pub mod icc_parser;
+pub mod image;
 pub mod jpeg;
 pub mod pdf;
 pub mod pe;
