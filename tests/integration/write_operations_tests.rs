@@ -262,10 +262,7 @@ fn test_write_metadata_validates_multiple_tags() {
 
     // Re-read and verify tags were written
     let updated_metadata = read_metadata(temp_path).expect("Failed to read metadata");
-    assert_eq!(
-        updated_metadata.get_string("IFD0:Software"),
-        Some("OxiDex")
-    );
+    assert_eq!(updated_metadata.get_string("IFD0:Software"), Some("OxiDex"));
     assert_eq!(
         updated_metadata.get_string("IFD0:Copyright"),
         Some("Copyright 2024")

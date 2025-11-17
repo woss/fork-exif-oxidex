@@ -217,8 +217,7 @@ fn get_oxidex_output(file_path: &Path) -> Result<String, String> {
         return Err(format!("OxiDex failed on {:?}: {}", file_path, stderr));
     }
 
-    String::from_utf8(output.stdout)
-        .map_err(|e| format!("Invalid UTF-8 in OxiDex output: {}", e))
+    String::from_utf8(output.stdout).map_err(|e| format!("Invalid UTF-8 in OxiDex output: {}", e))
 }
 
 /// Compares two JSON outputs and calculates match rate
