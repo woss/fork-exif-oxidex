@@ -19,7 +19,7 @@ env:
 jobs:
   benchmark-comparison:
     name: Compare Perl ExifTool vs Rust ExifTool
-    runs-on: swack
+    runs-on: arc-runner-set
     timeout-minutes: 30
     permissions:
       contents: write # Required for git push to update README.md
