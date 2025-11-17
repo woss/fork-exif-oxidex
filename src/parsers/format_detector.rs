@@ -221,8 +221,14 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     if magic_bytes.len() >= 3 && &magic_bytes[0..3] == b"ID3" {
         return Ok(FileFormat::MP3);
     }
-    // MPEG frame sync: 0xFF 0xFB or 0xFF 0xFA (11 bits set)
-    if magic_bytes.len() >= 2 && magic_bytes[0] == 0xFF && (magic_bytes[1] & 0xE0) == 0xE0 {
+    // MPEG frame sync: FF Fx where x is E0-FF but not FE/FF (those are UTF-16 BOM)
+    // Valid MPEG sync: FF FB, FF FA, FF F3, FF F2, FF E0-FF (excluding FE/FF)
+    if magic_bytes.len() >= 2
+        && magic_bytes[0] == 0xFF
+        && (magic_bytes[1] & 0xE0) == 0xE0
+        && magic_bytes[1] != 0xFE
+        && magic_bytes[1] != 0xFF
+    {
         return Ok(FileFormat::MP3);
     }
 
