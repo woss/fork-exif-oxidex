@@ -208,6 +208,16 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::FLAC);
     }
 
+    // MP3: ID3v2 tag or MPEG frame sync
+    // ID3v2: "ID3" signature at start
+    if magic_bytes.len() >= 3 && &magic_bytes[0..3] == b"ID3" {
+        return Ok(FileFormat::MP3);
+    }
+    // MPEG frame sync: 0xFF 0xFB or 0xFF 0xFA (11 bits set)
+    if magic_bytes.len() >= 2 && magic_bytes[0] == 0xFF && (magic_bytes[1] & 0xE0) == 0xE0 {
+        return Ok(FileFormat::MP3);
+    }
+
     // PDF: 0x25 0x50 0x44 0x46 ("%PDF")
     if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x25, 0x50, 0x44, 0x46]) {
         return Ok(FileFormat::PDF);

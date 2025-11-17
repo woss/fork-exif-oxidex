@@ -28,3 +28,15 @@ name = "fuzz_mp4"
 path = "fuzz_targets/fuzz_mp4.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_flac"
+path = "fuzz_targets/fuzz_flac.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_mp3"
+path = "fuzz_targets/fuzz_mp3.rs"
+test = false
+doc = false
