@@ -32,8 +32,14 @@ impl HEIFParser {
 
         // Check for HEIF-compatible brands: heic, heix, hevc, hevx, heim, heis, hevm, hevs, mif1
         let brand = &header[4..8];
-        Ok(brand == b"heic" || brand == b"heix" || brand == b"hevc" || brand == b"hevx"
-            || brand == b"heim" || brand == b"heis" || brand == b"hevm" || brand == b"hevs"
+        Ok(brand == b"heic"
+            || brand == b"heix"
+            || brand == b"hevc"
+            || brand == b"hevx"
+            || brand == b"heim"
+            || brand == b"heis"
+            || brand == b"hevm"
+            || brand == b"hevs"
             || brand == b"mif1")
     }
 }

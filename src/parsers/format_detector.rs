@@ -339,8 +339,14 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // - mif1: HEIF brand for multi-image format
     if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" {
         let brand = &magic_bytes[8..12];
-        if brand == b"heic" || brand == b"heix" || brand == b"hevc" || brand == b"hevx"
-            || brand == b"heim" || brand == b"heis" || brand == b"hevm" || brand == b"hevs"
+        if brand == b"heic"
+            || brand == b"heix"
+            || brand == b"hevc"
+            || brand == b"hevx"
+            || brand == b"heim"
+            || brand == b"heis"
+            || brand == b"hevm"
+            || brand == b"hevs"
             || brand == b"mif1"
         {
             return Ok(FileFormat::HEIF);

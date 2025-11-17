@@ -80,16 +80,21 @@ impl VCFParser {
                 // Extract standard vCard fields
                 match key {
                     "VERSION" => {
-                        metadata.insert("VCardVersion".to_string(), TagValue::String(value.to_string()));
+                        metadata.insert(
+                            "VCardVersion".to_string(),
+                            TagValue::String(value.to_string()),
+                        );
                     }
                     "FN" => {
-                        metadata.insert("FullName".to_string(), TagValue::String(value.to_string()));
+                        metadata
+                            .insert("FullName".to_string(), TagValue::String(value.to_string()));
                     }
                     "EMAIL" => {
                         metadata.insert("Email".to_string(), TagValue::String(value.to_string()));
                     }
                     "TEL" => {
-                        metadata.insert("Telephone".to_string(), TagValue::String(value.to_string()));
+                        metadata
+                            .insert("Telephone".to_string(), TagValue::String(value.to_string()));
                     }
                     _ => {}
                 }
@@ -117,7 +122,10 @@ impl FormatParser for VCFParser {
         }
 
         let mut metadata = MetadataMap::new();
-        metadata.insert("FileType".to_string(), TagValue::String("vCard".to_string()));
+        metadata.insert(
+            "FileType".to_string(),
+            TagValue::String("vCard".to_string()),
+        );
         metadata.insert(
             "FileSize".to_string(),
             TagValue::String(reader.size().to_string()),

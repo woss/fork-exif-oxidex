@@ -221,39 +221,6 @@ fn parse_app_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_core_properties() {
-        let xml = r#"<?xml version="1.0"?>
-<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
-    <dc:title>Test Document</dc:title>
-    <dc:creator>John Doe</dc:creator>
-    <dc:subject>Testing</dc:subject>
-</cp:coreProperties>"#;
-
-        let mut metadata = MetadataMap::new();
-        let result = parse_core_properties(xml, &mut metadata);
-        assert!(result.is_ok());
-        assert!(metadata.contains_key("OOXML:Title"));
-    }
-
-    #[test]
-    fn test_parse_app_properties() {
-        let xml = r#"<?xml version="1.0"?>
-<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
-    <Application>Microsoft Word</Application>
-    <Pages>10</Pages>
-</Properties>"#;
-
-        let mut metadata = MetadataMap::new();
-        let result = parse_app_properties(xml, &mut metadata);
-        assert!(result.is_ok());
-    }
-}
-
 /// Standalone function to parse DOCX metadata
 ///
 /// This function provides a convenient way to parse DOCX metadata without
@@ -291,4 +258,37 @@ pub fn parse_pptx_metadata(
     parser
         .parse(reader)
         .map_err(|e| format!("PPTX parse error: {}", e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_core_properties() {
+        let xml = r#"<?xml version="1.0"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+    <dc:title>Test Document</dc:title>
+    <dc:creator>John Doe</dc:creator>
+    <dc:subject>Testing</dc:subject>
+</cp:coreProperties>"#;
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_core_properties(xml, &mut metadata);
+        assert!(result.is_ok());
+        assert!(metadata.contains_key("OOXML:Title"));
+    }
+
+    #[test]
+    fn test_parse_app_properties() {
+        let xml = r#"<?xml version="1.0"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+    <Application>Microsoft Word</Application>
+    <Pages>10</Pages>
+</Properties>"#;
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_app_properties(xml, &mut metadata);
+        assert!(result.is_ok());
+    }
 }
