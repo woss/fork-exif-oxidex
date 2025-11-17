@@ -630,6 +630,11 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::VCF);
     }
 
+    // LNK: 0x4C 0x00 0x00 0x00 (Windows shortcut magic number)
+    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x4C, 0x00, 0x00, 0x00] {
+        return Ok(FileFormat::LNK);
+    }
+
     // No known format matched
     Ok(FileFormat::Unknown)
 }

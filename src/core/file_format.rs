@@ -234,6 +234,9 @@ pub enum FileFormat {
     /// vCard contact format (.vcf)
     VCF,
 
+    /// Windows shortcut (.lnk)
+    LNK,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -312,6 +315,7 @@ impl FileFormat {
             FileFormat::FITS => "FITS",
             FileFormat::HDF5 => "HDF5",
             FileFormat::VCF => "vCard",
+            FileFormat::LNK => "Windows Shortcut",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -392,6 +396,7 @@ impl FileFormat {
             FileFormat::FITS => &["fits", "fit"],
             FileFormat::HDF5 => &["h5", "hdf5"],
             FileFormat::VCF => &["vcf", "vcard"],
+            FileFormat::LNK => &["lnk"],
             FileFormat::Unknown => &[],
         }
     }
