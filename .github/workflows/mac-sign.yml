@@ -66,6 +66,25 @@ jobs:
         run: |
           just build-release
 
+      - name: Sign binary
+        env:
+          IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
+        run: |
+          APP_PATH="./target/release/oxidex"
+
+          echo "Signing binary with Developer ID certificate..."
+          codesign --sign "$IDENTITY" \
+            --timestamp \
+            --options runtime \
+            --verbose \
+            "$APP_PATH"
+
+          echo "Verifying signature..."
+          codesign --verify --verbose "$APP_PATH"
+
+          echo "Displaying signature details..."
+          codesign --display --verbose=4 "$APP_PATH"
+
       - name: Notarize app
         env:
           NOTARIZATION_APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
