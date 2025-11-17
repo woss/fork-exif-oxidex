@@ -203,3 +203,16 @@ mod tests {
         assert!(metadata.contains_key("EPUB:Creator"));
     }
 }
+
+/// Standalone function to parse EPUB metadata
+///
+/// This function provides a convenient way to parse EPUB metadata without
+/// directly instantiating the EpubParser struct.
+pub fn parse_epub_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = EpubParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("EPUB parse error: {}", e))
+}

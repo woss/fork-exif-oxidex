@@ -253,3 +253,42 @@ mod tests {
         assert!(result.is_ok());
     }
 }
+
+/// Standalone function to parse DOCX metadata
+///
+/// This function provides a convenient way to parse DOCX metadata without
+/// directly instantiating the DocxParser struct.
+pub fn parse_docx_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = DocxParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("DOCX parse error: {}", e))
+}
+
+/// Standalone function to parse XLSX metadata
+///
+/// This function provides a convenient way to parse XLSX metadata without
+/// directly instantiating the XlsxParser struct.
+pub fn parse_xlsx_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = XlsxParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("XLSX parse error: {}", e))
+}
+
+/// Standalone function to parse PPTX metadata
+///
+/// This function provides a convenient way to parse PPTX metadata without
+/// directly instantiating the PptxParser struct.
+pub fn parse_pptx_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = PptxParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("PPTX parse error: {}", e))
+}

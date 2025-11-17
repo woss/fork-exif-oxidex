@@ -27,6 +27,11 @@ use crate::parsers::audio::wav::parse_wav_metadata;
 use crate::parsers::audio::ogg::parse_ogg_metadata;
 use crate::parsers::audio::opus::parse_opus_metadata;
 use crate::parsers::audio::ape::parse_ape_metadata;
+use crate::parsers::archive::zip::parse_zip_metadata;
+use crate::parsers::document::ooxml::parse_docx_metadata;
+use crate::parsers::document::ooxml::parse_xlsx_metadata;
+use crate::parsers::document::ooxml::parse_pptx_metadata;
+use crate::parsers::document::epub::parse_epub_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -165,6 +170,22 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("Opus parse error: {}", e))),
         FileFormat::APE => parse_ape_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("APE parse error: {}", e))),
+        FileFormat::ZIP => parse_zip_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("ZIP parse error: {}", e))),
+        FileFormat::DOCX => parse_docx_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("DOCX parse error: {}", e))),
+        FileFormat::XLSX => parse_xlsx_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("XLSX parse error: {}", e))),
+        FileFormat::PPTX => parse_pptx_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("PPTX parse error: {}", e))),
+        FileFormat::Pages => parse_docx_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("Pages parse error: {}", e))),
+        FileFormat::Numbers => parse_xlsx_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("Numbers parse error: {}", e))),
+        FileFormat::Keynote => parse_pptx_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("Keynote parse error: {}", e))),
+        FileFormat::EPUB => parse_epub_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("EPUB parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format

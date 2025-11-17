@@ -91,3 +91,16 @@ mod tests {
         assert!(result.is_err());
     }
 }
+
+/// Standalone function to parse ZIP metadata
+///
+/// This function provides a convenient way to parse ZIP metadata without
+/// directly instantiating the ZipParser struct.
+pub fn parse_zip_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    let parser = ZipParser;
+    parser
+        .parse(reader)
+        .map_err(|e| format!("ZIP parse error: {}", e))
+}
