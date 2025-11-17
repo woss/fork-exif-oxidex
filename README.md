@@ -110,25 +110,25 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 - **CPU**: x86_64 (4 cores)
 - **Memory**: 8GB RAM
 - **Perl ExifTool**: version latest
-- **OxiDex**: version 1.0.0
+- **ExifTool-RS**: version 1.0.0
 
 ### Benchmark Results
 
-| Scenario | Perl ExifTool | OxiDex | Speedup |
-|----------|---------------|--------|---------|
-| Single JPEG Read | 105.1ms ± 2.6ms | 14.3ms ± 0.4ms | **7.4x faster** |
-| Batch Processing (1000 files) | 3057.7ms ± 23.0ms | 364.5ms ± 9.9ms | **8.4x faster** |
-| Write Operation (modify EXIF tag) | 287.3ms ± 3.2ms | 17.1ms ± 0.4ms | **16.8x faster** |
-| Format Detection | 104.4ms ± 1.2ms | 14.3ms ± 0.4ms | **7.3x faster** |
+| Scenario | Perl ExifTool | ExifTool-RS | Speedup |
+|----------|---------------|-------------|---------|
+| Single JPEG Read | 104.2ms ± 1.0ms | 14.1ms ± 0.5ms | **7.4x faster** |
+| Batch Processing (1000 files) | 3074.5ms ± 9.6ms | 382.6ms ± 15.4ms | **8.0x faster** |
+| Write Operation (modify EXIF tag) | 286.8ms ± 3.2ms | 16.7ms ± 0.5ms | **17.1x faster** |
+| Format Detection | 105.0ms ± 1.9ms | 14.1ms ± 0.4ms | **7.5x faster** |
 
 *Benchmarks performed using [hyperfine](https://github.com/sharkdp/hyperfine) with multiple runs and warmup periods.*
 
 ### Key Performance Improvements
 
 - **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 7.4x faster metadata extraction
-- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 364.5ms ± 9.9ms vs. 3057.7ms ± 23.0ms for single-threaded Perl
-- **Write operations**: Efficient binary manipulation and atomic file operations provide 16.8x faster EXIF tag modifications
-- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (7.3x faster)
+- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 382.6ms ± 15.4ms vs. 3074.5ms ± 9.6ms for single-threaded Perl
+- **Write operations**: Efficient binary manipulation and atomic file operations provide 17.1x faster EXIF tag modifications
+- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (7.5x faster)
 
 ### Reproducing These Benchmarks
 
@@ -140,7 +140,7 @@ brew install hyperfine exiftool  # macOS
 # or
 sudo apt install hyperfine libimage-exiftool-perl  # Ubuntu
 
-# Build OxiDex in release mode
+# Build ExifTool-RS in release mode
 cargo build --release
 
 # Run the benchmark suite
