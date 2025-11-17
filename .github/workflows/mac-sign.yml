@@ -72,7 +72,7 @@ jobs:
           NOTARIZATION_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
           NOTARIZATION_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
         run: |
-          APP_PATH="./target/debug/oxidex"
+          APP_PATH="./target/release/oxidex"
 
           echo "Creating archive for notarization..."
           ditto -c -k --keepParent "$APP_PATH" "oxidex.zip"
