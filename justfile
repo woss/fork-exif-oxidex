@@ -258,13 +258,15 @@ untag version:
 # Create macOS DMG installer
 create-dmg version:
     @echo "Creating DMG for {{version}}..."
-    mkdir -p dist
+    mkdir -p dist/dmg-contents
+    cp target/release/oxidex dist/dmg-contents/
     create-dmg \
       --volname "OxiDex {{version}}" \
       --no-internet-enable \
       --skip-jenkins \
       "dist/oxidex-{{version}}.dmg" \
-      "target/release/"
+      "dist/dmg-contents/"
+    rm -rf dist/dmg-contents
     @echo "DMG created at dist/oxidex-{{version}}.dmg"
 
 # Release workflow
