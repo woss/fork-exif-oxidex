@@ -197,11 +197,17 @@ fn parse_hdrl_list(
 }
 
 /// Parse avih chunk (main AVI header)
-fn parse_avih_chunk(reader: &dyn FileReader, offset: u64, metadata: &mut MetadataMap) -> Result<()> {
+fn parse_avih_chunk(
+    reader: &dyn FileReader,
+    offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
     let avih_data = reader.read(offset, 56)?;
 
-    let microsec_per_frame = u32::from_le_bytes([avih_data[0], avih_data[1], avih_data[2], avih_data[3]]);
-    let total_frames = u32::from_le_bytes([avih_data[16], avih_data[17], avih_data[18], avih_data[19]]);
+    let microsec_per_frame =
+        u32::from_le_bytes([avih_data[0], avih_data[1], avih_data[2], avih_data[3]]);
+    let total_frames =
+        u32::from_le_bytes([avih_data[16], avih_data[17], avih_data[18], avih_data[19]]);
     let width = u32::from_le_bytes([avih_data[32], avih_data[33], avih_data[34], avih_data[35]]);
     let height = u32::from_le_bytes([avih_data[36], avih_data[37], avih_data[38], avih_data[39]]);
 

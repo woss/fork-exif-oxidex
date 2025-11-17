@@ -2,7 +2,7 @@
 
 use oxidex::core::FormatParser;
 use oxidex::io::BufferedReader;
-use oxidex::parsers::document::{DocxParser, XlsxParser, PptxParser};
+use oxidex::parsers::document::{DocxParser, PptxParser, XlsxParser};
 
 #[test]
 fn test_docx_invalid() {

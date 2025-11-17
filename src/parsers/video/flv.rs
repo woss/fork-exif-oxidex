@@ -77,9 +77,18 @@ impl FormatParser for FlvParser {
         let has_video = (flags & 0x01) != 0;
         let has_audio = (flags & 0x04) != 0;
 
-        metadata.insert("FLV:Version".to_string(), TagValue::new_integer(version as i64));
-        metadata.insert("FLV:HasVideo".to_string(), TagValue::new_string(has_video.to_string()));
-        metadata.insert("FLV:HasAudio".to_string(), TagValue::new_string(has_audio.to_string()));
+        metadata.insert(
+            "FLV:Version".to_string(),
+            TagValue::new_integer(version as i64),
+        );
+        metadata.insert(
+            "FLV:HasVideo".to_string(),
+            TagValue::new_string(has_video.to_string()),
+        );
+        metadata.insert(
+            "FLV:HasAudio".to_string(),
+            TagValue::new_string(has_audio.to_string()),
+        );
 
         // Look for onMetaData script tag (first script tag)
         // Skip: Previous Tag Size 0 (4 bytes after header)
@@ -94,7 +103,8 @@ impl FormatParser for FlvParser {
             let tag_header = reader.read(offset, 11)?;
 
             let tag_type = tag_header[0];
-            let data_size = u32::from_be_bytes([0, tag_header[1], tag_header[2], tag_header[3]]) as u64;
+            let data_size =
+                u32::from_be_bytes([0, tag_header[1], tag_header[2], tag_header[3]]) as u64;
 
             // Check if this is a script data tag
             if tag_type == TAG_TYPE_SCRIPT && data_size > 0 && data_size < 100_000 {
@@ -183,8 +193,14 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
                 }
                 let value_bytes = &data[offset..offset + 8];
                 let value = f64::from_be_bytes([
-                    value_bytes[0], value_bytes[1], value_bytes[2], value_bytes[3],
-                    value_bytes[4], value_bytes[5], value_bytes[6], value_bytes[7],
+                    value_bytes[0],
+                    value_bytes[1],
+                    value_bytes[2],
+                    value_bytes[3],
+                    value_bytes[4],
+                    value_bytes[5],
+                    value_bytes[6],
+                    value_bytes[7],
                 ]);
                 offset += 8;
 
@@ -201,7 +217,10 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 
                 // Format numbers appropriately
                 if key == "duration" || key == "framerate" || key.ends_with("datarate") {
-                    metadata.insert(tag_name.to_string(), TagValue::new_string(format!("{:.2}", value)));
+                    metadata.insert(
+                        tag_name.to_string(),
+                        TagValue::new_string(format!("{:.2}", value)),
+                    );
                 } else {
                     metadata.insert(tag_name.to_string(), TagValue::new_integer(value as i64));
                 }

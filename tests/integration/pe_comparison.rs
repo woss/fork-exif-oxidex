@@ -21,12 +21,30 @@ fn test_pe_parsing_notepad_plus_plus() {
         println!("\n=== PE Tags Extracted: {} ===", metadata.len());
 
         // Verify key tags are present
-        assert!(metadata.get("PE:MachineType").is_some(), "Missing PE:MachineType");
-        assert!(metadata.get("PE:CompanyName").is_some(), "Missing PE:CompanyName");
-        assert!(metadata.get("PE:FileVersion").is_some(), "Missing PE:FileVersion");
-        assert!(metadata.get("PE:ProductName").is_some(), "Missing PE:ProductName");
-        assert!(metadata.get("PE:FileDescription").is_some(), "Missing PE:FileDescription");
-        assert!(metadata.get("PE:LegalCopyright").is_some(), "Missing PE:LegalCopyright");
+        assert!(
+            metadata.get("PE:MachineType").is_some(),
+            "Missing PE:MachineType"
+        );
+        assert!(
+            metadata.get("PE:CompanyName").is_some(),
+            "Missing PE:CompanyName"
+        );
+        assert!(
+            metadata.get("PE:FileVersion").is_some(),
+            "Missing PE:FileVersion"
+        );
+        assert!(
+            metadata.get("PE:ProductName").is_some(),
+            "Missing PE:ProductName"
+        );
+        assert!(
+            metadata.get("PE:FileDescription").is_some(),
+            "Missing PE:FileDescription"
+        );
+        assert!(
+            metadata.get("PE:LegalCopyright").is_some(),
+            "Missing PE:LegalCopyright"
+        );
 
         // Print all tags for manual verification
         let mut keys: Vec<_> = metadata.keys().collect();
@@ -99,5 +117,8 @@ fn test_pe_tag_coverage() {
 
     // This test just documents the expected tags
     // Actual validation happens in the comparison tests
-    assert!(expected_pe_tags.len() >= 30, "Should have at least 30 PE tags");
+    assert!(
+        expected_pe_tags.len() >= 30,
+        "Should have at least 30 PE tags"
+    );
 }

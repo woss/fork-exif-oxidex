@@ -2,7 +2,7 @@
 
 use oxidex::core::FormatParser;
 use oxidex::io::BufferedReader;
-use oxidex::parsers::document::{PagesParser, NumbersParser, KeynoteParser};
+use oxidex::parsers::document::{KeynoteParser, NumbersParser, PagesParser};
 
 #[test]
 fn test_pages_invalid() {

@@ -42,8 +42,8 @@ const ADTS_SYNC_WORD: u16 = 0xFFF;
 
 /// AAC sample rate table (indexed by sample rate index)
 const SAMPLE_RATES: [u32; 16] = [
-    96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050,
-    16000, 12000, 11025, 8000, 7350, 0, 0, 0,
+    96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350, 0, 0,
+    0,
 ];
 
 /// AAC profile names
@@ -182,9 +182,8 @@ fn parse_adts_header(header: &[u8]) -> Result<AdtsInfo> {
     let channel_config = ((header[2] & 0x01) << 2) | ((header[3] >> 6) & 0x03);
 
     // Frame length (13 bits): bits from byte 3-5
-    let frame_length = (((header[3] & 0x03) as u16) << 11)
-        | ((header[4] as u16) << 3)
-        | ((header[5] >> 5) as u16);
+    let frame_length =
+        (((header[3] & 0x03) as u16) << 11) | ((header[4] as u16) << 3) | ((header[5] >> 5) as u16);
 
     // Validate indices
     if sample_rate_idx >= SAMPLE_RATES.len() {

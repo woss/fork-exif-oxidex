@@ -18,8 +18,10 @@ impl MachOParser {
             return Ok(false);
         }
         let header = reader.read(0, 4)?;
-        Ok(header == MACHO_MAGIC_32 || header == MACHO_MAGIC_64 
-           || header == MACHO_MAGIC_32_REV || header == MACHO_MAGIC_64_REV)
+        Ok(header == MACHO_MAGIC_32
+            || header == MACHO_MAGIC_64
+            || header == MACHO_MAGIC_32_REV
+            || header == MACHO_MAGIC_64_REV)
     }
 
     pub fn read_arch(reader: &dyn FileReader) -> Result<&'static str> {
@@ -41,12 +43,21 @@ impl FormatParser for MachOParser {
             return Err(ExifToolError::parse_error("Invalid Mach-O signature"));
         }
         let mut metadata = MetadataMap::new();
-        metadata.insert("FileType".to_string(), TagValue::String("Mach-O".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
-        
+        metadata.insert(
+            "FileType".to_string(),
+            TagValue::String("Mach-O".to_string()),
+        );
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
+
         let arch = Self::read_arch(reader)?;
-        metadata.insert("Architecture".to_string(), TagValue::String(arch.to_string()));
-        
+        metadata.insert(
+            "Architecture".to_string(),
+            TagValue::String(arch.to_string()),
+        );
+
         Ok(metadata)
     }
 

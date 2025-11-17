@@ -226,8 +226,8 @@ pub struct ResourceDirectory {
 /// Resource Directory Entry (8 bytes)
 #[derive(Debug, Clone)]
 pub struct ResourceDirectoryEntry {
-    pub name_id: u32,  // High bit indicates if name or ID
-    pub data_offset: u32,  // High bit indicates if subdirectory or data
+    pub name_id: u32,     // High bit indicates if name or ID
+    pub data_offset: u32, // High bit indicates if subdirectory or data
 }
 
 /// Resource Data Entry (16 bytes)
@@ -254,7 +254,7 @@ pub mod resource_types {
     pub const RT_MESSAGETABLE: u32 = 11;
     pub const RT_GROUP_CURSOR: u32 = 12;
     pub const RT_GROUP_ICON: u32 = 14;
-    pub const RT_VERSION: u32 = 16;  // VERSION_INFO
+    pub const RT_VERSION: u32 = 16; // VERSION_INFO
     pub const RT_DLGINCLUDE: u32 = 17;
     pub const RT_PLUGPLAY: u32 = 19;
     pub const RT_VXD: u32 = 20;

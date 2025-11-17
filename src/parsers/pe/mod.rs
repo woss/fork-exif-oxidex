@@ -103,8 +103,8 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Step 5: Parse section table
     let section_table_size = (coff_header.number_of_sections as u64) * 40; // Each section header is 40 bytes
     let section_data = reader.read(section_table_offset, section_table_size as usize)?;
-    let (_, sections) = parse_section_table(section_data, coff_header.number_of_sections)
-        .map_err(|e| {
+    let (_, sections) =
+        parse_section_table(section_data, coff_header.number_of_sections).map_err(|e| {
             ExifToolError::parse_error(format!("Failed to parse section table: {:?}", e))
         })?;
 
@@ -117,9 +117,12 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
             let rsrc_data = reader.read(rsrc_file_offset, rsrc_size)?;
 
             // Step 8: Find VERSION_INFO resource (type 16)
-            if let Some((version_rva, version_size)) =
-                find_resource_data(&rsrc_data, rsrc_file_offset, resource_types::RT_VERSION, None)
-            {
+            if let Some((version_rva, version_size)) = find_resource_data(
+                &rsrc_data,
+                rsrc_file_offset,
+                resource_types::RT_VERSION,
+                None,
+            ) {
                 // Convert RVA to file offset
                 // RVA is relative to image base, need to convert using section info
                 let version_offset_in_section = version_rva - rsrc_section.virtual_address as u64;
@@ -141,8 +144,7 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
             if debug_rva > 0 && debug_size > 0 {
                 // Find section containing debug directory
                 if let Some(debug_section) = sections.iter().find(|s| {
-                    debug_rva >= s.virtual_address
-                        && debug_rva < s.virtual_address + s.virtual_size
+                    debug_rva >= s.virtual_address && debug_rva < s.virtual_address + s.virtual_size
                 }) {
                     let debug_offset = debug_section.pointer_to_raw_data as u64
                         + (debug_rva - debug_section.virtual_address) as u64;

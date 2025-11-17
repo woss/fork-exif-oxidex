@@ -45,7 +45,11 @@ impl FormatParser for KeynoteParser {
 }
 
 /// Common iWork parsing logic
-fn parse_iwork(reader: &dyn FileReader, app_name: &str, expected_file: &str) -> Result<MetadataMap> {
+fn parse_iwork(
+    reader: &dyn FileReader,
+    app_name: &str,
+    expected_file: &str,
+) -> Result<MetadataMap> {
     let mut metadata = MetadataMap::new();
 
     // Read as ZIP

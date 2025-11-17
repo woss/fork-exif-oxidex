@@ -38,11 +38,14 @@ impl FormatParser for ELFParser {
         }
         let mut metadata = MetadataMap::new();
         metadata.insert("FileType".to_string(), TagValue::String("ELF".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
-        
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
+
         let class = Self::read_class(reader)?;
         metadata.insert("ELFClass".to_string(), TagValue::String(class.to_string()));
-        
+
         Ok(metadata)
     }
 

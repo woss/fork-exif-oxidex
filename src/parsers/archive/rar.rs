@@ -59,8 +59,14 @@ impl FormatParser for RARParser {
         // Detect version
         let version = Self::detect_version(reader)?;
         metadata.insert("FileType".to_string(), TagValue::String("RAR".to_string()));
-        metadata.insert("RARVersion".to_string(), TagValue::String(version.to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
+        metadata.insert(
+            "RARVersion".to_string(),
+            TagValue::String(version.to_string()),
+        );
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
 
         Ok(metadata)
     }

@@ -299,10 +299,7 @@ pub fn extract_rsds_metadata(rsds: &CodeViewRSDS, metadata: &mut MetadataMap) {
         "PE:PDBFileName".to_string(),
         TagValue::String(rsds.pdb_file_name.clone()),
     );
-    metadata.insert(
-        "PE:PDBAge".to_string(),
-        TagValue::Integer(rsds.age as i64),
-    );
+    metadata.insert("PE:PDBAge".to_string(), TagValue::Integer(rsds.age as i64));
 
     // Format GUID as string
     let guid_str = format!(
@@ -313,10 +310,7 @@ pub fn extract_rsds_metadata(rsds: &CodeViewRSDS, metadata: &mut MetadataMap) {
         rsds.guid[8], rsds.guid[9],
         rsds.guid[10], rsds.guid[11], rsds.guid[12], rsds.guid[13], rsds.guid[14], rsds.guid[15]
     );
-    metadata.insert(
-        "PE:PDBGUID".to_string(),
-        TagValue::String(guid_str),
-    );
+    metadata.insert("PE:PDBGUID".to_string(), TagValue::String(guid_str));
 }
 
 /// Extract metadata from CodeView NB10 debug info
@@ -325,10 +319,7 @@ pub fn extract_nb10_metadata(nb10: &CodeViewNB10, metadata: &mut MetadataMap) {
         "PE:PDBFileName".to_string(),
         TagValue::String(nb10.pdb_file_name.clone()),
     );
-    metadata.insert(
-        "PE:PDBAge".to_string(),
-        TagValue::Integer(nb10.age as i64),
-    );
+    metadata.insert("PE:PDBAge".to_string(), TagValue::Integer(nb10.age as i64));
 
     // Convert timestamp to date
     use chrono::{TimeZone, Utc};
@@ -410,8 +401,8 @@ mod tests {
         let rsds = CodeViewRSDS {
             signature: *b"RSDS",
             guid: [
-                0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
-                0x0E, 0x0F, 0x10,
+                0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+                0x0F, 0x10,
             ],
             age: 1,
             pdb_file_name: "test.pdb".to_string(),
@@ -448,10 +439,7 @@ mod tests {
         extract_nb10_metadata(&nb10, &mut metadata);
 
         // Verify PDB file name
-        assert_eq!(
-            metadata.get_string("PE:PDBFileName").unwrap(),
-            "legacy.pdb"
-        );
+        assert_eq!(metadata.get_string("PE:PDBFileName").unwrap(), "legacy.pdb");
 
         // Verify age
         assert_eq!(metadata.get_integer("PE:PDBAge").unwrap(), 1);

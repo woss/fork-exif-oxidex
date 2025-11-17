@@ -2,8 +2,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
-use quick_xml::Reader;
 use quick_xml::events::Event;
+use quick_xml::Reader;
 use std::io::{Cursor, Read};
 use zip::ZipArchive;
 
@@ -28,25 +28,31 @@ impl FormatParser for EpubParser {
                 return Err(ExifToolError::parse_error("Not a valid EPUB file"));
             }
         } else {
-            return Err(ExifToolError::parse_error("Not a valid EPUB file: missing mimetype"));
+            return Err(ExifToolError::parse_error(
+                "Not a valid EPUB file: missing mimetype",
+            ));
         }
 
         // Find the OPF file location from container.xml
         let opf_path = if let Ok(mut container_file) = archive.by_name("META-INF/container.xml") {
             let mut content = String::new();
-            container_file.read_to_string(&mut content)
-                .map_err(|e| ExifToolError::parse_error(format!("Failed to read container.xml: {}", e)))?;
+            container_file.read_to_string(&mut content).map_err(|e| {
+                ExifToolError::parse_error(format!("Failed to read container.xml: {}", e))
+            })?;
 
             extract_opf_path(&content)?
         } else {
-            return Err(ExifToolError::parse_error("Not a valid EPUB: missing META-INF/container.xml"));
+            return Err(ExifToolError::parse_error(
+                "Not a valid EPUB: missing META-INF/container.xml",
+            ));
         };
 
         // Parse the OPF file for metadata
         if let Ok(mut opf_file) = archive.by_name(&opf_path) {
             let mut content = String::new();
-            opf_file.read_to_string(&mut content)
-                .map_err(|e| ExifToolError::parse_error(format!("Failed to read OPF file: {}", e)))?;
+            opf_file.read_to_string(&mut content).map_err(|e| {
+                ExifToolError::parse_error(format!("Failed to read OPF file: {}", e))
+            })?;
 
             parse_opf_metadata(&content, &mut metadata)?;
         }
@@ -79,13 +85,20 @@ fn extract_opf_path(xml: &str) -> Result<String> {
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => return Err(ExifToolError::parse_error(format!("XML parse error: {}", e))),
+            Err(e) => {
+                return Err(ExifToolError::parse_error(format!(
+                    "XML parse error: {}",
+                    e
+                )))
+            }
             _ => {}
         }
         buf.clear();
     }
 
-    Err(ExifToolError::parse_error("Could not find OPF path in container.xml"))
+    Err(ExifToolError::parse_error(
+        "Could not find OPF path in container.xml",
+    ))
 }
 
 /// Parse OPF metadata (Dublin Core and custom metadata)
@@ -131,12 +144,18 @@ fn parse_opf_metadata(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                                 continue;
                             }
                         };
-                        metadata.insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
+                        metadata
+                            .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
                     }
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => return Err(ExifToolError::parse_error(format!("XML parse error: {}", e))),
+            Err(e) => {
+                return Err(ExifToolError::parse_error(format!(
+                    "XML parse error: {}",
+                    e
+                )))
+            }
             _ => {}
         }
         buf.clear();

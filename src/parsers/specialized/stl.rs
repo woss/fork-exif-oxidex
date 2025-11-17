@@ -37,11 +37,17 @@ impl FormatParser for STLParser {
         }
         let mut metadata = MetadataMap::new();
         metadata.insert("FileType".to_string(), TagValue::String("STL".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
-        
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
+
         let format = Self::detect_format(reader)?;
-        metadata.insert("STLFormat".to_string(), TagValue::String(format.to_string()));
-        
+        metadata.insert(
+            "STLFormat".to_string(),
+            TagValue::String(format.to_string()),
+        );
+
         Ok(metadata)
     }
 

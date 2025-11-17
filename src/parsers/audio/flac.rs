@@ -89,9 +89,10 @@ impl FormatParser for FlacParser {
         while !is_last && offset < file_size {
             // Read block header (4 bytes)
             let block_header = reader.read(offset, 4)?;
-            let (_, (is_last_flag, block_type, block_length)) =
-                parse_block_header(block_header)
-                    .map_err(|e| ExifToolError::parse_error(format!("Failed to parse block header: {:?}", e)))?;
+            let (_, (is_last_flag, block_type, block_length)) = parse_block_header(block_header)
+                .map_err(|e| {
+                    ExifToolError::parse_error(format!("Failed to parse block header: {:?}", e))
+                })?;
 
             is_last = is_last_flag;
             offset += 4;
@@ -196,7 +197,10 @@ fn parse_streaminfo_block(data: &[u8], metadata: &mut MetadataMap) -> Result<()>
         .iter()
         .map(|b| format!("{:02x}", b))
         .collect::<String>();
-    metadata.insert("FLAC:MD5Signature".to_string(), TagValue::new_string(md5_hex));
+    metadata.insert(
+        "FLAC:MD5Signature".to_string(),
+        TagValue::new_string(md5_hex),
+    );
 
     Ok(())
 }
@@ -225,7 +229,8 @@ fn parse_streaminfo(input: &[u8]) -> IResult<&[u8], StreamInfo> {
     let (input, bytes) = nom::bytes::complete::take(8usize)(input)?;
 
     // Parse bit-packed fields
-    let sample_rate = (u32::from(bytes[0]) << 12) | (u32::from(bytes[1]) << 4) | (u32::from(bytes[2]) >> 4);
+    let sample_rate =
+        (u32::from(bytes[0]) << 12) | (u32::from(bytes[1]) << 4) | (u32::from(bytes[2]) >> 4);
     let channels = ((bytes[2] >> 1) & 0x07) + 1; // 3 bits, add 1 (1-8 channels)
     let bits_per_sample = (((bytes[2] & 0x01) << 4) | (bytes[3] >> 4)) + 1; // 5 bits, add 1 (1-32 bits)
 
@@ -324,7 +329,10 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
 
             // Map to FLAC: prefix
             let tag_name = format!("FLAC:{}", field_name);
-            metadata.insert(tag_name, crate::core::TagValue::new_string(field_value.to_string()));
+            metadata.insert(
+                tag_name,
+                crate::core::TagValue::new_string(field_value.to_string()),
+            );
         }
 
         offset += comment_length;

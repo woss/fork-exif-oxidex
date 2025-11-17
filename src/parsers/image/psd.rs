@@ -34,11 +34,17 @@ impl FormatParser for PSDParser {
         }
         let mut metadata = MetadataMap::new();
         metadata.insert("FileType".to_string(), TagValue::String("PSD".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
-        
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
+
         let version = Self::read_version(reader)?;
-        metadata.insert("PSDVersion".to_string(), TagValue::String(version.to_string()));
-        
+        metadata.insert(
+            "PSDVersion".to_string(),
+            TagValue::String(version.to_string()),
+        );
+
         Ok(metadata)
     }
 

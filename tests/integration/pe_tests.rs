@@ -137,7 +137,7 @@ fn test_pe_header_characteristics_decoded() {
     data.extend_from_slice(&[0; 4]); // Symbol table ptr
     data.extend_from_slice(&[0; 4]); // Number of symbols
     data.extend_from_slice(&96u16.to_le_bytes()); // Optional header size
-    // Characteristics: Executable (0x0002) + 32-bit (0x0100) = 0x0102
+                                                  // Characteristics: Executable (0x0002) + 32-bit (0x0100) = 0x0102
     data.extend_from_slice(&0x0102u16.to_le_bytes());
 
     // Optional Header Standard Fields

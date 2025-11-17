@@ -1,5 +1,5 @@
+use oxidex::core::{FileReader, FormatParser};
 use oxidex::parsers::audio::flac::FlacParser;
-use oxidex::core::{FormatParser, FileReader};
 use std::io;
 
 struct TestReader {

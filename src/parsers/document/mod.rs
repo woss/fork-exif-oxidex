@@ -1,9 +1,9 @@
 //! Document format parsers
 
-pub mod ooxml;
-pub mod iwork;
 pub mod epub;
+pub mod iwork;
+pub mod ooxml;
 
-pub use ooxml::{DocxParser, XlsxParser, PptxParser};
-pub use iwork::{PagesParser, NumbersParser, KeynoteParser};
 pub use epub::EpubParser;
+pub use iwork::{KeynoteParser, NumbersParser, PagesParser};
+pub use ooxml::{DocxParser, PptxParser, XlsxParser};

@@ -25,7 +25,10 @@ impl FormatParser for OBJParser {
         }
         let mut metadata = MetadataMap::new();
         metadata.insert("FileType".to_string(), TagValue::String("OBJ".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
         Ok(metadata)
     }
 

@@ -86,12 +86,16 @@ impl FormatParser for Mp3Parser {
 fn parse_id3v2(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Result<()> {
     // Read ID3v2 header (10 bytes)
     let header = reader.read(0, 10)?;
-    let (_, id3v2_header) = parse_id3v2_header(header)
-        .map_err(|e| ExifToolError::parse_error(format!("Failed to parse ID3v2 header: {:?}", e)))?;
+    let (_, id3v2_header) = parse_id3v2_header(header).map_err(|e| {
+        ExifToolError::parse_error(format!("Failed to parse ID3v2 header: {:?}", e))
+    })?;
 
     metadata.insert(
         "ID3:Version".to_string(),
-        TagValue::new_string(format!("2.{}.{}", id3v2_header.version, id3v2_header.revision)),
+        TagValue::new_string(format!(
+            "2.{}.{}",
+            id3v2_header.version, id3v2_header.revision
+        )),
     );
 
     // Read frames
@@ -173,7 +177,8 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
         } else {
             // ID3v2.2: 6-byte header
             let frame_id = String::from_utf8_lossy(&data[offset..offset + 3]).to_string();
-            let frame_size = u32::from_be_bytes([0, data[offset + 3], data[offset + 4], data[offset + 5]]);
+            let frame_size =
+                u32::from_be_bytes([0, data[offset + 3], data[offset + 4], data[offset + 5]]);
             offset += 6;
 
             (frame_id, frame_size, 0)

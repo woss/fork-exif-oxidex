@@ -67,7 +67,8 @@ mod tests {
     #[test]
     fn test_zip_signature() {
         // Minimal ZIP file (empty archive)
-        let data = b"PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+        let data =
+            b"PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
         let reader = BufferedReader::from_bytes(data);
         let parser = ZipParser;
 

@@ -58,17 +58,26 @@ impl FormatParser for GZParser {
         let mut metadata = MetadataMap::new();
 
         metadata.insert("FileType".to_string(), TagValue::String("GZIP".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
 
         let method = Self::read_compression_method(reader)?;
         let compression_name = match method {
             8 => "DEFLATE",
             _ => "Unknown",
         };
-        metadata.insert("CompressionMethod".to_string(), TagValue::String(compression_name.to_string()));
+        metadata.insert(
+            "CompressionMethod".to_string(),
+            TagValue::String(compression_name.to_string()),
+        );
 
         let flags = Self::read_flags(reader)?;
-        metadata.insert("Flags".to_string(), TagValue::String(format!("0x{:02X}", flags)));
+        metadata.insert(
+            "Flags".to_string(),
+            TagValue::String(format!("0x{:02X}", flags)),
+        );
 
         Ok(metadata)
     }

@@ -4,18 +4,18 @@
 
 #![allow(dead_code)]
 
+pub mod aac;
+pub mod ape;
 pub mod flac;
 pub mod mp3;
-pub mod aac;
-pub mod wav;
 pub mod ogg;
 pub mod opus;
-pub mod ape;
+pub mod wav;
 
+pub use aac::AacParser;
+pub use ape::ApeParser;
 pub use flac::FlacParser;
 pub use mp3::Mp3Parser;
-pub use aac::AacParser;
-pub use wav::WavParser;
 pub use ogg::OggParser;
 pub use opus::OpusParser;
-pub use ape::ApeParser;
+pub use wav::WavParser;

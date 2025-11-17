@@ -2,8 +2,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
-use quick_xml::Reader;
 use quick_xml::events::Event;
+use quick_xml::Reader;
 use std::io::{Cursor, Read};
 use zip::ZipArchive;
 
@@ -32,8 +32,9 @@ impl FormatParser for DocxParser {
         // Parse core.xml for metadata
         if let Ok(mut core_file) = archive.by_name("docProps/core.xml") {
             let mut xml_content = String::new();
-            core_file.read_to_string(&mut xml_content)
-                .map_err(|e| ExifToolError::parse_error(format!("Failed to read core.xml: {}", e)))?;
+            core_file.read_to_string(&mut xml_content).map_err(|e| {
+                ExifToolError::parse_error(format!("Failed to read core.xml: {}", e))
+            })?;
 
             parse_core_properties(&xml_content, &mut metadata)?;
         }
@@ -41,8 +42,9 @@ impl FormatParser for DocxParser {
         // Parse app.xml for application properties
         if let Ok(mut app_file) = archive.by_name("docProps/app.xml") {
             let mut xml_content = String::new();
-            app_file.read_to_string(&mut xml_content)
-                .map_err(|e| ExifToolError::parse_error(format!("Failed to read app.xml: {}", e)))?;
+            app_file.read_to_string(&mut xml_content).map_err(|e| {
+                ExifToolError::parse_error(format!("Failed to read app.xml: {}", e))
+            })?;
 
             parse_app_properties(&xml_content, &mut metadata)?;
         }
@@ -157,12 +159,18 @@ fn parse_core_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                                 continue;
                             }
                         };
-                        metadata.insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
+                        metadata
+                            .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
                     }
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => return Err(ExifToolError::parse_error(format!("XML parse error: {}", e))),
+            Err(e) => {
+                return Err(ExifToolError::parse_error(format!(
+                    "XML parse error: {}",
+                    e
+                )))
+            }
             _ => {}
         }
         buf.clear();
@@ -198,7 +206,8 @@ fn parse_app_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                                 continue;
                             }
                         };
-                        metadata.insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
+                        metadata
+                            .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
                     }
                 }
             }

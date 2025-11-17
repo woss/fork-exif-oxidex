@@ -32,7 +32,10 @@ impl TTFParser {
         }
 
         let num_tables_bytes = reader.read(4, 2)?;
-        Ok(u16::from_be_bytes([num_tables_bytes[0], num_tables_bytes[1]]))
+        Ok(u16::from_be_bytes([
+            num_tables_bytes[0],
+            num_tables_bytes[1],
+        ]))
     }
 }
 
@@ -45,10 +48,16 @@ impl FormatParser for TTFParser {
         let mut metadata = MetadataMap::new();
 
         metadata.insert("FileType".to_string(), TagValue::String("TTF".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
 
         let num_tables = Self::read_num_tables(reader)?;
-        metadata.insert("NumTables".to_string(), TagValue::String(num_tables.to_string()));
+        metadata.insert(
+            "NumTables".to_string(),
+            TagValue::String(num_tables.to_string()),
+        );
 
         Ok(metadata)
     }

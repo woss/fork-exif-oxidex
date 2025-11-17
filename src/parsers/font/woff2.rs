@@ -49,8 +49,14 @@ impl FormatParser for WOFF2Parser {
 
         let mut metadata = MetadataMap::new();
 
-        metadata.insert("FileType".to_string(), TagValue::String("WOFF2".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
+        metadata.insert(
+            "FileType".to_string(),
+            TagValue::String("WOFF2".to_string()),
+        );
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
 
         let flavor = Self::read_flavor(reader)?;
         metadata.insert("FontFlavor".to_string(), TagValue::String(flavor));
