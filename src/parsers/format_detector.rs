@@ -156,6 +156,14 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::CameraRaw(raw::RawFormat::MinoltaMRW));
     }
 
+    // Canon CRW (CIFF format) has "II\x1a\x00" + "HEAPCCDR" signature
+    if magic_bytes.len() >= 14
+        && &magic_bytes[0..4] == b"II\x1a\x00"
+        && &magic_bytes[6..14] == b"HEAPCCDR"
+    {
+        return Ok(FileFormat::CameraRaw(raw::RawFormat::CanonCRW));
+    }
+
     // Check formats in order from most specific to least specific
     // Start with 4-byte signatures, then 3-byte signatures
 
@@ -556,12 +564,6 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
                 return Ok(FileFormat::STL);
             }
         }
-    }
-
-    // STL Binary: if not detected as ASCII and has valid size
-    if reader.size() >= 84 {
-        // Binary STL has 80-byte header + 4-byte triangle count
-        return Ok(FileFormat::STL);
     }
 
     // No known format matched
