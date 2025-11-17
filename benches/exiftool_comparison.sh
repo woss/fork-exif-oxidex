@@ -40,7 +40,7 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-EXIFTOOL_RS_BIN="$PROJECT_ROOT/target/release/exiftool-rs"
+EXIFTOOL_RS_BIN="$PROJECT_ROOT/target/release/oxidex"
 FIXTURE_DIR="$PROJECT_ROOT/tests/fixtures"
 TEMP_DIR=$(mktemp -d)
 RESULTS_MD="$SCRIPT_DIR/benchmark_results.md"
