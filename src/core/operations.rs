@@ -15,6 +15,11 @@ use crate::parsers::pdf::parse_pdf_metadata;
 use crate::parsers::pe::parse_pe_metadata;
 use crate::parsers::png::parse_png_metadata;
 use crate::parsers::quicktime::parse_quicktime_metadata;
+use crate::parsers::video::mkv::parse_mkv_metadata;
+use crate::parsers::video::webm::parse_webm_metadata;
+use crate::parsers::video::flv::parse_flv_metadata;
+use crate::parsers::video::avi::parse_avi_metadata;
+use crate::parsers::video::mts::parse_mts_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -129,6 +134,16 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             let data = reader.read(0, size)?;
             crate::parsers::raw::parse_raw_metadata(data, raw_format)
         }
+        FileFormat::MKV => parse_mkv_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("MKV parse error: {}", e))),
+        FileFormat::WEBM => parse_webm_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("WebM parse error: {}", e))),
+        FileFormat::FLV => parse_flv_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("FLV parse error: {}", e))),
+        FileFormat::AVI => parse_avi_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("AVI parse error: {}", e))),
+        FileFormat::MTS => parse_mts_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("MTS parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format

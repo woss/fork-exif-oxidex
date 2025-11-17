@@ -128,6 +128,24 @@ impl FormatParser for FlvParser {
     }
 }
 
+/// Convenience function to parse FLV metadata from a reader.
+///
+/// This is a wrapper around `FlvParser::parse()` to provide a simpler API
+/// for the operations module.
+///
+/// # Arguments
+///
+/// * `reader` - FileReader implementation providing access to the FLV file
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_flv_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = FlvParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 /// Parse onMetaData script data object (simplified AMF0 parsing)
 fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     // AMF0 format:

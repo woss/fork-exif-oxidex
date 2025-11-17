@@ -85,6 +85,24 @@ impl FormatParser for AviParser {
     }
 }
 
+/// Convenience function to parse AVI metadata from a reader.
+///
+/// This is a wrapper around `AviParser::parse()` to provide a simpler API
+/// for the operations module.
+///
+/// # Arguments
+///
+/// * `reader` - FileReader implementation providing access to the AVI file
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_avi_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = AviParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 /// Parse AVI RIFF chunks
 fn parse_avi_chunks(
     reader: &dyn FileReader,

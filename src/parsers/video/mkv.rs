@@ -77,6 +77,24 @@ impl FormatParser for MkvParser {
     }
 }
 
+/// Convenience function to parse MKV metadata from a reader.
+///
+/// This is a wrapper around `MkvParser::parse()` to provide a simpler API
+/// for the operations module.
+///
+/// # Arguments
+///
+/// * `reader` - FileReader implementation providing access to the MKV file
+///
+/// # Returns
+///
+/// * `Ok(MetadataMap)` - Successfully extracted metadata
+/// * `Err(String)` - Parse error message
+pub fn parse_mkv_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = MkvParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
