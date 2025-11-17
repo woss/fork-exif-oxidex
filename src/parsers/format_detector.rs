@@ -223,6 +223,11 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::BMP);
     }
 
+    // WebP: "RIFF" + size (4 bytes) + "WEBP"
+    if magic_bytes.len() >= 12 && &magic_bytes[0..4] == b"RIFF" && &magic_bytes[8..12] == b"WEBP" {
+        return Ok(FileFormat::WebP);
+    }
+
     // FLAC: "fLaC" signature
     if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"fLaC" {
         return Ok(FileFormat::FLAC);

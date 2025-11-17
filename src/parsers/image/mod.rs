@@ -11,6 +11,7 @@ pub mod ico;
 pub mod jxl;
 pub mod psd;
 pub mod svg;
+pub mod webp;
 
 pub use avif::AVIFParser;
 pub use bmp::BMPParser;
@@ -23,3 +24,4 @@ pub use ico::ICOParser;
 pub use jxl::JXLParser;
 pub use psd::PSDParser;
 pub use svg::SVGParser;
+pub use webp::WebPParser;

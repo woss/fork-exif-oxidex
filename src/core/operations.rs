@@ -65,6 +65,7 @@ use crate::parsers::specialized::stl::parse_stl_metadata;
 use crate::parsers::image::bmp::parse_bmp_metadata;
 use crate::parsers::image::gif::parse_gif_metadata;
 use crate::parsers::image::heif::parse_heif_metadata;
+use crate::parsers::image::webp::parse_webp_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -280,6 +281,8 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("GIF parse error: {}", e))),
         FileFormat::BMP => parse_bmp_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("BMP parse error: {}", e))),
+        FileFormat::WebP => parse_webp_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("WebP parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format
