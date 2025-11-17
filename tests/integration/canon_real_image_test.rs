@@ -79,12 +79,12 @@ fn test_canon_real_image() {
     if !sample_path.exists() {
         eprintln!("\n=== Canon Real Image Test: SKIPPED ===");
         eprintln!("No Canon sample file found at: {:?}", sample_path);
-        eprintln!("");
+        eprintln!();
         eprintln!("To run this test, obtain a Canon image:");
         eprintln!("  1. Download from: https://raw.pixls.us/ (search for Canon)");
         eprintln!("  2. Or use your own Canon JPEG/CR2/CR3 file");
         eprintln!("  3. Place at: tests/fixtures/canon_sample.jpg");
-        eprintln!("");
+        eprintln!();
         eprintln!("This is not a test failure - the test is simply skipped.");
         eprintln!("=======================================\n");
         return;

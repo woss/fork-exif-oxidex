@@ -121,6 +121,7 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             parse_quicktime_metadata(&reader)
                 .map_err(|e| ExifToolError::parse_error(format!("QuickTime parse error: {}", e)))
         }
+        FileFormat::CasioCAM => parse_casio_cam_metadata(&reader),
         FileFormat::CameraRaw(raw_format) => {
             // Parse camera raw format using raw metadata parser
             // Read entire file for raw parsing (raw formats need full file access)
@@ -438,6 +439,69 @@ fn parse_jpeg_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
             }
         }
     }
+
+    Ok(metadata)
+}
+
+/// Parses metadata from a Casio CAM file.
+///
+/// Casio CAM files are proprietary JPEG containers with a 70-byte header.
+/// This function:
+/// 1. Skips the 70-byte proprietary header
+/// 2. Extracts the embedded JPEG data starting at offset 70
+/// 3. Parses the JPEG metadata using the standard JPEG parser
+/// 4. Adds a warning tag to match ExifTool's behavior
+fn parse_casio_cam_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
+    // Casio CAM format: 70-byte proprietary header + JPEG data
+    const HEADER_SIZE: u64 = 70;
+
+    if reader.size() <= HEADER_SIZE {
+        return Err(ExifToolError::parse_error(
+            "File too small to be a valid Casio CAM file",
+        ));
+    }
+
+    // Read the JPEG data starting at offset 70
+    let jpeg_size = (reader.size() - HEADER_SIZE) as usize;
+    let jpeg_data = reader.read(HEADER_SIZE, jpeg_size)?;
+
+    // Create an in-memory reader for the JPEG data
+    struct CasioCamJpegReader {
+        data: Vec<u8>,
+    }
+
+    impl FileReader for CasioCamJpegReader {
+        fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
+            let start = offset as usize;
+            let end = start + length;
+
+            if end > self.data.len() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::UnexpectedEof,
+                    "read beyond end of JPEG data",
+                ));
+            }
+
+            Ok(&self.data[start..end])
+        }
+
+        fn size(&self) -> u64 {
+            self.data.len() as u64
+        }
+    }
+
+    let jpeg_reader = CasioCamJpegReader {
+        data: jpeg_data.to_vec(),
+    };
+
+    // Parse the JPEG metadata
+    let mut metadata = parse_jpeg_metadata(&jpeg_reader)?;
+
+    // Add warning tag to match ExifTool's behavior
+    metadata.insert(
+        "File:Warning".to_string(),
+        TagValue::String("Processing JPEG-like data after unknown 70-byte header".to_string()),
+    );
 
     Ok(metadata)
 }

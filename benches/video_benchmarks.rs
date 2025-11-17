@@ -1,4 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use oxidex::core::FormatParser;
 use oxidex::io::MMapReader;
 use oxidex::parsers::video::avi::AviParser;

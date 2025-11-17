@@ -230,7 +230,7 @@ fn test_read_metadata_from_dng() {
 
     // DNG files should have some metadata extracted
     assert!(
-        metadata.len() > 0,
+        !metadata.is_empty(),
         "Should extract some metadata from DNG file, found 0 tags"
     );
 

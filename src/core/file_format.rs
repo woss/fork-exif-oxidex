@@ -72,6 +72,9 @@ pub enum FileFormat {
     /// WebP image format (.webp)
     WebP,
 
+    /// Casio CAM format - JPEG with 70-byte proprietary header (.cam)
+    CasioCAM,
+
     /// RAW image formats (generic)
     RAW,
 
@@ -254,6 +257,7 @@ impl FileFormat {
             FileFormat::QuickTime => "QuickTime",
             FileFormat::HEIF => "HEIF",
             FileFormat::WebP => "WebP",
+            FileFormat::CasioCAM => "Casio CAM",
             FileFormat::RAW => "RAW",
             FileFormat::CameraRaw(_) => "Camera Raw",
             FileFormat::PE => "PE",
@@ -328,6 +332,7 @@ impl FileFormat {
             FileFormat::QuickTime => &["mov", "mp4", "m4v"],
             FileFormat::HEIF => &["heif", "heic"],
             FileFormat::WebP => &["webp"],
+            FileFormat::CasioCAM => &["cam"],
             FileFormat::RAW => &["cr2", "nef", "arw", "dng"],
             FileFormat::CameraRaw(_) => &[
                 "cr2", "cr3", "crw", "nef", "nrw", "arw", "sr2", "srf", "srw", "arq", "ari", "raf",

@@ -116,7 +116,7 @@ fn test_canon_makernote_extraction() {
         || metadata.contains_key("FirmwareVersion");
 
     // At minimum, we should have extracted *some* metadata
-    assert!(metadata.len() > 0, "Expected some metadata to be extracted");
+    assert!(!metadata.is_empty(), "Expected some metadata to be extracted");
 
     // Check for Canon tags if integration is complete
     // If integration isn't complete yet, this test will fail here,

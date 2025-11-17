@@ -2,7 +2,6 @@
 //!
 //! This test suite validates PE metadata extraction
 
-use oxidex::core::FileReader;
 use oxidex::io::MMapReader;
 use oxidex::parsers::pe::parse_pe_metadata;
 use std::path::Path;

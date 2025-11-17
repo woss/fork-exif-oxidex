@@ -843,33 +843,31 @@ fn extract_heif_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), 
     // Extract image properties from ispe (image spatial extents) atoms
     // HEIF files may have multiple ispe atoms for different items
     for atom in &children {
-        if atom.atom_type.matches("ispe") {
-            if atom.data.len() >= 12 {
-                // ispe format: version(1) + flags(3) + width(4) + height(4)
-                let width = u32::from_be_bytes([
-                    atom.data[4],
-                    atom.data[5],
-                    atom.data[6],
-                    atom.data[7],
-                ]);
-                let height = u32::from_be_bytes([
-                    atom.data[8],
-                    atom.data[9],
-                    atom.data[10],
-                    atom.data[11],
-                ]);
+        if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
+            // ispe format: version(1) + flags(3) + width(4) + height(4)
+            let width = u32::from_be_bytes([
+                atom.data[4],
+                atom.data[5],
+                atom.data[6],
+                atom.data[7],
+            ]);
+            let height = u32::from_be_bytes([
+                atom.data[8],
+                atom.data[9],
+                atom.data[10],
+                atom.data[11],
+            ]);
 
-                // Only set if not already set (use first/primary image)
-                if !metadata.contains_key("HEIF:ImageWidth") {
-                    metadata.insert(
-                        "HEIF:ImageWidth".to_string(),
-                        TagValue::Integer(width as i64),
-                    );
-                    metadata.insert(
-                        "HEIF:ImageHeight".to_string(),
-                        TagValue::Integer(height as i64),
-                    );
-                }
+            // Only set if not already set (use first/primary image)
+            if !metadata.contains_key("HEIF:ImageWidth") {
+                metadata.insert(
+                    "HEIF:ImageWidth".to_string(),
+                    TagValue::Integer(width as i64),
+                );
+                metadata.insert(
+                    "HEIF:ImageHeight".to_string(),
+                    TagValue::Integer(height as i64),
+                );
             }
         }
     }

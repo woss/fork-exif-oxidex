@@ -24,7 +24,8 @@
 //! start target/criterion/report/index.html
 //! ```
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use oxidex::core::operations::read_metadata;
 use oxidex::io::MMapReader;
 use oxidex::parsers::format_detector::detect_format;

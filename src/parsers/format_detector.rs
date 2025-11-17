@@ -394,6 +394,20 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::ZIP);
     }
 
+    // Casio CAM: Proprietary format with 70-byte header followed by JPEG
+    // Check for JPEG signature at offset 70 (0x46)
+    if reader.size() > 73 {
+        let header_check = reader.read(70, 3)?;
+        if header_check.starts_with(&[0xFF, 0xD8, 0xFF]) {
+            // This might be a Casio CAM file - verify with header pattern
+            // Casio CAM files often start with specific byte patterns
+            if magic_bytes.len() >= 4 && magic_bytes[2] == 0x4D && magic_bytes[3] == 0x4D {
+                // "MM" marker found - likely Casio CAM format
+                return Ok(FileFormat::CasioCAM);
+            }
+        }
+    }
+
     // JPEG: 0xFF 0xD8 0xFF (SOI marker + start of next marker)
     // Note: JPEG signature is 3 bytes, checked after 4-byte signatures
     if magic_bytes.len() >= 3 && magic_bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {

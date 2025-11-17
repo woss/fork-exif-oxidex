@@ -411,7 +411,7 @@ fn test_read_real_raw_files() {
             );
 
             let meta = metadata.unwrap();
-            assert!(meta.len() > 0, "No metadata extracted from {}", file_path);
+            assert!(!meta.is_empty(), "No metadata extracted from {}", file_path);
 
             println!(
                 "  Successfully extracted {} metadata tags from {}",
