@@ -1,6 +1,11 @@
 //! HEIF/HEIC image format parser
 //!
-//! HEIF (High Efficiency Image Format) uses ISO BMFF container with "heic" or "heix" brand
+//! HEIF (High Efficiency Image Format) uses ISO BMFF container with various brands:
+//! - heic, heix: HEVC (H.265) image sequence
+//! - hevc, hevx: HEVC image
+//! - heim, heis: HEVC image sequence with auxiliary images
+//! - hevm, hevs: HEVC multiview image
+//! - mif1: Multi-image format
 
 #![allow(dead_code)]
 

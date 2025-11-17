@@ -316,9 +316,36 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::PDF);
     }
 
+    // IMPORTANT: Check specific BMFF (ISO Base Media File Format) variants BEFORE generic QuickTime/MP4
+    // Many formats use "ftyp" at offset 4, so we must check for specific brands first
+
+    // AVIF: ISO BMFF with "ftyp" at offset 4 and "avif" brand
+    // AVIF is the AV1 Image File Format, which uses BMFF container
+    if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" && &magic_bytes[8..12] == b"avif" {
+        return Ok(FileFormat::AVIF);
+    }
+
+    // HEIF: ISO BMFF with "ftyp" at offset 4 and HEIF brands
+    // HEIF (High Efficiency Image Format) supports multiple brands:
+    // - heic, heix: HEVC (H.265) image sequence
+    // - hevc, hevx: HEVC image
+    // - heim, heis: HEVC image sequence with auxiliary images
+    // - hevm, hevs: HEVC multiview image
+    // - mif1: HEIF brand for multi-image format
+    if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" {
+        let brand = &magic_bytes[8..12];
+        if brand == b"heic" || brand == b"heix" || brand == b"hevc" || brand == b"hevx"
+            || brand == b"heim" || brand == b"heis" || brand == b"hevm" || brand == b"hevs"
+            || brand == b"mif1"
+        {
+            return Ok(FileFormat::HEIF);
+        }
+    }
+
     // QuickTime/MP4: Check for "ftyp" atom at bytes 4-7
     // MP4/MOV files have structure: [4 bytes size][4 bytes type "ftyp"]
     // Common types after ftyp: "isom", "mp42", "mp41", "M4V ", "qt  ", etc.
+    // This MUST come after AVIF and HEIF checks since they also use "ftyp"
     if magic_bytes.len() >= 8 && &magic_bytes[4..8] == b"ftyp" {
         return Ok(FileFormat::QuickTime);
     }
@@ -529,22 +556,6 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         && magic_bytes[0..8] == [0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20]
     {
         return Ok(FileFormat::JXL);
-    }
-
-    // AVIF: ISO BMFF with "ftyp" at offset 4 and "avif" brand
-    if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" && &magic_bytes[8..12] == b"avif" {
-        return Ok(FileFormat::AVIF);
-    }
-
-    // HEIF: ISO BMFF with "ftyp" at offset 4 and HEIF brands
-    if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" {
-        let brand = &magic_bytes[8..12];
-        if brand == b"heic" || brand == b"heix" || brand == b"hevc" || brand == b"hevx"
-            || brand == b"heim" || brand == b"heis" || brand == b"hevm" || brand == b"hevs"
-            || brand == b"mif1"
-        {
-            return Ok(FileFormat::HEIF);
-        }
     }
 
     // Phase 6: Specialized formats
