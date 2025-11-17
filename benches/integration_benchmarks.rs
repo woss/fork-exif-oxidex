@@ -17,8 +17,8 @@
 //! ```
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::hint::black_box;
 use oxidex::core::operations::read_metadata;
+use std::hint::black_box;
 use std::path::Path;
 
 /// Benchmark single file extraction across different formats

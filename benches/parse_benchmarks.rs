@@ -25,12 +25,12 @@
 //! ```
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use oxidex::core::operations::read_metadata;
 use oxidex::io::MMapReader;
 use oxidex::parsers::format_detector::detect_format;
 use oxidex::parsers::jpeg::segment_parser::parse_segments;
 use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use std::hint::black_box;
 use std::path::Path;
 
 // Import IPTC parser for tag name generation benchmark

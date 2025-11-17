@@ -1,11 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use oxidex::core::FormatParser;
 use oxidex::io::MMapReader;
 use oxidex::parsers::video::avi::AviParser;
 use oxidex::parsers::video::flv::FlvParser;
 use oxidex::parsers::video::mkv::MkvParser;
 use oxidex::parsers::video::mts::MtsParser;
+use std::hint::black_box;
 use std::path::Path;
 
 fn bench_mkv_parsing(c: &mut Criterion) {

@@ -1,5 +1,4 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use oxidex::core::FormatParser;
 use oxidex::io::MMapReader;
 use oxidex::parsers::audio::aac::AacParser;
@@ -9,6 +8,7 @@ use oxidex::parsers::audio::mp3::Mp3Parser;
 use oxidex::parsers::audio::ogg::OggParser;
 use oxidex::parsers::audio::opus::OpusParser;
 use oxidex::parsers::audio::wav::WavParser;
+use std::hint::black_box;
 use std::path::Path;
 
 fn bench_flac_parsing(c: &mut Criterion) {

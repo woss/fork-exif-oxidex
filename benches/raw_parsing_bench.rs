@@ -25,8 +25,8 @@
 //! ```
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use oxidex::parsers::raw::{detect_raw_format, parse_raw_metadata, RawFormat};
+use std::hint::black_box;
 
 /// Benchmark for raw format detection
 ///
