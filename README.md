@@ -116,18 +116,18 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 
 | Scenario | Perl ExifTool | ExifTool-RS | Speedup |
 |----------|---------------|-------------|---------|
-| Single JPEG Read | 104.4ms ± 1.2ms | 14.1ms ± 0.3ms | **7.4x faster** |
-| Batch Processing (1000 files) | 3109.2ms ± 41.2ms | 403.7ms ± 34.7ms | **7.7x faster** |
-| Write Operation (modify EXIF tag) | 292.7ms ± 10.6ms | 17.0ms ± 0.7ms | **17.2x faster** |
-| Format Detection | 105.3ms ± 1.8ms | 14.2ms ± 0.6ms | **7.4x faster** |
+| Single JPEG Read | 105.1ms ± 1.4ms | 14.0ms ± 0.4ms | **7.5x faster** |
+| Batch Processing (1000 files) | 3048.9ms ± 34.7ms | 366.0ms ± 13.1ms | **8.3x faster** |
+| Write Operation (modify EXIF tag) | 286.8ms ± 3.2ms | 16.4ms ± 0.5ms | **17.5x faster** |
+| Format Detection | 104.2ms ± 1.2ms | 14.1ms ± 0.4ms | **7.4x faster** |
 
 *Benchmarks performed using [hyperfine](https://github.com/sharkdp/hyperfine) with multiple runs and warmup periods.*
 
 ### Key Performance Improvements
 
-- **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 7.4x faster metadata extraction
-- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 403.7ms ± 34.7ms vs. 3109.2ms ± 41.2ms for single-threaded Perl
-- **Write operations**: Efficient binary manipulation and atomic file operations provide 17.2x faster EXIF tag modifications
+- **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 7.5x faster metadata extraction
+- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 366.0ms ± 13.1ms vs. 3048.9ms ± 34.7ms for single-threaded Perl
+- **Write operations**: Efficient binary manipulation and atomic file operations provide 17.5x faster EXIF tag modifications
 - **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (7.4x faster)
 
 ### Reproducing These Benchmarks
