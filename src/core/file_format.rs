@@ -145,6 +145,22 @@ pub enum FileFormat {
     /// EPUB e-book format (.epub)
     EPUB,
 
+    // Phase 3: Archive formats
+    /// RAR archive format (.rar)
+    RAR,
+
+    /// 7z archive format (.7z)
+    SevenZ,
+
+    /// ISO 9660 disc image (.iso)
+    ISO,
+
+    /// TAR archive format (.tar)
+    TAR,
+
+    /// GZIP compressed file (.gz)
+    GZ,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -195,6 +211,11 @@ impl FileFormat {
             FileFormat::Numbers => "Numbers",
             FileFormat::Keynote => "Keynote",
             FileFormat::EPUB => "EPUB",
+            FileFormat::RAR => "RAR",
+            FileFormat::SevenZ => "7z",
+            FileFormat::ISO => "ISO",
+            FileFormat::TAR => "TAR",
+            FileFormat::GZ => "GZIP",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -247,6 +268,11 @@ impl FileFormat {
             FileFormat::Numbers => &["numbers"],
             FileFormat::Keynote => &["key"],
             FileFormat::EPUB => &["epub"],
+            FileFormat::RAR => &["rar"],
+            FileFormat::SevenZ => &["7z"],
+            FileFormat::ISO => &["iso"],
+            FileFormat::TAR => &["tar"],
+            FileFormat::GZ => &["gz"],
             FileFormat::Unknown => &[],
         }
     }

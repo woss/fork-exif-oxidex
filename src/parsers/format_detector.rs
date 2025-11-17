@@ -385,6 +385,41 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::JPEG);
     }
 
+    // Phase 3: Archive formats
+
+    // RAR: "Rar!" signature (0x52 0x61 0x72 0x21)
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"Rar!" {
+        return Ok(FileFormat::RAR);
+    }
+
+    // 7z: 0x37 0x7A 0xBC 0xAF 0x27 0x1C signature
+    if magic_bytes.len() >= 6 && &magic_bytes[0..6] == &[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C] {
+        return Ok(FileFormat::SevenZ);
+    }
+
+    // TAR: "ustar" at offset 257
+    if reader.size() >= 262 {
+        if let Ok(tar_sig) = reader.read(257, 5) {
+            if tar_sig == b"ustar" {
+                return Ok(FileFormat::TAR);
+            }
+        }
+    }
+
+    // ISO: "CD001" at offset 32769
+    if reader.size() >= 32774 {
+        if let Ok(iso_sig) = reader.read(32769, 5) {
+            if iso_sig == b"CD001" {
+                return Ok(FileFormat::ISO);
+            }
+        }
+    }
+
+    // GZIP: 0x1F 0x8B
+    if magic_bytes.len() >= 2 && magic_bytes.starts_with(&[0x1F, 0x8B]) {
+        return Ok(FileFormat::GZ);
+    }
+
     // No known format matched
     Ok(FileFormat::Unknown)
 }
