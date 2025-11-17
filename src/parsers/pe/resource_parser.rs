@@ -65,7 +65,7 @@ pub fn parse_resource_data_entry(input: &[u8]) -> IResult<&[u8], ResourceDataEnt
 /// Find a resource by type and ID in the resource directory tree
 pub fn find_resource_data(
     rsrc_data: &[u8],
-    rsrc_base_offset: u64,
+    _rsrc_base_offset: u64,
     resource_type: u32,
     resource_id: Option<u32>,
 ) -> Option<(u64, u32)> {
@@ -95,7 +95,7 @@ pub fn find_resource_data(
 
             let subdir_offset = (entry.data_offset & 0x7FFFFFFF) as usize;
 
-            return find_resource_by_id(rsrc_data, subdir_offset, rsrc_base_offset, resource_id);
+            return find_resource_by_id(rsrc_data, subdir_offset, _rsrc_base_offset, resource_id);
         }
     }
 
@@ -106,10 +106,9 @@ pub fn find_resource_data(
 fn find_resource_by_id(
     rsrc_data: &[u8],
     subdir_offset: usize,
-    rsrc_base_offset: u64,
+    _rsrc_base_offset: u64,
     resource_id: Option<u32>,
 ) -> Option<(u64, u32)> {
-
     if subdir_offset >= rsrc_data.len() {
         return None;
     }
@@ -141,11 +140,7 @@ fn find_resource_by_id(
 
             // One more level - language subdirectory
             // Offset is relative to start of resource section, so use rsrc_data directly
-            return find_first_language_resource(
-                rsrc_data,
-                lang_subdir_offset,
-                rsrc_base_offset,
-            );
+            return find_first_language_resource(rsrc_data, lang_subdir_offset, _rsrc_base_offset);
         }
     }
 
@@ -156,9 +151,8 @@ fn find_resource_by_id(
 fn find_first_language_resource(
     rsrc_data: &[u8],
     lang_dir_offset: usize,
-    rsrc_base_offset: u64,
+    _rsrc_base_offset: u64,
 ) -> Option<(u64, u32)> {
-
     if lang_dir_offset >= rsrc_data.len() {
         return None;
     }
@@ -189,8 +183,7 @@ fn find_first_language_resource(
             return None;
         }
 
-        let (_, data_entry) =
-            parse_resource_data_entry(&rsrc_data[data_entry_offset..]).ok()?;
+        let (_, data_entry) = parse_resource_data_entry(&rsrc_data[data_entry_offset..]).ok()?;
 
         // Return RVA and size
         Some((data_entry.data_rva as u64, data_entry.size))

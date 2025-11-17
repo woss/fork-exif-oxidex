@@ -55,15 +55,13 @@ pub fn parse_version_info(data: &[u8]) -> Option<(VsFixedFileInfo, HashMap<Strin
     // WORD  Padding2
     // WORD  Children (StringFileInfo and/or VarFileInfo)
 
-
     if data.len() < 6 {
         return None;
     }
 
     let (_input, w_length) = le_u16::<_, nom::error::Error<_>>(data).ok()?;
-    let (input, w_value_length) = le_u16::<_, nom::error::Error<_>>(&data[2..]).ok()?;
+    let (_input, w_value_length) = le_u16::<_, nom::error::Error<_>>(&data[2..]).ok()?;
     let (_input, _w_type) = le_u16::<_, nom::error::Error<_>>(&data[4..]).ok()?;
-
 
     // Skip to after "VS_VERSION_INFO" null-terminated wide string
     // VS_VERSION_INFO = 15 chars + null = 16 * 2 = 32 bytes
@@ -87,22 +85,16 @@ pub fn parse_version_info(data: &[u8]) -> Option<(VsFixedFileInfo, HashMap<Strin
     // Align to 4 bytes
     offset = (offset + 3) & !3;
 
-
     // VERSION_INFO can have multiple children (StringFileInfo, VarFileInfo)
     // We need to search for StringFileInfo specifically
-    let strings = find_string_file_info(&data[offset..], w_length as usize - offset)
-        .unwrap_or_default();
-
+    let strings =
+        find_string_file_info(&data[offset..], w_length as usize - offset).unwrap_or_default();
 
     Some((fixed_info, strings))
 }
 
 /// Find and parse StringFileInfo among VERSION_INFO children
-fn find_string_file_info(
-    data: &[u8],
-    max_length: usize,
-) -> Option<HashMap<String, String>> {
-
+fn find_string_file_info(data: &[u8], max_length: usize) -> Option<HashMap<String, String>> {
     let mut offset = 0;
     while offset + 6 < max_length && offset + 6 < data.len() {
         // Read child structure header
@@ -128,11 +120,7 @@ fn find_string_file_info(
 }
 
 /// Parse StringFileInfo structure
-fn parse_string_file_info(
-    data: &[u8],
-    _max_length: usize,
-) -> Option<HashMap<String, String>> {
-
+fn parse_string_file_info(data: &[u8], _max_length: usize) -> Option<HashMap<String, String>> {
     if data.len() < 6 {
         return None;
     }
@@ -146,7 +134,6 @@ fn parse_string_file_info(
     let (_input, _length) = le_u16::<_, nom::error::Error<_>>(data).ok()?;
     let (_input, value_len) = le_u16::<_, nom::error::Error<_>>(&data[2..]).ok()?;
 
-
     if value_len != 0 {
         return None; // StringFileInfo should have wValueLength = 0
     }
@@ -158,20 +145,17 @@ fn parse_string_file_info(
     let mut offset = 6 + (key.len() + 1) * 2; // +1 for null terminator
     offset = (offset + 3) & !3;
 
-
     // Now we should have StringTable structure
     parse_string_table(&data[offset..])
 }
 
 /// Parse StringTable structure (contains the actual key-value pairs)
 fn parse_string_table(data: &[u8]) -> Option<HashMap<String, String>> {
-
     if data.len() < 6 {
         return None;
     }
 
     let (_, length) = le_u16::<_, nom::error::Error<_>>(data).ok()?;
-
 
     // Read the language ID string to find actual offset
     let lang_id = read_wide_string(&data[6..])?;
@@ -179,7 +163,6 @@ fn parse_string_table(data: &[u8]) -> Option<HashMap<String, String>> {
     // Skip header (6 bytes) + language ID string (including null terminator)
     let mut offset = 6 + (lang_id.len() + 1) * 2; // +1 for null terminator
     offset = (offset + 3) & !3;
-
 
     let end_offset = length as usize;
     let mut strings = HashMap::new();

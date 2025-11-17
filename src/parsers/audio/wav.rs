@@ -186,8 +186,9 @@ fn parse_info_chunk(
         let tag_header = reader.read(offset, 8)?;
 
         let tag_id = &tag_header[0..4];
-        let tag_size = u32::from_le_bytes([tag_header[4], tag_header[5], tag_header[6], tag_header[7]])
-            as usize;
+        let tag_size =
+            u32::from_le_bytes([tag_header[4], tag_header[5], tag_header[6], tag_header[7]])
+                as usize;
 
         offset += 8;
 
@@ -199,7 +200,7 @@ fn parse_info_chunk(
         let tag_value_bytes = reader.read(offset, tag_size)?;
 
         // Decode as Windows-1252 (null-terminated)
-        let (tag_value, _, _) = WINDOWS_1252.decode(&tag_value_bytes);
+        let (tag_value, _, _) = WINDOWS_1252.decode(tag_value_bytes);
         let tag_value = tag_value.trim_end_matches('\0').trim();
 
         if !tag_value.is_empty() {
@@ -215,7 +216,7 @@ fn parse_info_chunk(
                 b"ISBJ" => "RIFF:Subject",
                 _ => {
                     // Use raw tag ID for unknown tags
-                    let id_str = String::from_utf8_lossy(tag_id);
+                    let _id_str = String::from_utf8_lossy(tag_id);
                     offset += tag_size as u64;
                     if tag_size % 2 == 1 {
                         offset += 1;
@@ -224,7 +225,10 @@ fn parse_info_chunk(
                 }
             };
 
-            metadata.insert(tag_name.to_string(), TagValue::new_string(tag_value.to_string()));
+            metadata.insert(
+                tag_name.to_string(),
+                TagValue::new_string(tag_value.to_string()),
+            );
         }
 
         // Move to next tag (align to even byte boundary)
