@@ -1,3 +1,23 @@
+# Multi-Platform Release Workflow Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
+
+**Goal:** Create a unified release.yml workflow that builds, signs, and releases binaries for all platforms (Windows x64, Linux musl x64/aarch64, macOS aarch64 with signed binary and notarized DMG) triggered on git tags.
+
+**Architecture:** Port Mac signing/notarization from mac-sign.yml into a new release.yml workflow. Build cross-platform binaries, sign macOS artifacts, create GitHub release with all artifacts using softprops/action-gh-release@v2.
+
+**Tech Stack:** GitHub Actions, Rust cross-compilation, macOS codesign, Apple notarization, create-dmg
+
+---
+
+## Task 1: Create release.yml workflow skeleton
+
+**Files:**
+- Create: `.github/workflows/release.yml`
+
+**Step 1: Create basic release workflow structure**
+
+```yaml
 name: Release
 
 on:
@@ -10,6 +30,43 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  # Placeholder - will add jobs in next tasks
+  build-linux:
+    name: Build Linux (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+    steps:
+      - run: echo "Placeholder"
+```
+
+**Step 2: Verify syntax**
+
+Run: `cat .github/workflows/release.yml`
+Expected: Valid YAML
+
+**Step 3: Commit**
+
+```bash
+git add .github/workflows/release.yml
+git commit -m "feat: add release.yml workflow skeleton"
+```
+
+---
+
+## Task 2: Add Linux build job to release.yml
+
+**Files:**
+- Modify: `.github/workflows/release.yml`
+
+**Step 1: Implement Linux build matrix job**
+
+Replace the placeholder with:
+
+```yaml
   build-linux:
     name: Build Linux (${{ matrix.target }})
     runs-on: ubuntu-latest
@@ -62,7 +119,25 @@ jobs:
           name: oxidex-${{ matrix.target }}
           path: artifacts/oxidex-${{ matrix.target }}
           retention-days: 1
+```
 
+**Step 2: Commit**
+
+```bash
+git add .github/workflows/release.yml
+git commit -m "feat: add Linux build job to release workflow"
+```
+
+---
+
+## Task 3: Add Windows build job to release.yml
+
+**Files:**
+- Modify: `.github/workflows/release.yml`
+
+**Step 1: Add Windows build job after Linux job**
+
+```yaml
   build-windows:
     name: Build Windows (x86_64)
     runs-on: windows-latest
@@ -89,7 +164,26 @@ jobs:
           name: oxidex-x86_64-pc-windows-msvc
           path: artifacts/oxidex-x86_64-pc-windows-msvc.exe
           retention-days: 1
+```
 
+**Step 2: Commit**
+
+```bash
+git add .github/workflows/release.yml
+git commit -m "feat: add Windows build job to release workflow"
+```
+
+---
+
+## Task 4: Port macOS signing and notarization to release.yml
+
+**Files:**
+- Read: `.github/workflows/mac-sign.yml` (for reference)
+- Modify: `.github/workflows/release.yml`
+
+**Step 1: Add macOS build and sign job**
+
+```yaml
   build-macos:
     name: Build and Sign macOS (aarch64)
     runs-on: warp-macos-15-arm64-6x
@@ -244,7 +338,25 @@ jobs:
         if: always()
         run: |
           security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+```
 
+**Step 2: Commit**
+
+```bash
+git add .github/workflows/release.yml
+git commit -m "feat: add macOS build, sign, and notarize job to release workflow"
+```
+
+---
+
+## Task 5: Add GitHub release creation job
+
+**Files:**
+- Modify: `.github/workflows/release.yml`
+
+**Step 1: Add release job that depends on all build jobs**
+
+```yaml
   create-release:
     name: Create GitHub Release
     needs: [build-linux, build-windows, build-macos]
@@ -266,15 +378,15 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          # Linux x64 (musl static binary)
+          # Linux x64
           cp artifacts/oxidex-x86_64-unknown-linux-musl/oxidex-x86_64-unknown-linux-musl release-assets/
-          # Linux ARM64 (musl static binary)
+          # Linux ARM64
           cp artifacts/oxidex-aarch64-unknown-linux-musl/oxidex-aarch64-unknown-linux-musl release-assets/
           # Windows x64
           cp artifacts/oxidex-x86_64-pc-windows-msvc/oxidex-x86_64-pc-windows-msvc.exe release-assets/
-          # macOS signed binary (ARM64)
+          # macOS signed binary
           cp artifacts/oxidex-aarch64-apple-darwin/oxidex-aarch64-apple-darwin release-assets/
-          # macOS DMG (signed and notarized)
+          # macOS DMG
           cp artifacts/oxidex-dmg/*.dmg release-assets/
 
       - name: Extract version and create release notes
@@ -320,7 +432,7 @@ jobs:
           The macOS artifacts are signed with a Developer ID certificate and the DMG is notarized by Apple for secure installation.
           EOF
 
-          # Replace $VERSION in the file with actual version
+          # Replace $VERSION in the file
           sed -i "s/\$VERSION/$VERSION/g" release-notes.md
 
       - name: Create GitHub Release
@@ -334,3 +446,161 @@ jobs:
             release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Step 2: Commit**
+
+```bash
+git add .github/workflows/release.yml
+git commit -m "feat: add GitHub release creation job with all artifacts"
+```
+
+---
+
+## Task 6: Delete mac-sign.yml workflow
+
+**Files:**
+- Delete: `.github/workflows/mac-sign.yml`
+
+**Step 1: Remove the old mac-sign workflow**
+
+```bash
+git rm .github/workflows/mac-sign.yml
+```
+
+**Step 2: Commit**
+
+```bash
+git commit -m "chore: remove mac-sign.yml (ported to release.yml)"
+```
+
+---
+
+## Task 7: Push changes and create v1.1.1 tag
+
+**Files:**
+- N/A (git operations)
+
+**Step 1: Push all commits**
+
+```bash
+git push origin main
+```
+
+Expected: All commits pushed successfully
+
+**Step 2: Create and push v1.1.1 tag**
+
+```bash
+git tag -a v1.1.1 -m "Release v1.1.1
+
+- Multi-platform release workflow
+- Signed and notarized macOS binaries
+- Automated GitHub release creation"
+
+git push origin v1.1.1
+```
+
+Expected: Tag created and pushed, release workflow triggered
+
+**Step 3: Monitor workflow**
+
+```bash
+gh run watch
+```
+
+Expected: release.yml workflow runs and completes successfully
+
+---
+
+## Task 8: Verify release artifacts
+
+**Files:**
+- N/A (verification)
+
+**Step 1: Check GitHub release page**
+
+```bash
+gh release view v1.1.1
+```
+
+Expected output should show:
+- Release v1.1.1
+- 5 assets:
+  - oxidex-x86_64-unknown-linux-musl
+  - oxidex-aarch64-unknown-linux-musl
+  - oxidex-x86_64-pc-windows-msvc.exe
+  - oxidex-aarch64-apple-darwin
+  - oxidex-v1.1.1.dmg
+
+**Step 2: Download and verify each artifact exists**
+
+```bash
+gh release download v1.1.1 -D /tmp/release-test
+ls -lh /tmp/release-test
+```
+
+Expected: All 5 files downloaded
+
+**Step 3: Verify macOS binary is signed (if on macOS)**
+
+```bash
+codesign --verify --verbose /tmp/release-test/oxidex-aarch64-apple-darwin
+codesign --display --verbose=4 /tmp/release-test/oxidex-aarch64-apple-darwin
+```
+
+Expected: Signature valid, shows Developer ID
+
+**Step 4: Verify DMG is notarized (if on macOS)**
+
+```bash
+spctl --assess --verbose=4 --type install /tmp/release-test/oxidex-v1.1.1.dmg
+```
+
+Expected: "accepted" with source=Notarized Developer ID
+
+---
+
+## Debugging Steps (if workflow fails)
+
+**Use superpowers:systematic-debugging skill:**
+
+1. Check workflow logs:
+   ```bash
+   gh run view --log-failed
+   ```
+
+2. Common issues:
+   - **Cross-compilation fails:** Ensure musl-tools and gcc-aarch64-linux-gnu installed
+   - **macOS signing fails:** Verify secrets are set correctly
+   - **Notarization fails:** Check Apple ID app-specific password
+   - **Artifact upload fails:** Verify artifact paths match
+   - **Release creation fails:** Ensure GITHUB_TOKEN has write permissions
+
+3. If any step fails, use systematic-debugging to:
+   - Identify root cause
+   - Test hypothesis
+   - Implement fix
+   - Verify
+
+---
+
+## Success Criteria
+
+✅ release.yml workflow exists and is properly configured
+✅ All platform builds complete successfully
+✅ macOS binary is signed with Developer ID certificate
+✅ macOS DMG is notarized and stapled
+✅ GitHub release v1.1.1 is created
+✅ All 5 artifacts are uploaded to the release
+✅ mac-sign.yml is deleted
+✅ Verification confirms signatures and notarization
+
+---
+
+## Post-Implementation
+
+After successful implementation:
+1. Document the release process in README.md
+2. Add badge for latest release
+3. Update CONTRIBUTING.md with release instructions
