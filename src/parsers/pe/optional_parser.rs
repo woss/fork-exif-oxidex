@@ -86,8 +86,21 @@ pub fn parse_optional_header_nt(
     let (input, loader_flags) = le_u32(input)?;
     let (input, number_of_rva_and_sizes) = le_u32(input)?;
 
+    // Parse data directories
+    let mut data_directories = Vec::new();
+    let mut remaining = input;
+    for _ in 0..number_of_rva_and_sizes {
+        if remaining.len() < 8 {
+            break;
+        }
+        let (rest, rva) = le_u32(remaining)?;
+        let (rest, size) = le_u32(rest)?;
+        data_directories.push((rva, size));
+        remaining = rest;
+    }
+
     Ok((
-        input,
+        remaining,
         OptionalHeaderNT {
             image_base,
             section_alignment,
@@ -110,6 +123,7 @@ pub fn parse_optional_header_nt(
             size_of_heap_commit,
             loader_flags,
             number_of_rva_and_sizes,
+            data_directories,
         },
     ))
 }

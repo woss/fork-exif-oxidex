@@ -16,6 +16,9 @@ mod pdf_tests;
 #[path = "integration/pdf_write_tests.rs"]
 mod pdf_write_tests;
 
+#[path = "integration/pe_comparison.rs"]
+mod pe_comparison;
+
 #[path = "integration/png_tests.rs"]
 mod png_tests;
 

@@ -1,8 +1,11 @@
 //! Metadata extraction from PE headers
 
+use std::collections::HashMap;
+
 use crate::core::{MetadataMap, TagValue};
 use crate::parsers::pe::structures::{
-    machine_types, subsystem_types, CoffHeader, DosHeader, OptionalHeaderNT, OptionalHeaderStandard,
+    machine_types, subsystem_types, CodeViewNB10, CodeViewRSDS, CoffHeader, DosHeader,
+    OptionalHeaderNT, OptionalHeaderStandard, VsFixedFileInfo,
 };
 
 /// Extract metadata from DOS header
@@ -237,6 +240,111 @@ pub fn extract_optional_metadata(
     }
 }
 
+/// Extract metadata from VERSION_INFO resource
+pub fn extract_version_info_metadata(
+    fixed_info: &VsFixedFileInfo,
+    strings: &HashMap<String, String>,
+    metadata: &mut MetadataMap,
+) {
+    // Fixed file info
+    metadata.insert(
+        "PE:FileVersionNumber".to_string(),
+        TagValue::String(fixed_info.file_version()),
+    );
+    metadata.insert(
+        "PE:ProductVersionNumber".to_string(),
+        TagValue::String(fixed_info.product_version()),
+    );
+    metadata.insert(
+        "PE:FileFlagsMask".to_string(),
+        TagValue::String(format!("{:#06x}", fixed_info.file_flags_mask)),
+    );
+
+    let flags = fixed_info.file_flags_string();
+    if !flags.is_empty() {
+        metadata.insert(
+            "PE:FileFlags".to_string(),
+            TagValue::String(flags.join(", ")),
+        );
+    } else {
+        metadata.insert(
+            "PE:FileFlags".to_string(),
+            TagValue::String("(none)".to_string()),
+        );
+    }
+
+    metadata.insert(
+        "PE:FileOS".to_string(),
+        TagValue::String(fixed_info.file_os_string().to_string()),
+    );
+    metadata.insert(
+        "PE:ObjectFileType".to_string(),
+        TagValue::String(fixed_info.file_type_string().to_string()),
+    );
+    metadata.insert(
+        "PE:FileSubtype".to_string(),
+        TagValue::Integer(fixed_info.file_subtype as i64),
+    );
+
+    // String file info
+    for (key, value) in strings {
+        let tag_name = format!("PE:{}", key);
+        metadata.insert(tag_name, TagValue::String(value.clone()));
+    }
+}
+
+/// Extract metadata from CodeView RSDS debug info
+pub fn extract_rsds_metadata(rsds: &CodeViewRSDS, metadata: &mut MetadataMap) {
+    metadata.insert(
+        "PE:PDBFileName".to_string(),
+        TagValue::String(rsds.pdb_file_name.clone()),
+    );
+    metadata.insert(
+        "PE:PDBAge".to_string(),
+        TagValue::Integer(rsds.age as i64),
+    );
+
+    // Format GUID as string
+    let guid_str = format!(
+        "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
+        rsds.guid[3], rsds.guid[2], rsds.guid[1], rsds.guid[0],
+        rsds.guid[5], rsds.guid[4],
+        rsds.guid[7], rsds.guid[6],
+        rsds.guid[8], rsds.guid[9],
+        rsds.guid[10], rsds.guid[11], rsds.guid[12], rsds.guid[13], rsds.guid[14], rsds.guid[15]
+    );
+    metadata.insert(
+        "PE:PDBGUID".to_string(),
+        TagValue::String(guid_str),
+    );
+}
+
+/// Extract metadata from CodeView NB10 debug info
+pub fn extract_nb10_metadata(nb10: &CodeViewNB10, metadata: &mut MetadataMap) {
+    metadata.insert(
+        "PE:PDBFileName".to_string(),
+        TagValue::String(nb10.pdb_file_name.clone()),
+    );
+    metadata.insert(
+        "PE:PDBAge".to_string(),
+        TagValue::Integer(nb10.age as i64),
+    );
+
+    // Convert timestamp to date
+    use chrono::{TimeZone, Utc};
+    if let Some(dt) = Utc.timestamp_opt(nb10.timestamp as i64, 0).single() {
+        metadata.insert(
+            "PE:PDBCreateDate".to_string(),
+            TagValue::String(dt.format("%Y:%m:%d %H:%M:%S").to_string()),
+        );
+    }
+
+    metadata.insert(
+        "PE:PDBModifyDate".to_string(),
+        TagValue::String("(same as create)".to_string()),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -294,5 +402,69 @@ mod tests {
         assert_eq!(metadata.get_integer("PE:NumberOfSections").unwrap(), 5);
         assert!(metadata.contains_key("PE:CompileTime"));
         assert_eq!(metadata.get_string("PE:FileType").unwrap(), "Executable");
+    }
+
+    #[test]
+    fn test_extract_rsds_metadata() {
+        // Create a test RSDS structure
+        let rsds = CodeViewRSDS {
+            signature: *b"RSDS",
+            guid: [
+                0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
+                0x0E, 0x0F, 0x10,
+            ],
+            age: 1,
+            pdb_file_name: "test.pdb".to_string(),
+        };
+
+        let mut metadata = MetadataMap::new();
+        extract_rsds_metadata(&rsds, &mut metadata);
+
+        // Verify PDB file name
+        assert_eq!(metadata.get_string("PE:PDBFileName").unwrap(), "test.pdb");
+
+        // Verify age
+        assert_eq!(metadata.get_integer("PE:PDBAge").unwrap(), 1);
+
+        // Verify GUID format (note: byte order conversion in GUID formatting)
+        assert!(metadata.contains_key("PE:PDBGUID"));
+        let guid = metadata.get_string("PE:PDBGUID").unwrap();
+        assert_eq!(guid.len(), 36); // GUID is 32 hex chars + 4 hyphens
+        assert!(guid.contains('-'));
+    }
+
+    #[test]
+    fn test_extract_nb10_metadata() {
+        // Create a test NB10 structure
+        let nb10 = CodeViewNB10 {
+            signature: *b"NB10",
+            offset: 0,
+            timestamp: 1609459200, // 2021-01-01 00:00:00 UTC
+            age: 1,
+            pdb_file_name: "legacy.pdb".to_string(),
+        };
+
+        let mut metadata = MetadataMap::new();
+        extract_nb10_metadata(&nb10, &mut metadata);
+
+        // Verify PDB file name
+        assert_eq!(
+            metadata.get_string("PE:PDBFileName").unwrap(),
+            "legacy.pdb"
+        );
+
+        // Verify age
+        assert_eq!(metadata.get_integer("PE:PDBAge").unwrap(), 1);
+
+        // Verify create date was set
+        assert!(metadata.contains_key("PE:PDBCreateDate"));
+        let create_date = metadata.get_string("PE:PDBCreateDate").unwrap();
+        assert!(create_date.starts_with("2021:01:01"));
+
+        // Verify modify date placeholder
+        assert_eq!(
+            metadata.get_string("PE:PDBModifyDate").unwrap(),
+            "(same as create)"
+        );
     }
 }

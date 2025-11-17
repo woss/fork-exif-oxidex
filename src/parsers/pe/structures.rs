@@ -133,6 +133,8 @@ pub struct OptionalHeaderNT {
     pub loader_flags: u32,
     /// Data directory count
     pub number_of_rva_and_sizes: u32,
+    /// Data directories (RVA, Size pairs)
+    pub data_directories: Vec<(u32, u32)>,
 }
 
 /// Machine type constants
@@ -185,4 +187,229 @@ pub mod subsystem_types {
     pub const IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER: u16 = 12;
     /// Xbox
     pub const IMAGE_SUBSYSTEM_XBOX: u16 = 14;
+}
+
+/// PE Section Header (40 bytes)
+#[derive(Debug, Clone)]
+pub struct SectionHeader {
+    pub name: [u8; 8],
+    pub virtual_size: u32,
+    pub virtual_address: u32,
+    pub size_of_raw_data: u32,
+    pub pointer_to_raw_data: u32,
+    pub pointer_to_relocations: u32,
+    pub pointer_to_line_numbers: u32,
+    pub number_of_relocations: u16,
+    pub number_of_line_numbers: u16,
+    pub characteristics: u32,
+}
+
+impl SectionHeader {
+    pub fn name_str(&self) -> String {
+        String::from_utf8_lossy(&self.name)
+            .trim_end_matches('\0')
+            .to_string()
+    }
+}
+
+/// Resource Directory (16 bytes)
+#[derive(Debug, Clone)]
+pub struct ResourceDirectory {
+    pub characteristics: u32,
+    pub time_date_stamp: u32,
+    pub major_version: u16,
+    pub minor_version: u16,
+    pub number_of_name_entries: u16,
+    pub number_of_id_entries: u16,
+}
+
+/// Resource Directory Entry (8 bytes)
+#[derive(Debug, Clone)]
+pub struct ResourceDirectoryEntry {
+    pub name_id: u32,  // High bit indicates if name or ID
+    pub data_offset: u32,  // High bit indicates if subdirectory or data
+}
+
+/// Resource Data Entry (16 bytes)
+#[derive(Debug, Clone)]
+pub struct ResourceDataEntry {
+    pub data_rva: u32,
+    pub size: u32,
+    pub codepage: u32,
+    pub reserved: u32,
+}
+
+// Resource type constants
+pub mod resource_types {
+    pub const RT_CURSOR: u32 = 1;
+    pub const RT_BITMAP: u32 = 2;
+    pub const RT_ICON: u32 = 3;
+    pub const RT_MENU: u32 = 4;
+    pub const RT_DIALOG: u32 = 5;
+    pub const RT_STRING: u32 = 6;
+    pub const RT_FONTDIR: u32 = 7;
+    pub const RT_FONT: u32 = 8;
+    pub const RT_ACCELERATOR: u32 = 9;
+    pub const RT_RCDATA: u32 = 10;
+    pub const RT_MESSAGETABLE: u32 = 11;
+    pub const RT_GROUP_CURSOR: u32 = 12;
+    pub const RT_GROUP_ICON: u32 = 14;
+    pub const RT_VERSION: u32 = 16;  // VERSION_INFO
+    pub const RT_DLGINCLUDE: u32 = 17;
+    pub const RT_PLUGPLAY: u32 = 19;
+    pub const RT_VXD: u32 = 20;
+    pub const RT_ANICURSOR: u32 = 21;
+    pub const RT_ANIICON: u32 = 22;
+    pub const RT_HTML: u32 = 23;
+    pub const RT_MANIFEST: u32 = 24;
+}
+
+/// VS_FIXEDFILEINFO structure (52 bytes)
+#[derive(Debug, Clone)]
+pub struct VsFixedFileInfo {
+    pub signature: u32,          // 0xFEEF04BD
+    pub struct_version: u32,     // 0x00010000
+    pub file_version_ms: u32,    // High 32 bits of file version
+    pub file_version_ls: u32,    // Low 32 bits of file version
+    pub product_version_ms: u32, // High 32 bits of product version
+    pub product_version_ls: u32, // Low 32 bits of product version
+    pub file_flags_mask: u32,
+    pub file_flags: u32,
+    pub file_os: u32,
+    pub file_type: u32,
+    pub file_subtype: u32,
+    pub file_date_ms: u32,
+    pub file_date_ls: u32,
+}
+
+impl VsFixedFileInfo {
+    pub fn file_version(&self) -> String {
+        format!(
+            "{}.{}.{}.{}",
+            (self.file_version_ms >> 16) & 0xFFFF,
+            self.file_version_ms & 0xFFFF,
+            (self.file_version_ls >> 16) & 0xFFFF,
+            self.file_version_ls & 0xFFFF
+        )
+    }
+
+    pub fn product_version(&self) -> String {
+        format!(
+            "{}.{}.{}.{}",
+            (self.product_version_ms >> 16) & 0xFFFF,
+            self.product_version_ms & 0xFFFF,
+            (self.product_version_ls >> 16) & 0xFFFF,
+            self.product_version_ls & 0xFFFF
+        )
+    }
+
+    pub fn file_flags_string(&self) -> Vec<&'static str> {
+        let mut flags = Vec::new();
+        let masked_flags = self.file_flags & self.file_flags_mask;
+
+        if (masked_flags & 0x0001) != 0 {
+            flags.push("Debug");
+        }
+        if (masked_flags & 0x0002) != 0 {
+            flags.push("Pre-release");
+        }
+        if (masked_flags & 0x0004) != 0 {
+            flags.push("Patched");
+        }
+        if (masked_flags & 0x0008) != 0 {
+            flags.push("Private build");
+        }
+        if (masked_flags & 0x0010) != 0 {
+            flags.push("Info inferred");
+        }
+        if (masked_flags & 0x0020) != 0 {
+            flags.push("Special build");
+        }
+
+        flags
+    }
+
+    pub fn file_os_string(&self) -> &'static str {
+        match self.file_os {
+            0x00010000 => "DOS",
+            0x00020000 => "OS/2 16-bit",
+            0x00030000 => "OS/2 32-bit",
+            0x00040000 => "Windows NT",
+            0x00050000 => "Windows CE",
+            0x00000001 => "Windows 16-bit",
+            0x00000004 => "Windows 32-bit",
+            0x00010001 => "DOS-Windows 16-bit",
+            0x00010004 => "DOS-Windows 32-bit",
+            0x00020001 => "OS/2 16-bit, PM-16",
+            0x00030001 => "OS/2 32-bit, PM-32",
+            0x00040004 => "Windows NT 32-bit",
+            _ => "Unknown",
+        }
+    }
+
+    pub fn file_type_string(&self) -> &'static str {
+        match self.file_type {
+            0x0 => "Unknown",
+            0x1 => "Application",
+            0x2 => "DLL",
+            0x3 => "Driver",
+            0x4 => "Font",
+            0x5 => "VXD",
+            0x7 => "Static library",
+            _ => "Unknown",
+        }
+    }
+}
+
+/// Debug Directory Entry
+#[derive(Debug, Clone)]
+pub struct DebugDirectoryEntry {
+    pub characteristics: u32,
+    pub time_date_stamp: u32,
+    pub major_version: u16,
+    pub minor_version: u16,
+    pub debug_type: u32,
+    pub size_of_data: u32,
+    pub address_of_raw_data: u32,
+    pub pointer_to_raw_data: u32,
+}
+
+/// Debug type constants
+pub mod debug_types {
+    pub const IMAGE_DEBUG_TYPE_UNKNOWN: u32 = 0;
+    pub const IMAGE_DEBUG_TYPE_COFF: u32 = 1;
+    pub const IMAGE_DEBUG_TYPE_CODEVIEW: u32 = 2;
+    pub const IMAGE_DEBUG_TYPE_FPO: u32 = 3;
+    pub const IMAGE_DEBUG_TYPE_MISC: u32 = 4;
+    pub const IMAGE_DEBUG_TYPE_EXCEPTION: u32 = 5;
+    pub const IMAGE_DEBUG_TYPE_FIXUP: u32 = 6;
+    pub const IMAGE_DEBUG_TYPE_OMAP_TO_SRC: u32 = 7;
+    pub const IMAGE_DEBUG_TYPE_OMAP_FROM_SRC: u32 = 8;
+    pub const IMAGE_DEBUG_TYPE_BORLAND: u32 = 9;
+    pub const IMAGE_DEBUG_TYPE_RESERVED10: u32 = 10;
+    pub const IMAGE_DEBUG_TYPE_CLSID: u32 = 11;
+    pub const IMAGE_DEBUG_TYPE_VC_FEATURE: u32 = 12;
+    pub const IMAGE_DEBUG_TYPE_POGO: u32 = 13;
+    pub const IMAGE_DEBUG_TYPE_ILTCG: u32 = 14;
+    pub const IMAGE_DEBUG_TYPE_MPX: u32 = 15;
+    pub const IMAGE_DEBUG_TYPE_REPRO: u32 = 16;
+}
+
+/// CodeView RSDS debug info
+#[derive(Debug, Clone)]
+pub struct CodeViewRSDS {
+    pub signature: [u8; 4], // "RSDS"
+    pub guid: [u8; 16],
+    pub age: u32,
+    pub pdb_file_name: String,
+}
+
+/// CodeView NB10 debug info
+#[derive(Debug, Clone)]
+pub struct CodeViewNB10 {
+    pub signature: [u8; 4], // "NB10"
+    pub offset: u32,
+    pub timestamp: u32,
+    pub age: u32,
+    pub pdb_file_name: String,
 }
