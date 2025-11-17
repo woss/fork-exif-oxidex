@@ -81,7 +81,7 @@ impl FormatParser for GIFParser {
 }
 
 /// Parses metadata from GIF files.
-pub fn parse_gif_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
+pub fn parse_gif_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
     let parser = GIFParser;
-    parser.parse(reader)
+    parser.parse(reader).map_err(|e| e.to_string())
 }

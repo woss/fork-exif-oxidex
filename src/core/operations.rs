@@ -272,7 +272,8 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("FITS parse error: {}", e))),
         FileFormat::HDF5 => parse_hdf5_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("HDF5 parse error: {}", e))),
-        FileFormat::GIF => parse_gif_metadata(&reader),
+        FileFormat::GIF => parse_gif_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("GIF parse error: {}", e))),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format
