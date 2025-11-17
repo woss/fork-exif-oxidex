@@ -97,12 +97,12 @@ use std::io;
 /// # }
 /// ```
 pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
-    // Attempt to read 64 bytes for magic byte detection (increased from 16 to support raw and PE formats)
+    // Attempt to read 600 bytes for magic byte detection (increased to support MTS which needs 3 packets)
     // If the file is smaller, read only what's available
-    let magic_bytes = match reader.read(0, 64) {
+    let magic_bytes = match reader.read(0, 600) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
-            // File is smaller than 64 bytes, try reading available bytes
+            // File is smaller than 600 bytes, try reading available bytes
             let size = reader.size() as usize;
             if size == 0 {
                 // Empty file - cannot determine format
@@ -218,13 +218,59 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::MP3);
     }
 
-    // MKV/Matroska: EBML signature 0x1A 0x45 0xDF 0xA3
+    // FLV: "FLV" signature
+    if magic_bytes.len() >= 3 && &magic_bytes[0..3] == b"FLV" {
+        return Ok(FileFormat::FLV);
+    }
+
+    // MTS/M2TS: MPEG-TS sync byte pattern (0x47 repeating every 188 or 192 bytes)
+    // Check for standard TS (188 bytes)
+    if magic_bytes.len() >= 564  // 3 packets
+        && magic_bytes[0] == 0x47
+        && magic_bytes[188] == 0x47
+        && magic_bytes[376] == 0x47
+    {
+        return Ok(FileFormat::MTS);
+    }
+    // Check for M2TS (192 bytes with 4-byte timestamp)
+    if magic_bytes.len() >= 576  // 3 packets
+        && magic_bytes[4] == 0x47
+        && magic_bytes[196] == 0x47
+        && magic_bytes[388] == 0x47
+    {
+        return Ok(FileFormat::MTS);
+    }
+
+    // AAC: ADTS sync word (0xFFF in first 12 bits)
+    // 0xFF 0xF1 or 0xFF 0xF9 are common ADTS patterns
+    if magic_bytes.len() >= 2
+        && magic_bytes[0] == 0xFF
+        && (magic_bytes[1] == 0xF1 || magic_bytes[1] == 0xF9)
+    {
+        return Ok(FileFormat::AAC);
+    }
+
+    // APE: "MAC " signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"MAC " {
+        return Ok(FileFormat::APE);
+    }
+
+    // MKV/Matroska/WebM: EBML signature 0x1A 0x45 0xDF 0xA3
+    // Note: Both MKV and WebM use EBML, need to parse DocType to distinguish
+    // For now, detect as MKV (can be refined later with DocType parsing)
     if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"\x1A\x45\xDF\xA3" {
+        // TODO: Parse EBML header to check DocType ("matroska" vs "webm")
         return Ok(FileFormat::MKV);
     }
 
-    // OGG: "OggS" signature
+    // OGG: "OggS" signature (used by Vorbis and Opus)
+    // Need to peek into first page to distinguish Opus from Vorbis
     if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"OggS" {
+        // Check for Opus signature ("OpusHead" at typical offset)
+        if magic_bytes.len() >= 36 && &magic_bytes[28..36] == b"OpusHead" {
+            return Ok(FileFormat::OPUS);
+        }
+        // Default to OGG Vorbis
         return Ok(FileFormat::OGG);
     }
 
