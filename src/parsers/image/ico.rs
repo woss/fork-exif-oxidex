@@ -41,3 +41,11 @@ impl FormatParser for ICOParser {
         matches!(format, FileFormat::ICO)
     }
 }
+
+/// Parses metadata from ICO files.
+///
+/// This is a convenience wrapper around ICOParser that provides a functional API.
+pub fn parse_ico_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = ICOParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

@@ -57,3 +57,11 @@ impl FormatParser for PSDParser {
         matches!(format, FileFormat::PSD)
     }
 }
+
+/// Parses metadata from PSD files.
+///
+/// This is a convenience wrapper around PSDParser that provides a functional API.
+pub fn parse_psd_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = PSDParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

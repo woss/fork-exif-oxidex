@@ -43,3 +43,11 @@ impl FormatParser for AVIFParser {
         matches!(format, FileFormat::AVIF)
     }
 }
+
+/// Parses metadata from AVIF files.
+///
+/// This is a convenience wrapper around AVIFParser that provides a functional API.
+pub fn parse_avif_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = AVIFParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

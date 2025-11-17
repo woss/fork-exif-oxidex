@@ -211,6 +211,13 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::PNG);
     }
 
+    // GIF: "GIF87a" or "GIF89a"
+    if magic_bytes.len() >= 6 {
+        if &magic_bytes[0..6] == b"GIF87a" || &magic_bytes[0..6] == b"GIF89a" {
+            return Ok(FileFormat::GIF);
+        }
+    }
+
     // FLAC: "fLaC" signature
     if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"fLaC" {
         return Ok(FileFormat::FLAC);

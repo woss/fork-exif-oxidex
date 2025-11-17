@@ -41,3 +41,11 @@ impl FormatParser for EXRParser {
         matches!(format, FileFormat::EXR)
     }
 }
+
+/// Parses metadata from OpenEXR files.
+///
+/// This is a convenience wrapper around EXRParser that provides a functional API.
+pub fn parse_exr_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = EXRParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

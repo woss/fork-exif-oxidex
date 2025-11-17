@@ -51,3 +51,11 @@ impl FormatParser for JXLParser {
         matches!(format, FileFormat::JXL)
     }
 }
+
+/// Parses metadata from JPEG XL files.
+///
+/// This is a convenience wrapper around JXLParser that provides a functional API.
+pub fn parse_jxl_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+    let parser = JXLParser;
+    parser.parse(reader).map_err(|e| e.to_string())
+}

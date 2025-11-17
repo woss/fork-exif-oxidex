@@ -42,6 +42,17 @@ use crate::parsers::document::ooxml::parse_docx_metadata;
 use crate::parsers::document::ooxml::parse_xlsx_metadata;
 use crate::parsers::document::ooxml::parse_pptx_metadata;
 use crate::parsers::document::epub::parse_epub_metadata;
+// Advanced image parsers
+use crate::parsers::image::avif::parse_avif_metadata;
+use crate::parsers::image::jxl::parse_jxl_metadata;
+use crate::parsers::image::bpg::parse_bpg_metadata;
+use crate::parsers::image::exr::parse_exr_metadata;
+use crate::parsers::image::flif::parse_flif_metadata;
+use crate::parsers::image::svg::parse_svg_metadata;
+use crate::parsers::image::ico::parse_ico_metadata;
+use crate::parsers::image::psd::parse_psd_metadata;
+// Image parsers
+use crate::parsers::image::gif::parse_gif_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -215,6 +226,24 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
             .map_err(|e| ExifToolError::parse_error(format!("WOFF parse error: {}", e))),
         FileFormat::WOFF2 => parse_woff2_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("WOFF2 parse error: {}", e))),
+        // Advanced image formats
+        FileFormat::AVIF => parse_avif_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("AVIF parse error: {}", e))),
+        FileFormat::JXL => parse_jxl_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("JXL parse error: {}", e))),
+        FileFormat::BPG => parse_bpg_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("BPG parse error: {}", e))),
+        FileFormat::EXR => parse_exr_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("EXR parse error: {}", e))),
+        FileFormat::FLIF => parse_flif_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("FLIF parse error: {}", e))),
+        FileFormat::SVG => parse_svg_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("SVG parse error: {}", e))),
+        FileFormat::ICO => parse_ico_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("ICO parse error: {}", e))),
+        FileFormat::PSD => parse_psd_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("PSD parse error: {}", e))),
+        FileFormat::GIF => parse_gif_metadata(&reader),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format
