@@ -116,19 +116,19 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 
 | Scenario | Perl ExifTool | ExifTool-RS | Speedup |
 |----------|---------------|-------------|---------|
-| Single JPEG Read | 104.2ms ± 1.0ms | 14.1ms ± 0.5ms | **7.4x faster** |
-| Batch Processing (1000 files) | 3074.5ms ± 9.6ms | 382.6ms ± 15.4ms | **8.0x faster** |
-| Write Operation (modify EXIF tag) | 286.8ms ± 3.2ms | 16.7ms ± 0.5ms | **17.1x faster** |
-| Format Detection | 105.0ms ± 1.9ms | 14.1ms ± 0.4ms | **7.5x faster** |
+| Single JPEG Read | 104.4ms ± 1.2ms | 14.1ms ± 0.3ms | **7.4x faster** |
+| Batch Processing (1000 files) | 3109.2ms ± 41.2ms | 403.7ms ± 34.7ms | **7.7x faster** |
+| Write Operation (modify EXIF tag) | 292.7ms ± 10.6ms | 17.0ms ± 0.7ms | **17.2x faster** |
+| Format Detection | 105.3ms ± 1.8ms | 14.2ms ± 0.6ms | **7.4x faster** |
 
 *Benchmarks performed using [hyperfine](https://github.com/sharkdp/hyperfine) with multiple runs and warmup periods.*
 
 ### Key Performance Improvements
 
 - **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 7.4x faster metadata extraction
-- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 382.6ms ± 15.4ms vs. 3074.5ms ± 9.6ms for single-threaded Perl
-- **Write operations**: Efficient binary manipulation and atomic file operations provide 17.1x faster EXIF tag modifications
-- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (7.5x faster)
+- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 403.7ms ± 34.7ms vs. 3109.2ms ± 41.2ms for single-threaded Perl
+- **Write operations**: Efficient binary manipulation and atomic file operations provide 17.2x faster EXIF tag modifications
+- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (7.4x faster)
 
 ### Reproducing These Benchmarks
 
