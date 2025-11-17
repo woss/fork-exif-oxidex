@@ -64,6 +64,7 @@ use crate::parsers::specialized::stl::parse_stl_metadata;
 // Image parsers
 use crate::parsers::image::bmp::parse_bmp_metadata;
 use crate::parsers::image::gif::parse_gif_metadata;
+use crate::parsers::image::heif::parse_heif_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -240,6 +241,8 @@ pub fn read_metadata(path: &Path) -> Result<MetadataMap> {
         // Advanced image formats
         FileFormat::AVIF => parse_avif_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("AVIF parse error: {}", e))),
+        FileFormat::HEIF => parse_heif_metadata(&reader)
+            .map_err(|e| ExifToolError::parse_error(format!("HEIF parse error: {}", e))),
         FileFormat::JXL => parse_jxl_metadata(&reader)
             .map_err(|e| ExifToolError::parse_error(format!("JXL parse error: {}", e))),
         FileFormat::BPG => parse_bpg_metadata(&reader)
