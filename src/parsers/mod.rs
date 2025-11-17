@@ -5,8 +5,10 @@
 
 #![allow(dead_code)]
 
+pub mod archive;
 pub mod audio;
 pub mod common;
+pub mod document;
 pub mod format_detector;
 pub mod icc_parser;
 pub mod jpeg;

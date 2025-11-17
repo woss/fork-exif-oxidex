@@ -131,6 +131,26 @@ impl BufferedReader {
 
         Ok(Self { buffer })
     }
+
+    /// Creates a `BufferedReader` from a byte slice.
+    ///
+    /// This is useful for testing parsers with in-memory data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use oxidex::io::BufferedReader;
+    /// use oxidex::core::FileReader;
+    ///
+    /// let data = b"PK\x03\x04test data";
+    /// let reader = BufferedReader::from_bytes(data);
+    /// assert_eq!(reader.size(), data.len() as u64);
+    /// ```
+    pub fn from_bytes(data: &[u8]) -> Self {
+        Self {
+            buffer: data.to_vec(),
+        }
+    }
 }
 
 impl FileReader for BufferedReader {

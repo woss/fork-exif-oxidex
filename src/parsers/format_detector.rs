@@ -323,6 +323,62 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         }
     }
 
+    // ZIP-based formats: Check for "PK" signature (0x50 0x4B)
+    // This includes ZIP, DOCX, XLSX, PPTX, Pages, Numbers, Keynote, EPUB
+    if magic_bytes.len() >= 2 && magic_bytes.starts_with(&[0x50, 0x4B]) {
+        // Need to read more to distinguish ZIP-based formats
+        // Try to detect Office Open XML formats by checking for specific files
+        let size = reader.size() as usize;
+        if let Ok(all_data) = reader.read(0, size) {
+            use std::io::Cursor;
+            use zip::ZipArchive;
+
+            if let Ok(mut archive) = ZipArchive::new(Cursor::new(all_data)) {
+                // Check for EPUB (mimetype file)
+                if archive.by_name("mimetype").is_ok() {
+                    return Ok(FileFormat::EPUB);
+                }
+
+                // Check for DOCX
+                if archive.by_name("word/document.xml").is_ok() {
+                    return Ok(FileFormat::DOCX);
+                }
+
+                // Check for XLSX
+                if archive.by_name("xl/workbook.xml").is_ok() {
+                    return Ok(FileFormat::XLSX);
+                }
+
+                // Check for PPTX
+                if archive.by_name("ppt/presentation.xml").is_ok() {
+                    return Ok(FileFormat::PPTX);
+                }
+
+                // Check for Pages
+                if archive.by_name("Index/Document.iwa").is_ok() {
+                    return Ok(FileFormat::Pages);
+                }
+
+                // Check for Numbers
+                if archive.by_name("Index/Document.iwa").is_ok()
+                    && archive.by_name("Index/Tables/").is_ok() {
+                    return Ok(FileFormat::Numbers);
+                }
+
+                // Check for Keynote
+                if archive.by_name("Index/Presentation.iwa").is_ok() {
+                    return Ok(FileFormat::Keynote);
+                }
+
+                // Generic ZIP archive
+                return Ok(FileFormat::ZIP);
+            }
+        }
+
+        // If we can't read it as a ZIP, still recognize it as ZIP
+        return Ok(FileFormat::ZIP);
+    }
+
     // JPEG: 0xFF 0xD8 0xFF (SOI marker + start of next marker)
     // Note: JPEG signature is 3 bytes, checked after 4-byte signatures
     if magic_bytes.len() >= 3 && magic_bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {

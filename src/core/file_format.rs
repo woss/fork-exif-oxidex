@@ -120,6 +120,31 @@ pub enum FileFormat {
     /// APE (Monkey's Audio) format (.ape)
     APE,
 
+    // Phase 2: Document formats
+    /// ZIP archive format (.zip)
+    ZIP,
+
+    /// DOCX document format (.docx)
+    DOCX,
+
+    /// XLSX spreadsheet format (.xlsx)
+    XLSX,
+
+    /// PPTX presentation format (.pptx)
+    PPTX,
+
+    /// Apple Pages document (.pages)
+    Pages,
+
+    /// Apple Numbers spreadsheet (.numbers)
+    Numbers,
+
+    /// Apple Keynote presentation (.key)
+    Keynote,
+
+    /// EPUB e-book format (.epub)
+    EPUB,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -162,6 +187,14 @@ impl FileFormat {
             FileFormat::OGG => "OGG",
             FileFormat::OPUS => "Opus",
             FileFormat::APE => "APE",
+            FileFormat::ZIP => "ZIP",
+            FileFormat::DOCX => "DOCX",
+            FileFormat::XLSX => "XLSX",
+            FileFormat::PPTX => "PPTX",
+            FileFormat::Pages => "Pages",
+            FileFormat::Numbers => "Numbers",
+            FileFormat::Keynote => "Keynote",
+            FileFormat::EPUB => "EPUB",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -206,6 +239,14 @@ impl FileFormat {
             FileFormat::OGG => &["ogg"],
             FileFormat::OPUS => &["opus"],
             FileFormat::APE => &["ape"],
+            FileFormat::ZIP => &["zip"],
+            FileFormat::DOCX => &["docx"],
+            FileFormat::XLSX => &["xlsx"],
+            FileFormat::PPTX => &["pptx"],
+            FileFormat::Pages => &["pages"],
+            FileFormat::Numbers => &["numbers"],
+            FileFormat::Keynote => &["key"],
+            FileFormat::EPUB => &["epub"],
             FileFormat::Unknown => &[],
         }
     }
