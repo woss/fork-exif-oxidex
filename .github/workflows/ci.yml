@@ -82,6 +82,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
+
       - name: Install dependencies
         run: |
           sudo apt-get update -qq
@@ -108,6 +111,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y wget build-essential pkg-config libssl-dev
+          rustup component add clippy
       - name: Run Clippy
         run: cargo clippy --all-features -- -D warnings
 
