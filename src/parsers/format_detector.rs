@@ -218,6 +218,27 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::MP3);
     }
 
+    // MKV/Matroska: EBML signature 0x1A 0x45 0xDF 0xA3
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"\x1A\x45\xDF\xA3" {
+        return Ok(FileFormat::MKV);
+    }
+
+    // OGG: "OggS" signature
+    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"OggS" {
+        return Ok(FileFormat::OGG);
+    }
+
+    // RIFF-based formats (WAV, AVI)
+    // RIFF header: "RIFF" + 4 bytes size + format type
+    if magic_bytes.len() >= 12 && &magic_bytes[0..4] == b"RIFF" {
+        let format_type = &magic_bytes[8..12];
+        if format_type == b"WAVE" {
+            return Ok(FileFormat::WAV);
+        } else if format_type == b"AVI " {
+            return Ok(FileFormat::AVI);
+        }
+    }
+
     // PDF: 0x25 0x50 0x44 0x46 ("%PDF")
     if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x25, 0x50, 0x44, 0x46]) {
         return Ok(FileFormat::PDF);
