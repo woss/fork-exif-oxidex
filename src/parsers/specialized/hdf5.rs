@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const HDF5_SIGNATURE: &[u8] = &[0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A];
 
+/// Parser for HDF5 (Hierarchical Data Format version 5) files
+///
+/// Extracts metadata from HDF5 scientific data container files.
 pub struct HDF5Parser;
 
 impl HDF5Parser {
+    /// Verifies the HDF5 file signature (PNG-like header with "HDF")
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 8 {
             return Ok(false);

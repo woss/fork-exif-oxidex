@@ -108,7 +108,10 @@ impl FormatParser for OggParser {
                 let page_body = reader.read(page_body_offset, page_body_size as usize)?;
 
                 // Vorbis packets start with packet type (1 byte) + "vorbis" (6 bytes)
-                if page_body.len() >= 7 && &page_body[1..7] == b"vorbis" && page_body[0] == VORBIS_COMMENT_HEADER {
+                if page_body.len() >= 7
+                    && &page_body[1..7] == b"vorbis"
+                    && page_body[0] == VORBIS_COMMENT_HEADER
+                {
                     // Parse Vorbis comments
                     parse_vorbis_comments(&page_body[7..], &mut metadata)?;
                     break; // Found comments, we're done

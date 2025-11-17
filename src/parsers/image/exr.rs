@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const EXR_SIGNATURE: &[u8] = &[0x76, 0x2F, 0x31, 0x01];
 
+/// Parser for OpenEXR high dynamic range image files
+///
+/// Extracts metadata from OpenEXR format images including dimensions and channel information.
 pub struct EXRParser;
 
 impl EXRParser {
+    /// Verifies the OpenEXR file signature (0x76 0x2F 0x31 0x01)
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 4 {
             return Ok(false);

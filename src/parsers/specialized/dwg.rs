@@ -5,9 +5,13 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
+/// Parser for AutoCAD DWG (Drawing) files
+///
+/// Extracts metadata from DWG files including version information and file properties.
 pub struct DWGParser;
 
 impl DWGParser {
+    /// Verifies the DWG file signature by checking for "AC" prefix followed by version number
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 6 {
             return Ok(false);
@@ -17,6 +21,7 @@ impl DWGParser {
         Ok(&header[0..2] == b"AC" && header[2] >= b'1' && header[3] >= b'0')
     }
 
+    /// Reads the AutoCAD version string from the file header
     pub fn read_version(reader: &dyn FileReader) -> Result<String> {
         if reader.size() < 6 {
             return Ok("Unknown".to_string());

@@ -7,6 +7,10 @@ use zip::ZipArchive;
 
 const ZIP_SIGNATURE: &[u8] = b"PK";
 
+/// Parser for ZIP archive files
+///
+/// Extracts metadata from ZIP archives including file count, compression methods,
+/// and archive comment if present.
 pub struct ZipParser;
 
 impl FormatParser for ZipParser {

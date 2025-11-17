@@ -192,19 +192,30 @@ pub mod subsystem_types {
 /// PE Section Header (40 bytes)
 #[derive(Debug, Clone)]
 pub struct SectionHeader {
+    /// 8-byte section name (null-padded ASCII string)
     pub name: [u8; 8],
+    /// Virtual size of the section when loaded
     pub virtual_size: u32,
+    /// Virtual address (RVA) where section should be loaded
     pub virtual_address: u32,
+    /// Size of initialized data on disk
     pub size_of_raw_data: u32,
+    /// File offset to section's raw data
     pub pointer_to_raw_data: u32,
+    /// File offset to relocation entries
     pub pointer_to_relocations: u32,
+    /// File offset to line number entries
     pub pointer_to_line_numbers: u32,
+    /// Number of relocation entries
     pub number_of_relocations: u16,
+    /// Number of line number entries
     pub number_of_line_numbers: u16,
+    /// Section characteristics flags
     pub characteristics: u32,
 }
 
 impl SectionHeader {
+    /// Returns the section name as a UTF-8 string, trimming null bytes
     pub fn name_str(&self) -> String {
         String::from_utf8_lossy(&self.name)
             .trim_end_matches('\0')
@@ -215,74 +226,121 @@ impl SectionHeader {
 /// Resource Directory (16 bytes)
 #[derive(Debug, Clone)]
 pub struct ResourceDirectory {
+    /// Resource directory characteristics (usually 0)
     pub characteristics: u32,
+    /// Time/date stamp of resource creation
     pub time_date_stamp: u32,
+    /// Major version number
     pub major_version: u16,
+    /// Minor version number
     pub minor_version: u16,
+    /// Number of named resource entries
     pub number_of_name_entries: u16,
+    /// Number of ID-based resource entries
     pub number_of_id_entries: u16,
 }
 
 /// Resource Directory Entry (8 bytes)
 #[derive(Debug, Clone)]
 pub struct ResourceDirectoryEntry {
-    pub name_id: u32,     // High bit indicates if name or ID
-    pub data_offset: u32, // High bit indicates if subdirectory or data
+    /// Resource name or ID (high bit indicates if name or ID)
+    pub name_id: u32,
+    /// Offset to resource data or subdirectory (high bit indicates which)
+    pub data_offset: u32,
 }
 
 /// Resource Data Entry (16 bytes)
 #[derive(Debug, Clone)]
 pub struct ResourceDataEntry {
+    /// RVA of resource data
     pub data_rva: u32,
+    /// Size of resource data in bytes
     pub size: u32,
+    /// Code page for resource data
     pub codepage: u32,
+    /// Reserved field (must be 0)
     pub reserved: u32,
 }
 
-// Resource type constants
+/// Resource type constants for Windows PE files
 pub mod resource_types {
+    /// Cursor resource
     pub const RT_CURSOR: u32 = 1;
+    /// Bitmap resource
     pub const RT_BITMAP: u32 = 2;
+    /// Icon resource
     pub const RT_ICON: u32 = 3;
+    /// Menu resource
     pub const RT_MENU: u32 = 4;
+    /// Dialog box resource
     pub const RT_DIALOG: u32 = 5;
+    /// String table resource
     pub const RT_STRING: u32 = 6;
+    /// Font directory resource
     pub const RT_FONTDIR: u32 = 7;
+    /// Font resource
     pub const RT_FONT: u32 = 8;
+    /// Keyboard accelerator resource
     pub const RT_ACCELERATOR: u32 = 9;
+    /// Raw data resource
     pub const RT_RCDATA: u32 = 10;
+    /// Message table resource
     pub const RT_MESSAGETABLE: u32 = 11;
+    /// Cursor group resource
     pub const RT_GROUP_CURSOR: u32 = 12;
+    /// Icon group resource
     pub const RT_GROUP_ICON: u32 = 14;
-    pub const RT_VERSION: u32 = 16; // VERSION_INFO
+    /// Version information resource
+    pub const RT_VERSION: u32 = 16;
+    /// Dialog include resource
     pub const RT_DLGINCLUDE: u32 = 17;
+    /// Plug and Play resource
     pub const RT_PLUGPLAY: u32 = 19;
+    /// VXD driver resource
     pub const RT_VXD: u32 = 20;
+    /// Animated cursor resource
     pub const RT_ANICURSOR: u32 = 21;
+    /// Animated icon resource
     pub const RT_ANIICON: u32 = 22;
+    /// HTML resource
     pub const RT_HTML: u32 = 23;
+    /// Side-by-side assembly manifest resource
     pub const RT_MANIFEST: u32 = 24;
 }
 
 /// VS_FIXEDFILEINFO structure (52 bytes)
 #[derive(Debug, Clone)]
 pub struct VsFixedFileInfo {
-    pub signature: u32,          // 0xFEEF04BD
-    pub struct_version: u32,     // 0x00010000
-    pub file_version_ms: u32,    // High 32 bits of file version
-    pub file_version_ls: u32,    // Low 32 bits of file version
-    pub product_version_ms: u32, // High 32 bits of product version
-    pub product_version_ls: u32, // Low 32 bits of product version
+    /// Structure signature (0xFEEF04BD)
+    pub signature: u32,
+    /// Structure version (typically 0x00010000)
+    pub struct_version: u32,
+    /// High 32 bits of file version number
+    pub file_version_ms: u32,
+    /// Low 32 bits of file version number
+    pub file_version_ls: u32,
+    /// High 32 bits of product version number
+    pub product_version_ms: u32,
+    /// Low 32 bits of product version number
+    pub product_version_ls: u32,
+    /// Bitmask for valid file flags
     pub file_flags_mask: u32,
+    /// File attribute flags
     pub file_flags: u32,
+    /// Operating system for which file was designed
     pub file_os: u32,
+    /// File type (application, DLL, driver, etc.)
     pub file_type: u32,
+    /// File subtype (varies by file type)
     pub file_subtype: u32,
+    /// High 32 bits of file creation date
     pub file_date_ms: u32,
+    /// Low 32 bits of file creation date
     pub file_date_ls: u32,
 }
 
 impl VsFixedFileInfo {
+    /// Returns the file version as a formatted string (e.g., "1.2.3.4")
     pub fn file_version(&self) -> String {
         format!(
             "{}.{}.{}.{}",
@@ -293,6 +351,7 @@ impl VsFixedFileInfo {
         )
     }
 
+    /// Returns the product version as a formatted string (e.g., "1.2.3.4")
     pub fn product_version(&self) -> String {
         format!(
             "{}.{}.{}.{}",
@@ -303,6 +362,7 @@ impl VsFixedFileInfo {
         )
     }
 
+    /// Returns a list of file flag descriptions based on the file_flags field
     pub fn file_flags_string(&self) -> Vec<&'static str> {
         let mut flags = Vec::new();
         let masked_flags = self.file_flags & self.file_flags_mask;
@@ -329,6 +389,7 @@ impl VsFixedFileInfo {
         flags
     }
 
+    /// Returns a human-readable description of the target operating system
     pub fn file_os_string(&self) -> &'static str {
         match self.file_os {
             0x00010000 => "DOS",
@@ -347,6 +408,7 @@ impl VsFixedFileInfo {
         }
     }
 
+    /// Returns a human-readable description of the file type
     pub fn file_type_string(&self) -> &'static str {
         match self.file_type {
             0x0 => "Unknown",
@@ -364,52 +426,86 @@ impl VsFixedFileInfo {
 /// Debug Directory Entry
 #[derive(Debug, Clone)]
 pub struct DebugDirectoryEntry {
+    /// Reserved, must be zero
     pub characteristics: u32,
+    /// Time/date stamp indicating when debug data was created
     pub time_date_stamp: u32,
+    /// Major version number of debug data format
     pub major_version: u16,
+    /// Minor version number of debug data format
     pub minor_version: u16,
+    /// Type of debug information
     pub debug_type: u32,
+    /// Size of debug data in bytes
     pub size_of_data: u32,
+    /// RVA of debug data when loaded
     pub address_of_raw_data: u32,
+    /// File offset to debug data
     pub pointer_to_raw_data: u32,
 }
 
 /// Debug type constants
 pub mod debug_types {
+    /// Unknown debug information type
     pub const IMAGE_DEBUG_TYPE_UNKNOWN: u32 = 0;
+    /// COFF debug information
     pub const IMAGE_DEBUG_TYPE_COFF: u32 = 1;
+    /// CodeView debug information
     pub const IMAGE_DEBUG_TYPE_CODEVIEW: u32 = 2;
+    /// Frame pointer omission (FPO) debug information
     pub const IMAGE_DEBUG_TYPE_FPO: u32 = 3;
+    /// Miscellaneous debug information
     pub const IMAGE_DEBUG_TYPE_MISC: u32 = 4;
+    /// Exception information
     pub const IMAGE_DEBUG_TYPE_EXCEPTION: u32 = 5;
+    /// Fixup information
     pub const IMAGE_DEBUG_TYPE_FIXUP: u32 = 6;
+    /// OMAP to source mapping information
     pub const IMAGE_DEBUG_TYPE_OMAP_TO_SRC: u32 = 7;
+    /// OMAP from source mapping information
     pub const IMAGE_DEBUG_TYPE_OMAP_FROM_SRC: u32 = 8;
+    /// Borland debug information
     pub const IMAGE_DEBUG_TYPE_BORLAND: u32 = 9;
+    /// Reserved debug type
     pub const IMAGE_DEBUG_TYPE_RESERVED10: u32 = 10;
+    /// CLSID debug information
     pub const IMAGE_DEBUG_TYPE_CLSID: u32 = 11;
+    /// Visual C++ feature information
     pub const IMAGE_DEBUG_TYPE_VC_FEATURE: u32 = 12;
+    /// Profile-guided optimization (POGO) debug information
     pub const IMAGE_DEBUG_TYPE_POGO: u32 = 13;
+    /// Incremental link-time code generation debug information
     pub const IMAGE_DEBUG_TYPE_ILTCG: u32 = 14;
+    /// MPX debug information
     pub const IMAGE_DEBUG_TYPE_MPX: u32 = 15;
+    /// Reproducible build debug information
     pub const IMAGE_DEBUG_TYPE_REPRO: u32 = 16;
 }
 
 /// CodeView RSDS debug info
 #[derive(Debug, Clone)]
 pub struct CodeViewRSDS {
-    pub signature: [u8; 4], // "RSDS"
+    /// Signature bytes ("RSDS")
+    pub signature: [u8; 4],
+    /// GUID identifying the PDB file
     pub guid: [u8; 16],
+    /// Age/iteration of the PDB file
     pub age: u32,
+    /// Path to the PDB file
     pub pdb_file_name: String,
 }
 
 /// CodeView NB10 debug info
 #[derive(Debug, Clone)]
 pub struct CodeViewNB10 {
-    pub signature: [u8; 4], // "NB10"
+    /// Signature bytes ("NB10")
+    pub signature: [u8; 4],
+    /// File offset to debug information
     pub offset: u32,
+    /// Timestamp when PDB file was created
     pub timestamp: u32,
+    /// Age/iteration of the PDB file
     pub age: u32,
+    /// Path to the PDB file
     pub pdb_file_name: String,
 }

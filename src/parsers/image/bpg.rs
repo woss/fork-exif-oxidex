@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const BPG_SIGNATURE: &[u8] = &[0x42, 0x50, 0x47, 0xFB];
 
+/// Parser for BPG (Better Portable Graphics) image files
+///
+/// Extracts basic metadata from BPG format images including dimensions and color information.
 pub struct BPGParser;
 
 impl BPGParser {
+    /// Verifies the BPG file signature (0x42 0x50 0x47 0xFB)
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 4 {
             return Ok(false);

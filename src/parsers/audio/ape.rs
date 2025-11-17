@@ -183,8 +183,7 @@ fn parse_mac_header(header: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 /// Find APEv2 footer in data
 fn find_apev2_footer(data: &[u8]) -> Option<usize> {
     // Search for "APETAGEX" signature
-    data.windows(8)
-        .position(|window| window == APEV2_SIGNATURE)
+    data.windows(8).position(|window| window == APEV2_SIGNATURE)
 }
 
 /// Parse APEv2 footer to get tag size (32 bytes)

@@ -118,7 +118,7 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
             // Step 8: Find VERSION_INFO resource (type 16)
             if let Some((version_rva, version_size)) = find_resource_data(
-                &rsrc_data,
+                rsrc_data,
                 rsrc_file_offset,
                 resource_types::RT_VERSION,
                 None,

@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const ELF_SIGNATURE: &[u8] = &[0x7F, 0x45, 0x4C, 0x46]; // "\x7FELF"
 
+/// Parser for ELF (Executable and Linkable Format) files
+///
+/// Extracts metadata from Unix/Linux executable and object files including architecture and endianness.
 pub struct ELFParser;
 
 impl ELFParser {
+    /// Verifies the ELF file signature (0x7F "ELF")
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 4 {
             return Ok(false);
@@ -18,6 +22,7 @@ impl ELFParser {
         Ok(header == ELF_SIGNATURE)
     }
 
+    /// Reads the ELF class (32-bit or 64-bit) from the file header
     pub fn read_class(reader: &dyn FileReader) -> Result<&'static str> {
         if reader.size() < 5 {
             return Ok("Unknown");

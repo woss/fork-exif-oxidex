@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const FLIF_SIGNATURE: &[u8] = b"FLIF";
 
+/// Parser for FLIF (Free Lossless Image Format) files
+///
+/// Extracts metadata from FLIF format images including dimensions and animation information.
 pub struct FLIFParser;
 
 impl FLIFParser {
+    /// Verifies the FLIF file signature ("FLIF")
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 4 {
             return Ok(false);

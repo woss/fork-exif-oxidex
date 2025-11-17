@@ -5,9 +5,13 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
+/// Parser for AutoCAD DXF (Drawing Exchange Format) files
+///
+/// Extracts metadata from DXF text-based drawing interchange files.
 pub struct DXFParser;
 
 impl DXFParser {
+    /// Verifies the DXF file signature by checking for the characteristic "0\nSECTION" header
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 20 {
             return Ok(false);

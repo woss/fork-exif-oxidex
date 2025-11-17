@@ -119,7 +119,7 @@ fn parse_avi_chunks(
                 // Parse LIST chunk
                 if chunk_size >= 4 {
                     let list_type = reader.read(offset, 4)?;
-                    match &list_type[..] {
+                    match list_type as &[u8] {
                         b"hdrl" => {
                             // Header list - parse AVI header
                             parse_hdrl_list(reader, offset + 4, offset + chunk_size, metadata)?;

@@ -5,9 +5,13 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
+/// Parser for Wavefront OBJ 3D model files
+///
+/// Extracts metadata from OBJ text-based 3D geometry description files.
 pub struct OBJParser;
 
 impl OBJParser {
+    /// Verifies the OBJ file by checking for vertex/normal/texture coordinate definitions
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 10 {
             return Ok(false);

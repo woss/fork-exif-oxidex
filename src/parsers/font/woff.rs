@@ -31,7 +31,7 @@ impl WOFFParser {
         }
 
         let flavor = reader.read(4, 4)?;
-        if flavor == &[0x00, 0x01, 0x00, 0x00] {
+        if flavor == [0x00, 0x01, 0x00, 0x00] {
             Ok("TrueType".to_string())
         } else if flavor == b"OTTO" {
             Ok("CFF".to_string())

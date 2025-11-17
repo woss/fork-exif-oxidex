@@ -69,7 +69,7 @@ fn parse_iwork(
 
     // Add basic metadata
     metadata.insert(
-        format!("iWork:Application"),
+        "iWork:Application".to_string(),
         TagValue::new_string(app_name.to_string()),
     );
 

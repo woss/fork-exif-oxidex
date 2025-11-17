@@ -5,9 +5,13 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
+/// Parser for SVG (Scalable Vector Graphics) files
+///
+/// Extracts metadata from SVG XML-based vector graphics files including dimensions and title.
 pub struct SVGParser;
 
 impl SVGParser {
+    /// Verifies the SVG file by checking for the presence of "<svg" tag in the header
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 100 {
             return Ok(false);

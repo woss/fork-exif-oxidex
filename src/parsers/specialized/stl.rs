@@ -5,9 +5,13 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
+/// Parser for STL (Stereolithography) 3D model files
+///
+/// Extracts metadata from STL files used in 3D printing and CAD applications.
 pub struct STLParser;
 
 impl STLParser {
+    /// Verifies the STL file signature (supports both ASCII and binary formats)
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 6 {
             return Ok(false);
@@ -17,6 +21,7 @@ impl STLParser {
         Ok(&header[0..5] == b"solid" || reader.size() >= 84)
     }
 
+    /// Detects whether the STL file is in ASCII or binary format
     pub fn detect_format(reader: &dyn FileReader) -> Result<&'static str> {
         if reader.size() < 6 {
             return Ok("Unknown");

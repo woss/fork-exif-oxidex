@@ -7,6 +7,10 @@ use quick_xml::Reader;
 use std::io::{Cursor, Read};
 use zip::ZipArchive;
 
+/// Parser for EPUB (Electronic Publication) e-book files
+///
+/// Extracts metadata from EPUB files including title, creator, publisher,
+/// language, and other Dublin Core metadata elements from the OPF package file.
 pub struct EpubParser;
 
 impl FormatParser for EpubParser {
@@ -75,12 +79,10 @@ fn extract_opf_path(xml: &str) -> Result<String> {
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Empty(e)) if e.local_name().as_ref() == b"rootfile" => {
-                for attr in e.attributes() {
-                    if let Ok(attr) = attr {
-                        if attr.key.local_name().as_ref() == b"full-path" {
-                            let path = String::from_utf8_lossy(&attr.value).to_string();
-                            return Ok(path);
-                        }
+                for attr in e.attributes().flatten() {
+                    if attr.key.local_name().as_ref() == b"full-path" {
+                        let path = String::from_utf8_lossy(&attr.value).to_string();
+                        return Ok(path);
                     }
                 }
             }

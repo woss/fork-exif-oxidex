@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const PSD_SIGNATURE: &[u8] = b"8BPS";
 
+/// Parser for Adobe Photoshop (PSD) document files
+///
+/// Extracts metadata from PSD files including dimensions, color mode, and layer information.
 pub struct PSDParser;
 
 impl PSDParser {
+    /// Verifies the PSD file signature ("8BPS")
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 4 {
             return Ok(false);
@@ -18,6 +22,7 @@ impl PSDParser {
         Ok(header == PSD_SIGNATURE)
     }
 
+    /// Reads the PSD file version number (typically 1 for PSD, 2 for PSB)
     pub fn read_version(reader: &dyn FileReader) -> Result<u16> {
         if reader.size() < 6 {
             return Ok(0);

@@ -8,9 +8,13 @@ use crate::error::{ExifToolError, Result};
 const JXL_SIGNATURE_1: &[u8] = &[0xFF, 0x0A];
 const JXL_SIGNATURE_2: &[u8] = &[0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20];
 
+/// Parser for JPEG XL (JXL) next-generation image files
+///
+/// Extracts metadata from JPEG XL format images including dimensions and encoding information.
 pub struct JXLParser;
 
 impl JXLParser {
+    /// Verifies the JPEG XL file signature (supports both bare codestream and container formats)
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 2 {
             return Ok(false);

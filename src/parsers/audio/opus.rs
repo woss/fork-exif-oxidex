@@ -114,7 +114,10 @@ impl FormatParser for OpusParser {
                     found_opus_head = true;
                 }
                 // Check for OpusTags
-                else if page_body.len() >= 8 && &page_body[0..8] == OPUS_TAGS && page_body_size <= 1_000_000 {
+                else if page_body.len() >= 8
+                    && &page_body[0..8] == OPUS_TAGS
+                    && page_body_size <= 1_000_000
+                {
                     // Safety limit
                     let full_tags =
                         reader.read(page_body_offset + 8, (page_body_size - 8) as usize)?;

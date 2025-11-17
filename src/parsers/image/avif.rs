@@ -14,6 +14,8 @@ const FTYP_SIGNATURE: &[u8] = b"ftyp";
 pub struct AVIFParser;
 
 impl AVIFParser {
+    /// Verifies the AVIF file signature by checking for the ISO BMFF structure
+    /// with "ftyp" box and "avif" brand identifier
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 12 {
             return Ok(false);

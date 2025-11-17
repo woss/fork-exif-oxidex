@@ -5,9 +5,13 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
+/// Parser for glTF (GL Transmission Format) 3D model files
+///
+/// Extracts metadata from glTF JSON-based 3D scene description files.
 pub struct GLTFParser;
 
 impl GLTFParser {
+    /// Verifies the glTF file by checking for JSON structure with "asset" field
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 20 {
             return Ok(false);

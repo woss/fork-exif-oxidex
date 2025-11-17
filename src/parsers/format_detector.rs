@@ -394,7 +394,7 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     }
 
     // 7z: 0x37 0x7A 0xBC 0xAF 0x27 0x1C signature
-    if magic_bytes.len() >= 6 && &magic_bytes[0..6] == &[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C] {
+    if magic_bytes.len() >= 6 && magic_bytes[0..6] == [0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C] {
         return Ok(FileFormat::SevenZ);
     }
 
@@ -453,7 +453,7 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     }
 
     // ICO: 0x00 0x00 0x01 0x00
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x00, 0x00, 0x01, 0x00] {
+    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x00, 0x00, 0x01, 0x00] {
         return Ok(FileFormat::ICO);
     }
 
@@ -472,21 +472,21 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     }
 
     // EXR: 0x76 0x2F 0x31 0x01
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x76, 0x2F, 0x31, 0x01] {
+    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x76, 0x2F, 0x31, 0x01] {
         return Ok(FileFormat::EXR);
     }
 
     // BPG: 0x42 0x50 0x47 0xFB
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x42, 0x50, 0x47, 0xFB] {
+    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x42, 0x50, 0x47, 0xFB] {
         return Ok(FileFormat::BPG);
     }
 
     // JXL: 0xFF 0x0A or 0x00 0x00 0x00 0x0C 0x4A 0x58 0x4C 0x20
-    if magic_bytes.len() >= 2 && &magic_bytes[0..2] == &[0xFF, 0x0A] {
+    if magic_bytes.len() >= 2 && magic_bytes[0..2] == [0xFF, 0x0A] {
         return Ok(FileFormat::JXL);
     }
     if magic_bytes.len() >= 12
-        && &magic_bytes[0..8] == &[0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20]
+        && magic_bytes[0..8] == [0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20]
     {
         return Ok(FileFormat::JXL);
     }
@@ -499,17 +499,17 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // Phase 6: Specialized formats
 
     // ELF: 0x7F 0x45 0x4C 0x46 ("\x7FELF")
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == &[0x7F, 0x45, 0x4C, 0x46] {
+    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x7F, 0x45, 0x4C, 0x46] {
         return Ok(FileFormat::ELF);
     }
 
     // Mach-O: 0xFE 0xED 0xFA 0xCE or reversed variants
     if magic_bytes.len() >= 4 {
         let sig = &magic_bytes[0..4];
-        if sig == &[0xFE, 0xED, 0xFA, 0xCE]
-            || sig == &[0xFE, 0xED, 0xFA, 0xCF]
-            || sig == &[0xCE, 0xFA, 0xED, 0xFE]
-            || sig == &[0xCF, 0xFA, 0xED, 0xFE]
+        if sig == [0xFE, 0xED, 0xFA, 0xCE]
+            || sig == [0xFE, 0xED, 0xFA, 0xCF]
+            || sig == [0xCE, 0xFA, 0xED, 0xFE]
+            || sig == [0xCF, 0xFA, 0xED, 0xFE]
         {
             return Ok(FileFormat::MachO);
         }
@@ -517,7 +517,7 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
 
     // HDF5: 0x89 0x48 0x44 0x46 (PNG-like signature)
     if magic_bytes.len() >= 8
-        && &magic_bytes[0..8] == &[0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A]
+        && magic_bytes[0..8] == [0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A]
     {
         return Ok(FileFormat::HDF5);
     }

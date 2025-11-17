@@ -10,9 +10,13 @@ const MACHO_MAGIC_64: &[u8] = &[0xFE, 0xED, 0xFA, 0xCF];
 const MACHO_MAGIC_32_REV: &[u8] = &[0xCE, 0xFA, 0xED, 0xFE];
 const MACHO_MAGIC_64_REV: &[u8] = &[0xCF, 0xFA, 0xED, 0xFE];
 
+/// Parser for Mach-O (Mach Object) executable files
+///
+/// Extracts metadata from macOS/iOS executable files including architecture and load commands.
 pub struct MachOParser;
 
 impl MachOParser {
+    /// Verifies the Mach-O file signature (supports both 32-bit and 64-bit, big and little endian)
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 4 {
             return Ok(false);
@@ -24,6 +28,7 @@ impl MachOParser {
             || header == MACHO_MAGIC_64_REV)
     }
 
+    /// Reads the architecture type (32-bit or 64-bit) from the Mach-O header
     pub fn read_arch(reader: &dyn FileReader) -> Result<&'static str> {
         if reader.size() < 4 {
             return Ok("Unknown");

@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const FITS_SIGNATURE: &[u8] = b"SIMPLE";
 
+/// Parser for FITS (Flexible Image Transport System) files
+///
+/// Extracts metadata from FITS astronomical data files used for scientific imaging.
 pub struct FITSParser;
 
 impl FITSParser {
+    /// Verifies the FITS file signature ("SIMPLE")
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 6 {
             return Ok(false);

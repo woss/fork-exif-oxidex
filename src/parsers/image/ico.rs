@@ -7,9 +7,13 @@ use crate::error::{ExifToolError, Result};
 
 const ICO_SIGNATURE: &[u8] = &[0x00, 0x00, 0x01, 0x00];
 
+/// Parser for Windows ICO (Icon) image files
+///
+/// Extracts metadata from ICO files including image count and icon dimensions.
 pub struct ICOParser;
 
 impl ICOParser {
+    /// Verifies the ICO file signature (0x00 0x00 0x01 0x00)
     pub fn verify_signature(reader: &dyn FileReader) -> Result<bool> {
         if reader.size() < 4 {
             return Ok(false);
