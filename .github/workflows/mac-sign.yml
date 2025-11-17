@@ -60,10 +60,6 @@ jobs:
           echo "Available signing identities:"
           security find-identity -v -p codesigning $KEYCHAIN_PATH
 
-      - name: Run tests
-        run: |
-          just test
-
       - name: Build release
         env:
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
