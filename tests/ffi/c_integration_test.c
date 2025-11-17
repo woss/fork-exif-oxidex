@@ -5,7 +5,7 @@
  * It tests basic handle lifecycle, error handling, and metadata operations.
  */
 
-#include "../../include/exiftool_rs.h"
+#include "../../include/oxidex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

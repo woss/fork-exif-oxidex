@@ -57,7 +57,7 @@ fn test_parse_sample_pdf_metadata() {
 
     assert_eq!(
         metadata.get_string("PDF:Author"),
-        Some("ExifTool-RS Test Suite"),
+        Some("OxiDex Test Suite"),
         "PDF:Author not found or incorrect"
     );
 
@@ -81,7 +81,7 @@ fn test_parse_sample_pdf_metadata() {
 
     assert_eq!(
         metadata.get_string("PDF:Creator"),
-        Some("ExifTool-RS PDF Parser Test Generator"),
+        Some("OxiDex PDF Parser Test Generator"),
         "PDF:Creator not found or incorrect"
     );
 

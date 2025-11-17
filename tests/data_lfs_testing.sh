@@ -2,7 +2,7 @@
 # Comprehensive test script for data.lfs directory
 
 DATA_DIR="/Users/allen/Documents/git/examples/data.lfs"
-EXIFTOOL_RS="./target/release/exiftool-rs"
+EXIFTOOL_RS="./target/release/oxidex"
 ERROR_LOG="tests/data_lfs_errors.log"
 SUCCESS_LOG="tests/data_lfs_success.log"
 

@@ -254,7 +254,7 @@ fn test_write_metadata_validates_multiple_tags() {
     let mut metadata = read_metadata(temp_path).expect("Failed to read metadata");
 
     // Add multiple tags of different types
-    metadata.insert("IFD0:Software", TagValue::new_string("ExifTool-RS"));
+    metadata.insert("IFD0:Software", TagValue::new_string("OxiDex"));
     metadata.insert("IFD0:Copyright", TagValue::new_string("Copyright 2024"));
 
     // Write should succeed (validation passes for all tags)
@@ -264,7 +264,7 @@ fn test_write_metadata_validates_multiple_tags() {
     let updated_metadata = read_metadata(temp_path).expect("Failed to read metadata");
     assert_eq!(
         updated_metadata.get_string("IFD0:Software"),
-        Some("ExifTool-RS")
+        Some("OxiDex")
     );
     assert_eq!(
         updated_metadata.get_string("IFD0:Copyright"),

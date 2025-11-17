@@ -190,7 +190,7 @@ Performance testing was conducted on a macOS system (Darwin 25.1.0) processing t
 - **Test Method**: Recursive directory processing (`-r` flag)
 - **Measurement**: Wall-clock time (user experience)
 
-### exiftool-rs Performance
+### oxidex Performance
 ```
 Files Processed: 1,907 image files read
 Failures: 89 files could not be read
@@ -210,15 +210,15 @@ CPU: 14.66s user, 1.09s system
 ### Performance Analysis
 
 **Speed Comparison**:
-- exiftool-rs is **8.21x faster** than Perl ExifTool (2.087s vs 17.145s)
-- exiftool-rs processes **914 files/second** vs Perl ExifTool's **116 files/second**
+- oxidex is **8.21x faster** than Perl ExifTool (2.087s vs 17.145s)
+- oxidex processes **914 files/second** vs Perl ExifTool's **116 files/second**
 - Speedup ratio: **788% faster** for bulk operations
 
 **Key Observations**:
-1. **Parallelism**: exiftool-rs shows significantly higher system time (8.129s vs 1.09s), indicating effective use of parallel processing for I/O operations
+1. **Parallelism**: oxidex shows significantly higher system time (8.129s vs 1.09s), indicating effective use of parallel processing for I/O operations
 2. **User Time**: Lower user CPU time (4.208s vs 14.66s) demonstrates more efficient code execution
-3. **File Count Difference**: exiftool-rs processed 1,907 files vs Perl ExifTool's 1,990 files, reflecting the current 81.02% success rate
-4. **Throughput**: The ~8x speedup makes exiftool-rs particularly effective for batch operations on large photo libraries
+3. **File Count Difference**: oxidex processed 1,907 files vs Perl ExifTool's 1,990 files, reflecting the current 81.02% success rate
+4. **Throughput**: The ~8x speedup makes oxidex particularly effective for batch operations on large photo libraries
 
 **Performance Notes**:
 - The recursive flag (`-r`) triggers batch processing mode with optimized parallel I/O
@@ -228,7 +228,7 @@ CPU: 14.66s user, 1.09s system
 
 ### Performance Conclusion
 
-exiftool-rs demonstrates excellent performance characteristics for bulk metadata extraction:
+oxidex demonstrates excellent performance characteristics for bulk metadata extraction:
 - Competitive processing speed (914 files/second)
 - Significant speedup over reference implementation (8.21x faster)
 - Efficient resource utilization through parallel processing
@@ -249,6 +249,6 @@ With the exclusion of git metadata files and implementation of Canon CRW support
 ---
 
 **Report Generated**: 2025-11-16
-**Test Corpus**: exiftool-rs data.lfs (4,026 files)
+**Test Corpus**: oxidex data.lfs (4,026 files)
 **Parsers Added**: Panasonic RW2, Fujifilm RAF, Olympus ORF
 **Performance**: 914 files/sec (8.21x faster than Perl ExifTool)

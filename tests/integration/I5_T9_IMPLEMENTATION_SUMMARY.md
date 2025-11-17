@@ -144,7 +144,7 @@ Updated from 95% to **98%** in all test assertions (I5.T9 requirement)
 
 Added badge for integration test workflow:
 ```markdown
-[![Integration Tests](https://github.com/exiftool-rs/exiftool-rs/workflows/Integration%20Tests%20(ExifTool%20Comparison)/badge.svg)](https://github.com/exiftool-rs/exiftool-rs/actions)
+[![Integration Tests](https://github.com/swack-tools/oxidex/workflows/Integration%20Tests%20(ExifTool%20Comparison)/badge.svg)](https://github.com/swack-tools/oxidex/actions)
 ```
 
 **CI Workflow Reporting**:

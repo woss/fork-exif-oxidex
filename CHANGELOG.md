@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Library renamed: `exiftool_rs` → `oxidex`
   - All crates renamed: `exiftool-tags*` → `oxidex-tags*`
   - Install with: `cargo install oxidex`
-  - GitHub repository URL unchanged: `exiftool-rs/exiftool-rs`
+  - GitHub repository: `swack-tools/oxidex`
 
 ---
 
@@ -192,9 +192,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performance
 
-ExifTool-RS delivers exceptional performance improvements over Perl ExifTool (version 13.36) on Apple M4 hardware:
+OxiDex delivers exceptional performance improvements over Perl ExifTool (version 13.36) on Apple M4 hardware:
 
-| Operation | Perl ExifTool | ExifTool-RS | Speedup |
+| Operation | Perl ExifTool | OxiDex | Speedup |
 |-----------|---------------|-------------|---------|
 | Single JPEG read | 37.5ms ± 0.5ms | 2.3ms ± 0.1ms | **16.1x faster** |
 | Batch processing (1000 files) | 916.4ms ± 8.0ms | 14.1ms ± 0.3ms | **64.9x faster** |
@@ -253,7 +253,7 @@ These features are planned for future releases (v1.1+):
 
 ### v1.0.0: Initial Stable Release
 
-ExifTool-RS achieves its foundational milestone with a fully-featured, production-ready metadata management tool. This release completes **Phase 1: Foundation & Adoption** with:
+OxiDex achieves its foundational milestone with a fully-featured, production-ready metadata management tool. This release completes **Phase 1: Foundation & Adoption** with:
 
 - **50+ format support** covering 90% of common use cases (JPEG, PNG, TIFF, PDF, MP4, RAW formats)
 - **16-65x performance improvement** over Perl ExifTool through compiled code and parallel processing
@@ -268,11 +268,11 @@ This release is suitable for production use in:
 - Embedded systems requiring native binaries
 - Cross-language integration via C FFI (Python, Node.js, Go, etc.)
 
-**Migration from Perl ExifTool**: ExifTool-RS is designed as a drop-in replacement for 90% of common workflows. See the migration guide in `docs/book/src/migration.md` for compatibility notes and feature differences.
+**Migration from Perl ExifTool**: OxiDex is designed as a drop-in replacement for 90% of common workflows. See the migration guide in `docs/book/src/migration.md` for compatibility notes and feature differences.
 
-**Installation**: `cargo install exiftool-rs` or download pre-built binaries from [GitHub Releases](https://github.com/exiftool-rs/exiftool-rs/releases/tag/v1.0.0).
+**Installation**: `cargo install oxidex` or download pre-built binaries from [GitHub Releases](https://github.com/swack-tools/oxidex/releases/tag/v1.0.0).
 
 ---
 
-[1.1.0]: https://github.com/exiftool-rs/exiftool-rs/releases/tag/v1.1.0
-[1.0.0]: https://github.com/exiftool-rs/exiftool-rs/releases/tag/v1.0.0
+[1.1.0]: https://github.com/swack-tools/oxidex/releases/tag/v1.1.0
+[1.0.0]: https://github.com/swack-tools/oxidex/releases/tag/v1.0.0

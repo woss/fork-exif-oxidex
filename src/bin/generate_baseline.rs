@@ -1,8 +1,8 @@
-//! Baseline Generation Tool for ExifTool-RS Integration Tests
+//! Baseline Generation Tool for OxiDex Integration Tests
 //!
 //! This tool generates baseline metadata outputs for all test fixtures by:
 //! 1. Executing Perl ExifTool on all test images to get JSON outputs
-//! 2. Executing ExifTool-RS on all test images to get JSON outputs
+//! 2. Executing OxiDex on all test images to get JSON outputs
 //! 3. Comparing outputs and calculating match rates
 //! 4. Generating a baseline_metadata.json file with results
 //!
@@ -28,10 +28,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// ExifTool-RS Baseline Generation Tool
+/// OxiDex Baseline Generation Tool
 ///
 /// Generates baseline metadata outputs for all test fixtures by comparing
-/// Perl ExifTool and ExifTool-RS outputs.
+/// Perl ExifTool and OxiDex outputs.
 #[derive(Debug)]
 struct Cli {
     /// Input directory containing test images
@@ -88,10 +88,10 @@ impl Cli {
 /// Print help text for the baseline generation tool
 fn print_help() {
     println!("generate_baseline {}", env!("CARGO_PKG_VERSION"));
-    println!("ExifTool-RS Baseline Generation Tool");
+    println!("OxiDex Baseline Generation Tool");
     println!();
     println!("Generates baseline metadata outputs for all test fixtures by comparing");
-    println!("Perl ExifTool and ExifTool-RS outputs.");
+    println!("Perl ExifTool and OxiDex outputs.");
     println!();
     println!("USAGE:");
     println!("    generate_baseline [OPTIONS]");
@@ -189,19 +189,19 @@ fn get_perl_exiftool_output(file_path: &Path) -> Result<String, String> {
         .map_err(|e| format!("Invalid UTF-8 in Perl ExifTool output: {}", e))
 }
 
-/// Executes ExifTool-RS and captures JSON output
+/// Executes OxiDex and captures JSON output
 fn get_oxidex_output(file_path: &Path) -> Result<String, String> {
-    // Find the exiftool-rs binary in target directory
+    // Find the oxidex binary in target directory
     let cargo_target_dir =
         std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
 
     let binary_path = PathBuf::from(&cargo_target_dir)
         .join("release")
-        .join("exiftool-rs");
+        .join("oxidex");
 
     if !binary_path.exists() {
         return Err(format!(
-            "ExifTool-RS binary not found at {:?}. Run 'cargo build --release' first.",
+            "OxiDex binary not found at {:?}. Run 'cargo build --release' first.",
             binary_path
         ));
     }
@@ -210,15 +210,15 @@ fn get_oxidex_output(file_path: &Path) -> Result<String, String> {
         .arg("--json")
         .arg(file_path)
         .output()
-        .map_err(|e| format!("Failed to execute ExifTool-RS: {}", e))?;
+        .map_err(|e| format!("Failed to execute OxiDex: {}", e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("ExifTool-RS failed on {:?}: {}", file_path, stderr));
+        return Err(format!("OxiDex failed on {:?}: {}", file_path, stderr));
     }
 
     String::from_utf8(output.stdout)
-        .map_err(|e| format!("Invalid UTF-8 in ExifTool-RS output: {}", e))
+        .map_err(|e| format!("Invalid UTF-8 in OxiDex output: {}", e))
 }
 
 /// Compares two JSON outputs and calculates match rate
@@ -374,7 +374,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let input_dir = cli.input;
     let output_dir = cli.output;
 
-    println!("ExifTool-RS Baseline Generation Tool");
+    println!("OxiDex Baseline Generation Tool");
     println!("====================================\n");
 
     // Check for Perl ExifTool
@@ -390,9 +390,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exiftool_version = get_exiftool_version()?;
     println!("Perl ExifTool version: {}", exiftool_version);
 
-    // Get ExifTool-RS version
+    // Get OxiDex version
     let oxidex_version = env!("CARGO_PKG_VERSION").to_string();
-    println!("ExifTool-RS version: {}", oxidex_version);
+    println!("OxiDex version: {}", oxidex_version);
 
     // Create output directory
     fs::create_dir_all(&output_dir)?;
@@ -490,7 +490,7 @@ fn process_image(
     // Get Perl ExifTool output
     let perl_json = get_perl_exiftool_output(image_path)?;
 
-    // Get ExifTool-RS output
+    // Get OxiDex output
     let rust_json = get_oxidex_output(image_path)?;
 
     // Save outputs to baseline directory

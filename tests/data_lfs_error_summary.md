@@ -4,7 +4,7 @@ Generated: 2025-11-16 14:51:34
 
 ## Executive Summary
 
-This document provides a comprehensive analysis of parsing errors encountered when testing exiftool-rs against all 4,026 files in the data.lfs test directory.
+This document provides a comprehensive analysis of parsing errors encountered when testing oxidex against all 4,026 files in the data.lfs test directory.
 
 ## Statistics
 

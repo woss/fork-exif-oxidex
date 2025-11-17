@@ -1013,7 +1013,7 @@ Thank you to all contributors who helped with this release!
 
 ---
 
-**Full Changelog:** https://github.com/exiftool-rs/exiftool-rs/compare/v1.0.0...v1.1.0
+**Full Changelog:** https://github.com/swack-tools/oxidex/compare/v1.0.0...v1.1.0
 ```
 
 ## Timeline Summary

@@ -1,7 +1,7 @@
 # OxiDex
 
-[![CI](https://github.com/exiftool-rs/exiftool-rs/workflows/CI/badge.svg)](https://github.com/exiftool-rs/exiftool-rs/actions)
-[![Integration Tests](https://github.com/exiftool-rs/exiftool-rs/workflows/Integration%20Tests%20(ExifTool%20Comparison)/badge.svg)](https://github.com/exiftool-rs/exiftool-rs/actions)
+[![CI](https://github.com/swack-tools/oxidex/workflows/CI/badge.svg)](https://github.com/swack-tools/oxidex/actions)
+[![Integration Tests](https://github.com/swack-tools/oxidex/workflows/Integration%20Tests%20(ExifTool%20Comparison)/badge.svg)](https://github.com/swack-tools/oxidex/actions)
 
 A modern, high-performance Rust implementation of the industry-standard [ExifTool](https://exiftool.org/) metadata management library and command-line application.
 
@@ -102,7 +102,7 @@ This design ensures:
 
 ## Performance Benchmarks
 
-ExifTool-RS demonstrates exceptional performance improvements over the original Perl ExifTool implementation. The following benchmarks compare both tools running on identical hardware.
+OxiDex demonstrates exceptional performance improvements over the original Perl ExifTool implementation. The following benchmarks compare both tools running on identical hardware.
 
 ### System Specifications
 
@@ -110,11 +110,11 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 - **CPU**: x86_64 (4 cores)
 - **Memory**: 8GB RAM
 - **Perl ExifTool**: version latest
-- **ExifTool-RS**: version 1.0.0
+- **OxiDex**: version 1.0.0
 
 ### Benchmark Results
 
-| Scenario | Perl ExifTool | ExifTool-RS | Speedup |
+| Scenario | Perl ExifTool | OxiDex | Speedup |
 |----------|---------------|-------------|---------|
 | Single JPEG Read | 74.0ms ± 30.6ms | 27.3ms ± 8.2ms | **2.7x faster** |
 | Batch Processing (1000 files) | 1838.5ms ± 54.3ms | 246.0ms ± 83.0ms | **7.5x faster** |
@@ -140,7 +140,7 @@ brew install hyperfine exiftool  # macOS
 # or
 sudo apt install hyperfine libimage-exiftool-perl  # Ubuntu
 
-# Build ExifTool-RS in release mode
+# Build OxiDex in release mode
 cargo build --release
 
 # Run the benchmark suite
@@ -173,7 +173,7 @@ For macOS users with [Homebrew](https://brew.sh):
 
 ```bash
 # Install from Homebrew formula (source build)
-brew install --build-from-source https://raw.githubusercontent.com/exiftool-rs/exiftool-rs/main/packaging/homebrew/oxidex.rb
+brew install --build-from-source https://raw.githubusercontent.com/swack-tools/oxidex/main/packaging/homebrew/oxidex.rb
 
 # Or install from local formula file
 brew install --build-from-source ./packaging/homebrew/oxidex.rb
@@ -186,7 +186,7 @@ oxidex --version
 
 ### From Pre-Built Binaries
 
-Static binaries are available for all major platforms on the [GitHub Releases](https://github.com/exiftool-rs/exiftool-rs/releases) page:
+Static binaries are available for all major platforms on the [GitHub Releases](https://github.com/swack-tools/oxidex/releases) page:
 
 - **Linux** (x86_64): `oxidex-x86_64-linux-musl.tar.gz`
 - **Linux** (ARM64): `oxidex-aarch64-linux-musl.tar.gz`
@@ -196,7 +196,7 @@ Static binaries are available for all major platforms on the [GitHub Releases](h
 
 ```bash
 # Example: Install on Linux (x86_64)
-wget https://github.com/exiftool-rs/exiftool-rs/releases/download/v1.0.0/oxidex-x86_64-linux-musl.tar.gz
+wget https://github.com/swack-tools/oxidex/releases/download/v1.0.0/oxidex-x86_64-linux-musl.tar.gz
 tar xzf oxidex-x86_64-linux-musl.tar.gz
 sudo mv oxidex /usr/local/bin/
 oxidex --version
@@ -208,8 +208,8 @@ For development or building from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/exiftool-rs/exiftool-rs.git
-cd exiftool-rs
+git clone https://github.com/swack-tools/oxidex.git
+cd oxidex
 
 # Build the project
 cargo build --release
@@ -277,7 +277,7 @@ metadata.set("Artist", "Your Name")?;
 metadata.write_to_file("photo.jpg")?;
 ```
 
-For complete documentation, see the [User Guide](https://exiftool-rs.github.io/exiftool-rs/).
+For complete documentation, see the [User Guide](https://swack-tools.github.io/oxidex/).
 
 ## Development
 
@@ -370,7 +370,7 @@ cargo test
 
 #### Latest CI Benchmark Results
 
-📊 **[View Live Benchmark Reports](https://swack-tools.github.io/exiftool-rs/benchmarks/report/index.html)** - Interactive Criterion.rs reports automatically updated on every commit to main
+📊 **[View Live Benchmark Reports](https://swack-tools.github.io/oxidex/benchmarks/report/index.html)** - Interactive Criterion.rs reports automatically updated on every commit to main
 
 The CI pipeline runs comprehensive benchmarks on every push and publishes the results to GitHub Pages. You can view detailed performance graphs, statistical analysis, and historical trends.
 
@@ -566,5 +566,5 @@ See the [project documentation](docs/) for detailed architectural decisions, imp
 **Status**: Stable Release
 **Current Version**: 1.0.0
 **License**: GPL-3.0
-**Documentation**: [User Guide](https://exiftool-rs.github.io/exiftool-rs/) | [API Docs](https://docs.rs/oxidex)
-**Issues**: [GitHub Issues](https://github.com/exiftool-rs/exiftool-rs/issues)
+**Documentation**: [User Guide](https://swack-tools.github.io/oxidex/) | [API Docs](https://docs.rs/oxidex)
+**Issues**: [GitHub Issues](https://github.com/swack-tools/oxidex/issues)
