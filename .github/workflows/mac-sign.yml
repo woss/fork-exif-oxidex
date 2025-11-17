@@ -68,15 +68,29 @@ jobs:
 
       - name: Sign binary
         env:
-          IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
           APP_PATH="./target/release/oxidex"
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
+          # Unlock keychain for codesign access
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Automatically detect the Developer ID Application certificate
+          IDENTITY=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Developer ID Application" | head -1 | grep -o '".*"' | tr -d '"')
+
+          if [ -z "$IDENTITY" ]; then
+            echo "Error: No Developer ID Application certificate found"
+            exit 1
+          fi
+
+          echo "Found signing identity: $IDENTITY"
           echo "Signing binary with Developer ID certificate..."
           codesign --sign "$IDENTITY" \
             --timestamp \
             --options runtime \
             --verbose \
+            --keychain $KEYCHAIN_PATH \
             "$APP_PATH"
 
           echo "Verifying signature..."
