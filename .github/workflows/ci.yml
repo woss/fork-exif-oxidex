@@ -139,40 +139,6 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  coverage:
-    name: Code Coverage
-    runs-on: arc-runner-set
-    timeout-minutes: 30
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y wget build-essential pkg-config libssl-dev
-      - name: Install cargo-tarpaulin
-        run: |
-          if ! command -v cargo-tarpaulin &> /dev/null; then
-            echo "cargo-tarpaulin not found in cache, installing..."
-            cargo install cargo-tarpaulin
-          else
-            echo "cargo-tarpaulin found in cache: $(cargo-tarpaulin --version)"
-          fi
-
-      - name: Generate coverage report
-        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
-        with:
-          files: ./cobertura.xml
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   integration-tests:
     name: Integration Tests (ExifTool Comparison)
     runs-on: arc-runner-set
