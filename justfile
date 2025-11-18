@@ -135,6 +135,30 @@ bench:
     @echo "Running benchmarks..."
     cargo bench --workspace
 
+# Profiling
+# ---------
+
+# Profile a specific benchmark with samply
+profile benchmark:
+    @echo "Profiling {{benchmark}} benchmark..."
+    samply record cargo bench --bench parse_benchmarks {{benchmark}}
+
+# Profile integration benchmarks
+profile-integration benchmark:
+    @echo "Profiling integration benchmark: {{benchmark}}..."
+    samply record cargo bench --bench integration_benchmarks {{benchmark}}
+
+# Profile the CLI binary with arguments
+profile-bin *args:
+    @echo "Profiling binary with args: {{args}}..."
+    cargo build --release
+    samply record ./target/release/oxidex {{args}}
+
+# Profile all parse benchmarks (warning: takes a while)
+profile-all:
+    @echo "Profiling all parse benchmarks..."
+    samply record cargo bench --bench parse_benchmarks
+
 # Update dependencies
 update:
     @echo "Updating dependencies..."
