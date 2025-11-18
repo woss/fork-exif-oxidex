@@ -11,7 +11,77 @@ cargo-flamegraph generates visual flame graphs showing where your code spends ti
 ## Installation
 
 ```bash
+# Install cargo-flamegraph (generates SVG)
 cargo install flamegraph
+
+# Install inferno CLI tools (text-based folded stacks)
+cargo install inferno
+```
+
+## Accessible Text-Based Profiling with Folded Stacks
+
+**Best for accessibility:** Use inferno's "folded stacks" format - pure text, no visuals required!
+
+### What are Folded Stacks?
+
+Folded stacks are a text format showing stack traces and sample counts:
+```
+function_a;function_b;function_c 100
+function_a;function_d 50
+```
+
+Each line shows:
+- Stack trace (semicolon-separated functions)
+- Number of samples (time spent)
+
+This format is:
+- ✅ Pure text (screen-reader friendly)
+- ✅ Easy to analyze programmatically
+- ✅ Standard format used by all flamegraph tools
+- ✅ Can be converted to SVG later if needed
+
+### Generating Folded Stacks (Still Requires Sudo on macOS)
+
+**On macOS with dtrace:**
+```bash
+# 1. Profile your benchmark (requires sudo - will prompt for password)
+sudo dtrace -x ustackframes=100 -n 'profile-997 /execname == "parse_benchmarks"/ { @[ustack()] = count(); } tick-10s { exit(0); }' -o dtrace.out
+
+# 2. Convert dtrace output to folded stacks (text)
+inferno-collapse-dtrace dtrace.out > stacks.txt
+
+# 3. Analyze the text (accessible!)
+python3 analyze_folded_stacks.py stacks.txt
+```
+
+**On Linux with perf (no sudo):**
+```bash
+# 1. Profile (no sudo needed!)
+perf record -F 997 -g cargo bench --bench parse_benchmarks full_read_metadata
+
+# 2. Convert to folded stacks
+perf script | inferno-collapse-perf > stacks.txt
+
+# 3. Analyze
+python3 analyze_folded_stacks.py stacks.txt
+```
+
+### Analysis Output (Text)
+
+The analyzer provides:
+- **Self time**: Functions doing actual work (leaf functions)
+- **Total time**: Functions including time in callees
+- **OxiDex-specific functions**: Highlighted with ***
+- **Percentages**: Clear text percentages
+
+**Example output:**
+```
+TOP FUNCTIONS BY SELF TIME
+Function                                                    Samples      %
+--------------------------------------------------------------------------------
+*** oxidex::parsers::jpeg::parse_segments                  15,234      45.2%
+*** oxidex::core::metadata::MetadataMap::new               8,456       25.1%
+    std::collections::HashMap::insert                       3,221        9.6%
 ```
 
 ## macOS Limitations
