@@ -11,9 +11,11 @@ authors = ["OxiDex Contributors"]
 description = "A modern, high-performance Rust implementation of ExifTool for reading, writing, and editing metadata in 300+ file formats"
 license = "GPL-3.0"
 repository = "https://github.com/swack-tools/oxidex"
+homepage = "https://github.com/swack-tools/oxidex"
+documentation = "https://github.com/swack-tools/oxidex"
 readme = "README.md"
-keywords = ["exif", "metadata", "xmp", "iptc", "image"]
-categories = ["multimedia::images", "command-line-utilities", "parsing"]
+keywords = ["exif", "metadata", "xmp", "exiftool", "image"]
+categories = ["multimedia::images", "multimedia::video", "command-line-utilities", "parsing"]
 
 [lib]
 name = "oxidex"
@@ -156,6 +158,7 @@ opt-level = 3
 lto = "thin"
 codegen-units = 1
 incremental = false
+debug = true  # Enable debug symbols for profiling
 
 [features]
 exiftool-comparison = []

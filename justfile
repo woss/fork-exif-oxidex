@@ -138,6 +138,11 @@ bench:
 # Profiling
 # ---------
 
+# Simple text-based profiling (recommended, accessible)
+profile-simple:
+    @echo "Running text-based performance profiling..."
+    @./profile_simple.sh
+
 # Profile a specific benchmark with samply
 profile benchmark:
     @echo "Profiling {{benchmark}} benchmark..."

@@ -4,12 +4,52 @@ This guide explains how to profile OxiDex to identify performance bottlenecks an
 
 ## Overview
 
-OxiDex uses **samply** for profiling, which provides interactive flame graphs, call trees, and timelines through the Firefox Profiler UI. This allows you to:
+OxiDex supports multiple profiling approaches:
+
+1. **Text-based benchmarking** (recommended for macOS, accessible) - Simple, accessible timing via Criterion benchmarks
+2. **samply profiling** (Linux preferred) - Interactive visual profiling with Firefox Profiler UI
+
+## Quick Start: Text-Based Profiling (Recommended)
+
+For accessible, text-based performance analysis:
+
+```bash
+just profile-simple
+```
+
+This runs all benchmarks and displays timing results in plain text, showing which operations are slowest. No visual tools required, works on all platforms, and provides clear text output suitable for screen readers.
+
+**Example output:**
+```
+Benchmark: full_read_metadata
+time:   [3.4 ms 3.5 ms 3.6 ms]
+
+Benchmark: tiff_simple
+time:   [5.3 ms 5.5 ms 5.7 ms]  ← Slowest, optimization target
+```
+
+## macOS Symbol Resolution Limitations
+
+**Important for macOS users:** samply on macOS may not resolve function symbols properly, showing hex addresses (like `0x44f8`) instead of function names. This is a known limitation of macOS profiling tools.
+
+**Workarounds:**
+- Use `just profile-simple` for text-based timing analysis (works well, accessible)
+- Use Instruments.app (requires Xcode, visual tool)
+- Add manual instrumentation for specific functions
+- Focus on benchmark timing comparisons rather than deep profiling
+
+**Why this happens:** macOS DTrace and samply have difficulty resolving symbols from Rust binaries even with debug info enabled. Linux's `perf` tool works better for symbol resolution.
+
+## samply Profiling (Advanced)
+
+samply provides interactive flame graphs, call trees, and timelines through the Firefox Profiler UI. This allows you to:
 
 - Identify CPU hotspots (functions consuming the most time)
 - Visualize call stacks and execution flow
 - Measure impact of optimizations
 - Find allocation bottlenecks
+
+**Note:** Works best on Linux. macOS users may see limited symbol information (see above).
 
 ## Prerequisites
 
