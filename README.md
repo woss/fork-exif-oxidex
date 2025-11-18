@@ -116,19 +116,19 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 
 | Scenario | Perl ExifTool | ExifTool-RS | Speedup |
 |----------|---------------|-------------|---------|
-| Single JPEG Read | 107.5ms ± 16.8ms | 21.4ms ± 8.0ms | **5.0x faster** |
-| Batch Processing (1000 files) | 1831.6ms ± 126.4ms | 178.4ms ± 7.9ms | **10.3x faster** |
-| Write Operation (modify EXIF tag) | 221.5ms ± 63.6ms | 23.9ms ± 3.9ms | **9.3x faster** |
-| Format Detection | 62.2ms ± 10.8ms | 11.0ms ± 1.8ms | **5.6x faster** |
+| Single JPEG Read | 112.5ms ± 13.8ms | 22.5ms ± 7.4ms | **5.0x faster** |
+| Batch Processing (1000 files) | 2273.4ms ± 737.6ms | 216.8ms ± 5.4ms | **10.5x faster** |
+| Write Operation (modify EXIF tag) | 269.9ms ± 95.2ms | 64.6ms ± 116.7ms | **4.2x faster** |
+| Format Detection | 60.7ms ± 9.5ms | 10.1ms ± 0.7ms | **6.0x faster** |
 
 *Benchmarks performed using [hyperfine](https://github.com/sharkdp/hyperfine) with multiple runs and warmup periods.*
 
 ### Key Performance Improvements
 
 - **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 5.0x faster metadata extraction
-- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 178.4ms ± 7.9ms vs. 1831.6ms ± 126.4ms for single-threaded Perl
-- **Write operations**: Efficient binary manipulation and atomic file operations provide 9.3x faster EXIF tag modifications
-- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (5.6x faster)
+- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 216.8ms ± 5.4ms vs. 2273.4ms ± 737.6ms for single-threaded Perl
+- **Write operations**: Efficient binary manipulation and atomic file operations provide 4.2x faster EXIF tag modifications
+- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (6.0x faster)
 
 ### Reproducing These Benchmarks
 
