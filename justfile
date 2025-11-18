@@ -143,6 +143,19 @@ profile-simple:
     @echo "Running text-based performance profiling..."
     @./profile_simple.sh
 
+# Profile with flamegraph (requires sudo on macOS, generates SVG)
+profile-flamegraph benchmark:
+    @echo "Generating flamegraph for {{benchmark}}..."
+    @echo "Note: Requires sudo on macOS. Use profile-simple for accessible alternative."
+    cargo flamegraph --bench parse_benchmarks --root -o flamegraph-{{benchmark}}.svg -- --bench {{benchmark}}
+    @echo "Flamegraph saved to: flamegraph-{{benchmark}}.svg"
+    @echo "Convert to text: python3 parse_flamegraph.py flamegraph-{{benchmark}}.svg"
+
+# Convert flamegraph SVG to accessible text
+flamegraph-to-text svg:
+    @echo "Converting flamegraph to accessible text..."
+    python3 parse_flamegraph.py {{svg}}
+
 # Profile a specific benchmark with samply
 profile benchmark:
     @echo "Profiling {{benchmark}} benchmark..."
