@@ -370,7 +370,7 @@ cargo test
 
 #### Latest CI Benchmark Results
 
-📊 **[View Live Benchmark Reports](https://swack-tools.github.io/oxidex/benchmarks/report/index.html)** - Interactive Criterion.rs reports automatically updated on every commit to main
+📊 **[View Live Benchmark Reports](https://oxidex.net/benchmarks/report/index.html)** - Interactive Criterion.rs reports automatically updated on every commit to main
 
 The CI pipeline runs comprehensive benchmarks on every push and publishes the results to GitHub Pages. You can view detailed performance graphs, statistical analysis, and historical trends.
 
