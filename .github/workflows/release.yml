@@ -361,7 +361,7 @@ jobs:
       - name: Fetch main branch changelog
         run: |
           git fetch origin main
-          git show origin/main:changelog.md > main-changelog.md
+          git show origin/main:CHANGELOG.md > main-changelog.md
 
       - name: Update gh-pages changelog
         run: |
