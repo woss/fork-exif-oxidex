@@ -10,6 +10,7 @@
 
 # Advanced Topics
 
+- [MCP Server Integration](mcp_integration.md)
 - [C FFI Integration](ffi.md)
 - [Supported Formats](formats.md)
 - [Troubleshooting](troubleshooting.md)

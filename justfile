@@ -72,6 +72,16 @@ build-bin-release:
     @echo "Building release binary..."
     cargo build --bin oxidex --release
 
+# Build MCP server
+build-mcp:
+    @echo "Building MCP server..."
+    cargo build -p oxidex-mcp
+
+# Build MCP server in release mode
+build-mcp-release:
+    @echo "Building MCP server (release)..."
+    cargo build -p oxidex-mcp --release
+
 # Check the project for errors without building
 check:
     @echo "Checking project..."
@@ -201,6 +211,16 @@ install:
 uninstall:
     @echo "Uninstalling oxidex..."
     cargo uninstall oxidex
+
+# Install the MCP server locally
+install-mcp:
+    @echo "Installing oxidex-mcp..."
+    cargo install --path oxidex-mcp
+
+# Uninstall the MCP server
+uninstall-mcp:
+    @echo "Uninstalling oxidex-mcp..."
+    cargo uninstall oxidex-mcp
 
 # Build Debian package (requires cargo-deb)
 deb:

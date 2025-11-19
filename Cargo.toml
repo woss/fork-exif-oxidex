@@ -1,6 +1,6 @@
 # Workspace configuration
 [workspace]
-members = [".", "oxidex-tags", "oxidex-tags-core", "oxidex-tags-camera", "oxidex-tags-media", "oxidex-tags-image", "oxidex-tags-document", "oxidex-tags-specialty"]
+members = [".", "oxidex-tags", "oxidex-tags-core", "oxidex-tags-camera", "oxidex-tags-media", "oxidex-tags-image", "oxidex-tags-document", "oxidex-tags-specialty", "oxidex-mcp"]
 resolver = "2"
 
 [package]
