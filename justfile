@@ -345,3 +345,11 @@ release version: release-check
     cargo build --release
     just tag {{version}}
     @echo "Release v{{version}} created and tagged!"
+docs-generate-tags:
+    @echo "Regenerating tag domain documentation..."
+    cargo run -p oxidex-tags --example render_domain -- core docs/tag-domains/core.md
+    cargo run -p oxidex-tags --example render_domain -- camera docs/tag-domains/camera.md
+    cargo run -p oxidex-tags --example render_domain -- media docs/tag-domains/media.md
+    cargo run -p oxidex-tags --example render_domain -- image docs/tag-domains/image.md
+    cargo run -p oxidex-tags --example render_domain -- document docs/tag-domains/document.md
+    cargo run -p oxidex-tags --example render_domain -- specialty docs/tag-domains/specialty.md
