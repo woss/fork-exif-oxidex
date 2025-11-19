@@ -12,7 +12,7 @@
 //! ## Before & After Example
 //!
 //! **Before** (in samsung.rs):
-//! ```rust
+//! ```ignore
 //! fn decode_scene_optimizer(value: i16) -> String {
 //!     match value {
 //!         0 => "Off".to_string(),
@@ -24,7 +24,7 @@
 //! ```
 //!
 //! **After** (in samsung.rs using this module):
-//! ```rust
+//! ```ignore
 //! use super::shared::generic_decoders::SimpleValueDecoder;
 //!
 //! const SCENE_OPTIMIZER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
