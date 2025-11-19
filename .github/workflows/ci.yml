@@ -30,7 +30,7 @@ env:
 jobs:
   test:
     name: Test Suite
-    runs-on: swack
+    runs-on: arc-runner-set
     timeout-minutes: 30
 
     steps:
