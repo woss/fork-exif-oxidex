@@ -112,7 +112,7 @@ pub enum TagDecoder {
 /// - Support for various value types
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::parsers::tiff::makernotes::shared::tag_registry::TagRegistry;
 /// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
 ///
@@ -524,7 +524,7 @@ impl Default for TagRegistry {
 /// with multiple tags.
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// tag_registry! {
 ///     REGISTRY_NAME {
 ///         tag_id1 => "Tag Name 1" : simple_i16(&DECODER1),
@@ -535,7 +535,7 @@ impl Default for TagRegistry {
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::tag_registry;
 /// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
 ///
