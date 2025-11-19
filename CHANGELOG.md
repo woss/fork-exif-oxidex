@@ -59,12 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All crates renamed: `exiftool-tags*` → `oxidex-tags*`
   - Install with: `cargo install oxidex`
   - GitHub repository: `swack-tools/oxidex`
-
----
-
-## [Previous Unreleased]
-
-### Changed
 - **Dependency Upgrades**: Updated all major dependencies to latest versions for improved performance and security
   - `criterion` 0.5 → 0.7 - Modern benchmarking framework with improved measurement accuracy
   - `indicatif` 0.17 → 0.18 - Enhanced progress bar library with better terminal compatibility
@@ -130,12 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - All values gracefully handle missing/invalid data
   - **Files Modified:**
     - `src/parsers/tiff/makernotes/canon.rs` (+400 lines of tests and implementation)
+- **CI/CD**: New `cross-compile` job in CI workflow that tests both ARM64 (`aarch64-unknown-linux-musl`) and x86_64 (`x86_64-unknown-linux-musl`) Linux builds using the `cross` tool with QEMU emulation support.
 
 ### Fixed
 - **CI/CD**: Fixed ARM64 cross-compilation in GitHub Actions by implementing QEMU emulation. Previously, attempting to run ARM64 Docker images (`ghcr.io/cross-rs/aarch64-unknown-linux-musl`) on x86_64 runners resulted in "exec format error". The fix adds `docker/setup-qemu-action` and `docker/setup-buildx-action` to enable multi-platform builds on x86_64 runners.
-
-### Added
-- **CI/CD**: New `cross-compile` job in CI workflow that tests both ARM64 (`aarch64-unknown-linux-musl`) and x86_64 (`x86_64-unknown-linux-musl`) Linux builds using the `cross` tool with QEMU emulation support.
 
 ## [1.0.0] - 2025-10-30
 
