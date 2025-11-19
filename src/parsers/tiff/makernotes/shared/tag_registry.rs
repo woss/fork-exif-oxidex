@@ -48,8 +48,8 @@
 //! let decoded = registry.decode_i16(0x0001, value);
 //! ```
 
-use std::collections::HashMap;
 use super::generic_decoders::SimpleValueDecoder;
+use std::collections::HashMap;
 
 /// Type alias for decoder functions that take an i16 and return a String
 pub type I16Decoder = fn(i16) -> String;
@@ -614,19 +614,14 @@ macro_rules! tag_registry {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::generic_decoders::SimpleValueDecoder;
+    use super::*;
 
-    const TEST_QUALITY: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
-        (1, "Low"),
-        (2, "Medium"),
-        (3, "High"),
-    ]);
+    const TEST_QUALITY: SimpleValueDecoder<i16> =
+        SimpleValueDecoder::new(&[(1, "Low"), (2, "Medium"), (3, "High")]);
 
-    const TEST_MODE: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
-        (0, "Auto"),
-        (1, "Manual"),
-    ]);
+    const TEST_MODE: SimpleValueDecoder<i16> =
+        SimpleValueDecoder::new(&[(0, "Auto"), (1, "Manual")]);
 
     fn custom_decoder(value: i16) -> String {
         format!("Custom: {}", value)
@@ -647,8 +642,7 @@ mod tests {
 
     #[test]
     fn test_register_simple_i16() {
-        let registry = TagRegistry::new()
-            .register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
+        let registry = TagRegistry::new().register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
 
         assert_eq!(registry.len(), 1);
         assert_eq!(registry.get_tag_name(0x0001), Some("Quality"));
@@ -657,16 +651,14 @@ mod tests {
 
     #[test]
     fn test_register_custom_decoder() {
-        let registry = TagRegistry::new()
-            .register_i16(0x0001, "CustomTag", custom_decoder);
+        let registry = TagRegistry::new().register_i16(0x0001, "CustomTag", custom_decoder);
 
         assert_eq!(registry.decode_i16(0x0001, 42), "Custom: 42");
     }
 
     #[test]
     fn test_register_raw() {
-        let registry = TagRegistry::new()
-            .register_raw(0x0001, "RawValue");
+        let registry = TagRegistry::new().register_raw(0x0001, "RawValue");
 
         assert_eq!(registry.get_tag_name(0x0001), Some("RawValue"));
         assert_eq!(registry.decode_i16(0x0001, 123), "123");
@@ -687,8 +679,7 @@ mod tests {
 
     #[test]
     fn test_has_tag() {
-        let registry = TagRegistry::new()
-            .register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
+        let registry = TagRegistry::new().register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
 
         assert!(registry.has_tag(0x0001));
         assert!(!registry.has_tag(0x0002));
@@ -696,8 +687,7 @@ mod tests {
 
     #[test]
     fn test_get_tag() {
-        let registry = TagRegistry::new()
-            .register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
+        let registry = TagRegistry::new().register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
 
         let tag = registry.get_tag(0x0001);
         assert!(tag.is_some());
@@ -706,8 +696,7 @@ mod tests {
 
     #[test]
     fn test_unknown_tag_decode() {
-        let registry = TagRegistry::new()
-            .register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
+        let registry = TagRegistry::new().register_simple_i16(0x0001, "Quality", &TEST_QUALITY);
 
         // Decoding an unregistered tag returns raw value
         assert_eq!(registry.decode_i16(0x9999, 42), "42");
@@ -737,17 +726,11 @@ mod tests {
 
     #[test]
     fn test_different_value_types() {
-        const TEST_U16: SimpleValueDecoder<u16> = SimpleValueDecoder::new(&[
-            (1, "One"),
-        ]);
+        const TEST_U16: SimpleValueDecoder<u16> = SimpleValueDecoder::new(&[(1, "One")]);
 
-        const TEST_I32: SimpleValueDecoder<i32> = SimpleValueDecoder::new(&[
-            (100, "Hundred"),
-        ]);
+        const TEST_I32: SimpleValueDecoder<i32> = SimpleValueDecoder::new(&[(100, "Hundred")]);
 
-        const TEST_U32: SimpleValueDecoder<u32> = SimpleValueDecoder::new(&[
-            (1000, "Thousand"),
-        ]);
+        const TEST_U32: SimpleValueDecoder<u32> = SimpleValueDecoder::new(&[(1000, "Thousand")]);
 
         let registry = TagRegistry::new()
             .register_simple_u16(0x0001, "U16Tag", &TEST_U16)

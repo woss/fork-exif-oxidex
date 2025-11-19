@@ -386,11 +386,7 @@ mod tests {
 
     #[test]
     fn test_const_decoder_macro() {
-        const_decoder!(TEST_WB, i16, [
-            (0, "Auto"),
-            (1, "Daylight"),
-            (2, "Cloudy"),
-        ]);
+        const_decoder!(TEST_WB, i16, [(0, "Auto"), (1, "Daylight"), (2, "Cloudy"),]);
 
         assert_eq!(TEST_WB.decode(0), "Auto");
         assert_eq!(TEST_WB.decode(1), "Daylight");
@@ -400,11 +396,10 @@ mod tests {
 
     #[test]
     fn test_bitfield_decoder_macro() {
-        bitfield_decoder!(TEST_FEATURES, [
-            (0x01, "HDR"),
-            (0x02, "Panorama"),
-            (0x04, "Night Mode"),
-        ]);
+        bitfield_decoder!(
+            TEST_FEATURES,
+            [(0x01, "HDR"), (0x02, "Panorama"), (0x04, "Night Mode"),]
+        );
 
         assert_eq!(TEST_FEATURES.decode(0x00), "None");
         assert_eq!(TEST_FEATURES.decode(0x01), "HDR");
@@ -466,10 +461,7 @@ mod tests {
             1 => "One",
         });
 
-        const_decoder!(TEST_TRAILING_CONST, i16, [
-            (0, "Zero"),
-            (1, "One"),
-        ]);
+        const_decoder!(TEST_TRAILING_CONST, i16, [(0, "Zero"), (1, "One"),]);
 
         assert_eq!(test_trailing(0), "Zero");
         assert_eq!(TEST_TRAILING_CONST.decode(1), "One");
