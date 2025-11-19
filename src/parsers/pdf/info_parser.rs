@@ -83,7 +83,10 @@ pub fn parse_info_dict(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Find and parse the Info dictionary
     let info_ref = find_dict_reference(&context.xref_data, "/Info")?;
     let info_offset = context.get_object_offset(info_ref.object_num, "Info")?;
-    let info_data = reader.read(info_offset, std::cmp::min(4096, reader.size().saturating_sub(info_offset) as usize))?;
+    let info_data = reader.read(
+        info_offset,
+        std::cmp::min(4096, reader.size().saturating_sub(info_offset) as usize),
+    )?;
     let info_dict = parse_info_object(info_data)?;
 
     // Convert dictionary to metadata map with proper formatting
@@ -663,7 +666,9 @@ fn parse_string_literal(input: &[u8]) -> IResult<&[u8], String> {
 /// Extracts content from a parenthesized string, handling escapes and nesting.
 /// Returns (content_bytes, closing_paren_position)
 #[allow(clippy::type_complexity)]
-fn extract_parenthesized_content(input: &[u8]) -> std::result::Result<(Vec<u8>, usize), nom::Err<nom::error::Error<&[u8]>>> {
+fn extract_parenthesized_content(
+    input: &[u8],
+) -> std::result::Result<(Vec<u8>, usize), nom::Err<nom::error::Error<&[u8]>>> {
     let mut content = Vec::new();
     let mut i = 0;
     let mut depth = 1; // Track nested parentheses
