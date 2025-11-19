@@ -29,6 +29,14 @@ use std::collections::HashMap;
 use std::io::Read;
 
 // ============================================================================
+// TYPE ALIASES
+// ============================================================================
+
+/// Type alias for header field extractor functions
+/// Maps bytes at offset into metadata using the provided HashMap
+type ExtractFn = fn(&[u8], usize, &mut HashMap<String, TagValue>) -> Result<()>;
+
+// ============================================================================
 // CORE REGISTRY STRUCTURES
 // ============================================================================
 
@@ -68,7 +76,7 @@ struct HeaderField {
     /// Field name in metadata
     name: &'static str,
     /// Extractor function
-    extract: fn(&[u8], usize, &mut HashMap<String, TagValue>) -> Result<()>,
+    extract: ExtractFn,
 }
 
 /// Lookup table entry for mapping codes to names
@@ -329,7 +337,7 @@ fn parse_tags_registry(data: &[u8], metadata: &mut HashMap<String, TagValue>) ->
         let tag_data = &data[tag_offset..tag_offset + tag_size];
 
         // Look up tag in registry and decode
-        decode_tag(&tag_signature.trim(), tag_data, tag_size, metadata);
+        decode_tag(tag_signature.trim(), tag_data, tag_size, metadata);
     }
 
     Ok(())
@@ -353,11 +361,11 @@ fn decode_tag(
         let result = match def.tag_type {
             TagType::TextDescription => {
                 parse_text_description_type(data).ok()
-                    .map(|s| TagValue::new_string(s))
+                    .map(TagValue::new_string)
             }
             TagType::Text => {
                 parse_text_type(data).ok()
-                    .map(|s| TagValue::new_string(s))
+                    .map(TagValue::new_string)
             }
             TagType::Xyz => {
                 parse_xyz_type(data).ok()
@@ -379,7 +387,7 @@ fn decode_tag(
             TagType::Signature => {
                 parse_signature_type(data).ok()
                     .map(|sig| {
-                        let name = lookup_in_table(&TECHNOLOGIES, &sig);
+                        let name = lookup_in_table(TECHNOLOGIES, &sig);
                         TagValue::new_string(name.to_string())
                     })
             }
@@ -467,7 +475,7 @@ fn extract_version(data: &[u8], offset: usize, metadata: &mut HashMap<String, Ta
 /// Extracts profile class from header
 fn extract_profile_class(data: &[u8], offset: usize, metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     let class = read_signature(data, offset)?;
-    let class_name = lookup_in_table(&PROFILE_CLASSES, &class);
+    let class_name = lookup_in_table(PROFILE_CLASSES, &class);
     metadata.insert("ProfileClass".to_string(), TagValue::new_string(class_name.to_string()));
     Ok(())
 }
@@ -517,7 +525,7 @@ fn extract_signature(data: &[u8], offset: usize, metadata: &mut HashMap<String, 
 /// Extracts primary platform from header
 fn extract_platform(data: &[u8], offset: usize, metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     let platform = read_signature(data, offset)?;
-    let platform_name = lookup_in_table(&PLATFORMS, &platform);
+    let platform_name = lookup_in_table(PLATFORMS, &platform);
     if !platform_name.is_empty() {
         metadata.insert("PrimaryPlatform".to_string(), TagValue::new_string(platform_name.to_string()));
     }

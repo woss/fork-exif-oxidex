@@ -62,7 +62,7 @@ const PARROT_SIGNATURE: &[u8] = b"Parrot";
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Flight Mode decoder - Different autonomous and manual flight modes
+// Flight Mode decoder - Different autonomous and manual flight modes
 const_decoder!(
     FLIGHT_MODE,
     i16,
@@ -78,46 +78,38 @@ const_decoder!(
 // Custom Formatters
 // ============================================================================
 
-/// Formats GPS coordinates (stored as 1/10,000,000 degrees)
-///
-/// # Arguments
-/// * `value` - GPS coordinate in 1/10,000,000 degree units
-///
-/// # Returns
-/// Formatted coordinate with 7 decimal places
+// Formats GPS coordinates (stored as 1/10,000,000 degrees)
+// # Arguments
+// * `value` - GPS coordinate in 1/10,000,000 degree units
+// # Returns
+// Formatted coordinate with 7 decimal places
 fn format_gps_coord(value: i32) -> String {
     format!("{:.7}", value as f64 / 10_000_000.0)
 }
 
-/// Formats altitude (stored as centimeters)
-///
-/// # Arguments
-/// * `value` - Altitude in centimeters
-///
-/// # Returns
-/// Formatted altitude in meters with 2 decimal places
+// Formats altitude (stored as centimeters)
+// # Arguments
+// * `value` - Altitude in centimeters
+// # Returns
+// Formatted altitude in meters with 2 decimal places
 fn format_altitude(value: i16) -> String {
     format!("{:.2} m", value as f64 / 100.0)
 }
 
-/// Formats speed (stored as deciseconds per meter)
-///
-/// # Arguments
-/// * `value` - Speed in 1/10 m/s units
-///
-/// # Returns
-/// Formatted speed in m/s with 1 decimal place
+// Formats speed (stored as deciseconds per meter)
+// # Arguments
+// * `value` - Speed in 1/10 m/s units
+// # Returns
+// Formatted speed in m/s with 1 decimal place
 fn format_speed(value: i16) -> String {
     format!("{:.1} m/s", value as f64 / 10.0)
 }
 
-/// Formats gimbal angle (stored as decidegrees)
-///
-/// # Arguments
-/// * `value` - Angle in 1/10 degree units
-///
-/// # Returns
-/// Formatted angle in degrees with 1 decimal place
+// Formats gimbal angle (stored as decidegrees)
+// # Arguments
+// * `value` - Angle in 1/10 degree units
+// # Returns
+// Formatted angle in degrees with 1 decimal place
 fn format_gimbal_angle(value: i16) -> String {
     format!("{:.1}°", value as f64 / 10.0)
 }
@@ -126,7 +118,7 @@ fn format_gimbal_angle(value: i16) -> String {
 // Tag Registry
 // ============================================================================
 
-/// Lazy-initialized tag registry for Parrot-specific tags
+// Lazy-initialized tag registry for Parrot-specific tags
 static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
     TagRegistry::with_capacity(15)
         // String tags
@@ -154,7 +146,7 @@ static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
 // Parser Implementation
 // ============================================================================
 
-/// Parrot Drone MakerNote parser
+/// Parser for Parrot MakerNotes
 #[derive(Default)]
 pub struct ParrotParser;
 

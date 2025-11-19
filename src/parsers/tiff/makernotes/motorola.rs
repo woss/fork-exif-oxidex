@@ -46,7 +46,7 @@ const MOTOROLA_PORTRAIT_MODE: u16 = 0x0008;
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Camera Mode decoder - Different shooting modes
+// Camera Mode decoder - Different shooting modes
 const_decoder!(
     CAMERA_MODE,
     u16,
@@ -60,7 +60,7 @@ const_decoder!(
     ]
 );
 
-/// Scene Mode decoder - Scene recognition modes
+// Scene Mode decoder - Scene recognition modes
 const_decoder!(
     SCENE_MODE,
     u16,
@@ -79,15 +79,13 @@ const_decoder!(
 // Helper Functions
 // ============================================================================
 
-/// Extracts u16 value from IFD entry
-///
-/// # Arguments
-/// * `entry` - The IFD entry
-/// * `_data` - The MakerNote data buffer (unused for inline values)
-/// * `byte_order` - Byte order for value extraction
-///
-/// # Returns
-/// The extracted u16 value, or None if extraction fails
+// Extracts u16 value from IFD entry
+// # Arguments
+// * `entry` - The IFD entry
+// * `_data` - The MakerNote data buffer (unused for inline values)
+// * `byte_order` - Byte order for value extraction
+// # Returns
+// The extracted u16 value, or None if extraction fails
 fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<u16> {
     if entry.value_count != 1 {
         return None;
@@ -103,7 +101,7 @@ fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> O
 // Tag Registry
 // ============================================================================
 
-/// Lazy-initialized tag registry for Motorola-specific tags
+// Lazy-initialized tag registry for Motorola-specific tags
 static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
     TagRegistry::with_capacity(8)
         .register_simple_u16(MOTOROLA_CAMERA_MODE, "CameraMode", &CAMERA_MODE)
@@ -120,7 +118,7 @@ static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
 // Parser Implementation
 // ============================================================================
 
-/// Parser for Motorola camera MakerNotes
+/// Parser for Motorola MakerNotes
 pub struct MotorolaParser;
 
 impl Default for MotorolaParser {

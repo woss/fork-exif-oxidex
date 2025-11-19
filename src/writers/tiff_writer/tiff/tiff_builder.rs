@@ -11,6 +11,14 @@ use super::byte_writer::write_tiff_header;
 use super::ifd_builder::{IfdBuilder, EXIF_IFD_POINTER, GPS_INFO_IFD_POINTER};
 use super::validator::separate_by_ifd;
 
+// ============================================================================
+// TYPE ALIASES
+// ============================================================================
+
+/// Type alias for the build result containing IFD bytes
+/// Tuple of (main IFD bytes, optional EXIF IFD bytes, optional GPS IFD bytes)
+type BuildResult = (Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
+
 /// Builder for constructing complete TIFF file structures.
 ///
 /// The TiffBuilder orchestrates the creation of a complete TIFF file,
@@ -145,7 +153,7 @@ impl TiffBuilder {
         &self,
         has_exif_ifd: bool,
         has_gps_ifd: bool,
-    ) -> Result<(Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>)> {
+    ) -> Result<BuildResult> {
         let ifd0_start = 8u64;
 
         // First pass: build IFD0 with placeholder pointers to determine size

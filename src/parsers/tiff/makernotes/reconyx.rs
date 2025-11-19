@@ -125,10 +125,12 @@ static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
 // Parser Implementation
 // ============================================================================
 
+/// Parser for Reconyx MakerNotes
 #[derive(Default)]
 pub struct ReconyxParser;
 
 impl ReconyxParser {
+    /// Creates a new ReconyxParser instance
     pub fn new() -> Self {
         ReconyxParser
     }

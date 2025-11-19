@@ -114,6 +114,7 @@ static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
 // Parser Implementation
 // ============================================================================
 
+/// Parser for Sanyo MakerNotes
 pub struct SanyoParser;
 
 impl Default for SanyoParser {
@@ -123,6 +124,7 @@ impl Default for SanyoParser {
 }
 
 impl SanyoParser {
+    /// Creates a new SanyoParser instance
     pub fn new() -> Self {
         SanyoParser
     }

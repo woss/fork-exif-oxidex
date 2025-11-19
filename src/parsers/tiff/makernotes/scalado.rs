@@ -81,8 +81,8 @@ const_decoder! {
     ]
 }
 
-/// Formats adjustment percentage (-100 to +100) with proper +/- sign
-/// Used for brightness, contrast, and saturation adjustments
+// Formats adjustment percentage (-100 to +100) with proper +/- sign
+// Used for brightness, contrast, and saturation adjustments
 fn format_adjustment(value: i16) -> String {
     if value >= 0 {
         format!("+{}", value)
@@ -91,10 +91,9 @@ fn format_adjustment(value: i16) -> String {
     }
 }
 
-/// Extracts an ASCII string from IFD entry
-///
-/// Handles both inline strings (<=4 bytes stored in value_offset)
-/// and external strings (>4 bytes stored at offset in data buffer)
+// Extracts an ASCII string from IFD entry
+// Handles both inline strings (<=4 bytes stored in value_offset)
+// and external strings (>4 bytes stored at offset in data buffer)
 fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
     // Field type 2 indicates ASCII string
     if entry.field_type != 2 {
@@ -129,7 +128,7 @@ fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
     }
 }
 
-/// Scalado MakerNote parser implementing the MakerNoteParser trait
+/// Parser for Scalado MakerNotes
 #[derive(Default)]
 pub struct ScaladoParser;
 

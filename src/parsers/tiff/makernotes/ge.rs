@@ -54,9 +54,9 @@ const_decoder! {
     ]
 }
 
-/// Extracts a u16 value from an IFD entry's value_offset field
-/// This handles the case where the value is stored inline in the offset field
-/// rather than as a pointer to external data
+// Extracts a u16 value from an IFD entry's value_offset field
+// This handles the case where the value is stored inline in the offset field
+// rather than as a pointer to external data
 fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<u16> {
     if entry.value_count != 1 {
         return None;
@@ -70,7 +70,7 @@ fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> O
     Some(value)
 }
 
-/// Parser for GE camera MakerNotes
+/// Parser for GE MakerNotes
 pub struct GeParser;
 
 impl Default for GeParser {

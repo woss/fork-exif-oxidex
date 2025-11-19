@@ -59,10 +59,10 @@ const NINTENDO_SIGNATURE: &[u8] = b"Nintendo";
 // These replace 7 repetitive decoder functions with compile-time const decoders,
 // reducing code duplication while maintaining all functionality.
 
-/// Camera Mode decoder - 2D vs 3D photography mode
+// Camera Mode decoder - 2D vs 3D photography mode
 const_decoder!(CAMERA_MODE, i16, [(0, "2D"), (1, "3D"),]);
 
-/// Camera Selection decoder - Inner camera (facing user) vs outer stereoscopic cameras
+// Camera Selection decoder - Inner camera (facing user) vs outer stereoscopic cameras
 const_decoder!(
     CAMERA_SELECTION,
     i16,
@@ -73,7 +73,7 @@ const_decoder!(
     ]
 );
 
-/// Photo Filter decoder - Built-in photo effects
+// Photo Filter decoder - Built-in photo effects
 const_decoder!(
     FILTER,
     i16,
@@ -92,24 +92,20 @@ const_decoder!(
 // ============================================================================
 // Formatters for values that need unit conversion or special formatting logic.
 
-/// Formats parallax value (stored as hundredths of millimeters)
-///
-/// # Arguments
-/// * `value` - Parallax value in 1/100mm units
-///
-/// # Returns
-/// Formatted string with mm units (e.g., "3.50 mm")
+// Formats parallax value (stored as hundredths of millimeters)
+// # Arguments
+// * `value` - Parallax value in 1/100mm units
+// # Returns
+// Formatted string with mm units (e.g., "3.50 mm")
 fn format_parallax(value: i16) -> String {
     format!("{:.2} mm", value as f64 / 100.0)
 }
 
-/// Formats 3D effect depth percentage with validation
-///
-/// # Arguments
-/// * `value` - 3D effect depth (0-100)
-///
-/// # Returns
-/// Formatted percentage or "Invalid" if out of range
+// Formats 3D effect depth percentage with validation
+// # Arguments
+// * `value` - 3D effect depth (0-100)
+// # Returns
+// Formatted percentage or "Invalid" if out of range
 fn format_3d_effect(value: i16) -> String {
     if !(0..=100).contains(&value) {
         return "Invalid".to_string();
@@ -117,13 +113,11 @@ fn format_3d_effect(value: i16) -> String {
     format!("{}%", value)
 }
 
-/// Formats boolean values as Yes/No strings
-///
-/// # Arguments
-/// * `value` - Boolean value (0=No, non-zero=Yes)
-///
-/// # Returns
-/// "Yes" or "No" string
+// Formats boolean values as Yes/No strings
+// # Arguments
+// * `value` - Boolean value (0=No, non-zero=Yes)
+// # Returns
+// "Yes" or "No" string
 fn format_yes_no(value: i16) -> String {
     if value != 0 {
         "Yes".to_string()
@@ -138,10 +132,9 @@ fn format_yes_no(value: i16) -> String {
 // Centralized tag definitions with their decoders. This eliminates the need
 // for large match statements and makes tag handling declarative and maintainable.
 
-/// Lazy-initialized tag registry for Nintendo-specific tags
-///
-/// Maps tag IDs to their names and decoders. The registry is initialized
-/// once on first access and provides O(1) lookups for tag metadata.
+// Lazy-initialized tag registry for Nintendo-specific tags
+// Maps tag IDs to their names and decoders. The registry is initialized
+// once on first access and provides O(1) lookups for tag metadata.
 static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
     TagRegistry::with_capacity(11)
         // String tags (no decoder needed, handled separately)
@@ -167,10 +160,7 @@ static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
 // Parser Implementation
 // ============================================================================
 
-/// Nintendo 3DS Camera MakerNote parser
-///
-/// Handles parsing of Nintendo 3DS camera metadata including 3D stereoscopic
-/// settings, camera selection, filters, and game integration data.
+/// Parser for Nintendo MakerNotes
 #[derive(Default)]
 pub struct NintendoParser;
 

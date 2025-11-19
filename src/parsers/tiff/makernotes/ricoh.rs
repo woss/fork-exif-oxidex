@@ -104,6 +104,7 @@ static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
 // Parser Implementation
 // ============================================================================
 
+/// Parser for Ricoh MakerNotes
 pub struct RicohParser;
 
 impl Default for RicohParser {
@@ -113,6 +114,7 @@ impl Default for RicohParser {
 }
 
 impl RicohParser {
+    /// Creates a new RicohParser instance
     pub fn new() -> Self {
         RicohParser
     }
