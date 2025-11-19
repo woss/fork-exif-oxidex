@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2025-11-19
+
+### Added
+- **CI/CD Automation**: GitHub Pages changelog now updates automatically when a release is created
+  - New `update-docs` job in release workflow extracts changelog entry from main branch
+  - Automatically commits and pushes to gh-pages branch after successful release
+  - Eliminates manual documentation updates for releases
+
+## [1.2.0] - 2025-11-19
+
+### Changed
+- **CI/CD Infrastructure**: Migrated release workflow from GitHub-hosted runners to self-hosted runners
+  - Moved create-release job from `ubuntu-latest` to `arc-runner-set`
+  - Migrated Windows builds from `windows-latest` to `arc-runner-set` with MinGW cross-compilation
+  - Changed Windows target from `x86_64-pc-windows-msvc` to `x86_64-pc-windows-gnu`
+  - Configured cross-compilation linker for Windows builds from Linux
+  - All release artifacts now built on self-hosted infrastructure except macOS (warp-macos-15-arm64-6x)
+
 ## [1.1.0] - 2025-11-17
 
 ### Added
