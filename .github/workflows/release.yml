@@ -72,7 +72,7 @@ jobs:
       - name: Install MinGW cross-compiler
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y mingw-w64
+          sudo apt-get install -y mingw-w64 gcc
 
       - name: Build release binary
         run: cargo build --release --target x86_64-pc-windows-gnu
