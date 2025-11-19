@@ -25,11 +25,18 @@
 #![allow(unused_imports)]
 
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
-use super::shared::array_extractors::extract_i16_array;
+use super::shared::array_extractors::{extract_i16_array, extract_string};
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
+use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 
+// Import macros
+use crate::const_decoder;
+
+// Reconyx MakerNote Tag IDs
 const RECONYX_MODEL: u16 = 0x0001;
 const RECONYX_SERIAL: u16 = 0x0002;
 const RECONYX_FIRMWARE: u16 = 0x0003;
@@ -47,28 +54,38 @@ const RECONYX_MOTION_DETECT_LEVEL: u16 = 0x010A;
 
 const RECONYX_SIGNATURE: &[u8] = b"Reconyx";
 
-fn decode_trigger_mode(value: i16) -> String {
-    match value {
-        0 => "Time Lapse".to_string(),
-        1 => "Motion Detection".to_string(),
-        2 => "Time Lapse + Motion".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// ============================================================================
+// Declarative Decoder Definitions
+// ============================================================================
 
-fn decode_moon_phase(value: i16) -> String {
-    match value {
-        0 => "New Moon".to_string(),
-        1 => "Waxing Crescent".to_string(),
-        2 => "First Quarter".to_string(),
-        3 => "Waxing Gibbous".to_string(),
-        4 => "Full Moon".to_string(),
-        5 => "Waning Gibbous".to_string(),
-        6 => "Last Quarter".to_string(),
-        7 => "Waning Crescent".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+const_decoder!(
+    TRIGGER_MODE,
+    i16,
+    [
+        (0, "Time Lapse"),
+        (1, "Motion Detection"),
+        (2, "Time Lapse + Motion"),
+    ]
+);
+
+const_decoder!(
+    MOON_PHASE,
+    i16,
+    [
+        (0, "New Moon"),
+        (1, "Waxing Crescent"),
+        (2, "First Quarter"),
+        (3, "Waxing Gibbous"),
+        (4, "Full Moon"),
+        (5, "Waning Gibbous"),
+        (6, "Last Quarter"),
+        (7, "Waning Crescent"),
+    ]
+);
+
+// ============================================================================
+// Custom Formatters
+// ============================================================================
 
 fn format_temperature(value: i16) -> String {
     format!("{}°C", value)
@@ -82,41 +99,89 @@ fn format_interval(value: i16) -> String {
     format!("{} seconds", value)
 }
 
-fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
-    if entry.field_type != 2 {
-        return None;
-    }
-    let offset = entry.value_offset as usize;
-    let count = entry.value_count as usize;
-    if count <= 4 {
-        let bytes = entry.value_offset.to_le_bytes();
-        let s = String::from_utf8_lossy(&bytes[..count.min(4)])
-            .trim_end_matches('\0')
-            .to_string();
-        return if s.is_empty() { None } else { Some(s) };
-    }
-    if offset + count > data.len() {
-        return None;
-    }
-    let s = String::from_utf8_lossy(&data[offset..offset + count])
-        .trim_end_matches('\0')
-        .to_string();
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
-}
+// ============================================================================
+// Tag Registry
+// ============================================================================
 
-/// Reconyx Wildlife Camera MakerNote parser
-/// Default implementation for parser
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
+    TagRegistry::with_capacity(14)
+        .register_raw(RECONYX_MODEL, "Model")
+        .register_raw(RECONYX_SERIAL, "SerialNumber")
+        .register_raw(RECONYX_FIRMWARE, "FirmwareVersion")
+        .register_simple_i16(RECONYX_TRIGGER_MODE, "TriggerMode", &TRIGGER_MODE)
+        .register_simple_i16(RECONYX_MOON_PHASE, "MoonPhase", &MOON_PHASE)
+        .register_raw(RECONYX_SEQUENCE_NUMBER, "SequenceNumber")
+        .register_raw(RECONYX_EVENT_NUMBER, "EventNumber")
+        .register_raw(RECONYX_TEMPERATURE, "Temperature")
+        .register_raw(RECONYX_BATTERY_VOLTAGE, "BatteryVoltage")
+        .register_raw(RECONYX_TIMELAPSE_INTERVAL, "TimelapseInterval")
+        .register_raw(RECONYX_PIR_READINGS, "PIRReadings")
+        .register_raw(RECONYX_FLASH_OUTPUT, "FlashOutput")
+        .register_raw(RECONYX_SENSOR_SENSITIVITY, "SensorSensitivity")
+        .register_raw(RECONYX_MOTION_DETECT_LEVEL, "MotionDetectLevel")
+});
+
+// ============================================================================
+// Parser Implementation
+// ============================================================================
+
 #[derive(Default)]
 pub struct ReconyxParser;
 
 impl ReconyxParser {
-    /// Creates a new Reconyx parser instance
     pub fn new() -> Self {
         ReconyxParser
+    }
+
+    fn parse_entry(
+        &self,
+        entry: &IfdEntry,
+        data: &[u8],
+        byte_order: ByteOrder,
+        tags: &mut HashMap<String, String>,
+    ) {
+        let tag_id = entry.tag_id;
+
+        // Handle string tags
+        match tag_id {
+            RECONYX_MODEL | RECONYX_SERIAL | RECONYX_FIRMWARE => {
+                if let Some(s) = extract_string(entry, data, byte_order) {
+                    if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
+                        tags.insert(format!("Reconyx:{}", name), s);
+                    }
+                }
+                return;
+            }
+            _ => {}
+        }
+
+        // Handle i16 array tags
+        if let Some(array) = extract_i16_array(entry, data, byte_order) {
+            if let Some(&value) = array.first() {
+                let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
+                    Some(name) => name,
+                    None => return,
+                };
+
+                let formatted_value = match tag_id {
+                    RECONYX_TRIGGER_MODE | RECONYX_MOON_PHASE => {
+                        TAG_REGISTRY.decode_i16(tag_id, value)
+                    }
+                    RECONYX_SEQUENCE_NUMBER
+                    | RECONYX_EVENT_NUMBER
+                    | RECONYX_PIR_READINGS
+                    | RECONYX_SENSOR_SENSITIVITY
+                    | RECONYX_MOTION_DETECT_LEVEL => value.to_string(),
+                    RECONYX_TEMPERATURE => format_temperature(value),
+                    RECONYX_BATTERY_VOLTAGE => format_voltage(value),
+                    RECONYX_TIMELAPSE_INTERVAL => format_interval(value),
+                    RECONYX_FLASH_OUTPUT => format!("{}%", value),
+                    _ => return,
+                };
+
+                tags.insert(format!("Reconyx:{}", tag_name), formatted_value);
+            }
+        }
     }
 }
 
@@ -139,117 +204,21 @@ impl MakerNoteParser for ReconyxParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 8 {
-            return Err("Reconyx MakerNote data too short".to_string());
-        }
-        let start_offset = if data.starts_with(RECONYX_SIGNATURE) {
-            7
-        } else {
-            0
+        let config = IfdParserConfig {
+            signature: Some(RECONYX_SIGNATURE),
+            signature_offset: 7,
+            max_entries: 200,
         };
-        let parse_data = &data[start_offset..];
-        if parse_data.len() < 2 {
-            return Ok(());
-        }
 
-        let num_entries = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([parse_data[0], parse_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([parse_data[0], parse_data[1]]),
-        } as usize;
-        if num_entries == 0 || num_entries > 200 {
-            return Ok(());
-        }
-
-        let mut offset = 2;
-        for _ in 0..num_entries {
-            if offset + 12 > parse_data.len() {
-                break;
-            }
-            let entry_data = &parse_data[offset..offset + 12];
-
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[0], entry_data[1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[0], entry_data[1]]),
-            };
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[2], entry_data[3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[2], entry_data[3]]),
-            };
-            let count = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-            };
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            match tag {
-                RECONYX_MODEL | RECONYX_SERIAL | RECONYX_FIRMWARE => {
-                    if let Some(s) = extract_string(&entry, parse_data) {
-                        let tag_name = match tag {
-                            RECONYX_MODEL => "Model",
-                            RECONYX_SERIAL => "SerialNumber",
-                            RECONYX_FIRMWARE => "FirmwareVersion",
-                            _ => continue,
-                        };
-                        tags.insert(format!("Reconyx:{}", tag_name), s);
-                    }
-                }
-                _ => {
-                    if let Some(array) = extract_i16_array(&entry, parse_data, byte_order) {
-                        if let Some(&val) = array.first() {
-                            let (tag_name, formatted_value) = match tag {
-                                RECONYX_TRIGGER_MODE => ("TriggerMode", decode_trigger_mode(val)),
-                                RECONYX_SEQUENCE_NUMBER => ("SequenceNumber", val.to_string()),
-                                RECONYX_EVENT_NUMBER => ("EventNumber", val.to_string()),
-                                RECONYX_TEMPERATURE => ("Temperature", format_temperature(val)),
-                                RECONYX_BATTERY_VOLTAGE => ("BatteryVoltage", format_voltage(val)),
-                                RECONYX_MOON_PHASE => ("MoonPhase", decode_moon_phase(val)),
-                                RECONYX_TIMELAPSE_INTERVAL => {
-                                    ("TimelapseInterval", format_interval(val))
-                                }
-                                RECONYX_PIR_READINGS => ("PIRReadings", val.to_string()),
-                                RECONYX_FLASH_OUTPUT => ("FlashOutput", format!("{}%", val)),
-                                RECONYX_SENSOR_SENSITIVITY => {
-                                    ("SensorSensitivity", val.to_string())
-                                }
-                                RECONYX_MOTION_DETECT_LEVEL => {
-                                    ("MotionDetectLevel", val.to_string())
-                                }
-                                _ => continue,
-                            };
-                            tags.insert(format!("Reconyx:{}", tag_name), formatted_value);
-                        }
-                    }
-                }
-            }
-            offset += 12;
-        }
-        Ok(())
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
+            self.parse_entry(entry, parse_data, byte_order, tags);
+        })
     }
 }
+
+// ============================================================================
+// Unit Tests
+// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -263,17 +232,25 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_trigger_mode() {
-        assert_eq!(decode_trigger_mode(1), "Motion Detection");
+    fn test_trigger_mode_decoder() {
+        assert_eq!(TRIGGER_MODE.decode(0), "Time Lapse");
+        assert_eq!(TRIGGER_MODE.decode(1), "Motion Detection");
     }
 
     #[test]
-    fn test_decode_moon_phase() {
-        assert_eq!(decode_moon_phase(4), "Full Moon");
+    fn test_moon_phase_decoder() {
+        assert_eq!(MOON_PHASE.decode(0), "New Moon");
+        assert_eq!(MOON_PHASE.decode(4), "Full Moon");
     }
 
     #[test]
     fn test_format_voltage() {
         assert_eq!(format_voltage(6000), "6.00 V");
+    }
+
+    #[test]
+    fn test_tag_registry() {
+        assert_eq!(TAG_REGISTRY.get_tag_name(RECONYX_MODEL), Some("Model"));
+        assert!(TAG_REGISTRY.has_tag(RECONYX_TEMPERATURE));
     }
 }

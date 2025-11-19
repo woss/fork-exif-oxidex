@@ -39,6 +39,7 @@ use std::collections::HashMap;
 
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // FLIR MakerNote Tag IDs
 const FLIR_MODEL: u16 = 0x0001; // Camera model
@@ -87,126 +88,77 @@ const FLIR_FRAME_RATE: u16 = 0x0126; // Frame rate (Hz)
 // FLIR signature
 const FLIR_SIGNATURE: &[u8] = b"FLIR";
 
-/// Decodes FLIR color palette type
-///
-/// # Arguments
-/// * `value` - Palette code
-///
-/// # Returns
-/// Human-readable palette name
-fn decode_palette(value: i16) -> String {
-    match value {
-        0 => "Iron".to_string(),
-        1 => "Rainbow".to_string(),
-        2 => "White Hot".to_string(),
-        3 => "Black Hot".to_string(),
-        4 => "Arctic".to_string(),
-        5 => "Lava".to_string(),
-        6 => "Gray".to_string(),
-        7 => "Rainbow HC".to_string(),
-        8 => "Ironbow".to_string(),
-        9 => "Medical".to_string(),
-        10 => "Fusion".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes FLIR color palette type
+const_decoder! {
+    DECODE_PALETTE, i16, [
+        (0, "Iron"),
+        (1, "Rainbow"),
+        (2, "White Hot"),
+        (3, "Black Hot"),
+        (4, "Arctic"),
+        (5, "Lava"),
+        (6, "Gray"),
+        (7, "Rainbow HC"),
+        (8, "Ironbow"),
+        (9, "Medical"),
+        (10, "Fusion"),
+    ]
 }
 
-/// Decodes palette method
-///
-/// # Arguments
-/// * `value` - Method code
-///
-/// # Returns
-/// Human-readable method
-fn decode_palette_method(value: i16) -> String {
-    match value {
-        0 => "Linear".to_string(),
-        1 => "Histogram Equalization".to_string(),
-        2 => "Adaptive".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes palette method
+const_decoder! {
+    DECODE_PALETTE_METHOD, i16, [
+        (0, "Linear"),
+        (1, "Histogram Equalization"),
+        (2, "Adaptive"),
+    ]
 }
 
-/// Decodes palette stretch mode
-///
-/// # Arguments
-/// * `value` - Stretch code
-///
-/// # Returns
-/// Human-readable stretch mode
-fn decode_palette_stretch(value: i16) -> String {
-    match value {
-        0 => "Manual".to_string(),
-        1 => "Automatic".to_string(),
-        2 => "Lock Range".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes palette stretch mode
+const_decoder! {
+    DECODE_PALETTE_STRETCH, i16, [
+        (0, "Manual"),
+        (1, "Automatic"),
+        (2, "Lock Range"),
+    ]
 }
 
-/// Decodes image type
-///
-/// # Arguments
-/// * `value` - Image type code
-///
-/// # Returns
-/// Human-readable image type
-fn decode_image_type(value: i16) -> String {
-    match value {
-        0 => "Thermal".to_string(),
-        1 => "Visual".to_string(),
-        2 => "Thermal + Visual (PIP)".to_string(),
-        3 => "Thermal + Visual (Blend)".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes image type
+const_decoder! {
+    DECODE_IMAGE_TYPE, i16, [
+        (0, "Thermal"),
+        (1, "Visual"),
+        (2, "Thermal + Visual (PIP)"),
+        (3, "Thermal + Visual (Blend)"),
+    ]
 }
 
-/// Decodes temperature unit
-///
-/// # Arguments
-/// * `value` - Unit code
-///
-/// # Returns
-/// Unit symbol
-fn decode_temperature_unit(value: i16) -> String {
-    match value {
-        0 => "°C".to_string(),
-        1 => "°F".to_string(),
-        2 => "K".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes temperature unit
+const_decoder! {
+    DECODE_TEMPERATURE_UNIT, i16, [
+        (0, "°C"),
+        (1, "°F"),
+        (2, "K"),
+    ]
 }
 
-/// Decodes measurement mode
-///
-/// # Arguments
-/// * `value` - Mode code
-///
-/// # Returns
-/// Human-readable mode
-fn decode_measurement_mode(value: i16) -> String {
-    match value {
-        0 => "Spot Meter".to_string(),
-        1 => "Area".to_string(),
-        2 => "Line".to_string(),
-        3 => "Delta T".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes measurement mode
+const_decoder! {
+    DECODE_MEASUREMENT_MODE, i16, [
+        (0, "Spot Meter"),
+        (1, "Area"),
+        (2, "Line"),
+        (3, "Delta T"),
+    ]
 }
 
-/// Decodes gain mode
-///
-/// # Arguments
-/// * `value` - Gain code
-///
-/// # Returns
-/// Human-readable gain mode
-fn decode_gain_mode(value: i16) -> String {
-    match value {
-        0 => "Automatic".to_string(),
-        1 => "Manual Low".to_string(),
-        2 => "Manual High".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes gain mode
+const_decoder! {
+    DECODE_GAIN_MODE, i16, [
+        (0, "Automatic"),
+        (1, "Manual Low"),
+        (2, "Manual High"),
+    ]
 }
 
 /// Converts Kelvin to Celsius
@@ -506,12 +458,12 @@ impl MakerNoteParser for FlirParser {
                                 }
                                 FLIR_DISTANCE => ("Distance", format_distance(val)),
                                 FLIR_HUMIDITY => ("RelativeHumidity", format_humidity(val)),
-                                FLIR_PALETTE => ("Palette", decode_palette(val)),
+                                FLIR_PALETTE => ("Palette", DECODE_PALETTE.decode(val)),
                                 FLIR_PALETTE_METHOD => {
-                                    ("PaletteMethod", decode_palette_method(val))
+                                    ("PaletteMethod", DECODE_PALETTE_METHOD.decode(val))
                                 }
                                 FLIR_PALETTE_STRETCH => {
-                                    ("PaletteStretch", decode_palette_stretch(val))
+                                    ("PaletteStretch", DECODE_PALETTE_STRETCH.decode(val))
                                 }
                                 FLIR_TEMPERATURE_RANGE_MIN => {
                                     ("RangeMin", format_temperature_kelvin(val))
@@ -545,7 +497,7 @@ impl MakerNoteParser for FlirParser {
                                 FLIR_CAMERA_TEMP_MAX => {
                                     ("CameraInternalTempMax", format_temperature_kelvin(val))
                                 }
-                                FLIR_IMAGE_TYPE => ("ImageType", decode_image_type(val)),
+                                FLIR_IMAGE_TYPE => ("ImageType", DECODE_IMAGE_TYPE.decode(val)),
                                 FLIR_FOCUS_DISTANCE => ("FocusDistance", format_distance(val)),
                                 FLIR_PEAK_TEMP => {
                                     ("PeakTemperature", format_temperature_kelvin(val))
@@ -554,10 +506,10 @@ impl MakerNoteParser for FlirParser {
                                     ("ValleyTemperature", format_temperature_kelvin(val))
                                 }
                                 FLIR_MEASUREMENT_MODE => {
-                                    ("MeasurementMode", decode_measurement_mode(val))
+                                    ("MeasurementMode", DECODE_MEASUREMENT_MODE.decode(val))
                                 }
                                 FLIR_TEMPERATURE_UNIT => {
-                                    ("TemperatureUnit", decode_temperature_unit(val))
+                                    ("TemperatureUnit", DECODE_TEMPERATURE_UNIT.decode(val))
                                 }
                                 FLIR_ISOTHERM_MIN => {
                                     ("IsothermMin", format_temperature_kelvin(val))
@@ -581,7 +533,7 @@ impl MakerNoteParser for FlirParser {
                                         "No".to_string()
                                     },
                                 ),
-                                FLIR_GAIN_MODE => ("GainMode", decode_gain_mode(val)),
+                                FLIR_GAIN_MODE => ("GainMode", DECODE_GAIN_MODE.decode(val)),
                                 FLIR_FRAME_RATE => ("FrameRate", format_frame_rate(val)),
                                 _ => continue,
                             };
@@ -611,15 +563,17 @@ mod tests {
 
     #[test]
     fn test_decode_palette() {
-        assert_eq!(decode_palette(0), "Iron");
-        assert_eq!(decode_palette(2), "White Hot");
-        assert_eq!(decode_palette(5), "Lava");
+        assert_eq!(DECODE_PALETTE.decode(0), "Iron");
+        assert_eq!(DECODE_PALETTE.decode(2), "White Hot");
+        assert_eq!(DECODE_PALETTE.decode(5), "Lava");
+        assert_eq!(DECODE_PALETTE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_image_type() {
-        assert_eq!(decode_image_type(0), "Thermal");
-        assert_eq!(decode_image_type(2), "Thermal + Visual (PIP)");
+        assert_eq!(DECODE_IMAGE_TYPE.decode(0), "Thermal");
+        assert_eq!(DECODE_IMAGE_TYPE.decode(2), "Thermal + Visual (PIP)");
+        assert_eq!(DECODE_IMAGE_TYPE.decode(99), "Unknown (99)");
     }
 
     #[test]
@@ -657,15 +611,17 @@ mod tests {
 
     #[test]
     fn test_decode_temperature_unit() {
-        assert_eq!(decode_temperature_unit(0), "°C");
-        assert_eq!(decode_temperature_unit(1), "°F");
-        assert_eq!(decode_temperature_unit(2), "K");
+        assert_eq!(DECODE_TEMPERATURE_UNIT.decode(0), "°C");
+        assert_eq!(DECODE_TEMPERATURE_UNIT.decode(1), "°F");
+        assert_eq!(DECODE_TEMPERATURE_UNIT.decode(2), "K");
+        assert_eq!(DECODE_TEMPERATURE_UNIT.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_gain_mode() {
-        assert_eq!(decode_gain_mode(0), "Automatic");
-        assert_eq!(decode_gain_mode(1), "Manual Low");
-        assert_eq!(decode_gain_mode(2), "Manual High");
+        assert_eq!(DECODE_GAIN_MODE.decode(0), "Automatic");
+        assert_eq!(DECODE_GAIN_MODE.decode(1), "Manual Low");
+        assert_eq!(DECODE_GAIN_MODE.decode(2), "Manual High");
+        assert_eq!(DECODE_GAIN_MODE.decode(99), "Unknown (99)");
     }
 }

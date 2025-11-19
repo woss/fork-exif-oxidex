@@ -28,6 +28,7 @@ use std::collections::HashMap;
 use super::phaseone_lens_database::lookup_lens_name;
 use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // ===== Phase One MakerNote Tag IDs =====
 // Based on ExifTool PhaseOne.pm tag definitions
@@ -143,87 +144,91 @@ pub fn is_phaseone_makernote(data: &[u8]) -> bool {
     false
 }
 
-/// Decodes Phase One exposure mode to human-readable string
-fn decode_exposure_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Manual",
-        1 => "Program",
-        2 => "Aperture Priority",
-        3 => "Shutter Priority",
-        _ => "Unknown",
-    }
+// ===== Const Decoders =====
+// Using const_decoder! macro for compile-time value decoding
+
+// Decodes Phase One exposure mode to human-readable string
+const_decoder! {
+    DECODER_EXPOSURE_MODE, i32, [
+        (0, "Manual"),
+        (1, "Program"),
+        (2, "Aperture Priority"),
+        (3, "Shutter Priority"),
+    ]
 }
 
-/// Decodes Phase One metering mode to human-readable string
-fn decode_metering_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Unknown",
-        1 => "Multi-zone",
-        2 => "Center-weighted",
-        3 => "Spot",
-        _ => "Unknown",
-    }
+// Decodes Phase One metering mode to human-readable string
+const_decoder! {
+    DECODER_METERING_MODE, i32, [
+        (0, "Unknown"),
+        (1, "Multi-zone"),
+        (2, "Center-weighted"),
+        (3, "Spot"),
+    ]
 }
 
-/// Decodes Phase One white balance to human-readable string
-fn decode_white_balance(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "Daylight",
-        2 => "Cloudy",
-        3 => "Shade",
-        4 => "Tungsten",
-        5 => "Fluorescent",
-        6 => "Flash",
-        7 => "Custom",
-        8 => "Kelvin",
-        _ => "Unknown",
-    }
+// Decodes Phase One white balance to human-readable string
+const_decoder! {
+    DECODER_WHITE_BALANCE, i32, [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Cloudy"),
+        (3, "Shade"),
+        (4, "Tungsten"),
+        (5, "Fluorescent"),
+        (6, "Flash"),
+        (7, "Custom"),
+        (8, "Kelvin"),
+    ]
 }
 
-/// Decodes Phase One drive mode to human-readable string
-fn decode_drive_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Single",
-        1 => "Continuous",
-        2 => "Self-Timer",
-        3 => "Mirror Lock-up",
-        4 => "Live View",
-        _ => "Unknown",
-    }
+// Decodes Phase One drive mode to human-readable string
+const_decoder! {
+    DECODER_DRIVE_MODE, i32, [
+        (0, "Single"),
+        (1, "Continuous"),
+        (2, "Self-Timer"),
+        (3, "Mirror Lock-up"),
+        (4, "Live View"),
+    ]
 }
 
-/// Decodes Phase One focus mode to human-readable string
-fn decode_focus_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Manual",
-        1 => "Single AF",
-        2 => "Continuous AF",
-        _ => "Unknown",
-    }
+// Decodes Phase One focus mode to human-readable string
+const_decoder! {
+    DECODER_FOCUS_MODE, i32, [
+        (0, "Manual"),
+        (1, "Single AF"),
+        (2, "Continuous AF"),
+    ]
 }
 
-/// Decodes Phase One flash mode to human-readable string
-fn decode_flash_mode(value: i32) -> &'static str {
-    match value {
-        0 => "No Flash",
-        1 => "Fired",
-        2 => "Sync",
-        3 => "Fill",
-        _ => "Unknown",
-    }
+// Decodes Phase One flash mode to human-readable string
+const_decoder! {
+    DECODER_FLASH_MODE, i32, [
+        (0, "No Flash"),
+        (1, "Fired"),
+        (2, "Sync"),
+        (3, "Fill"),
+    ]
 }
 
-/// Decodes Phase One system type to human-readable string
-fn decode_system_type(value: i32) -> &'static str {
-    match value {
-        0 => "Unknown",
-        1 => "H System",
-        2 => "V System",
-        3 => "DF/DF+",
-        4 => "XF Camera System",
-        _ => "Unknown",
-    }
+// Decodes Phase One system type to human-readable string
+const_decoder! {
+    DECODER_SYSTEM_TYPE, i32, [
+        (0, "Unknown"),
+        (1, "H System"),
+        (2, "V System"),
+        (3, "DF/DF+"),
+        (4, "XF Camera System"),
+    ]
+}
+
+// Decodes Phase One On/Off settings to human-readable string
+const_decoder! {
+    DECODER_OFF_ON, i32, [
+        (0, "Off"),
+        (1, "On"),
+    ]
 }
 
 /// Phase One MakerNote Parser
@@ -410,7 +415,7 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "PhaseOne:SystemType".to_string(),
-                        decode_system_type(value).to_string(),
+                        DECODER_SYSTEM_TYPE.decode(value).to_string(),
                     );
                 }
 
@@ -515,7 +520,7 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "PhaseOne:ExposureMode".to_string(),
-                        decode_exposure_mode(value).to_string(),
+                        DECODER_EXPOSURE_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -523,7 +528,7 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "PhaseOne:MeteringMode".to_string(),
-                        decode_metering_mode(value).to_string(),
+                        DECODER_METERING_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -531,7 +536,7 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "PhaseOne:FlashMode".to_string(),
-                        decode_flash_mode(value).to_string(),
+                        DECODER_FLASH_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -540,7 +545,7 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "PhaseOne:WhiteBalance".to_string(),
-                        decode_white_balance(value).to_string(),
+                        DECODER_WHITE_BALANCE.decode(value).to_string(),
                     );
                 }
 
@@ -587,12 +592,10 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
 
                 PHASEONE_LONG_EXPOSURE_NR => {
                     let value = entry.value_offset as i32;
-                    let nr_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        _ => "Unknown",
-                    };
-                    tags.insert("PhaseOne:LongExposureNR".to_string(), nr_str.to_string());
+                    tags.insert(
+                        "PhaseOne:LongExposureNR".to_string(),
+                        DECODER_OFF_ON.decode(value).to_string(),
+                    );
                 }
 
                 // Capture settings
@@ -600,7 +603,7 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "PhaseOne:DriveMode".to_string(),
-                        decode_drive_mode(value).to_string(),
+                        DECODER_DRIVE_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -608,28 +611,24 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "PhaseOne:FocusMode".to_string(),
-                        decode_focus_mode(value).to_string(),
+                        DECODER_FOCUS_MODE.decode(value).to_string(),
                     );
                 }
 
                 PHASEONE_MIRROR_LOCKUP => {
                     let value = entry.value_offset as i32;
-                    let mlu_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        _ => "Unknown",
-                    };
-                    tags.insert("PhaseOne:MirrorLockup".to_string(), mlu_str.to_string());
+                    tags.insert(
+                        "PhaseOne:MirrorLockup".to_string(),
+                        DECODER_OFF_ON.decode(value).to_string(),
+                    );
                 }
 
                 PHASEONE_LIVE_VIEW => {
                     let value = entry.value_offset as i32;
-                    let lv_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        _ => "Unknown",
-                    };
-                    tags.insert("PhaseOne:LiveView".to_string(), lv_str.to_string());
+                    tags.insert(
+                        "PhaseOne:LiveView".to_string(),
+                        DECODER_OFF_ON.decode(value).to_string(),
+                    );
                 }
 
                 // Advanced features
@@ -640,22 +639,18 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
 
                 PHASEONE_PIXEL_SHIFT => {
                     let value = entry.value_offset as i32;
-                    let ps_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        _ => "Unknown",
-                    };
-                    tags.insert("PhaseOne:PixelShift".to_string(), ps_str.to_string());
+                    tags.insert(
+                        "PhaseOne:PixelShift".to_string(),
+                        DECODER_OFF_ON.decode(value).to_string(),
+                    );
                 }
 
                 PHASEONE_FOCUS_STACKING => {
                     let value = entry.value_offset as i32;
-                    let fs_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        _ => "Unknown",
-                    };
-                    tags.insert("PhaseOne:FocusStacking".to_string(), fs_str.to_string());
+                    tags.insert(
+                        "PhaseOne:FocusStacking".to_string(),
+                        DECODER_OFF_ON.decode(value).to_string(),
+                    );
                 }
 
                 // IIQ specific
@@ -687,12 +682,10 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
 
                 PHASEONE_SENSOR_CLEANING => {
                     let value = entry.value_offset as i32;
-                    let clean_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        _ => "Unknown",
-                    };
-                    tags.insert("PhaseOne:SensorCleaning".to_string(), clean_str.to_string());
+                    tags.insert(
+                        "PhaseOne:SensorCleaning".to_string(),
+                        DECODER_OFF_ON.decode(value).to_string(),
+                    );
                 }
 
                 _ => {
@@ -745,4 +738,178 @@ fn phaseone_tag_to_name(tag_id: u16) -> String {
         _ => return format!("Unknown-{:#06X}", tag_id),
     };
     tag_name.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test DECODER_EXPOSURE_MODE with all known values and unknown values
+    #[test]
+    fn test_decoder_exposure_mode() {
+        // Test known values
+        assert_eq!(DECODER_EXPOSURE_MODE.decode(0), "Manual");
+        assert_eq!(DECODER_EXPOSURE_MODE.decode(1), "Program");
+        assert_eq!(DECODER_EXPOSURE_MODE.decode(2), "Aperture Priority");
+        assert_eq!(DECODER_EXPOSURE_MODE.decode(3), "Shutter Priority");
+
+        // Test unknown values - should return "Unknown (value)" format
+        assert_eq!(DECODER_EXPOSURE_MODE.decode(4), "Unknown (4)");
+        assert_eq!(DECODER_EXPOSURE_MODE.decode(99), "Unknown (99)");
+        assert_eq!(DECODER_EXPOSURE_MODE.decode(-1), "Unknown (-1)");
+    }
+
+    /// Test DECODER_METERING_MODE with all known values and unknown values
+    #[test]
+    fn test_decoder_metering_mode() {
+        // Test known values
+        assert_eq!(DECODER_METERING_MODE.decode(0), "Unknown");
+        assert_eq!(DECODER_METERING_MODE.decode(1), "Multi-zone");
+        assert_eq!(DECODER_METERING_MODE.decode(2), "Center-weighted");
+        assert_eq!(DECODER_METERING_MODE.decode(3), "Spot");
+
+        // Test unknown values
+        assert_eq!(DECODER_METERING_MODE.decode(4), "Unknown (4)");
+        assert_eq!(DECODER_METERING_MODE.decode(99), "Unknown (99)");
+    }
+
+    /// Test DECODER_WHITE_BALANCE with all known values and unknown values
+    #[test]
+    fn test_decoder_white_balance() {
+        // Test known values
+        assert_eq!(DECODER_WHITE_BALANCE.decode(0), "Auto");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(1), "Daylight");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(2), "Cloudy");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(3), "Shade");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(4), "Tungsten");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(5), "Fluorescent");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(6), "Flash");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(7), "Custom");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(8), "Kelvin");
+
+        // Test unknown values
+        assert_eq!(DECODER_WHITE_BALANCE.decode(9), "Unknown (9)");
+        assert_eq!(DECODER_WHITE_BALANCE.decode(99), "Unknown (99)");
+    }
+
+    /// Test DECODER_DRIVE_MODE with all known values and unknown values
+    #[test]
+    fn test_decoder_drive_mode() {
+        // Test known values
+        assert_eq!(DECODER_DRIVE_MODE.decode(0), "Single");
+        assert_eq!(DECODER_DRIVE_MODE.decode(1), "Continuous");
+        assert_eq!(DECODER_DRIVE_MODE.decode(2), "Self-Timer");
+        assert_eq!(DECODER_DRIVE_MODE.decode(3), "Mirror Lock-up");
+        assert_eq!(DECODER_DRIVE_MODE.decode(4), "Live View");
+
+        // Test unknown values
+        assert_eq!(DECODER_DRIVE_MODE.decode(5), "Unknown (5)");
+        assert_eq!(DECODER_DRIVE_MODE.decode(99), "Unknown (99)");
+    }
+
+    /// Test DECODER_FOCUS_MODE with all known values and unknown values
+    #[test]
+    fn test_decoder_focus_mode() {
+        // Test known values
+        assert_eq!(DECODER_FOCUS_MODE.decode(0), "Manual");
+        assert_eq!(DECODER_FOCUS_MODE.decode(1), "Single AF");
+        assert_eq!(DECODER_FOCUS_MODE.decode(2), "Continuous AF");
+
+        // Test unknown values
+        assert_eq!(DECODER_FOCUS_MODE.decode(3), "Unknown (3)");
+        assert_eq!(DECODER_FOCUS_MODE.decode(99), "Unknown (99)");
+    }
+
+    /// Test DECODER_FLASH_MODE with all known values and unknown values
+    #[test]
+    fn test_decoder_flash_mode() {
+        // Test known values
+        assert_eq!(DECODER_FLASH_MODE.decode(0), "No Flash");
+        assert_eq!(DECODER_FLASH_MODE.decode(1), "Fired");
+        assert_eq!(DECODER_FLASH_MODE.decode(2), "Sync");
+        assert_eq!(DECODER_FLASH_MODE.decode(3), "Fill");
+
+        // Test unknown values
+        assert_eq!(DECODER_FLASH_MODE.decode(4), "Unknown (4)");
+        assert_eq!(DECODER_FLASH_MODE.decode(99), "Unknown (99)");
+    }
+
+    /// Test DECODER_SYSTEM_TYPE with all known values and unknown values
+    #[test]
+    fn test_decoder_system_type() {
+        // Test known values
+        assert_eq!(DECODER_SYSTEM_TYPE.decode(0), "Unknown");
+        assert_eq!(DECODER_SYSTEM_TYPE.decode(1), "H System");
+        assert_eq!(DECODER_SYSTEM_TYPE.decode(2), "V System");
+        assert_eq!(DECODER_SYSTEM_TYPE.decode(3), "DF/DF+");
+        assert_eq!(DECODER_SYSTEM_TYPE.decode(4), "XF Camera System");
+
+        // Test unknown values
+        assert_eq!(DECODER_SYSTEM_TYPE.decode(5), "Unknown (5)");
+        assert_eq!(DECODER_SYSTEM_TYPE.decode(99), "Unknown (99)");
+    }
+
+    /// Test DECODER_OFF_ON with all known values and unknown values
+    #[test]
+    fn test_decoder_off_on() {
+        // Test known values
+        assert_eq!(DECODER_OFF_ON.decode(0), "Off");
+        assert_eq!(DECODER_OFF_ON.decode(1), "On");
+
+        // Test unknown values
+        assert_eq!(DECODER_OFF_ON.decode(2), "Unknown (2)");
+        assert_eq!(DECODER_OFF_ON.decode(99), "Unknown (99)");
+    }
+
+    /// Test is_phaseone_makernote function with valid headers
+    #[test]
+    fn test_is_phaseone_makernote_valid() {
+        // Test with "Phase One" header
+        let data = b"Phase One\x00\x01\x02";
+        assert!(is_phaseone_makernote(data));
+
+        // Test with valid entry count (little endian)
+        let data = &[0x05, 0x00]; // 5 entries
+        assert!(is_phaseone_makernote(data));
+
+        // Test with valid entry count (big endian)
+        let data = &[0x00, 0x0A]; // 10 entries
+        assert!(is_phaseone_makernote(data));
+    }
+
+    /// Test is_phaseone_makernote function with invalid data
+    #[test]
+    fn test_is_phaseone_makernote_invalid() {
+        // Test with too short data
+        let data = &[0x00];
+        assert!(!is_phaseone_makernote(data));
+
+        // Test with empty data
+        let data = &[];
+        assert!(!is_phaseone_makernote(data));
+
+        // Test with invalid entry count (too high)
+        let data = &[0xFF, 0xFF]; // 65535 entries (invalid)
+        assert!(!is_phaseone_makernote(data));
+    }
+
+    /// Test PhaseOneMakerNoteParser trait methods
+    #[test]
+    fn test_parser_trait_methods() {
+        let parser = PhaseOneMakerNoteParser;
+
+        // Test manufacturer name
+        assert_eq!(parser.manufacturer_name(), "PhaseOne");
+
+        // Test tag prefix
+        assert_eq!(parser.tag_prefix(), "PhaseOne:");
+
+        // Test validate_header with valid data
+        let valid_data = b"Phase One\x00\x01";
+        assert!(parser.validate_header(valid_data));
+
+        // Test validate_header with invalid data
+        let invalid_data = &[];
+        assert!(!parser.validate_header(invalid_data));
+    }
 }

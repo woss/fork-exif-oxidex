@@ -26,6 +26,7 @@ use std::collections::HashMap;
 use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 use super::shared::MakerNoteParser;
 use super::sigma_lens_database::lookup_lens_name;
+use crate::const_decoder;
 
 // ===== Sigma MakerNote Tag IDs =====
 // Based on ExifTool Sigma.pm tag definitions
@@ -126,144 +127,139 @@ pub fn is_sigma_makernote(data: &[u8]) -> bool {
     false
 }
 
-/// Decodes Sigma resolution mode to human-readable string
-fn decode_resolution_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Low",
-        1 => "Medium",
-        2 => "High",
-        3 => "Ultra High",
-        _ => "Unknown",
-    }
+// ============================================================================
+// DECODERS - Sigma Value Decoders
+// ============================================================================
+// Following the shared decoder pattern from canon.rs, sony.rs, and fujifilm.rs
+// Each decoder is a constant that implements the Decode trait
+
+// Decodes Sigma resolution mode to human-readable string
+const_decoder! {
+    DECODE_RESOLUTION_MODE, i32, [
+        (0, "Low"),
+        (1, "Medium"),
+        (2, "High"),
+        (3, "Ultra High"),
+    ]
 }
 
-/// Decodes Sigma AF mode to human-readable string
-fn decode_af_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Manual",
-        1 => "AF-S (Single)",
-        2 => "AF-C (Continuous)",
-        3 => "AF-A (Auto)",
-        _ => "Unknown",
-    }
+// Decodes Sigma AF mode to human-readable string
+const_decoder! {
+    DECODE_AF_MODE, i32, [
+        (0, "Manual"),
+        (1, "AF-S (Single)"),
+        (2, "AF-C (Continuous)"),
+        (3, "AF-A (Auto)"),
+    ]
 }
 
-/// Decodes Sigma white balance to human-readable string
-fn decode_white_balance(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "Daylight",
-        2 => "Shade",
-        3 => "Cloudy",
-        4 => "Tungsten",
-        5 => "Fluorescent",
-        6 => "Flash",
-        7 => "Custom",
-        8 => "Color Temperature",
-        _ => "Unknown",
-    }
+// Decodes Sigma white balance to human-readable string
+const_decoder! {
+    DECODE_WHITE_BALANCE, i32, [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Shade"),
+        (3, "Cloudy"),
+        (4, "Tungsten"),
+        (5, "Fluorescent"),
+        (6, "Flash"),
+        (7, "Custom"),
+        (8, "Color Temperature"),
+    ]
 }
 
-/// Decodes Sigma exposure mode to human-readable string
-fn decode_exposure_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "Program",
-        2 => "Aperture Priority",
-        3 => "Shutter Priority",
-        4 => "Manual",
-        _ => "Unknown",
-    }
+// Decodes Sigma exposure mode to human-readable string
+const_decoder! {
+    DECODE_EXPOSURE_MODE, i32, [
+        (0, "Auto"),
+        (1, "Program"),
+        (2, "Aperture Priority"),
+        (3, "Shutter Priority"),
+        (4, "Manual"),
+    ]
 }
 
-/// Decodes Sigma metering mode to human-readable string
-fn decode_metering_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Unknown",
-        1 => "Multi-segment",
-        2 => "Center-weighted Average",
-        3 => "Spot",
-        4 => "Average",
-        _ => "Unknown",
-    }
+// Decodes Sigma metering mode to human-readable string
+const_decoder! {
+    DECODE_METERING_MODE, i32, [
+        (0, "Unknown"),
+        (1, "Multi-segment"),
+        (2, "Center-weighted Average"),
+        (3, "Spot"),
+        (4, "Average"),
+    ]
 }
 
-/// Decodes Sigma drive mode to human-readable string
-fn decode_drive_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Single",
-        1 => "Continuous",
-        2 => "Self-Timer",
-        3 => "Self-Timer (Multiple)",
-        4 => "Bracket",
-        5 => "Mirror Lock-up",
-        _ => "Unknown",
-    }
+// Decodes Sigma drive mode to human-readable string
+const_decoder! {
+    DECODE_DRIVE_MODE, i32, [
+        (0, "Single"),
+        (1, "Continuous"),
+        (2, "Self-Timer"),
+        (3, "Self-Timer (Multiple)"),
+        (4, "Bracket"),
+        (5, "Mirror Lock-up"),
+    ]
 }
 
-/// Decodes Sigma flash mode to human-readable string
-fn decode_flash_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "Auto",
-        2 => "On",
-        3 => "Red-eye Reduction",
-        4 => "Fill Flash",
-        5 => "Slow Sync",
-        6 => "Rear Curtain",
-        7 => "Wireless",
-        _ => "Unknown",
-    }
+// Decodes Sigma flash mode to human-readable string
+const_decoder! {
+    DECODE_FLASH_MODE, i32, [
+        (0, "Off"),
+        (1, "Auto"),
+        (2, "On"),
+        (3, "Red-eye Reduction"),
+        (4, "Fill Flash"),
+        (5, "Slow Sync"),
+        (6, "Rear Curtain"),
+        (7, "Wireless"),
+    ]
 }
 
-/// Decodes Sigma quality setting to human-readable string
-fn decode_quality(value: i32) -> &'static str {
-    match value {
-        0 => "Low",
-        1 => "Medium",
-        2 => "High",
-        3 => "RAW",
-        4 => "RAW + JPEG",
-        _ => "Unknown",
-    }
+// Decodes Sigma quality setting to human-readable string
+const_decoder! {
+    DECODE_QUALITY, i32, [
+        (0, "Low"),
+        (1, "Medium"),
+        (2, "High"),
+        (3, "RAW"),
+        (4, "RAW + JPEG"),
+    ]
 }
 
-/// Decodes Sigma color mode to human-readable string
-fn decode_color_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Standard",
-        1 => "Vivid",
-        2 => "Neutral",
-        3 => "Portrait",
-        4 => "Landscape",
-        5 => "Monochrome",
-        6 => "Sepia",
-        7 => "FOV Classic Blue",
-        8 => "FOV Classic Yellow",
-        _ => "Unknown",
-    }
+// Decodes Sigma color mode to human-readable string
+const_decoder! {
+    DECODE_COLOR_MODE, i32, [
+        (0, "Standard"),
+        (1, "Vivid"),
+        (2, "Neutral"),
+        (3, "Portrait"),
+        (4, "Landscape"),
+        (5, "Monochrome"),
+        (6, "Sepia"),
+        (7, "FOV Classic Blue"),
+        (8, "FOV Classic Yellow"),
+    ]
 }
 
-/// Decodes Sigma color space to human-readable string
-fn decode_color_space(value: i32) -> &'static str {
-    match value {
-        0 => "sRGB",
-        1 => "Adobe RGB",
-        _ => "Unknown",
-    }
+// Decodes Sigma color space to human-readable string
+const_decoder! {
+    DECODE_COLOR_SPACE, i32, [
+        (0, "sRGB"),
+        (1, "Adobe RGB"),
+    ]
 }
 
-/// Decodes Sigma picture style to human-readable string
-fn decode_picture_style(value: i32) -> &'static str {
-    match value {
-        0 => "Standard",
-        1 => "Vivid",
-        2 => "Neutral",
-        3 => "Portrait",
-        4 => "Landscape",
-        5 => "Monochrome",
-        _ => "Unknown",
-    }
+// Decodes Sigma picture style to human-readable string
+const_decoder! {
+    DECODE_PICTURE_STYLE, i32, [
+        (0, "Standard"),
+        (1, "Vivid"),
+        (2, "Neutral"),
+        (3, "Portrait"),
+        (4, "Landscape"),
+        (5, "Monochrome"),
+    ]
 }
 
 /// Sigma MakerNote Parser
@@ -406,7 +402,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:DriveMode".to_string(),
-                        decode_drive_mode(value).to_string(),
+                        DECODE_DRIVE_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -415,7 +411,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:ResolutionMode".to_string(),
-                        decode_resolution_mode(value).to_string(),
+                        DECODE_RESOLUTION_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -424,7 +420,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:AFMode".to_string(),
-                        decode_af_mode(value).to_string(),
+                        DECODE_AF_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -439,7 +435,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:WhiteBalance".to_string(),
-                        decode_white_balance(value).to_string(),
+                        DECODE_WHITE_BALANCE.decode(value).to_string(),
                     );
                 }
 
@@ -448,7 +444,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:ExposureMode".to_string(),
-                        decode_exposure_mode(value).to_string(),
+                        DECODE_EXPOSURE_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -457,7 +453,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:MeteringMode".to_string(),
-                        decode_metering_mode(value).to_string(),
+                        DECODE_METERING_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -472,7 +468,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:ColorSpace".to_string(),
-                        decode_color_space(value).to_string(),
+                        DECODE_COLOR_SPACE.decode(value).to_string(),
                     );
                 }
 
@@ -549,7 +545,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:Quality".to_string(),
-                        decode_quality(value).to_string(),
+                        DECODE_QUALITY.decode(value).to_string(),
                     );
                 }
 
@@ -608,7 +604,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:ColorMode".to_string(),
-                        decode_color_mode(value).to_string(),
+                        DECODE_COLOR_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -617,7 +613,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:PictureStyle".to_string(),
-                        decode_picture_style(value).to_string(),
+                        DECODE_PICTURE_STYLE.decode(value).to_string(),
                     );
                 }
 
@@ -632,7 +628,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Sigma:FlashMode".to_string(),
-                        decode_flash_mode(value).to_string(),
+                        DECODE_FLASH_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -718,4 +714,160 @@ fn sigma_tag_to_name(tag_id: u16) -> String {
         _ => return format!("Unknown-{:#06X}", tag_id),
     };
     tag_name.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ============================================================================
+    // Decoder Tests
+    // ============================================================================
+    // Tests verify that const_decoder! macros properly decode known values
+    // and return "Unknown (value)" format for unknown values
+
+    #[test]
+    fn test_decode_resolution_mode() {
+        assert_eq!(DECODE_RESOLUTION_MODE.decode(0), "Low");
+        assert_eq!(DECODE_RESOLUTION_MODE.decode(1), "Medium");
+        assert_eq!(DECODE_RESOLUTION_MODE.decode(2), "High");
+        assert_eq!(DECODE_RESOLUTION_MODE.decode(3), "Ultra High");
+        assert_eq!(DECODE_RESOLUTION_MODE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_af_mode() {
+        assert_eq!(DECODE_AF_MODE.decode(0), "Manual");
+        assert_eq!(DECODE_AF_MODE.decode(1), "AF-S (Single)");
+        assert_eq!(DECODE_AF_MODE.decode(2), "AF-C (Continuous)");
+        assert_eq!(DECODE_AF_MODE.decode(3), "AF-A (Auto)");
+        assert_eq!(DECODE_AF_MODE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_white_balance() {
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0), "Auto");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(1), "Daylight");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(2), "Shade");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(3), "Cloudy");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(4), "Tungsten");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(5), "Fluorescent");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(6), "Flash");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(7), "Custom");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(8), "Color Temperature");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_exposure_mode() {
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(0), "Auto");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(1), "Program");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(2), "Aperture Priority");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(3), "Shutter Priority");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(4), "Manual");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_metering_mode() {
+        assert_eq!(DECODE_METERING_MODE.decode(0), "Unknown");
+        assert_eq!(DECODE_METERING_MODE.decode(1), "Multi-segment");
+        assert_eq!(DECODE_METERING_MODE.decode(2), "Center-weighted Average");
+        assert_eq!(DECODE_METERING_MODE.decode(3), "Spot");
+        assert_eq!(DECODE_METERING_MODE.decode(4), "Average");
+        assert_eq!(DECODE_METERING_MODE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_drive_mode() {
+        assert_eq!(DECODE_DRIVE_MODE.decode(0), "Single");
+        assert_eq!(DECODE_DRIVE_MODE.decode(1), "Continuous");
+        assert_eq!(DECODE_DRIVE_MODE.decode(2), "Self-Timer");
+        assert_eq!(DECODE_DRIVE_MODE.decode(3), "Self-Timer (Multiple)");
+        assert_eq!(DECODE_DRIVE_MODE.decode(4), "Bracket");
+        assert_eq!(DECODE_DRIVE_MODE.decode(5), "Mirror Lock-up");
+        assert_eq!(DECODE_DRIVE_MODE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_flash_mode() {
+        assert_eq!(DECODE_FLASH_MODE.decode(0), "Off");
+        assert_eq!(DECODE_FLASH_MODE.decode(1), "Auto");
+        assert_eq!(DECODE_FLASH_MODE.decode(2), "On");
+        assert_eq!(DECODE_FLASH_MODE.decode(3), "Red-eye Reduction");
+        assert_eq!(DECODE_FLASH_MODE.decode(4), "Fill Flash");
+        assert_eq!(DECODE_FLASH_MODE.decode(5), "Slow Sync");
+        assert_eq!(DECODE_FLASH_MODE.decode(6), "Rear Curtain");
+        assert_eq!(DECODE_FLASH_MODE.decode(7), "Wireless");
+        assert_eq!(DECODE_FLASH_MODE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_quality() {
+        assert_eq!(DECODE_QUALITY.decode(0), "Low");
+        assert_eq!(DECODE_QUALITY.decode(1), "Medium");
+        assert_eq!(DECODE_QUALITY.decode(2), "High");
+        assert_eq!(DECODE_QUALITY.decode(3), "RAW");
+        assert_eq!(DECODE_QUALITY.decode(4), "RAW + JPEG");
+        assert_eq!(DECODE_QUALITY.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_color_mode() {
+        assert_eq!(DECODE_COLOR_MODE.decode(0), "Standard");
+        assert_eq!(DECODE_COLOR_MODE.decode(1), "Vivid");
+        assert_eq!(DECODE_COLOR_MODE.decode(2), "Neutral");
+        assert_eq!(DECODE_COLOR_MODE.decode(3), "Portrait");
+        assert_eq!(DECODE_COLOR_MODE.decode(4), "Landscape");
+        assert_eq!(DECODE_COLOR_MODE.decode(5), "Monochrome");
+        assert_eq!(DECODE_COLOR_MODE.decode(6), "Sepia");
+        assert_eq!(DECODE_COLOR_MODE.decode(7), "FOV Classic Blue");
+        assert_eq!(DECODE_COLOR_MODE.decode(8), "FOV Classic Yellow");
+        assert_eq!(DECODE_COLOR_MODE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_color_space() {
+        assert_eq!(DECODE_COLOR_SPACE.decode(0), "sRGB");
+        assert_eq!(DECODE_COLOR_SPACE.decode(1), "Adobe RGB");
+        assert_eq!(DECODE_COLOR_SPACE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_decode_picture_style() {
+        assert_eq!(DECODE_PICTURE_STYLE.decode(0), "Standard");
+        assert_eq!(DECODE_PICTURE_STYLE.decode(1), "Vivid");
+        assert_eq!(DECODE_PICTURE_STYLE.decode(2), "Neutral");
+        assert_eq!(DECODE_PICTURE_STYLE.decode(3), "Portrait");
+        assert_eq!(DECODE_PICTURE_STYLE.decode(4), "Landscape");
+        assert_eq!(DECODE_PICTURE_STYLE.decode(5), "Monochrome");
+        assert_eq!(DECODE_PICTURE_STYLE.decode(99), "Unknown (99)");
+    }
+
+    #[test]
+    fn test_is_sigma_makernote() {
+        // Test SIGMA header
+        let sigma_header = b"SIGMA\0\0\0";
+        assert!(is_sigma_makernote(sigma_header));
+
+        // Test FOVEON header
+        let foveon_header = b"FOVEON\0\0";
+        assert!(is_sigma_makernote(foveon_header));
+
+        // Test invalid header
+        let invalid_header = b"INVALID\0";
+        assert!(!is_sigma_makernote(invalid_header));
+
+        // Test too short data
+        let short_data = b"SIG";
+        assert!(!is_sigma_makernote(short_data));
+
+        // Test reasonable entry count (no header) - need at least 8 bytes
+        let entry_count_data = [10u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8]; // 10 entries in little endian
+        assert!(is_sigma_makernote(&entry_count_data));
+
+        // Test unreasonable entry count - need at least 8 bytes
+        let bad_entry_count = [200u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8]; // 200 entries
+        assert!(!is_sigma_makernote(&bad_entry_count));
+    }
 }

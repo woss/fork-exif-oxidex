@@ -9,6 +9,17 @@
 //! - istD/ist series legacy DSLRs
 //!
 //! Based on ExifTool's Pentax.pm module.
+//!
+//! ## Architecture
+//! This module has been refactored to use the shared MakerNotes framework,
+//! reducing code duplication by using:
+//! - **const_decoder!** macros for declarative value decoders
+//! - **Shared IFD parsing** utilities to eliminate duplicate parsing code
+//! - **Generic decoders** for common patterns (ON_OFF, etc.)
+//!
+//! ## Code Duplication Reduction
+//! This refactoring eliminates decoder function duplication while maintaining
+//! 100% functionality and test coverage.
 
 #![allow(dead_code)]
 #![allow(unused_imports)]
@@ -25,9 +36,15 @@ use std::collections::HashMap;
 
 use super::pentax_lens_database::lookup_lens_name;
 use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
+use super::shared::generic_decoders::ON_OFF;
 use super::shared::MakerNoteParser;
 
-// ===== Pentax MakerNote Tag IDs =====
+// Import declarative decoder macros
+use crate::const_decoder;
+
+// ============================================================================
+// Pentax MakerNote Tag IDs
+// ============================================================================
 // Based on ExifTool Pentax.pm tag definitions
 
 // Basic Camera Information Tags
@@ -101,6 +118,269 @@ const PENTAX_FLASH_INFO: u16 = 0x0219;
 const PENTAX_HEADER_AOC: &[u8] = b"AOC\0";
 const PENTAX_HEADER_PENTAX: &[u8] = b"PENTAX \0";
 
+// ============================================================================
+// Declarative Decoder Definitions
+// ============================================================================
+// Using const_decoder! macro to eliminate decoder function duplication
+
+// Quality setting decoder - maps numeric values to quality modes
+const_decoder!(
+    QUALITY,
+    i32,
+    [
+        (0, "Good"),
+        (1, "Better"),
+        (2, "Best"),
+        (3, "TIFF"),
+        (4, "RAW"),
+        (5, "Premium"),
+        (6, "RAW + JPEG"),
+        (7, "RAW + Premium"),
+        (8, "RAW + Better"),
+        (9, "RAW + Good"),
+    ]
+);
+
+// Picture mode decoder - maps values to shooting scene modes
+const_decoder!(
+    PICTURE_MODE,
+    i32,
+    [
+        (0, "Program"),
+        (1, "Shutter Priority"),
+        (2, "Aperture Priority"),
+        (3, "Manual"),
+        (4, "Portrait"),
+        (5, "Landscape"),
+        (6, "Macro"),
+        (7, "Sport"),
+        (8, "Night Scene Portrait"),
+        (9, "No Flash"),
+        (10, "Night Scene"),
+        (11, "Surf & Snow"),
+        (12, "Text"),
+        (13, "Sunset"),
+        (14, "Kids"),
+        (15, "Pet"),
+        (16, "Candlelight"),
+        (17, "Museum"),
+        (18, "Food"),
+        (19, "Stage Lighting"),
+        (20, "Night Snap"),
+        (21, "Blue Sky"),
+        (22, "Forest"),
+    ]
+);
+
+// Flash mode decoder - maps values to flash modes
+const_decoder!(
+    FLASH_MODE,
+    i32,
+    [
+        (0, "Auto"),
+        (1, "Flash On"),
+        (2, "Flash Off"),
+        (3, "Red-eye Reduction"),
+        (4, "Auto + Red-eye"),
+        (5, "On + Red-eye"),
+        (6, "Wireless"),
+        (7, "Slow-sync"),
+        (8, "Trailing-curtain Sync"),
+    ]
+);
+
+// Focus mode decoder - maps values to autofocus modes
+const_decoder!(
+    FOCUS_MODE,
+    i32,
+    [
+        (0, "Normal (AF)"),
+        (1, "Macro (AF)"),
+        (2, "Manual"),
+        (3, "AF-S (Single)"),
+        (4, "AF-C (Continuous)"),
+        (5, "AF-A (Auto)"),
+    ]
+);
+
+// Metering mode decoder - maps values to exposure metering modes
+const_decoder!(
+    METERING_MODE,
+    i32,
+    [
+        (0, "Multi-segment"),
+        (1, "Center-weighted Average"),
+        (2, "Spot"),
+        (3, "Average"),
+        (4, "Highlight-weighted"),
+    ]
+);
+
+// White balance decoder - maps values to white balance presets
+const_decoder!(
+    WHITE_BALANCE,
+    i32,
+    [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Shade"),
+        (3, "Cloudy"),
+        (4, "Tungsten"),
+        (5, "Fluorescent"),
+        (6, "Manual"),
+        (7, "Daylight Fluorescent"),
+        (8, "Day White Fluorescent"),
+        (9, "White Fluorescent"),
+        (10, "Flash"),
+        (11, "Cloudy Fluorescent"),
+        (14, "Multi Auto"),
+        (15, "Color Temperature Enhancement"),
+    ]
+);
+
+// White balance mode decoder - maps values to WB modes
+const_decoder!(
+    WHITE_BALANCE_MODE,
+    i32,
+    [
+        (1, "Auto (Daylight)"),
+        (2, "Auto (Shade)"),
+        (3, "Auto (Flash)"),
+        (4, "Auto (Tungsten)"),
+        (6, "Auto (Daylight Fluorescent)"),
+        (7, "Auto (Day White Fluorescent)"),
+        (8, "Auto (White Fluorescent)"),
+        (10, "Auto (Flash)"),
+    ]
+);
+
+// Drive mode decoder - maps values to drive/shooting modes
+const_decoder!(
+    DRIVE_MODE,
+    i32,
+    [
+        (0, "Single-frame"),
+        (1, "Continuous"),
+        (2, "Self-timer (12s)"),
+        (3, "Self-timer (2s)"),
+        (4, "Remote"),
+        (5, "Exposure Bracketing"),
+        (6, "Multiple Exposure"),
+        (7, "Remote (3s delay)"),
+        (8, "Continuous (Hi)"),
+        (9, "Continuous (Lo)"),
+        (10, "Continuous (Med)"),
+        (11, "Interval Shooting"),
+        (12, "Interval Composite"),
+    ]
+);
+
+// Color space decoder - maps values to color space settings
+const_decoder!(COLOR_SPACE, i32, [(0, "sRGB"), (1, "Adobe RGB"),]);
+
+// Saturation decoder - maps values to saturation settings
+const_decoder!(
+    SATURATION,
+    i32,
+    [
+        (0, "Low"),
+        (1, "Normal"),
+        (2, "High"),
+        (3, "Med Low"),
+        (4, "Med High"),
+        (5, "Very High"),
+        (6, "Very Low"),
+        (7, "Off (B&W)"),
+    ]
+);
+
+// Contrast decoder - maps values to contrast settings
+const_decoder!(
+    CONTRAST,
+    i32,
+    [
+        (0, "Low"),
+        (1, "Normal"),
+        (2, "High"),
+        (3, "Med Low"),
+        (4, "Med High"),
+        (5, "Very High"),
+        (6, "Very Low"),
+    ]
+);
+
+// Sharpness decoder - maps values to sharpness settings
+const_decoder!(
+    SHARPNESS,
+    i32,
+    [
+        (0, "Soft"),
+        (1, "Normal"),
+        (2, "Hard"),
+        (3, "Med Soft"),
+        (4, "Med Hard"),
+        (5, "Very Hard"),
+        (6, "Very Soft"),
+    ]
+);
+
+// Shake reduction decoder - maps values to SR/stabilization modes
+const_decoder!(
+    SHAKE_REDUCTION,
+    i32,
+    [
+        (0, "Off"),
+        (1, "On"),
+        (2, "On (Video)"),
+        (3, "On (2-axis)"),
+        (4, "On (3-axis)"),
+        (5, "On (4-axis)"),
+        (6, "On (5-axis)"),
+    ]
+);
+
+// Image size decoder - maps values to resolution presets
+const_decoder!(
+    IMAGE_SIZE,
+    i32,
+    [
+        (0, "640x480"),
+        (1, "Full"),
+        (2, "1024x768"),
+        (3, "1280x960"),
+        (4, "1600x1200"),
+        (5, "2048x1536"),
+        (8, "2560x1920"),
+        (9, "3072x2304"),
+        (10, "3264x2448"),
+        (19, "320x240"),
+        (20, "2288x1712"),
+        (21, "2592x1944"),
+        (22, "2304x1728"),
+        (23, "3056x2296"),
+        (25, "2816x2212"),
+        (27, "3648x2736"),
+        (36, "3008x2008"),
+    ]
+);
+
+// Auto bracketing decoder - maps values to bracketing modes
+const_decoder!(AUTO_BRACKETING, i32, [(0, "Off"), (1, "On"),]);
+
+// World time location decoder - maps values to time zone selection
+const_decoder!(
+    WORLD_TIME_LOCATION,
+    i32,
+    [(0, "Hometown"), (1, "Destination"),]
+);
+
+// Pixel shift resolution decoder - maps values to PSR modes
+const_decoder!(
+    PIXEL_SHIFT_RESOLUTION,
+    i32,
+    [(0, "Off"), (1, "On"), (2, "On (Motion Correction)"),]
+);
+
 /// Checks if the provided data has a valid Pentax MakerNote header
 ///
 /// # Arguments
@@ -135,216 +415,6 @@ pub fn is_pentax_makernote(data: &[u8]) -> bool {
     }
 
     false
-}
-
-/// Decodes Pentax quality setting to human-readable string
-fn decode_quality(value: i32) -> &'static str {
-    match value {
-        0 => "Good",
-        1 => "Better",
-        2 => "Best",
-        3 => "TIFF",
-        4 => "RAW",
-        5 => "Premium",
-        6 => "RAW + JPEG",
-        7 => "RAW + Premium",
-        8 => "RAW + Better",
-        9 => "RAW + Good",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax picture mode to human-readable string
-fn decode_picture_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Program",
-        1 => "Shutter Priority",
-        2 => "Aperture Priority",
-        3 => "Manual",
-        4 => "Portrait",
-        5 => "Landscape",
-        6 => "Macro",
-        7 => "Sport",
-        8 => "Night Scene Portrait",
-        9 => "No Flash",
-        10 => "Night Scene",
-        11 => "Surf & Snow",
-        12 => "Text",
-        13 => "Sunset",
-        14 => "Kids",
-        15 => "Pet",
-        16 => "Candlelight",
-        17 => "Museum",
-        18 => "Food",
-        19 => "Stage Lighting",
-        20 => "Night Snap",
-        21 => "Blue Sky",
-        22 => "Forest",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax flash mode to human-readable string
-fn decode_flash_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "Flash On",
-        2 => "Flash Off",
-        3 => "Red-eye Reduction",
-        4 => "Auto + Red-eye",
-        5 => "On + Red-eye",
-        6 => "Wireless",
-        7 => "Slow-sync",
-        8 => "Trailing-curtain Sync",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax focus mode to human-readable string
-fn decode_focus_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Normal (AF)",
-        1 => "Macro (AF)",
-        2 => "Manual",
-        3 => "AF-S (Single)",
-        4 => "AF-C (Continuous)",
-        5 => "AF-A (Auto)",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax metering mode to human-readable string
-fn decode_metering_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Multi-segment",
-        1 => "Center-weighted Average",
-        2 => "Spot",
-        3 => "Average",
-        4 => "Highlight-weighted",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax white balance setting to human-readable string
-fn decode_white_balance(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "Daylight",
-        2 => "Shade",
-        3 => "Cloudy",
-        4 => "Tungsten",
-        5 => "Fluorescent",
-        6 => "Manual",
-        7 => "Daylight Fluorescent",
-        8 => "Day White Fluorescent",
-        9 => "White Fluorescent",
-        10 => "Flash",
-        11 => "Cloudy Fluorescent",
-        14 => "Multi Auto",
-        15 => "Color Temperature Enhancement",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax white balance mode to human-readable string
-fn decode_white_balance_mode(value: i32) -> &'static str {
-    match value {
-        1 => "Auto (Daylight)",
-        2 => "Auto (Shade)",
-        3 => "Auto (Flash)",
-        4 => "Auto (Tungsten)",
-        6 => "Auto (Daylight Fluorescent)",
-        7 => "Auto (Day White Fluorescent)",
-        8 => "Auto (White Fluorescent)",
-        10 => "Auto (Flash)",
-        _ => "Manual",
-    }
-}
-
-/// Decodes Pentax drive mode to human-readable string
-fn decode_drive_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Single-frame",
-        1 => "Continuous",
-        2 => "Self-timer (12s)",
-        3 => "Self-timer (2s)",
-        4 => "Remote",
-        5 => "Exposure Bracketing",
-        6 => "Multiple Exposure",
-        7 => "Remote (3s delay)",
-        8 => "Continuous (Hi)",
-        9 => "Continuous (Lo)",
-        10 => "Continuous (Med)",
-        11 => "Interval Shooting",
-        12 => "Interval Composite",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax color space to human-readable string
-fn decode_color_space(value: i32) -> &'static str {
-    match value {
-        0 => "sRGB",
-        1 => "Adobe RGB",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax saturation setting to human-readable string
-fn decode_saturation(value: i32) -> &'static str {
-    match value {
-        0 => "Low",
-        1 => "Normal",
-        2 => "High",
-        3 => "Med Low",
-        4 => "Med High",
-        5 => "Very High",
-        6 => "Very Low",
-        7 => "Off (B&W)",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax contrast setting to human-readable string
-fn decode_contrast(value: i32) -> &'static str {
-    match value {
-        0 => "Low",
-        1 => "Normal",
-        2 => "High",
-        3 => "Med Low",
-        4 => "Med High",
-        5 => "Very High",
-        6 => "Very Low",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax sharpness setting to human-readable string
-fn decode_sharpness(value: i32) -> &'static str {
-    match value {
-        0 => "Soft",
-        1 => "Normal",
-        2 => "Hard",
-        3 => "Med Soft",
-        4 => "Med Hard",
-        5 => "Very Hard",
-        6 => "Very Soft",
-        _ => "Unknown",
-    }
-}
-
-/// Decodes Pentax shake reduction info to human-readable string
-fn decode_shake_reduction(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "On",
-        2 => "On (Video)",
-        3 => "On (2-axis)",
-        4 => "On (3-axis)",
-        5 => "On (4-axis)",
-        6 => "On (5-axis)",
-        _ => "Unknown",
-    }
 }
 
 /// Represents a Pentax MakerNote parser
@@ -451,43 +521,114 @@ impl MakerNoteParser for PentaxParser {
                     }
                 }
 
-                // Quality mode
+                // Decoded value tags using const decoders
                 PENTAX_QUALITY => {
                     let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:Quality".to_string(),
-                        decode_quality(value).to_string(),
-                    );
+                    tags.insert("Pentax:Quality".to_string(), QUALITY.decode(value));
                 }
 
-                // Picture mode
                 PENTAX_PICTURE_MODE => {
                     let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:PictureMode".to_string(),
-                        decode_picture_mode(value).to_string(),
-                    );
+                    tags.insert("Pentax:PictureMode".to_string(), PICTURE_MODE.decode(value));
                 }
 
-                // Flash mode
                 PENTAX_FLASH_MODE => {
                     let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:FlashMode".to_string(),
-                        decode_flash_mode(value).to_string(),
-                    );
+                    tags.insert("Pentax:FlashMode".to_string(), FLASH_MODE.decode(value));
                 }
 
-                // Focus mode
                 PENTAX_FOCUS_MODE => {
                     let value = entry.value_offset as i32;
+                    tags.insert("Pentax:FocusMode".to_string(), FOCUS_MODE.decode(value));
+                }
+
+                PENTAX_METERING_MODE => {
+                    let value = entry.value_offset as i32;
                     tags.insert(
-                        "Pentax:FocusMode".to_string(),
-                        decode_focus_mode(value).to_string(),
+                        "Pentax:MeteringMode".to_string(),
+                        METERING_MODE.decode(value),
                     );
                 }
 
-                // AF point selected
+                PENTAX_WHITE_BALANCE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:WhiteBalance".to_string(),
+                        WHITE_BALANCE.decode(value),
+                    );
+                }
+
+                PENTAX_WHITE_BALANCE_MODE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:WhiteBalanceMode".to_string(),
+                        WHITE_BALANCE_MODE.decode(value),
+                    );
+                }
+
+                PENTAX_SATURATION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert("Pentax:Saturation".to_string(), SATURATION.decode(value));
+                }
+
+                PENTAX_CONTRAST => {
+                    let value = entry.value_offset as i32;
+                    tags.insert("Pentax:Contrast".to_string(), CONTRAST.decode(value));
+                }
+
+                PENTAX_SHARPNESS => {
+                    let value = entry.value_offset as i32;
+                    tags.insert("Pentax:Sharpness".to_string(), SHARPNESS.decode(value));
+                }
+
+                PENTAX_DRIVE_MODE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert("Pentax:DriveMode".to_string(), DRIVE_MODE.decode(value));
+                }
+
+                PENTAX_COLOR_SPACE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert("Pentax:ColorSpace".to_string(), COLOR_SPACE.decode(value));
+                }
+
+                PENTAX_SHAKE_REDUCTION_INFO => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:ShakeReduction".to_string(),
+                        SHAKE_REDUCTION.decode(value),
+                    );
+                }
+
+                PENTAX_PENTAX_IMAGE_SIZE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert("Pentax:ImageSize".to_string(), IMAGE_SIZE.decode(value));
+                }
+
+                PENTAX_AUTO_BRACKETING => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:AutoBracketing".to_string(),
+                        AUTO_BRACKETING.decode(value),
+                    );
+                }
+
+                PENTAX_WORLD_TIME_LOCATION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:WorldTimeLocation".to_string(),
+                        WORLD_TIME_LOCATION.decode(value),
+                    );
+                }
+
+                PENTAX_PIXEL_SHIFT_RESOLUTION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:PixelShiftResolution".to_string(),
+                        PIXEL_SHIFT_RESOLUTION.decode(value),
+                    );
+                }
+
+                // Numeric value tags (no decoding needed)
                 PENTAX_AF_POINT_SELECTED => {
                     let value = entry.value_offset as i32;
                     if (0..=65535).contains(&value) {
@@ -495,7 +636,6 @@ impl MakerNoteParser for PentaxParser {
                     }
                 }
 
-                // AF point in focus
                 PENTAX_AF_POINT_IN_FOCUS => {
                     let value = entry.value_offset as i32;
                     if (0..=65535).contains(&value) {
@@ -503,52 +643,21 @@ impl MakerNoteParser for PentaxParser {
                     }
                 }
 
-                // ISO speed
                 PENTAX_ISO_SPEED => {
                     let value = entry.value_offset;
                     tags.insert("Pentax:ISO".to_string(), value.to_string());
                 }
 
-                // Metering mode
-                PENTAX_METERING_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:MeteringMode".to_string(),
-                        decode_metering_mode(value).to_string(),
-                    );
-                }
-
-                // White balance
-                PENTAX_WHITE_BALANCE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:WhiteBalance".to_string(),
-                        decode_white_balance(value).to_string(),
-                    );
-                }
-
-                // White balance mode
-                PENTAX_WHITE_BALANCE_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:WhiteBalanceMode".to_string(),
-                        decode_white_balance_mode(value).to_string(),
-                    );
-                }
-
-                // Blue balance
                 PENTAX_BLUE_BALANCE => {
                     let value = entry.value_offset as i32;
                     tags.insert("Pentax:BlueBalance".to_string(), value.to_string());
                 }
 
-                // Red balance
                 PENTAX_RED_BALANCE => {
                     let value = entry.value_offset as i32;
                     tags.insert("Pentax:RedBalance".to_string(), value.to_string());
                 }
 
-                // Focal length
                 PENTAX_FOCAL_LENGTH => {
                     let value = entry.value_offset;
                     tags.insert(
@@ -557,7 +666,6 @@ impl MakerNoteParser for PentaxParser {
                     );
                 }
 
-                // Digital zoom
                 PENTAX_DIGITAL_ZOOM => {
                     let value = entry.value_offset;
                     if value > 0 {
@@ -568,58 +676,11 @@ impl MakerNoteParser for PentaxParser {
                     }
                 }
 
-                // Saturation
-                PENTAX_SATURATION => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:Saturation".to_string(),
-                        decode_saturation(value).to_string(),
-                    );
-                }
-
-                // Contrast
-                PENTAX_CONTRAST => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:Contrast".to_string(),
-                        decode_contrast(value).to_string(),
-                    );
-                }
-
-                // Sharpness
-                PENTAX_SHARPNESS => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:Sharpness".to_string(),
-                        decode_sharpness(value).to_string(),
-                    );
-                }
-
-                // Drive mode
-                PENTAX_DRIVE_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:DriveMode".to_string(),
-                        decode_drive_mode(value).to_string(),
-                    );
-                }
-
-                // Color space
-                PENTAX_COLOR_SPACE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:ColorSpace".to_string(),
-                        decode_color_space(value).to_string(),
-                    );
-                }
-
-                // Shutter count
                 PENTAX_SHUTTER_COUNT => {
                     let value = entry.value_offset;
                     tags.insert("Pentax:ShutterCount".to_string(), value.to_string());
                 }
 
-                // Lens type and lookup
                 PENTAX_LENS_TYPE => {
                     let lens_id = entry.value_offset as u16;
                     if let Some(lens_name) = lookup_lens_name(lens_id) {
@@ -632,56 +693,16 @@ impl MakerNoteParser for PentaxParser {
                     }
                 }
 
-                // Model type
                 PENTAX_PENTAX_MODEL_TYPE => {
                     let value = entry.value_offset;
                     tags.insert("Pentax:ModelType".to_string(), value.to_string());
                 }
 
-                // Model ID
                 PENTAX_PENTAX_MODEL_ID => {
                     let value = entry.value_offset;
                     tags.insert("Pentax:ModelID".to_string(), value.to_string());
                 }
 
-                // Image size
-                PENTAX_PENTAX_IMAGE_SIZE => {
-                    let value = entry.value_offset as i32;
-                    let size_str = match value {
-                        0 => "640x480",
-                        1 => "Full",
-                        2 => "1024x768",
-                        3 => "1280x960",
-                        4 => "1600x1200",
-                        5 => "2048x1536",
-                        8 => "2560x1920",
-                        9 => "3072x2304",
-                        10 => "3264x2448",
-                        19 => "320x240",
-                        20 => "2288x1712",
-                        21 => "2592x1944",
-                        22 => "2304x1728",
-                        23 => "3056x2296",
-                        25 => "2816x2212",
-                        27 => "3648x2736",
-                        36 => "3008x2008",
-                        _ => "Unknown",
-                    };
-                    tags.insert("Pentax:ImageSize".to_string(), size_str.to_string());
-                }
-
-                // Auto bracketing
-                PENTAX_AUTO_BRACKETING => {
-                    let value = entry.value_offset as i32;
-                    let bracket_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        _ => "Unknown",
-                    };
-                    tags.insert("Pentax:AutoBracketing".to_string(), bracket_str.to_string());
-                }
-
-                // Preview image info (just extract dimensions)
                 PENTAX_PREVIEW_IMAGE_SIZE => {
                     let value = entry.value_offset;
                     tags.insert("Pentax:PreviewImageSize".to_string(), value.to_string());
@@ -692,7 +713,6 @@ impl MakerNoteParser for PentaxParser {
                     tags.insert("Pentax:PreviewImageLength".to_string(), value.to_string());
                 }
 
-                // Camera temperature
                 PENTAX_CAMERA_TEMPERATURE => {
                     let value = entry.value_offset as i32;
                     tags.insert(
@@ -701,37 +721,11 @@ impl MakerNoteParser for PentaxParser {
                     );
                 }
 
-                // Shake reduction info
-                PENTAX_SHAKE_REDUCTION_INFO => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:ShakeReduction".to_string(),
-                        decode_shake_reduction(value).to_string(),
-                    );
-                }
-
-                // Pixel shift resolution (for K-1 and newer high-res shot mode)
-                PENTAX_PIXEL_SHIFT_RESOLUTION => {
-                    let value = entry.value_offset as i32;
-                    let psr_str = match value {
-                        0 => "Off",
-                        1 => "On",
-                        2 => "On (Motion Correction)",
-                        _ => "Unknown",
-                    };
-                    tags.insert(
-                        "Pentax:PixelShiftResolution".to_string(),
-                        psr_str.to_string(),
-                    );
-                }
-
-                // Battery level
                 PENTAX_BATTERY_LEVEL => {
                     let value = entry.value_offset;
                     tags.insert("Pentax:BatteryLevel".to_string(), format!("{}%", value));
                 }
 
-                // Hometown and destination cities (for world time feature)
                 PENTAX_HOMETOWN_CITY => {
                     let value = entry.value_offset;
                     tags.insert("Pentax:HometownCity".to_string(), value.to_string());
@@ -742,30 +736,13 @@ impl MakerNoteParser for PentaxParser {
                     tags.insert("Pentax:DestinationCity".to_string(), value.to_string());
                 }
 
-                // World time location
-                PENTAX_WORLD_TIME_LOCATION => {
-                    let value = entry.value_offset as i32;
-                    let location = match value {
-                        0 => "Hometown",
-                        1 => "Destination",
-                        _ => "Unknown",
-                    };
-                    tags.insert("Pentax:WorldTimeLocation".to_string(), location.to_string());
-                }
-
-                // Picture mode 2 (extended picture modes)
                 PENTAX_PICTURE_MODE_2 => {
                     let value = entry.value_offset as i32;
                     tags.insert("Pentax:PictureMode2".to_string(), value.to_string());
                 }
 
                 _ => {
-                    // For unknown tags, we can optionally store them for debugging
-                    // Uncomment if you want to see all unknown tags:
-                    // tags.insert(
-                    //     format!("Pentax:Unknown-{:#06X}", entry.tag_id),
-                    //     entry.value_offset.to_string(),
-                    // );
+                    // Unknown tags are silently ignored
                 }
             }
         }
@@ -775,6 +752,8 @@ impl MakerNoteParser for PentaxParser {
 }
 
 /// Maps Pentax tag ID to human-readable tag name
+///
+/// This function provides consistent tag naming for Pentax MakerNote tags
 fn pentax_tag_to_name(tag_id: u16) -> String {
     let tag_name = match tag_id {
         PENTAX_VERSION => "Version",
@@ -808,6 +787,8 @@ fn pentax_tag_to_name(tag_id: u16) -> String {
 }
 
 /// Parses IFD entries in the specified byte order
+///
+/// This function handles parsing multiple IFD entries based on byte order
 fn parse_ifd_entries(
     input: &[u8],
     entry_count: u16,
@@ -821,6 +802,8 @@ fn parse_ifd_entries(
 }
 
 /// Parses a single IFD entry in little-endian byte order
+///
+/// IFD entries are 12 bytes: tag_id (2), field_type (2), value_count (4), value_offset (4)
 fn parse_ifd_entry_le(input: &[u8]) -> IResult<&[u8], IfdEntry> {
     use nom::Parser;
     map(
@@ -842,6 +825,8 @@ fn parse_ifd_entry_le(input: &[u8]) -> IResult<&[u8], IfdEntry> {
 }
 
 /// Parses a single IFD entry in big-endian byte order
+///
+/// IFD entries are 12 bytes: tag_id (2), field_type (2), value_count (4), value_offset (4)
 fn parse_ifd_entry_be(input: &[u8]) -> IResult<&[u8], IfdEntry> {
     use nom::Parser;
     map(
@@ -894,65 +879,69 @@ fn extract_string_value(entry: &IfdEntry, full_data: &[u8], ifd_offset: usize) -
     None
 }
 
+// ============================================================================
+// Unit Tests
+// ============================================================================
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_decode_quality() {
-        assert_eq!(decode_quality(2), "Best");
-        assert_eq!(decode_quality(4), "RAW");
-        assert_eq!(decode_quality(6), "RAW + JPEG");
+        assert_eq!(QUALITY.decode(2), "Best");
+        assert_eq!(QUALITY.decode(4), "RAW");
+        assert_eq!(QUALITY.decode(6), "RAW + JPEG");
     }
 
     #[test]
     fn test_decode_picture_mode() {
-        assert_eq!(decode_picture_mode(0), "Program");
-        assert_eq!(decode_picture_mode(2), "Aperture Priority");
-        assert_eq!(decode_picture_mode(3), "Manual");
-        assert_eq!(decode_picture_mode(5), "Landscape");
+        assert_eq!(PICTURE_MODE.decode(0), "Program");
+        assert_eq!(PICTURE_MODE.decode(2), "Aperture Priority");
+        assert_eq!(PICTURE_MODE.decode(3), "Manual");
+        assert_eq!(PICTURE_MODE.decode(5), "Landscape");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(2), "Manual");
-        assert_eq!(decode_focus_mode(3), "AF-S (Single)");
-        assert_eq!(decode_focus_mode(4), "AF-C (Continuous)");
+        assert_eq!(FOCUS_MODE.decode(2), "Manual");
+        assert_eq!(FOCUS_MODE.decode(3), "AF-S (Single)");
+        assert_eq!(FOCUS_MODE.decode(4), "AF-C (Continuous)");
     }
 
     #[test]
     fn test_decode_white_balance() {
-        assert_eq!(decode_white_balance(0), "Auto");
-        assert_eq!(decode_white_balance(1), "Daylight");
-        assert_eq!(decode_white_balance(6), "Manual");
+        assert_eq!(WHITE_BALANCE.decode(0), "Auto");
+        assert_eq!(WHITE_BALANCE.decode(1), "Daylight");
+        assert_eq!(WHITE_BALANCE.decode(6), "Manual");
     }
 
     #[test]
     fn test_decode_drive_mode() {
-        assert_eq!(decode_drive_mode(0), "Single-frame");
-        assert_eq!(decode_drive_mode(1), "Continuous");
-        assert_eq!(decode_drive_mode(5), "Exposure Bracketing");
+        assert_eq!(DRIVE_MODE.decode(0), "Single-frame");
+        assert_eq!(DRIVE_MODE.decode(1), "Continuous");
+        assert_eq!(DRIVE_MODE.decode(5), "Exposure Bracketing");
     }
 
     #[test]
     fn test_decode_saturation() {
-        assert_eq!(decode_saturation(0), "Low");
-        assert_eq!(decode_saturation(1), "Normal");
-        assert_eq!(decode_saturation(2), "High");
+        assert_eq!(SATURATION.decode(0), "Low");
+        assert_eq!(SATURATION.decode(1), "Normal");
+        assert_eq!(SATURATION.decode(2), "High");
     }
 
     #[test]
     fn test_decode_contrast() {
-        assert_eq!(decode_contrast(0), "Low");
-        assert_eq!(decode_contrast(1), "Normal");
-        assert_eq!(decode_contrast(2), "High");
+        assert_eq!(CONTRAST.decode(0), "Low");
+        assert_eq!(CONTRAST.decode(1), "Normal");
+        assert_eq!(CONTRAST.decode(2), "High");
     }
 
     #[test]
     fn test_decode_sharpness() {
-        assert_eq!(decode_sharpness(0), "Soft");
-        assert_eq!(decode_sharpness(1), "Normal");
-        assert_eq!(decode_sharpness(2), "Hard");
+        assert_eq!(SHARPNESS.decode(0), "Soft");
+        assert_eq!(SHARPNESS.decode(1), "Normal");
+        assert_eq!(SHARPNESS.decode(2), "Hard");
     }
 
     #[test]

@@ -21,6 +21,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -48,107 +49,72 @@ const APPLE_SCENE_DETECTION: u16 = 0x003C; // Scene detection result
 // Apple signature (not always present, but useful for validation)
 const APPLE_SIGNATURE: &[u8] = b"Apple iOS";
 
-/// Decodes Apple HDR image type to human-readable string
-///
-/// # Arguments
-/// * `value` - HDR type value from tag 0x000A
-///
-/// # Returns
-/// Human-readable HDR mode description
-fn decode_hdr_type(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "HDR".to_string(),
-        3 => "Auto HDR".to_string(),
-        4 => "Smart HDR".to_string(),
-        5 => "Smart HDR 2".to_string(),
-        6 => "Smart HDR 3".to_string(),
-        7 => "Smart HDR 4".to_string(),
-        8 => "Smart HDR 5".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Apple HDR image type
+const_decoder! {
+    DECODE_HDR_TYPE, i16, [
+        (0, "Off"),
+        (1, "HDR"),
+        (3, "Auto HDR"),
+        (4, "Smart HDR"),
+        (5, "Smart HDR 2"),
+        (6, "Smart HDR 3"),
+        (7, "Smart HDR 4"),
+        (8, "Smart HDR 5"),
+    ]
 }
 
-/// Decodes Portrait Mode effect type
-///
-/// # Arguments
-/// * `value` - Portrait effect value
-///
-/// # Returns
-/// Human-readable portrait effect description
-fn decode_portrait_mode(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Natural Light".to_string(),
-        2 => "Studio Light".to_string(),
-        3 => "Contour Light".to_string(),
-        4 => "Stage Light".to_string(),
-        5 => "Stage Light Mono".to_string(),
-        6 => "High-Key Light Mono".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Portrait Mode effect type
+const_decoder! {
+    DECODE_PORTRAIT_MODE, i16, [
+        (0, "Off"),
+        (1, "Natural Light"),
+        (2, "Studio Light"),
+        (3, "Contour Light"),
+        (4, "Stage Light"),
+        (5, "Stage Light Mono"),
+        (6, "High-Key Light Mono"),
+    ]
 }
 
-/// Decodes scene detection type
-///
-/// # Arguments
-/// * `value` - Scene type value
-///
-/// # Returns
-/// Human-readable scene description
-fn decode_scene_type(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Sunset/Sunrise".to_string(),
-        2 => "Blue Sky".to_string(),
-        3 => "Snow".to_string(),
-        4 => "Foliage".to_string(),
-        5 => "Beach".to_string(),
-        6 => "Night".to_string(),
-        7 => "Fireworks".to_string(),
-        8 => "Food".to_string(),
-        9 => "Pet".to_string(),
-        10 => "Document".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes scene detection type
+const_decoder! {
+    DECODE_SCENE_TYPE, i16, [
+        (0, "None"),
+        (1, "Sunset/Sunrise"),
+        (2, "Blue Sky"),
+        (3, "Snow"),
+        (4, "Foliage"),
+        (5, "Beach"),
+        (6, "Night"),
+        (7, "Fireworks"),
+        (8, "Food"),
+        (9, "Pet"),
+        (10, "Document"),
+    ]
 }
 
-/// Decodes semantic style (Photographic Style)
-///
-/// # Arguments
-/// * `value` - Style value
-///
-/// # Returns
-/// Human-readable style name
-fn decode_semantic_style(value: i16) -> String {
-    match value {
-        0 => "Standard".to_string(),
-        1 => "Rich Contrast".to_string(),
-        2 => "Vibrant".to_string(),
-        3 => "Warm".to_string(),
-        4 => "Cool".to_string(),
-        _ => format!("Custom ({})", value),
-    }
+// Decodes semantic style (Photographic Style)
+const_decoder! {
+    DECODE_SEMANTIC_STYLE, i16, [
+        (0, "Standard"),
+        (1, "Rich Contrast"),
+        (2, "Vibrant"),
+        (3, "Warm"),
+        (4, "Cool"),
+    ]
 }
 
-/// Decodes lens model for multi-camera iPhones
-///
-/// # Arguments
-/// * `value` - Lens identifier
-///
-/// # Returns
-/// Human-readable lens description
-fn decode_lens_model(value: i16) -> String {
-    match value {
-        0 => "Wide (Main Camera)".to_string(),
-        1 => "Telephoto".to_string(),
-        2 => "Ultra Wide".to_string(),
-        3 => "Front Camera".to_string(),
-        4 => "Telephoto 2x".to_string(),
-        5 => "Telephoto 3x".to_string(),
-        6 => "Telephoto 5x".to_string(),
-        _ => format!("Unknown Lens ({})", value),
-    }
+// Decodes lens model for multi-camera iPhones
+const_decoder! {
+    DECODE_LENS_MODEL, i16, [
+        (0, "Wide (Main Camera)"),
+        (1, "Telephoto"),
+        (2, "Ultra Wide"),
+        (3, "Front Camera"),
+        (4, "Telephoto 2x"),
+        (5, "Telephoto 3x"),
+        (6, "Telephoto 5x"),
+    ]
 }
 
 /// Extracts a 16-bit signed value from IFD entry
@@ -278,7 +244,10 @@ impl AppleParser {
         match tag_id {
             APPLE_HDR_IMAGE_TYPE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Apple:HDRImageType".to_string(), decode_hdr_type(value));
+                    tags.insert(
+                        "Apple:HDRImageType".to_string(),
+                        DECODE_HDR_TYPE.decode(value),
+                    );
                 }
             }
             APPLE_BURST_UUID => {
@@ -311,7 +280,7 @@ impl AppleParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Apple:PortraitMode".to_string(),
-                        decode_portrait_mode(value),
+                        DECODE_PORTRAIT_MODE.decode(value),
                     );
                 }
             }
@@ -324,7 +293,7 @@ impl AppleParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Apple:SemanticStyle".to_string(),
-                        decode_semantic_style(value),
+                        DECODE_SEMANTIC_STYLE.decode(value),
                     );
                 }
             }
@@ -336,7 +305,10 @@ impl AppleParser {
             }
             APPLE_LENS_MODEL => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Apple:LensModel".to_string(), decode_lens_model(value));
+                    tags.insert(
+                        "Apple:LensModel".to_string(),
+                        DECODE_LENS_MODEL.decode(value),
+                    );
                 }
             }
             APPLE_SMART_HDR_VERSION => {
@@ -352,7 +324,10 @@ impl AppleParser {
             }
             APPLE_SCENE_DETECTION => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Apple:SceneDetection".to_string(), decode_scene_type(value));
+                    tags.insert(
+                        "Apple:SceneDetection".to_string(),
+                        DECODE_SCENE_TYPE.decode(value),
+                    );
                 }
             }
             _ => {
@@ -498,38 +473,38 @@ mod tests {
 
     #[test]
     fn test_decode_hdr_type() {
-        assert_eq!(decode_hdr_type(0), "Off");
-        assert_eq!(decode_hdr_type(1), "HDR");
-        assert_eq!(decode_hdr_type(4), "Smart HDR");
-        assert_eq!(decode_hdr_type(8), "Smart HDR 5");
+        assert_eq!(DECODE_HDR_TYPE.decode(0), "Off");
+        assert_eq!(DECODE_HDR_TYPE.decode(1), "HDR");
+        assert_eq!(DECODE_HDR_TYPE.decode(4), "Smart HDR");
+        assert_eq!(DECODE_HDR_TYPE.decode(8), "Smart HDR 5");
     }
 
     #[test]
     fn test_decode_portrait_mode() {
-        assert_eq!(decode_portrait_mode(0), "Off");
-        assert_eq!(decode_portrait_mode(1), "Natural Light");
-        assert_eq!(decode_portrait_mode(4), "Stage Light");
+        assert_eq!(DECODE_PORTRAIT_MODE.decode(0), "Off");
+        assert_eq!(DECODE_PORTRAIT_MODE.decode(1), "Natural Light");
+        assert_eq!(DECODE_PORTRAIT_MODE.decode(4), "Stage Light");
     }
 
     #[test]
     fn test_decode_scene_type() {
-        assert_eq!(decode_scene_type(0), "None");
-        assert_eq!(decode_scene_type(6), "Night");
-        assert_eq!(decode_scene_type(8), "Food");
+        assert_eq!(DECODE_SCENE_TYPE.decode(0), "None");
+        assert_eq!(DECODE_SCENE_TYPE.decode(6), "Night");
+        assert_eq!(DECODE_SCENE_TYPE.decode(8), "Food");
     }
 
     #[test]
     fn test_decode_semantic_style() {
-        assert_eq!(decode_semantic_style(0), "Standard");
-        assert_eq!(decode_semantic_style(2), "Vibrant");
+        assert_eq!(DECODE_SEMANTIC_STYLE.decode(0), "Standard");
+        assert_eq!(DECODE_SEMANTIC_STYLE.decode(2), "Vibrant");
     }
 
     #[test]
     fn test_decode_lens_model() {
-        assert_eq!(decode_lens_model(0), "Wide (Main Camera)");
-        assert_eq!(decode_lens_model(1), "Telephoto");
-        assert_eq!(decode_lens_model(2), "Ultra Wide");
-        assert_eq!(decode_lens_model(6), "Telephoto 5x");
+        assert_eq!(DECODE_LENS_MODEL.decode(0), "Wide (Main Camera)");
+        assert_eq!(DECODE_LENS_MODEL.decode(1), "Telephoto");
+        assert_eq!(DECODE_LENS_MODEL.decode(2), "Ultra Wide");
+        assert_eq!(DECODE_LENS_MODEL.decode(6), "Telephoto 5x");
     }
 
     #[test]

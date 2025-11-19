@@ -29,6 +29,7 @@ use std::collections::HashMap;
 
 use super::minolta_lens_database::lookup_minolta_lens;
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // Minolta MakerNote Tag IDs
 const MINOLTA_CAMERA_SETTINGS_OLD: u16 = 0x0001; // Camera settings (old models)
@@ -56,150 +57,101 @@ const MINOLTA_MAX_FOCAL_LENGTH: u16 = 0x0056; // Max focal length
 const MINOLTA_FIRMWARE_VERSION: u16 = 0x0058; // Camera firmware
 const MINOLTA_AF_POINTS: u16 = 0x0059; // AF points used
 
-/// Decodes Minolta image quality setting
-///
-/// # Arguments
-/// * `value` - Image quality value
-///
-/// # Returns
-/// Human-readable quality description
-fn decode_image_quality(value: u16) -> String {
-    match value {
-        0 => "Raw".to_string(),
-        1 => "Super Fine".to_string(),
-        2 => "Fine".to_string(),
-        3 => "Standard".to_string(),
-        4 => "Economy".to_string(),
-        5 => "Extra Fine".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Minolta image quality setting
+const_decoder! {
+    DECODE_IMAGE_QUALITY, u16, [
+        (0, "Raw"),
+        (1, "Super Fine"),
+        (2, "Fine"),
+        (3, "Standard"),
+        (4, "Economy"),
+        (5, "Extra Fine"),
+    ]
 }
 
-/// Decodes Minolta flash mode
-///
-/// # Arguments
-/// * `value` - Flash mode value
-///
-/// # Returns
-/// Human-readable flash mode
-fn decode_flash_mode(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "On".to_string(),
-        2 => "Off".to_string(),
-        3 => "Red-eye Reduction".to_string(),
-        4 => "Slow Sync".to_string(),
-        5 => "Rear Curtain Sync".to_string(),
-        6 => "Fill Flash".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Minolta flash mode
+const_decoder! {
+    DECODE_FLASH_MODE, u16, [
+        (0, "Auto"),
+        (1, "On"),
+        (2, "Off"),
+        (3, "Red-eye Reduction"),
+        (4, "Slow Sync"),
+        (5, "Rear Curtain Sync"),
+        (6, "Fill Flash"),
+    ]
 }
 
-/// Decodes Minolta white balance mode
-///
-/// # Arguments
-/// * `value` - White balance value
-///
-/// # Returns
-/// Human-readable white balance mode
-fn decode_white_balance(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Daylight".to_string(),
-        2 => "Cloudy".to_string(),
-        3 => "Tungsten".to_string(),
-        4 => "Fluorescent".to_string(),
-        5 => "Flash".to_string(),
-        6 => "Shade".to_string(),
-        7 => "Custom".to_string(),
-        8 => "Kelvin".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Minolta white balance mode
+const_decoder! {
+    DECODE_WHITE_BALANCE, u16, [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Cloudy"),
+        (3, "Tungsten"),
+        (4, "Fluorescent"),
+        (5, "Flash"),
+        (6, "Shade"),
+        (7, "Custom"),
+        (8, "Kelvin"),
+    ]
 }
 
-/// Decodes Minolta focus mode
-///
-/// # Arguments
-/// * `value` - Focus mode value
-///
-/// # Returns
-/// Human-readable focus mode
-fn decode_focus_mode(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Manual".to_string(),
-        2 => "AF-C (Continuous)".to_string(),
-        3 => "AF-S (Single)".to_string(),
-        4 => "AF-A (Automatic)".to_string(),
-        5 => "DMF (Direct Manual Focus)".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Minolta focus mode
+const_decoder! {
+    DECODE_FOCUS_MODE, u16, [
+        (0, "Auto"),
+        (1, "Manual"),
+        (2, "AF-C (Continuous)"),
+        (3, "AF-S (Single)"),
+        (4, "AF-A (Automatic)"),
+        (5, "DMF (Direct Manual Focus)"),
+    ]
 }
 
-/// Decodes Minolta color mode
-///
-/// # Arguments
-/// * `value` - Color mode value
-///
-/// # Returns
-/// Human-readable color mode
-fn decode_color_mode(value: u16) -> String {
-    match value {
-        0 => "Natural".to_string(),
-        1 => "Vivid".to_string(),
-        2 => "Portrait".to_string(),
-        3 => "Landscape".to_string(),
-        4 => "Black & White".to_string(),
-        5 => "Adobe RGB".to_string(),
-        6 => "Neutral".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Minolta color mode
+const_decoder! {
+    DECODE_COLOR_MODE, u16, [
+        (0, "Natural"),
+        (1, "Vivid"),
+        (2, "Portrait"),
+        (3, "Landscape"),
+        (4, "Black & White"),
+        (5, "Adobe RGB"),
+        (6, "Neutral"),
+    ]
 }
 
-/// Decodes Minolta exposure mode
-///
-/// # Arguments
-/// * `value` - Exposure mode value
-///
-/// # Returns
-/// Human-readable exposure mode
-fn decode_exposure_mode(value: u16) -> String {
-    match value {
-        0 => "Program".to_string(),
-        1 => "Aperture Priority".to_string(),
-        2 => "Shutter Priority".to_string(),
-        3 => "Manual".to_string(),
-        4 => "Auto".to_string(),
-        5 => "Portrait".to_string(),
-        6 => "Landscape".to_string(),
-        7 => "Sports".to_string(),
-        8 => "Night Portrait".to_string(),
-        9 => "Macro".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Minolta exposure mode
+const_decoder! {
+    DECODE_EXPOSURE_MODE, u16, [
+        (0, "Program"),
+        (1, "Aperture Priority"),
+        (2, "Shutter Priority"),
+        (3, "Manual"),
+        (4, "Auto"),
+        (5, "Portrait"),
+        (6, "Landscape"),
+        (7, "Sports"),
+        (8, "Night Portrait"),
+        (9, "Macro"),
+    ]
 }
 
-/// Decodes Minolta scene mode
-///
-/// # Arguments
-/// * `value` - Scene mode value
-///
-/// # Returns
-/// Human-readable scene mode
-fn decode_scene_mode(value: u16) -> String {
-    match value {
-        0 => "Standard".to_string(),
-        1 => "Portrait".to_string(),
-        2 => "Landscape".to_string(),
-        3 => "Sports".to_string(),
-        4 => "Sunset".to_string(),
-        5 => "Night View".to_string(),
-        6 => "Night Portrait".to_string(),
-        7 => "Fireworks".to_string(),
-        8 => "Food".to_string(),
-        9 => "Text".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Minolta scene mode
+const_decoder! {
+    DECODE_SCENE_MODE, u16, [
+        (0, "Standard"),
+        (1, "Portrait"),
+        (2, "Landscape"),
+        (3, "Sports"),
+        (4, "Sunset"),
+        (5, "Night View"),
+        (6, "Night Portrait"),
+        (7, "Fireworks"),
+        (8, "Food"),
+        (9, "Text"),
+    ]
 }
 
 /// Extracts a 16-bit unsigned value from IFD entry
@@ -336,13 +288,16 @@ impl MinoltaParser {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
                     tags.insert(
                         "Minolta:ImageQuality".to_string(),
-                        decode_image_quality(value),
+                        DECODE_IMAGE_QUALITY.decode(value),
                     );
                 }
             }
             MINOLTA_FLASH_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Minolta:FlashMode".to_string(), decode_flash_mode(value));
+                    tags.insert(
+                        "Minolta:FlashMode".to_string(),
+                        DECODE_FLASH_MODE.decode(value),
+                    );
                 }
             }
             MINOLTA_FLASH_EXPOSURE_COMP => {
@@ -358,13 +313,16 @@ impl MinoltaParser {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
                     tags.insert(
                         "Minolta:WhiteBalance".to_string(),
-                        decode_white_balance(value),
+                        DECODE_WHITE_BALANCE.decode(value),
                     );
                 }
             }
             MINOLTA_FOCUS_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Minolta:FocusMode".to_string(), decode_focus_mode(value));
+                    tags.insert(
+                        "Minolta:FocusMode".to_string(),
+                        DECODE_FOCUS_MODE.decode(value),
+                    );
                 }
             }
             MINOLTA_MACRO_MODE => {
@@ -390,19 +348,25 @@ impl MinoltaParser {
             }
             MINOLTA_COLOR_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Minolta:ColorMode".to_string(), decode_color_mode(value));
+                    tags.insert(
+                        "Minolta:ColorMode".to_string(),
+                        DECODE_COLOR_MODE.decode(value),
+                    );
                 }
             }
             MINOLTA_SCENE_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Minolta:SceneMode".to_string(), decode_scene_mode(value));
+                    tags.insert(
+                        "Minolta:SceneMode".to_string(),
+                        DECODE_SCENE_MODE.decode(value),
+                    );
                 }
             }
             MINOLTA_EXPOSURE_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
                     tags.insert(
                         "Minolta:ExposureMode".to_string(),
-                        decode_exposure_mode(value),
+                        DECODE_EXPOSURE_MODE.decode(value),
                     );
                 }
             }
@@ -583,43 +547,49 @@ mod tests {
 
     #[test]
     fn test_decode_image_quality() {
-        assert_eq!(decode_image_quality(0), "Raw");
-        assert_eq!(decode_image_quality(2), "Fine");
-        assert_eq!(decode_image_quality(5), "Extra Fine");
+        assert_eq!(DECODE_IMAGE_QUALITY.decode(0), "Raw");
+        assert_eq!(DECODE_IMAGE_QUALITY.decode(2), "Fine");
+        assert_eq!(DECODE_IMAGE_QUALITY.decode(5), "Extra Fine");
+        assert_eq!(DECODE_IMAGE_QUALITY.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_flash_mode() {
-        assert_eq!(decode_flash_mode(0), "Auto");
-        assert_eq!(decode_flash_mode(1), "On");
-        assert_eq!(decode_flash_mode(3), "Red-eye Reduction");
+        assert_eq!(DECODE_FLASH_MODE.decode(0), "Auto");
+        assert_eq!(DECODE_FLASH_MODE.decode(1), "On");
+        assert_eq!(DECODE_FLASH_MODE.decode(3), "Red-eye Reduction");
+        assert_eq!(DECODE_FLASH_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_white_balance() {
-        assert_eq!(decode_white_balance(0), "Auto");
-        assert_eq!(decode_white_balance(3), "Tungsten");
-        assert_eq!(decode_white_balance(7), "Custom");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0), "Auto");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(3), "Tungsten");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(7), "Custom");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(0), "Auto");
-        assert_eq!(decode_focus_mode(2), "AF-C (Continuous)");
-        assert_eq!(decode_focus_mode(5), "DMF (Direct Manual Focus)");
+        assert_eq!(DECODE_FOCUS_MODE.decode(0), "Auto");
+        assert_eq!(DECODE_FOCUS_MODE.decode(2), "AF-C (Continuous)");
+        assert_eq!(DECODE_FOCUS_MODE.decode(5), "DMF (Direct Manual Focus)");
+        assert_eq!(DECODE_FOCUS_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_color_mode() {
-        assert_eq!(decode_color_mode(0), "Natural");
-        assert_eq!(decode_color_mode(4), "Black & White");
+        assert_eq!(DECODE_COLOR_MODE.decode(0), "Natural");
+        assert_eq!(DECODE_COLOR_MODE.decode(4), "Black & White");
+        assert_eq!(DECODE_COLOR_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_exposure_mode() {
-        assert_eq!(decode_exposure_mode(0), "Program");
-        assert_eq!(decode_exposure_mode(3), "Manual");
-        assert_eq!(decode_exposure_mode(7), "Sports");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(0), "Program");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(3), "Manual");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(7), "Sports");
+        assert_eq!(DECODE_EXPOSURE_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]

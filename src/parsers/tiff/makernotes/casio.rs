@@ -24,6 +24,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -48,153 +49,97 @@ const CASIO_CONTINUOUS_MODE: u16 = 0x001A; // Continuous shooting mode
 const CASIO_BEST_SHOT_MODE: u16 = 0x001B; // Best Shot scene mode
 const CASIO_SLOW_SHUTTER: u16 = 0x0020; // Slow shutter setting
 
-/// Decodes Casio recording mode
-///
-/// # Arguments
-/// * `value` - Recording mode value
-///
-/// # Returns
-/// Human-readable recording mode
-fn decode_recording_mode(value: u16) -> String {
-    match value {
-        1 => "Single".to_string(),
-        2 => "Panorama".to_string(),
-        3 => "Night Scene".to_string(),
-        4 => "Portrait".to_string(),
-        5 => "Landscape".to_string(),
-        6 => "Sports".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Casio recording mode
+const_decoder! {
+    DECODE_RECORDING_MODE, u16, [
+        (1, "Single"),
+        (2, "Panorama"),
+        (3, "Night Scene"),
+        (4, "Portrait"),
+        (5, "Landscape"),
+        (6, "Sports"),
+    ]
 }
 
-/// Decodes Casio image quality
-///
-/// # Arguments
-/// * `value` - Quality value
-///
-/// # Returns
-/// Human-readable quality setting
-fn decode_quality(value: u16) -> String {
-    match value {
-        1 => "Economy".to_string(),
-        2 => "Normal".to_string(),
-        3 => "Fine".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Casio image quality
+const_decoder! {
+    DECODE_QUALITY, u16, [
+        (1, "Economy"),
+        (2, "Normal"),
+        (3, "Fine"),
+    ]
 }
 
-/// Decodes Casio focus mode
-///
-/// # Arguments
-/// * `value` - Focus mode value
-///
-/// # Returns
-/// Human-readable focus mode
-fn decode_focus_mode(value: u16) -> String {
-    match value {
-        0 => "Normal".to_string(),
-        1 => "Macro".to_string(),
-        2 => "Super Macro".to_string(),
-        3 => "Infinity".to_string(),
-        4 => "Manual".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Casio focus mode
+const_decoder! {
+    DECODE_FOCUS_MODE, u16, [
+        (0, "Normal"),
+        (1, "Macro"),
+        (2, "Super Macro"),
+        (3, "Infinity"),
+        (4, "Manual"),
+    ]
 }
 
-/// Decodes Casio flash mode
-///
-/// # Arguments
-/// * `value` - Flash mode value
-///
-/// # Returns
-/// Human-readable flash mode
-fn decode_flash_mode(value: u16) -> String {
-    match value {
-        1 => "Auto".to_string(),
-        2 => "On".to_string(),
-        3 => "Off".to_string(),
-        4 => "Red-eye Reduction".to_string(),
-        5 => "Slow Sync".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Casio flash mode
+const_decoder! {
+    DECODE_FLASH_MODE, u16, [
+        (1, "Auto"),
+        (2, "On"),
+        (3, "Off"),
+        (4, "Red-eye Reduction"),
+        (5, "Slow Sync"),
+    ]
 }
 
-/// Decodes Casio white balance
-///
-/// # Arguments
-/// * `value` - White balance value
-///
-/// # Returns
-/// Human-readable white balance mode
-fn decode_white_balance(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Daylight".to_string(),
-        2 => "Shade".to_string(),
-        3 => "Tungsten".to_string(),
-        4 => "Fluorescent".to_string(),
-        5 => "Manual".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Casio white balance
+const_decoder! {
+    DECODE_WHITE_BALANCE, u16, [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Shade"),
+        (3, "Tungsten"),
+        (4, "Fluorescent"),
+        (5, "Manual"),
+    ]
 }
 
-/// Decodes Casio color mode
-///
-/// # Arguments
-/// * `value` - Color mode value
-///
-/// # Returns
-/// Human-readable color mode
-fn decode_color_mode(value: u16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "On".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Casio color mode
+const_decoder! {
+    DECODE_COLOR_MODE, u16, [
+        (0, "Off"),
+        (1, "On"),
+    ]
 }
 
-/// Decodes Casio enhancement mode
-///
-/// # Arguments
-/// * `value` - Enhancement value
-///
-/// # Returns
-/// Human-readable enhancement mode
-fn decode_enhancement(value: u16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Red".to_string(),
-        2 => "Green".to_string(),
-        3 => "Blue".to_string(),
-        4 => "Flesh Tones".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Casio enhancement mode
+const_decoder! {
+    DECODE_ENHANCEMENT, u16, [
+        (0, "Off"),
+        (1, "Red"),
+        (2, "Green"),
+        (3, "Blue"),
+        (4, "Flesh Tones"),
+    ]
 }
 
-/// Decodes Casio Best Shot mode
-///
-/// # Arguments
-/// * `value` - Best Shot mode value
-///
-/// # Returns
-/// Human-readable Best Shot mode
-fn decode_best_shot_mode(value: u16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Portrait".to_string(),
-        2 => "Scenery".to_string(),
-        3 => "Night Scene".to_string(),
-        4 => "Night Scene Portrait".to_string(),
-        5 => "Sunset".to_string(),
-        6 => "High Sensitivity".to_string(),
-        7 => "Children".to_string(),
-        8 => "Sports".to_string(),
-        9 => "Candlelight".to_string(),
-        10 => "Fireworks".to_string(),
-        11 => "Food".to_string(),
-        12 => "Text".to_string(),
-        _ => format!("Mode {}", value),
-    }
+// Decodes Casio Best Shot mode
+const_decoder! {
+    DECODE_BEST_SHOT_MODE, u16, [
+        (0, "Off"),
+        (1, "Portrait"),
+        (2, "Scenery"),
+        (3, "Night Scene"),
+        (4, "Night Scene Portrait"),
+        (5, "Sunset"),
+        (6, "High Sensitivity"),
+        (7, "Children"),
+        (8, "Sports"),
+        (9, "Candlelight"),
+        (10, "Fireworks"),
+        (11, "Food"),
+        (12, "Text"),
+    ]
 }
 
 /// Extracts a 16-bit unsigned value from IFD entry
@@ -239,23 +184,29 @@ impl CasioParser {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
                     tags.insert(
                         "Casio:RecordingMode".to_string(),
-                        decode_recording_mode(value),
+                        DECODE_RECORDING_MODE.decode(value),
                     );
                 }
             }
             CASIO_QUALITY => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:Quality".to_string(), decode_quality(value));
+                    tags.insert("Casio:Quality".to_string(), DECODE_QUALITY.decode(value));
                 }
             }
             CASIO_FOCUS_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:FocusMode".to_string(), decode_focus_mode(value));
+                    tags.insert(
+                        "Casio:FocusMode".to_string(),
+                        DECODE_FOCUS_MODE.decode(value),
+                    );
                 }
             }
             CASIO_FLASH_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:FlashMode".to_string(), decode_flash_mode(value));
+                    tags.insert(
+                        "Casio:FlashMode".to_string(),
+                        DECODE_FLASH_MODE.decode(value),
+                    );
                 }
             }
             CASIO_FLASH_INTENSITY => {
@@ -267,7 +218,7 @@ impl CasioParser {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
                     tags.insert(
                         "Casio:WhiteBalance".to_string(),
-                        decode_white_balance(value),
+                        DECODE_WHITE_BALANCE.decode(value),
                     );
                 }
             }
@@ -298,19 +249,25 @@ impl CasioParser {
             }
             CASIO_COLOR_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:ColorMode".to_string(), decode_color_mode(value));
+                    tags.insert(
+                        "Casio:ColorMode".to_string(),
+                        DECODE_COLOR_MODE.decode(value),
+                    );
                 }
             }
             CASIO_ENHANCEMENT => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:Enhancement".to_string(), decode_enhancement(value));
+                    tags.insert(
+                        "Casio:Enhancement".to_string(),
+                        DECODE_ENHANCEMENT.decode(value),
+                    );
                 }
             }
             CASIO_BEST_SHOT_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
                     tags.insert(
                         "Casio:BestShotMode".to_string(),
-                        decode_best_shot_mode(value),
+                        DECODE_BEST_SHOT_MODE.decode(value),
                     );
                 }
             }
@@ -431,26 +388,26 @@ mod tests {
 
     #[test]
     fn test_decode_recording_mode() {
-        assert_eq!(decode_recording_mode(1), "Single");
-        assert_eq!(decode_recording_mode(4), "Portrait");
+        assert_eq!(DECODE_RECORDING_MODE.decode(1), "Single");
+        assert_eq!(DECODE_RECORDING_MODE.decode(4), "Portrait");
     }
 
     #[test]
     fn test_decode_quality() {
-        assert_eq!(decode_quality(1), "Economy");
-        assert_eq!(decode_quality(3), "Fine");
+        assert_eq!(DECODE_QUALITY.decode(1), "Economy");
+        assert_eq!(DECODE_QUALITY.decode(3), "Fine");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(1), "Macro");
-        assert_eq!(decode_focus_mode(2), "Super Macro");
+        assert_eq!(DECODE_FOCUS_MODE.decode(1), "Macro");
+        assert_eq!(DECODE_FOCUS_MODE.decode(2), "Super Macro");
     }
 
     #[test]
     fn test_decode_best_shot_mode() {
-        assert_eq!(decode_best_shot_mode(0), "Off");
-        assert_eq!(decode_best_shot_mode(10), "Fireworks");
+        assert_eq!(DECODE_BEST_SHOT_MODE.decode(0), "Off");
+        assert_eq!(DECODE_BEST_SHOT_MODE.decode(10), "Fireworks");
     }
 
     #[test]

@@ -6,10 +6,18 @@
 //! Supports both Four Thirds (E-series DSLRs) and Micro Four Thirds (OM-D, PEN) cameras.
 //!
 //! Based on ExifTool's Olympus.pm module.
+//!
+//! ## Architecture
+//! This parser uses the shared MakerNote framework to eliminate code duplication:
+//! - **const_decoder!** macros for declarative value decoders
+//! - **Generic decoders** (ON_OFF) for common patterns
+//! - **Modular array processors** for Camera Settings and Equipment arrays
+//! - **Shared extractors** for common array extraction logic
 
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::error::{ExifToolError, Result};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
@@ -22,6 +30,7 @@ use std::collections::HashMap;
 
 use super::olympus_lens_database::lookup_lens_name;
 use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
+use super::shared::generic_decoders::ON_OFF;
 use super::shared::MakerNoteParser;
 
 // ===== Olympus MakerNote Tag IDs =====
@@ -53,7 +62,7 @@ const OLYMPUS_THUMBNAIL_IMAGE: u16 = 0x0104;
 const OLYMPUS_BODY_FIRMWARE_VERSION: u16 = 0x0404;
 const OLYMPUS_LENS_MODEL: u16 = 0x0206;
 
-// Olympus MakerNote header signature
+// Olympus MakerNote header signatures
 // Olympus uses "OLYMPUS\0II" or "OLYMPUS\0MM" (10 bytes) followed by offset
 const OLYMPUS_HEADER: &[u8] = b"OLYMPUS\0II";
 const OLYMPUS_HEADER_BE: &[u8] = b"OLYMPUS\0MM";
@@ -131,254 +140,258 @@ const EQ_FLASH_MODEL: usize = 17;
 const EQ_FLASH_FIRMWARE_VERSION: usize = 18;
 const EQ_FLASH_SERIAL_NUMBER: usize = 19;
 
-/// Decodes Olympus quality mode to human-readable string
-fn decode_quality(value: i32) -> &'static str {
-    match value {
-        1 => "SQ (Standard Quality)",
-        2 => "HQ (High Quality)",
-        3 => "SHQ (Super High Quality)",
-        4 => "RAW",
-        5 => "SQ (Low)",
-        6 => "SQ (Medium)",
-        _ => "Unknown",
-    }
-}
+// ============================================================================
+// Decoder Definitions using const_decoder! macro
+// ============================================================================
+// These replace individual decoder functions, dramatically reducing code duplication
 
-/// Decodes Olympus exposure mode to human-readable string
-fn decode_exposure_mode(value: i32) -> &'static str {
-    match value {
-        1 => "Manual",
-        2 => "Program",
-        3 => "Aperture Priority",
-        4 => "Shutter Priority",
-        5 => "Program Shift",
-        _ => "Unknown",
-    }
-}
+// Olympus quality mode decoder
+const_decoder!(
+    QUALITY_DECODER,
+    i32,
+    [
+        (1, "SQ (Standard Quality)"),
+        (2, "HQ (High Quality)"),
+        (3, "SHQ (Super High Quality)"),
+        (4, "RAW"),
+        (5, "SQ (Low)"),
+        (6, "SQ (Medium)"),
+    ]
+);
 
-/// Decodes Olympus metering mode to human-readable string
-fn decode_metering_mode(value: i32) -> &'static str {
-    match value {
-        2 => "Center Weighted",
-        3 => "Spot",
-        5 => "ESP (Evaluative)",
-        261 => "Pattern+AF",
-        515 => "Spot+Highlight Control",
-        1027 => "Spot+Shadow Control",
-        _ => "Unknown",
-    }
-}
+// Olympus exposure mode decoder
+const_decoder!(
+    EXPOSURE_MODE_DECODER,
+    i32,
+    [
+        (1, "Manual"),
+        (2, "Program"),
+        (3, "Aperture Priority"),
+        (4, "Shutter Priority"),
+        (5, "Program Shift"),
+    ]
+);
 
-/// Decodes Olympus focus mode to human-readable string
-fn decode_focus_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Single AF",
-        1 => "Sequential Shooting AF",
-        2 => "Continuous AF",
-        3 => "Manual Focus",
-        4 => "Super AF",
-        5 => "AF-C",
-        10 => "MF",
-        _ => "Unknown",
-    }
-}
+// Olympus metering mode decoder
+const_decoder!(
+    METERING_MODE_DECODER,
+    i32,
+    [
+        (2, "Center Weighted"),
+        (3, "Spot"),
+        (5, "ESP (Evaluative)"),
+        (261, "Pattern+AF"),
+        (515, "Spot+Highlight Control"),
+        (1027, "Spot+Shadow Control"),
+    ]
+);
 
-/// Decodes Olympus white balance to human-readable string
-fn decode_white_balance(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "Auto (Keep Warm Color Off)",
-        16 => "7500K (Fine Weather with Shade)",
-        17 => "6000K (Cloudy)",
-        18 => "5300K (Fine Weather)",
-        20 => "3000K (Tungsten)",
-        21 => "3600K (Evening Sunlight)",
-        22 => "Auto Setup",
-        23 => "5500K (Flash)",
-        33 => "6600K (Daylight Fluorescent)",
-        34 => "4500K (Neutral White Fluorescent)",
-        35 => "4000K (Cool White Fluorescent)",
-        36 => "White Fluorescent",
-        48 => "3600K (Tungsten)",
-        67 => "Underwater",
-        256 => "One Touch WB 1",
-        257 => "One Touch WB 2",
-        258 => "One Touch WB 3",
-        259 => "One Touch WB 4",
-        512 => "Custom WB 1",
-        513 => "Custom WB 2",
-        514 => "Custom WB 3",
-        515 => "Custom WB 4",
-        _ => "Unknown",
-    }
-}
+// Olympus focus mode decoder
+const_decoder!(
+    FOCUS_MODE_DECODER,
+    i32,
+    [
+        (0, "Single AF"),
+        (1, "Sequential Shooting AF"),
+        (2, "Continuous AF"),
+        (3, "Manual Focus"),
+        (4, "Super AF"),
+        (5, "AF-C"),
+        (10, "MF"),
+    ]
+);
 
-/// Decodes Olympus flash mode to human-readable string
-fn decode_flash_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "On",
-        2 => "Fill-in",
-        3 => "Red-eye",
-        4 => "Slow Sync",
-        5 => "Forced On",
-        6 => "2nd Curtain",
-        _ => "Unknown",
-    }
-}
+// Olympus white balance decoder
+const_decoder!(
+    WHITE_BALANCE_DECODER,
+    i32,
+    [
+        (0, "Auto"),
+        (1, "Auto (Keep Warm Color Off)"),
+        (16, "7500K (Fine Weather with Shade)"),
+        (17, "6000K (Cloudy)"),
+        (18, "5300K (Fine Weather)"),
+        (20, "3000K (Tungsten)"),
+        (21, "3600K (Evening Sunlight)"),
+        (22, "Auto Setup"),
+        (23, "5500K (Flash)"),
+        (33, "6600K (Daylight Fluorescent)"),
+        (34, "4500K (Neutral White Fluorescent)"),
+        (35, "4000K (Cool White Fluorescent)"),
+        (36, "White Fluorescent"),
+        (48, "3600K (Tungsten)"),
+        (67, "Underwater"),
+        (256, "One Touch WB 1"),
+        (257, "One Touch WB 2"),
+        (258, "One Touch WB 3"),
+        (259, "One Touch WB 4"),
+        (512, "Custom WB 1"),
+        (513, "Custom WB 2"),
+        (514, "Custom WB 3"),
+        (515, "Custom WB 4"),
+    ]
+);
 
-/// Decodes Olympus scene mode to human-readable string
-fn decode_scene_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Standard",
-        6 => "Auto",
-        7 => "Sport",
-        8 => "Portrait",
-        9 => "Landscape",
-        10 => "Night Scene",
-        11 => "Self Portrait",
-        12 => "Panorama",
-        13 => "2 in 1",
-        14 => "Movie",
-        15 => "Landscape+Portrait",
-        16 => "Night+Portrait",
-        17 => "Indoor",
-        18 => "Fireworks",
-        19 => "Sunset",
-        20 => "Beauty Skin",
-        21 => "Macro",
-        22 => "Super Macro",
-        23 => "Food",
-        24 => "Documents",
-        25 => "Museum",
-        26 => "Shoot & Select",
-        27 => "Beach & Snow",
-        28 => "Self Portrait+Self Timer",
-        29 => "Candle",
-        30 => "Available Light",
-        31 => "Behind Glass",
-        32 => "My Mode",
-        33 => "Pet",
-        34 => "Underwater Wide",
-        35 => "Underwater Macro",
-        36 => "Shoot & Select 1",
-        37 => "Shoot & Select 2",
-        38 => "Digital Image Stabilization",
-        39 => "Face Portrait",
-        40 => "Pet Portrait",
-        41 => "Smile Shot",
-        42 => "Quick Shutter",
-        _ => "Unknown",
-    }
-}
+// Olympus flash mode decoder
+const_decoder!(
+    FLASH_MODE_DECODER,
+    i32,
+    [
+        (0, "Off"),
+        (1, "On"),
+        (2, "Fill-in"),
+        (3, "Red-eye"),
+        (4, "Slow Sync"),
+        (5, "Forced On"),
+        (6, "2nd Curtain"),
+    ]
+);
 
-/// Decodes Olympus picture mode to human-readable string
-fn decode_picture_mode(value: i32) -> &'static str {
-    match value {
-        1 => "Vivid",
-        2 => "Natural",
-        3 => "Muted",
-        4 => "Portrait",
-        5 => "i-Enhance",
-        6 => "Color Creator",
-        7 => "Custom",
-        8 => "e-Portrait",
-        9 => "Color Profile 1",
-        10 => "Color Profile 2",
-        11 => "Color Profile 3",
-        12 => "Monochrome Profile 1",
-        13 => "Monochrome Profile 2",
-        14 => "Monochrome Profile 3",
-        256 => "Monotone",
-        512 => "Sepia",
-        _ => "Unknown",
-    }
-}
+// Olympus scene mode decoder
+const_decoder!(
+    SCENE_MODE_DECODER,
+    i32,
+    [
+        (0, "Standard"),
+        (6, "Auto"),
+        (7, "Sport"),
+        (8, "Portrait"),
+        (9, "Landscape"),
+        (10, "Night Scene"),
+        (11, "Self Portrait"),
+        (12, "Panorama"),
+        (13, "2 in 1"),
+        (14, "Movie"),
+        (15, "Landscape+Portrait"),
+        (16, "Night+Portrait"),
+        (17, "Indoor"),
+        (18, "Fireworks"),
+        (19, "Sunset"),
+        (20, "Beauty Skin"),
+        (21, "Macro"),
+        (22, "Super Macro"),
+        (23, "Food"),
+        (24, "Documents"),
+        (25, "Museum"),
+        (26, "Shoot & Select"),
+        (27, "Beach & Snow"),
+        (28, "Self Portrait+Self Timer"),
+        (29, "Candle"),
+        (30, "Available Light"),
+        (31, "Behind Glass"),
+        (32, "My Mode"),
+        (33, "Pet"),
+        (34, "Underwater Wide"),
+        (35, "Underwater Macro"),
+        (36, "Shoot & Select 1"),
+        (37, "Shoot & Select 2"),
+        (38, "Digital Image Stabilization"),
+        (39, "Face Portrait"),
+        (40, "Pet Portrait"),
+        (41, "Smile Shot"),
+        (42, "Quick Shutter"),
+    ]
+);
 
-/// Decodes Olympus art filter to human-readable string
-fn decode_art_filter(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "Soft Focus",
-        2 => "Pop Art",
-        3 => "Pale & Light Color",
-        4 => "Light Tone",
-        5 => "Pin Hole",
-        6 => "Grainy Film",
-        9 => "Diorama",
-        10 => "Cross Process",
-        12 => "Fish Eye",
-        13 => "Drawing",
-        14 => "Gentle Sepia",
-        15 => "Pale & Light Color II",
-        16 => "Pop Art II",
-        17 => "Pin Hole II",
-        18 => "Pin Hole III",
-        19 => "Grainy Film II",
-        20 => "Dramatic Tone",
-        21 => "Punk",
-        22 => "Soft Focus 2",
-        23 => "Sparkle",
-        24 => "Watercolor",
-        25 => "Key Line",
-        26 => "Key Line II",
-        27 => "Miniature",
-        28 => "Reflection",
-        29 => "Fragmented",
-        31 => "Cross Process II",
-        32 => "Gentle Sepia II",
-        33 => "Dramatic Tone II",
-        34 => "Vintage",
-        35 => "Vintage II",
-        36 => "Vintage III",
-        37 => "Partial Color",
-        38 => "Partial Color II",
-        39 => "Partial Color III",
-        _ => "Unknown",
-    }
-}
+// Olympus picture mode decoder
+const_decoder!(
+    PICTURE_MODE_DECODER,
+    i32,
+    [
+        (1, "Vivid"),
+        (2, "Natural"),
+        (3, "Muted"),
+        (4, "Portrait"),
+        (5, "i-Enhance"),
+        (6, "Color Creator"),
+        (7, "Custom"),
+        (8, "e-Portrait"),
+        (9, "Color Profile 1"),
+        (10, "Color Profile 2"),
+        (11, "Color Profile 3"),
+        (12, "Monochrome Profile 1"),
+        (13, "Monochrome Profile 2"),
+        (14, "Monochrome Profile 3"),
+        (256, "Monotone"),
+        (512, "Sepia"),
+    ]
+);
 
-/// Decodes Olympus noise reduction to human-readable string
-fn decode_noise_reduction(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "Noise Reduction",
-        2 => "Noise Filter",
-        3 => "Noise Reduction + Noise Filter",
-        4 => "Noise Filter (ISO Boost)",
-        5 => "Noise Reduction + Noise Filter (ISO Boost)",
-        _ => "Unknown",
-    }
-}
+// Olympus art filter decoder
+const_decoder!(
+    ART_FILTER_DECODER,
+    i32,
+    [
+        (0, "Off"),
+        (1, "Soft Focus"),
+        (2, "Pop Art"),
+        (3, "Pale & Light Color"),
+        (4, "Light Tone"),
+        (5, "Pin Hole"),
+        (6, "Grainy Film"),
+        (9, "Diorama"),
+        (10, "Cross Process"),
+        (12, "Fish Eye"),
+        (13, "Drawing"),
+        (14, "Gentle Sepia"),
+        (15, "Pale & Light Color II"),
+        (16, "Pop Art II"),
+        (17, "Pin Hole II"),
+        (18, "Pin Hole III"),
+        (19, "Grainy Film II"),
+        (20, "Dramatic Tone"),
+        (21, "Punk"),
+        (22, "Soft Focus 2"),
+        (23, "Sparkle"),
+        (24, "Watercolor"),
+        (25, "Key Line"),
+        (26, "Key Line II"),
+        (27, "Miniature"),
+        (28, "Reflection"),
+        (29, "Fragmented"),
+        (31, "Cross Process II"),
+        (32, "Gentle Sepia II"),
+        (33, "Dramatic Tone II"),
+        (34, "Vintage"),
+        (35, "Vintage II"),
+        (36, "Vintage III"),
+        (37, "Partial Color"),
+        (38, "Partial Color II"),
+        (39, "Partial Color III"),
+    ]
+);
 
-/// Decodes Olympus color space to human-readable string
-fn decode_color_space(value: i32) -> &'static str {
-    match value {
-        0 => "sRGB",
-        1 => "Adobe RGB",
-        2 => "Pro Photo RGB",
-        _ => "Unknown",
-    }
-}
+// Olympus noise reduction decoder
+const_decoder!(
+    NOISE_REDUCTION_DECODER,
+    i32,
+    [
+        (0, "Off"),
+        (1, "Noise Reduction"),
+        (2, "Noise Filter"),
+        (3, "Noise Reduction + Noise Filter"),
+        (4, "Noise Filter (ISO Boost)"),
+        (5, "Noise Reduction + Noise Filter (ISO Boost)"),
+    ]
+);
 
-/// Decodes Olympus macro mode to human-readable string
-fn decode_macro_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "On",
-        2 => "Super Macro",
-        _ => "Unknown",
-    }
-}
+// Olympus color space decoder
+const_decoder!(
+    COLOR_SPACE_DECODER,
+    i32,
+    [(0, "sRGB"), (1, "Adobe RGB"), (2, "Pro Photo RGB"),]
+);
 
-/// Decodes boolean off/on value
-fn decode_off_on(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "On",
-        _ => "Unknown",
-    }
-}
+// Olympus macro mode decoder
+const_decoder!(
+    MACRO_MODE_DECODER,
+    i32,
+    [(0, "Off"), (1, "On"), (2, "Super Macro"),]
+);
+
+// ============================================================================
+// Olympus MakerNote Parser Implementation
+// ============================================================================
 
 /// Represents an Olympus MakerNote parser
 pub struct OlympusParser;
@@ -465,17 +478,14 @@ impl MakerNoteParser for OlympusParser {
                 // Simple numeric tags
                 OLYMPUS_JPEG_QUALITY => {
                     let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Olympus:Quality".to_string(),
-                        decode_quality(value).to_string(),
-                    );
+                    tags.insert("Olympus:Quality".to_string(), QUALITY_DECODER.decode(value));
                 }
 
                 OLYMPUS_MACRO_MODE => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Olympus:MacroMode".to_string(),
-                        decode_macro_mode(value).to_string(),
+                        MACRO_MODE_DECODER.decode(value),
                     );
                 }
 
@@ -518,13 +528,25 @@ impl MakerNoteParser for OlympusParser {
     }
 }
 
+// ============================================================================
+// Modular Array Processors
+// ============================================================================
+// These functions process complex array structures from Olympus MakerNotes
+
 /// Parses Camera Settings array (tag 0x0003)
+///
+/// This array contains camera shooting parameters like exposure mode, metering mode,
+/// focus settings, white balance, and image processing settings.
+///
+/// # Arguments
+/// * `array` - The i32 array containing camera settings
+/// * `tags` - HashMap to populate with parsed tag values
 fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     // Exposure mode
     if let Some(&value) = array.get(CS_EXPOSURE_MODE) {
         tags.insert(
             "Olympus:ExposureMode".to_string(),
-            decode_exposure_mode(value).to_string(),
+            EXPOSURE_MODE_DECODER.decode(value),
         );
     }
 
@@ -532,7 +554,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_METERING_MODE) {
         tags.insert(
             "Olympus:MeteringMode".to_string(),
-            decode_metering_mode(value).to_string(),
+            METERING_MODE_DECODER.decode(value),
         );
     }
 
@@ -540,7 +562,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_FOCUS_MODE) {
         tags.insert(
             "Olympus:FocusMode".to_string(),
-            decode_focus_mode(value).to_string(),
+            FOCUS_MODE_DECODER.decode(value),
         );
     }
 
@@ -548,7 +570,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_WHITE_BALANCE) {
         tags.insert(
             "Olympus:WhiteBalance".to_string(),
-            decode_white_balance(value).to_string(),
+            WHITE_BALANCE_DECODER.decode(value),
         );
     }
 
@@ -566,7 +588,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_FLASH_MODE) {
         tags.insert(
             "Olympus:FlashMode".to_string(),
-            decode_flash_mode(value).to_string(),
+            FLASH_MODE_DECODER.decode(value),
         );
     }
 
@@ -607,7 +629,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_COLOR_SPACE) {
         tags.insert(
             "Olympus:ColorSpace".to_string(),
-            decode_color_space(value).to_string(),
+            COLOR_SPACE_DECODER.decode(value),
         );
     }
 
@@ -615,7 +637,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_SCENE_MODE) {
         tags.insert(
             "Olympus:SceneMode".to_string(),
-            decode_scene_mode(value).to_string(),
+            SCENE_MODE_DECODER.decode(value),
         );
     }
 
@@ -623,7 +645,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_NOISE_REDUCTION) {
         tags.insert(
             "Olympus:NoiseReduction".to_string(),
-            decode_noise_reduction(value).to_string(),
+            NOISE_REDUCTION_DECODER.decode(value),
         );
     }
 
@@ -631,7 +653,7 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
     if let Some(&value) = array.get(CS_PICTURE_MODE) {
         tags.insert(
             "Olympus:PictureMode".to_string(),
-            decode_picture_mode(value).to_string(),
+            PICTURE_MODE_DECODER.decode(value),
         );
     }
 
@@ -640,32 +662,39 @@ fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
         if value != 0 {
             tags.insert(
                 "Olympus:ArtFilter".to_string(),
-                decode_art_filter(value).to_string(),
+                ART_FILTER_DECODER.decode(value),
             );
         }
     }
 
-    // Distortion correction
+    // Distortion correction - using shared ON_OFF decoder
     if let Some(&value) = array.get(CS_DISTORTION_CORRECTION) {
         tags.insert(
             "Olympus:DistortionCorrection".to_string(),
-            decode_off_on(value).to_string(),
+            ON_OFF.decode(value as i16),
         );
     }
 
-    // Shading compensation
+    // Shading compensation - using shared ON_OFF decoder
     if let Some(&value) = array.get(CS_SHADING_COMPENSATION) {
         tags.insert(
             "Olympus:ShadingCompensation".to_string(),
-            decode_off_on(value).to_string(),
+            ON_OFF.decode(value as i16),
         );
     }
 }
 
 /// Parses Equipment array (tag 0x0201)
+///
+/// This array contains equipment information including body serial number,
+/// firmware version, lens type, lens serial number, focal length range,
+/// and aperture information.
+///
+/// # Arguments
+/// * `array` - The u8 array containing equipment data
+/// * `tags` - HashMap to populate with parsed tag values
+/// * `byte_order` - Byte order for multi-byte value parsing
 fn parse_equipment(array: &[u8], tags: &mut HashMap<String, String>, byte_order: ByteOrder) {
-    // Equipment array is complex - contains version, serial numbers, lens info, flash info
-
     // Serial number (8 bytes starting at offset 2)
     if array.len() >= 10 {
         let serial_bytes = &array[2..10];
@@ -780,7 +809,17 @@ fn parse_equipment(array: &[u8], tags: &mut HashMap<String, String>, byte_order:
     }
 }
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 /// Converts Olympus tag ID to tag name string
+///
+/// # Arguments
+/// * `tag_id` - The Olympus tag ID
+///
+/// # Returns
+/// String in format "Olympus:TagName" or "Olympus:Unknown-0xXXXX"
 fn olympus_tag_to_name(tag_id: u16) -> String {
     let tag_name = match tag_id {
         OLYMPUS_SPECIAL_MODE => "SpecialMode",
@@ -800,6 +839,14 @@ fn olympus_tag_to_name(tag_id: u16) -> String {
 }
 
 /// Parses IFD entries in the specified byte order
+///
+/// # Arguments
+/// * `input` - Input byte slice containing IFD entries
+/// * `entry_count` - Number of entries to parse
+/// * `byte_order` - Byte order for parsing (LittleEndian or BigEndian)
+///
+/// # Returns
+/// IResult with remaining input and vector of parsed IFD entries
 fn parse_ifd_entries(
     input: &[u8],
     entry_count: u16,
@@ -813,6 +860,12 @@ fn parse_ifd_entries(
 }
 
 /// Parses a single IFD entry in little-endian byte order
+///
+/// Each entry is 12 bytes:
+/// - 2 bytes: tag ID
+/// - 2 bytes: field type
+/// - 4 bytes: value count
+/// - 4 bytes: value offset
 fn parse_ifd_entry_le(input: &[u8]) -> IResult<&[u8], IfdEntry> {
     use nom::Parser;
     map(
@@ -834,6 +887,12 @@ fn parse_ifd_entry_le(input: &[u8]) -> IResult<&[u8], IfdEntry> {
 }
 
 /// Parses a single IFD entry in big-endian byte order
+///
+/// Each entry is 12 bytes:
+/// - 2 bytes: tag ID
+/// - 2 bytes: field type
+/// - 4 bytes: value count
+/// - 4 bytes: value offset
 fn parse_ifd_entry_be(input: &[u8]) -> IResult<&[u8], IfdEntry> {
     use nom::Parser;
     map(
@@ -855,6 +914,17 @@ fn parse_ifd_entry_be(input: &[u8]) -> IResult<&[u8], IfdEntry> {
 }
 
 /// Extracts string value from IFD entry
+///
+/// Handles both inline strings (<=4 bytes in value_offset) and
+/// longer strings stored at an offset in the data.
+///
+/// # Arguments
+/// * `entry` - The IFD entry containing string metadata
+/// * `full_data` - Complete MakerNote data buffer
+/// * `base_offset` - Base offset for calculating absolute positions
+///
+/// # Returns
+/// Some(String) if extraction succeeds, None otherwise
 fn extract_string_value(entry: &IfdEntry, full_data: &[u8], base_offset: usize) -> Option<String> {
     let byte_count = entry.value_count as usize;
 
@@ -884,6 +954,18 @@ fn extract_string_value(entry: &IfdEntry, full_data: &[u8], base_offset: usize) 
 }
 
 /// Extracts i32 array from IFD entry
+///
+/// Reads a sequence of 32-bit signed integers from the MakerNote data.
+/// Used for Camera Settings array and similar structures.
+///
+/// # Arguments
+/// * `entry` - The IFD entry containing array metadata
+/// * `full_data` - Complete MakerNote data buffer
+/// * `base_offset` - Base offset for calculating absolute positions
+/// * `byte_order` - Byte order for parsing integers
+///
+/// # Returns
+/// Some(Vec<i32>) if extraction succeeds, None otherwise
 fn extract_i32_array(
     entry: &IfdEntry,
     full_data: &[u8],
@@ -922,6 +1004,17 @@ fn extract_i32_array(
 }
 
 /// Extracts u8 array from IFD entry
+///
+/// Reads a sequence of bytes from the MakerNote data.
+/// Used for Equipment array and other byte-level structures.
+///
+/// # Arguments
+/// * `entry` - The IFD entry containing array metadata
+/// * `full_data` - Complete MakerNote data buffer
+/// * `base_offset` - Base offset for calculating absolute positions
+///
+/// # Returns
+/// Some(Vec<u8>) if extraction succeeds, None otherwise
 fn extract_u8_array(entry: &IfdEntry, full_data: &[u8], base_offset: usize) -> Option<Vec<u8>> {
     let count = entry.value_count as usize;
     let offset = (entry.value_offset as usize) + base_offset;
@@ -932,6 +1025,10 @@ fn extract_u8_array(entry: &IfdEntry, full_data: &[u8], base_offset: usize) -> O
 
     Some(full_data[offset..offset + count].to_vec())
 }
+
+// ============================================================================
+// Unit Tests
+// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -972,56 +1069,56 @@ mod tests {
 
     #[test]
     fn test_decode_quality() {
-        assert_eq!(decode_quality(1), "SQ (Standard Quality)");
-        assert_eq!(decode_quality(2), "HQ (High Quality)");
-        assert_eq!(decode_quality(3), "SHQ (Super High Quality)");
-        assert_eq!(decode_quality(4), "RAW");
+        assert_eq!(QUALITY_DECODER.decode(1), "SQ (Standard Quality)");
+        assert_eq!(QUALITY_DECODER.decode(2), "HQ (High Quality)");
+        assert_eq!(QUALITY_DECODER.decode(3), "SHQ (Super High Quality)");
+        assert_eq!(QUALITY_DECODER.decode(4), "RAW");
     }
 
     #[test]
     fn test_decode_exposure_mode() {
-        assert_eq!(decode_exposure_mode(1), "Manual");
-        assert_eq!(decode_exposure_mode(2), "Program");
-        assert_eq!(decode_exposure_mode(3), "Aperture Priority");
-        assert_eq!(decode_exposure_mode(4), "Shutter Priority");
+        assert_eq!(EXPOSURE_MODE_DECODER.decode(1), "Manual");
+        assert_eq!(EXPOSURE_MODE_DECODER.decode(2), "Program");
+        assert_eq!(EXPOSURE_MODE_DECODER.decode(3), "Aperture Priority");
+        assert_eq!(EXPOSURE_MODE_DECODER.decode(4), "Shutter Priority");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(0), "Single AF");
-        assert_eq!(decode_focus_mode(2), "Continuous AF");
-        assert_eq!(decode_focus_mode(3), "Manual Focus");
+        assert_eq!(FOCUS_MODE_DECODER.decode(0), "Single AF");
+        assert_eq!(FOCUS_MODE_DECODER.decode(2), "Continuous AF");
+        assert_eq!(FOCUS_MODE_DECODER.decode(3), "Manual Focus");
     }
 
     #[test]
     fn test_decode_white_balance() {
-        assert_eq!(decode_white_balance(0), "Auto");
-        assert_eq!(decode_white_balance(18), "5300K (Fine Weather)");
-        assert_eq!(decode_white_balance(23), "5500K (Flash)");
+        assert_eq!(WHITE_BALANCE_DECODER.decode(0), "Auto");
+        assert_eq!(WHITE_BALANCE_DECODER.decode(18), "5300K (Fine Weather)");
+        assert_eq!(WHITE_BALANCE_DECODER.decode(23), "5500K (Flash)");
     }
 
     #[test]
     fn test_decode_scene_mode() {
-        assert_eq!(decode_scene_mode(0), "Standard");
-        assert_eq!(decode_scene_mode(8), "Portrait");
-        assert_eq!(decode_scene_mode(9), "Landscape");
-        assert_eq!(decode_scene_mode(21), "Macro");
-        assert_eq!(decode_scene_mode(22), "Super Macro");
+        assert_eq!(SCENE_MODE_DECODER.decode(0), "Standard");
+        assert_eq!(SCENE_MODE_DECODER.decode(8), "Portrait");
+        assert_eq!(SCENE_MODE_DECODER.decode(9), "Landscape");
+        assert_eq!(SCENE_MODE_DECODER.decode(21), "Macro");
+        assert_eq!(SCENE_MODE_DECODER.decode(22), "Super Macro");
     }
 
     #[test]
     fn test_decode_picture_mode() {
-        assert_eq!(decode_picture_mode(1), "Vivid");
-        assert_eq!(decode_picture_mode(2), "Natural");
-        assert_eq!(decode_picture_mode(5), "i-Enhance");
+        assert_eq!(PICTURE_MODE_DECODER.decode(1), "Vivid");
+        assert_eq!(PICTURE_MODE_DECODER.decode(2), "Natural");
+        assert_eq!(PICTURE_MODE_DECODER.decode(5), "i-Enhance");
     }
 
     #[test]
     fn test_decode_art_filter() {
-        assert_eq!(decode_art_filter(0), "Off");
-        assert_eq!(decode_art_filter(2), "Pop Art");
-        assert_eq!(decode_art_filter(9), "Diorama");
-        assert_eq!(decode_art_filter(24), "Watercolor");
+        assert_eq!(ART_FILTER_DECODER.decode(0), "Off");
+        assert_eq!(ART_FILTER_DECODER.decode(2), "Pop Art");
+        assert_eq!(ART_FILTER_DECODER.decode(9), "Diorama");
+        assert_eq!(ART_FILTER_DECODER.decode(24), "Watercolor");
     }
 
     #[test]

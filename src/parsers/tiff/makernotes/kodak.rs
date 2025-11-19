@@ -25,6 +25,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -52,137 +53,88 @@ const KODAK_TIME_ZONE: u16 = 0x0029; // Time zone offset
 // Kodak signature for validation
 const KODAK_SIGNATURE: &[u8] = b"KDK";
 
-/// Decodes Kodak image quality setting
-///
-/// # Arguments
-/// * `value` - Image quality value
-///
-/// # Returns
-/// Human-readable quality description
-fn decode_quality(value: u16) -> String {
-    match value {
-        1 => "Fine".to_string(),
-        2 => "Normal".to_string(),
-        3 => "Economy".to_string(),
-        4 => "Best".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Kodak image quality setting
+const_decoder! {
+    DECODE_QUALITY, u16, [
+        (1, "Fine"),
+        (2, "Normal"),
+        (3, "Economy"),
+        (4, "Best"),
+    ]
 }
 
-/// Decodes Kodak burst mode
-///
-/// # Arguments
-/// * `value` - Burst mode value
-///
-/// # Returns
-/// Human-readable burst mode
-fn decode_burst_mode(value: u16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "On".to_string(),
-        2 => "Continuous".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Kodak burst mode
+const_decoder! {
+    DECODE_BURST_MODE, u16, [
+        (0, "Off"),
+        (1, "On"),
+        (2, "Continuous"),
+    ]
 }
 
-/// Decodes Kodak focus mode
-///
-/// # Arguments
-/// * `value` - Focus mode value
-///
-/// # Returns
-/// Human-readable focus mode
-fn decode_focus_mode(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Manual".to_string(),
-        2 => "Macro".to_string(),
-        3 => "Infinity".to_string(),
-        4 => "Multi-Zone".to_string(),
-        5 => "Center".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Kodak focus mode
+const_decoder! {
+    DECODE_FOCUS_MODE, u16, [
+        (0, "Auto"),
+        (1, "Manual"),
+        (2, "Macro"),
+        (3, "Infinity"),
+        (4, "Multi-Zone"),
+        (5, "Center"),
+    ]
 }
 
-/// Decodes Kodak white balance mode
-///
-/// # Arguments
-/// * `value` - White balance value
-///
-/// # Returns
-/// Human-readable white balance mode
-fn decode_white_balance(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Daylight".to_string(),
-        2 => "Tungsten".to_string(),
-        3 => "Fluorescent".to_string(),
-        4 => "Flash".to_string(),
-        5 => "Cloudy".to_string(),
-        6 => "Shade".to_string(),
-        7 => "Manual".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Kodak white balance mode
+const_decoder! {
+    DECODE_WHITE_BALANCE, u16, [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Tungsten"),
+        (3, "Fluorescent"),
+        (4, "Flash"),
+        (5, "Cloudy"),
+        (6, "Shade"),
+        (7, "Manual"),
+    ]
 }
 
-/// Decodes Kodak flash mode
-///
-/// # Arguments
-/// * `value` - Flash mode value
-///
-/// # Returns
-/// Human-readable flash mode
-fn decode_flash_mode(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Fill Flash".to_string(),
-        2 => "Off".to_string(),
-        3 => "Red-eye Reduction".to_string(),
-        4 => "Slow Sync".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Kodak flash mode
+const_decoder! {
+    DECODE_FLASH_MODE, u16, [
+        (0, "Auto"),
+        (1, "Fill Flash"),
+        (2, "Off"),
+        (3, "Red-eye Reduction"),
+        (4, "Slow Sync"),
+    ]
 }
 
-/// Decodes Kodak color mode
-///
-/// # Arguments
-/// * `value` - Color mode value
-///
-/// # Returns
-/// Human-readable color mode
-fn decode_color_mode(value: u16) -> String {
-    match value {
-        0 => "Natural".to_string(),
-        1 => "Vivid".to_string(),
-        2 => "Black & White".to_string(),
-        3 => "Sepia".to_string(),
-        4 => "High Saturation".to_string(),
-        5 => "Low Saturation".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Kodak color mode
+const_decoder! {
+    DECODE_COLOR_MODE, u16, [
+        (0, "Natural"),
+        (1, "Vivid"),
+        (2, "Black & White"),
+        (3, "Sepia"),
+        (4, "High Saturation"),
+        (5, "Low Saturation"),
+    ]
 }
 
-/// Decodes Kodak scene mode
-///
-/// # Arguments
-/// * `value` - Scene mode value
-///
-/// # Returns
-/// Human-readable scene mode
-fn decode_scene_mode(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Portrait".to_string(),
-        2 => "Landscape".to_string(),
-        3 => "Sports".to_string(),
-        4 => "Night".to_string(),
-        5 => "Sunset".to_string(),
-        6 => "Snow".to_string(),
-        7 => "Beach".to_string(),
-        8 => "Fireworks".to_string(),
-        9 => "Text".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Kodak scene mode
+const_decoder! {
+    DECODE_SCENE_MODE, u16, [
+        (0, "Auto"),
+        (1, "Portrait"),
+        (2, "Landscape"),
+        (3, "Sports"),
+        (4, "Night"),
+        (5, "Sunset"),
+        (6, "Snow"),
+        (7, "Beach"),
+        (8, "Fireworks"),
+        (9, "Text"),
+    ]
 }
 
 /// Extracts a 16-bit unsigned value from IFD entry
@@ -319,30 +271,39 @@ impl KodakParser {
             }
             KODAK_QUALITY => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Kodak:Quality".to_string(), decode_quality(value));
+                    tags.insert("Kodak:Quality".to_string(), DECODE_QUALITY.decode(value));
                 }
             }
             KODAK_BURST_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Kodak:BurstMode".to_string(), decode_burst_mode(value));
+                    tags.insert(
+                        "Kodak:BurstMode".to_string(),
+                        DECODE_BURST_MODE.decode(value),
+                    );
                 }
             }
             KODAK_FOCUS_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Kodak:FocusMode".to_string(), decode_focus_mode(value));
+                    tags.insert(
+                        "Kodak:FocusMode".to_string(),
+                        DECODE_FOCUS_MODE.decode(value),
+                    );
                 }
             }
             KODAK_WHITE_BALANCE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
                     tags.insert(
                         "Kodak:WhiteBalance".to_string(),
-                        decode_white_balance(value),
+                        DECODE_WHITE_BALANCE.decode(value),
                     );
                 }
             }
             KODAK_FLASH_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Kodak:FlashMode".to_string(), decode_flash_mode(value));
+                    tags.insert(
+                        "Kodak:FlashMode".to_string(),
+                        DECODE_FLASH_MODE.decode(value),
+                    );
                 }
             }
             KODAK_FLASH_FIRED => {
@@ -358,7 +319,10 @@ impl KodakParser {
             }
             KODAK_COLOR_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Kodak:ColorMode".to_string(), decode_color_mode(value));
+                    tags.insert(
+                        "Kodak:ColorMode".to_string(),
+                        DECODE_COLOR_MODE.decode(value),
+                    );
                 }
             }
             KODAK_SHARPNESS => {
@@ -378,7 +342,10 @@ impl KodakParser {
             }
             KODAK_SCENE_MODE => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Kodak:SceneMode".to_string(), decode_scene_mode(value));
+                    tags.insert(
+                        "Kodak:SceneMode".to_string(),
+                        DECODE_SCENE_MODE.decode(value),
+                    );
                 }
             }
             KODAK_EXPOSURE_BIAS => {
@@ -514,35 +481,40 @@ mod tests {
 
     #[test]
     fn test_decode_quality() {
-        assert_eq!(decode_quality(1), "Fine");
-        assert_eq!(decode_quality(2), "Normal");
-        assert_eq!(decode_quality(4), "Best");
+        assert_eq!(DECODE_QUALITY.decode(1), "Fine");
+        assert_eq!(DECODE_QUALITY.decode(2), "Normal");
+        assert_eq!(DECODE_QUALITY.decode(4), "Best");
+        assert_eq!(DECODE_QUALITY.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_burst_mode() {
-        assert_eq!(decode_burst_mode(0), "Off");
-        assert_eq!(decode_burst_mode(2), "Continuous");
+        assert_eq!(DECODE_BURST_MODE.decode(0), "Off");
+        assert_eq!(DECODE_BURST_MODE.decode(2), "Continuous");
+        assert_eq!(DECODE_BURST_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(0), "Auto");
-        assert_eq!(decode_focus_mode(2), "Macro");
-        assert_eq!(decode_focus_mode(4), "Multi-Zone");
+        assert_eq!(DECODE_FOCUS_MODE.decode(0), "Auto");
+        assert_eq!(DECODE_FOCUS_MODE.decode(2), "Macro");
+        assert_eq!(DECODE_FOCUS_MODE.decode(4), "Multi-Zone");
+        assert_eq!(DECODE_FOCUS_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_white_balance() {
-        assert_eq!(decode_white_balance(0), "Auto");
-        assert_eq!(decode_white_balance(2), "Tungsten");
-        assert_eq!(decode_white_balance(7), "Manual");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0), "Auto");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(2), "Tungsten");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(7), "Manual");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_color_mode() {
-        assert_eq!(decode_color_mode(0), "Natural");
-        assert_eq!(decode_color_mode(2), "Black & White");
+        assert_eq!(DECODE_COLOR_MODE.decode(0), "Natural");
+        assert_eq!(DECODE_COLOR_MODE.decode(2), "Black & White");
+        assert_eq!(DECODE_COLOR_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]

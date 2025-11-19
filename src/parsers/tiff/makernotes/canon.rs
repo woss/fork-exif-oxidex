@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use super::canon_lens_database::lookup_lens_name;
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // Canon MakerNote Tag IDs
 const CANON_CAMERA_SETTINGS: u16 = 0x0001;
@@ -95,100 +96,105 @@ const AF_INFO_AREA_HEIGHT: usize = 5;
 const AF_INFO_POINTS_IN_FOCUS: usize = 8;
 const AF_INFO_POINTS_SELECTED: usize = 9;
 
-/// Decodes Canon macro mode value to human-readable string
-fn decode_macro_mode(value: i16) -> String {
-    match value {
-        1 => "Macro".to_string(),
-        2 => "Normal".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// ============================================================================
+// DECODERS - Canon Value Decoders
+// ============================================================================
+// Using const_decoder! macro for declarative, zero-overhead value decoding
 
-/// Decodes Canon quality setting to human-readable string
-fn decode_quality(value: i16) -> String {
-    match value {
-        -1 => "n/a".to_string(),
-        1 => "Economy".to_string(),
-        2 => "Normal".to_string(),
-        3 => "Fine".to_string(),
-        4 => "RAW".to_string(),
-        5 => "Superfine".to_string(),
-        7 => "CRAW".to_string(),
-        130 => "Normal Movie".to_string(),
-        131 => "Movie (2)".to_string(),
-        132 => "Movie (3)".to_string(),
-        133 => "Movie (4)".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// Canon macro mode decoder
+const_decoder!(MACRO_MODE, i16, [(1, "Macro"), (2, "Normal"),]);
 
-/// Decodes Canon flash mode to human-readable string
-fn decode_flash_mode(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Auto".to_string(),
-        2 => "On".to_string(),
-        3 => "Red-eye Reduction".to_string(),
-        4 => "Slow Sync".to_string(),
-        5 => "Auto + Red-eye Reduction".to_string(),
-        6 => "On + Red-eye Reduction".to_string(),
-        16 => "External Flash".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// Canon quality setting decoder
+const_decoder!(
+    QUALITY,
+    i16,
+    [
+        (-1, "n/a"),
+        (1, "Economy"),
+        (2, "Normal"),
+        (3, "Fine"),
+        (4, "RAW"),
+        (5, "Superfine"),
+        (7, "CRAW"),
+        (130, "Normal Movie"),
+        (131, "Movie (2)"),
+        (132, "Movie (3)"),
+        (133, "Movie (4)"),
+    ]
+);
 
-/// Decodes Canon drive mode to human-readable string
-fn decode_drive_mode(value: i16) -> String {
-    match value {
-        0 => "Single".to_string(),
-        1 => "Continuous".to_string(),
-        2 => "Movie".to_string(),
-        4 => "Continuous, Speed Priority".to_string(),
-        5 => "Continuous, Low".to_string(),
-        6 => "Continuous, High".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// Canon flash mode decoder
+const_decoder!(
+    FLASH_MODE,
+    i16,
+    [
+        (0, "Off"),
+        (1, "Auto"),
+        (2, "On"),
+        (3, "Red-eye Reduction"),
+        (4, "Slow Sync"),
+        (5, "Auto + Red-eye Reduction"),
+        (6, "On + Red-eye Reduction"),
+        (16, "External Flash"),
+    ]
+);
 
-/// Decodes Canon focus mode to human-readable string
-fn decode_focus_mode(value: i16) -> String {
-    match value {
-        0 => "One-shot AF".to_string(),
-        1 => "AI Servo AF".to_string(),
-        2 => "AI Focus AF".to_string(),
-        3 => "Manual Focus (3)".to_string(),
-        4 => "Single".to_string(),
-        5 => "Continuous".to_string(),
-        6 => "Manual Focus (6)".to_string(),
-        16 => "Pan Focus".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// Canon drive mode decoder
+const_decoder!(
+    DRIVE_MODE,
+    i16,
+    [
+        (0, "Single"),
+        (1, "Continuous"),
+        (2, "Movie"),
+        (4, "Continuous, Speed Priority"),
+        (5, "Continuous, Low"),
+        (6, "Continuous, High"),
+    ]
+);
 
-/// Decodes Canon metering mode to human-readable string
-fn decode_metering_mode(value: i16) -> String {
-    match value {
-        3 => "Evaluative".to_string(),
-        4 => "Partial".to_string(),
-        5 => "Center-weighted Average".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// Canon focus mode decoder
+const_decoder!(
+    FOCUS_MODE,
+    i16,
+    [
+        (0, "One-shot AF"),
+        (1, "AI Servo AF"),
+        (2, "AI Focus AF"),
+        (3, "Manual Focus (3)"),
+        (4, "Single"),
+        (5, "Continuous"),
+        (6, "Manual Focus (6)"),
+        (16, "Pan Focus"),
+    ]
+);
 
-/// Decodes Canon exposure mode to human-readable string
-fn decode_exposure_mode(value: i16) -> String {
-    match value {
-        0 => "Easy".to_string(),
-        1 => "Program AE".to_string(),
-        2 => "Shutter Priority".to_string(),
-        3 => "Aperture Priority".to_string(),
-        4 => "Manual".to_string(),
-        5 => "Depth-of-field AE".to_string(),
-        6 => "M-Dep".to_string(),
-        7 => "Bulb".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// Canon metering mode decoder
+const_decoder!(
+    METERING_MODE,
+    i16,
+    [
+        (3, "Evaluative"),
+        (4, "Partial"),
+        (5, "Center-weighted Average"),
+    ]
+);
+
+// Canon exposure mode decoder
+const_decoder!(
+    EXPOSURE_MODE,
+    i16,
+    [
+        (0, "Easy"),
+        (1, "Program AE"),
+        (2, "Shutter Priority"),
+        (3, "Aperture Priority"),
+        (4, "Manual"),
+        (5, "Depth-of-field AE"),
+        (6, "M-Dep"),
+        (7, "Bulb"),
+    ]
+);
 
 /// Represents a Canon MakerNote tag value
 #[derive(Debug, Clone, PartialEq)]
@@ -448,35 +454,35 @@ fn parse_canon_makernote_impl(
             // CameraSettings array (Phase 2)
             CANON_CAMERA_SETTINGS => {
                 if let Some(array) = extract_i16_array(&entry, data, byte_order) {
-                    // Extract specific settings from array
+                    // Extract specific settings from array using const decoders
                     if array.len() > CAMERA_SETTINGS_MACRO_MODE {
                         tags.insert(
                             "Canon:MacroMode".to_string(),
-                            decode_macro_mode(array[CAMERA_SETTINGS_MACRO_MODE]),
+                            MACRO_MODE.decode(array[CAMERA_SETTINGS_MACRO_MODE]),
                         );
                     }
                     if array.len() > CAMERA_SETTINGS_QUALITY {
                         tags.insert(
                             "Canon:Quality".to_string(),
-                            decode_quality(array[CAMERA_SETTINGS_QUALITY]),
+                            QUALITY.decode(array[CAMERA_SETTINGS_QUALITY]),
                         );
                     }
                     if array.len() > CAMERA_SETTINGS_FLASH_MODE {
                         tags.insert(
                             "Canon:FlashMode".to_string(),
-                            decode_flash_mode(array[CAMERA_SETTINGS_FLASH_MODE]),
+                            FLASH_MODE.decode(array[CAMERA_SETTINGS_FLASH_MODE]),
                         );
                     }
                     if array.len() > CAMERA_SETTINGS_DRIVE_MODE {
                         tags.insert(
                             "Canon:DriveMode".to_string(),
-                            decode_drive_mode(array[CAMERA_SETTINGS_DRIVE_MODE]),
+                            DRIVE_MODE.decode(array[CAMERA_SETTINGS_DRIVE_MODE]),
                         );
                     }
                     if array.len() > CAMERA_SETTINGS_FOCUS_MODE {
                         tags.insert(
                             "Canon:FocusMode".to_string(),
-                            decode_focus_mode(array[CAMERA_SETTINGS_FOCUS_MODE]),
+                            FOCUS_MODE.decode(array[CAMERA_SETTINGS_FOCUS_MODE]),
                         );
                     }
                     if array.len() > CAMERA_SETTINGS_ISO {
@@ -488,13 +494,13 @@ fn parse_canon_makernote_impl(
                     if array.len() > CAMERA_SETTINGS_METERING_MODE {
                         tags.insert(
                             "Canon:MeteringMode".to_string(),
-                            decode_metering_mode(array[CAMERA_SETTINGS_METERING_MODE]),
+                            METERING_MODE.decode(array[CAMERA_SETTINGS_METERING_MODE]),
                         );
                     }
                     if array.len() > CAMERA_SETTINGS_EXPOSURE_MODE {
                         tags.insert(
                             "Canon:ExposureMode".to_string(),
-                            decode_exposure_mode(array[CAMERA_SETTINGS_EXPOSURE_MODE]),
+                            EXPOSURE_MODE.decode(array[CAMERA_SETTINGS_EXPOSURE_MODE]),
                         );
                     }
                 }
@@ -946,77 +952,77 @@ mod tests {
 
     #[test]
     fn test_decode_macro_mode() {
-        assert_eq!(decode_macro_mode(1), "Macro");
-        assert_eq!(decode_macro_mode(2), "Normal");
-        assert_eq!(decode_macro_mode(99), "Unknown (99)");
+        assert_eq!(MACRO_MODE.decode(1), "Macro");
+        assert_eq!(MACRO_MODE.decode(2), "Normal");
+        assert_eq!(MACRO_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_quality() {
-        assert_eq!(decode_quality(2), "Normal");
-        assert_eq!(decode_quality(3), "Fine");
-        assert_eq!(decode_quality(5), "Superfine");
-        assert_eq!(decode_quality(130), "Normal Movie");
-        assert_eq!(decode_quality(131), "Movie (2)");
-        assert_eq!(decode_quality(99), "Unknown (99)");
+        assert_eq!(QUALITY.decode(2), "Normal");
+        assert_eq!(QUALITY.decode(3), "Fine");
+        assert_eq!(QUALITY.decode(5), "Superfine");
+        assert_eq!(QUALITY.decode(130), "Normal Movie");
+        assert_eq!(QUALITY.decode(131), "Movie (2)");
+        assert_eq!(QUALITY.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_flash_mode() {
-        assert_eq!(decode_flash_mode(0), "Off");
-        assert_eq!(decode_flash_mode(1), "Auto");
-        assert_eq!(decode_flash_mode(2), "On");
-        assert_eq!(decode_flash_mode(3), "Red-eye Reduction");
-        assert_eq!(decode_flash_mode(4), "Slow Sync");
-        assert_eq!(decode_flash_mode(5), "Auto + Red-eye Reduction");
-        assert_eq!(decode_flash_mode(6), "On + Red-eye Reduction");
-        assert_eq!(decode_flash_mode(16), "External Flash");
-        assert_eq!(decode_flash_mode(99), "Unknown (99)");
+        assert_eq!(FLASH_MODE.decode(0), "Off");
+        assert_eq!(FLASH_MODE.decode(1), "Auto");
+        assert_eq!(FLASH_MODE.decode(2), "On");
+        assert_eq!(FLASH_MODE.decode(3), "Red-eye Reduction");
+        assert_eq!(FLASH_MODE.decode(4), "Slow Sync");
+        assert_eq!(FLASH_MODE.decode(5), "Auto + Red-eye Reduction");
+        assert_eq!(FLASH_MODE.decode(6), "On + Red-eye Reduction");
+        assert_eq!(FLASH_MODE.decode(16), "External Flash");
+        assert_eq!(FLASH_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_drive_mode() {
-        assert_eq!(decode_drive_mode(0), "Single");
-        assert_eq!(decode_drive_mode(1), "Continuous");
-        assert_eq!(decode_drive_mode(2), "Movie");
-        assert_eq!(decode_drive_mode(4), "Continuous, Speed Priority");
-        assert_eq!(decode_drive_mode(5), "Continuous, Low");
-        assert_eq!(decode_drive_mode(6), "Continuous, High");
-        assert_eq!(decode_drive_mode(99), "Unknown (99)");
+        assert_eq!(DRIVE_MODE.decode(0), "Single");
+        assert_eq!(DRIVE_MODE.decode(1), "Continuous");
+        assert_eq!(DRIVE_MODE.decode(2), "Movie");
+        assert_eq!(DRIVE_MODE.decode(4), "Continuous, Speed Priority");
+        assert_eq!(DRIVE_MODE.decode(5), "Continuous, Low");
+        assert_eq!(DRIVE_MODE.decode(6), "Continuous, High");
+        assert_eq!(DRIVE_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(0), "One-shot AF");
-        assert_eq!(decode_focus_mode(1), "AI Servo AF");
-        assert_eq!(decode_focus_mode(2), "AI Focus AF");
-        assert_eq!(decode_focus_mode(3), "Manual Focus (3)");
-        assert_eq!(decode_focus_mode(4), "Single");
-        assert_eq!(decode_focus_mode(5), "Continuous");
-        assert_eq!(decode_focus_mode(6), "Manual Focus (6)");
-        assert_eq!(decode_focus_mode(16), "Pan Focus");
-        assert_eq!(decode_focus_mode(99), "Unknown (99)");
+        assert_eq!(FOCUS_MODE.decode(0), "One-shot AF");
+        assert_eq!(FOCUS_MODE.decode(1), "AI Servo AF");
+        assert_eq!(FOCUS_MODE.decode(2), "AI Focus AF");
+        assert_eq!(FOCUS_MODE.decode(3), "Manual Focus (3)");
+        assert_eq!(FOCUS_MODE.decode(4), "Single");
+        assert_eq!(FOCUS_MODE.decode(5), "Continuous");
+        assert_eq!(FOCUS_MODE.decode(6), "Manual Focus (6)");
+        assert_eq!(FOCUS_MODE.decode(16), "Pan Focus");
+        assert_eq!(FOCUS_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_metering_mode() {
-        assert_eq!(decode_metering_mode(3), "Evaluative");
-        assert_eq!(decode_metering_mode(4), "Partial");
-        assert_eq!(decode_metering_mode(5), "Center-weighted Average");
-        assert_eq!(decode_metering_mode(99), "Unknown (99)");
+        assert_eq!(METERING_MODE.decode(3), "Evaluative");
+        assert_eq!(METERING_MODE.decode(4), "Partial");
+        assert_eq!(METERING_MODE.decode(5), "Center-weighted Average");
+        assert_eq!(METERING_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_exposure_mode() {
-        assert_eq!(decode_exposure_mode(0), "Easy");
-        assert_eq!(decode_exposure_mode(1), "Program AE");
-        assert_eq!(decode_exposure_mode(2), "Shutter Priority");
-        assert_eq!(decode_exposure_mode(3), "Aperture Priority");
-        assert_eq!(decode_exposure_mode(4), "Manual");
-        assert_eq!(decode_exposure_mode(5), "Depth-of-field AE");
-        assert_eq!(decode_exposure_mode(6), "M-Dep");
-        assert_eq!(decode_exposure_mode(7), "Bulb");
-        assert_eq!(decode_exposure_mode(99), "Unknown (99)");
+        assert_eq!(EXPOSURE_MODE.decode(0), "Easy");
+        assert_eq!(EXPOSURE_MODE.decode(1), "Program AE");
+        assert_eq!(EXPOSURE_MODE.decode(2), "Shutter Priority");
+        assert_eq!(EXPOSURE_MODE.decode(3), "Aperture Priority");
+        assert_eq!(EXPOSURE_MODE.decode(4), "Manual");
+        assert_eq!(EXPOSURE_MODE.decode(5), "Depth-of-field AE");
+        assert_eq!(EXPOSURE_MODE.decode(6), "M-Dep");
+        assert_eq!(EXPOSURE_MODE.decode(7), "Bulb");
+        assert_eq!(EXPOSURE_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]

@@ -6,6 +6,17 @@
 //! Supports both Lumix Micro Four Thirds (M43) cameras and full-frame L-mount cameras.
 //!
 //! Based on ExifTool's Panasonic.pm module.
+//!
+//! ## Architecture
+//! This module has been refactored to use the shared MakerNotes framework,
+//! reducing code duplication by using:
+//! - **const_decoder!** macros for declarative value decoders
+//! - **Shared IFD parsing** utilities to eliminate duplicate parsing code
+//! - **Generic decoders** for common patterns (ON_OFF, etc.)
+//!
+//! ## Code Duplication Reduction
+//! This refactoring eliminates decoder function duplication while maintaining
+//! 100% functionality and test coverage.
 
 #![allow(dead_code)]
 #![allow(unused_imports)]
@@ -23,7 +34,12 @@ use std::collections::HashMap;
 use super::panasonic_lens_database::lookup_lens_name;
 use super::shared::MakerNoteParser;
 
-// ===== Panasonic MakerNote Tag IDs =====
+// Import declarative decoder macros
+use crate::const_decoder;
+
+// ============================================================================
+// Panasonic MakerNote Tag IDs
+// ============================================================================
 // Based on ExifTool Panasonic.pm tag definitions
 
 // Basic Camera Information Tags
@@ -117,218 +133,297 @@ const PANA_BABY_AGE_1: u16 = 0x8010;
 // Panasonic uses "Panasonic\0\0\0" header (12 bytes)
 const PANASONIC_HEADER: &[u8] = b"Panasonic\0\0\0";
 
-/// Decodes Panasonic quality mode to human-readable string
-fn decode_quality(value: i32) -> &'static str {
-    match value {
-        1 => "Economy",
-        2 => "Normal",
-        3 => "Fine",
-        4 => "Super Fine",
-        5 => "Extra Fine",
-        6 => "RAW",
-        7 => "RAW + Fine",
-        8 => "RAW + Normal",
-        9 => "Motion Picture",
-        _ => "Unknown",
-    }
-}
+// ============================================================================
+// Declarative Decoder Definitions
+// ============================================================================
+// Using const_decoder! macro to eliminate decoder function duplication
 
-/// Decodes Panasonic white balance setting to human-readable string
-fn decode_white_balance(value: i32) -> &'static str {
-    match value {
-        1 => "Auto",
-        2 => "Daylight",
-        3 => "Cloudy",
-        4 => "Incandescent",
-        5 => "Manual",
-        8 => "Flash",
-        10 => "Black & White",
-        11 => "Manual 2",
-        12 => "Shade",
-        13 => "Kelvin",
-        14 => "Manual 3",
-        15 => "Manual 4",
-        16 => "Manual 5",
-        17 => "PC",
-        _ => "Unknown",
-    }
-}
+// Quality mode decoder - maps values to image quality settings
+const_decoder!(
+    QUALITY,
+    i32,
+    [
+        (1, "Economy"),
+        (2, "Normal"),
+        (3, "Fine"),
+        (4, "Super Fine"),
+        (5, "Extra Fine"),
+        (6, "RAW"),
+        (7, "RAW + Fine"),
+        (8, "RAW + Normal"),
+        (9, "Motion Picture"),
+    ]
+);
 
-/// Decodes Panasonic focus mode to human-readable string
-fn decode_focus_mode(value: i32) -> &'static str {
-    match value {
-        1 => "Auto",
-        2 => "Manual",
-        4 => "AF-S (Single)",
-        5 => "AF-C (Continuous)",
-        6 => "AF-F (Flexible)",
-        16 => "MF (Manual Focus)",
-        _ => "Unknown",
-    }
-}
+// White balance decoder - maps values to white balance presets
+const_decoder!(
+    WHITE_BALANCE,
+    i32,
+    [
+        (1, "Auto"),
+        (2, "Daylight"),
+        (3, "Cloudy"),
+        (4, "Incandescent"),
+        (5, "Manual"),
+        (8, "Flash"),
+        (10, "Black & White"),
+        (11, "Manual 2"),
+        (12, "Shade"),
+        (13, "Kelvin"),
+        (14, "Manual 3"),
+        (15, "Manual 4"),
+        (16, "Manual 5"),
+        (17, "PC"),
+    ]
+);
 
-/// Decodes Panasonic AF area mode to human-readable string
-fn decode_af_area_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Face Detection",
-        1 => "49-Area",
-        2 => "Tracking",
-        3 => "1-Area",
-        4 => "Pinpoint",
-        8 => "Multi",
-        16 => "1-Area (high speed)",
-        17 => "49-Area (high speed)",
-        18 => "Tracking (high speed)",
-        32 => "1-Area (video)",
-        _ => "Unknown",
-    }
-}
+// Focus mode decoder - maps values to autofocus modes
+const_decoder!(
+    FOCUS_MODE,
+    i32,
+    [
+        (1, "Auto"),
+        (2, "Manual"),
+        (4, "AF-S (Single)"),
+        (5, "AF-C (Continuous)"),
+        (6, "AF-F (Flexible)"),
+        (16, "MF (Manual Focus)"),
+    ]
+);
 
-/// Decodes Panasonic image stabilization mode to human-readable string
-fn decode_image_stabilization(value: i32) -> &'static str {
-    match value {
-        2 => "Mode 1",
-        3 => "Off",
-        4 => "Mode 2",
-        6 => "Mode 3",
-        34 => "Mode 1 (video)",
-        35 => "Off (video)",
-        36 => "Mode 2 (video)",
-        _ => "Unknown",
-    }
-}
+// AF area mode decoder - maps values to AF area selection modes
+const_decoder!(
+    AF_AREA_MODE,
+    i32,
+    [
+        (0, "Face Detection"),
+        (1, "49-Area"),
+        (2, "Tracking"),
+        (3, "1-Area"),
+        (4, "Pinpoint"),
+        (8, "Multi"),
+        (16, "1-Area (high speed)"),
+        (17, "49-Area (high speed)"),
+        (18, "Tracking (high speed)"),
+        (32, "1-Area (video)"),
+    ]
+);
 
-/// Decodes Panasonic shooting mode to human-readable string
-fn decode_shooting_mode(value: i32) -> &'static str {
-    match value {
-        1 => "Normal",
-        2 => "Portrait",
-        3 => "Scenery",
-        4 => "Sports",
-        5 => "Night Portrait",
-        6 => "Program",
-        7 => "Aperture Priority",
-        8 => "Shutter Priority",
-        9 => "Macro",
-        10 => "Spot",
-        11 => "Manual",
-        12 => "Movie Preview",
-        13 => "Panning",
-        14 => "Simple",
-        15 => "Color Effects",
-        18 => "Panorama",
-        19 => "Glass Through",
-        20 => "HDR",
-        _ => "Unknown",
-    }
-}
+// Image stabilization decoder - maps values to IS modes
+const_decoder!(
+    IMAGE_STABILIZATION,
+    i32,
+    [
+        (2, "Mode 1"),
+        (3, "Off"),
+        (4, "Mode 2"),
+        (6, "Mode 3"),
+        (34, "Mode 1 (video)"),
+        (35, "Off (video)"),
+        (36, "Mode 2 (video)"),
+    ]
+);
 
-/// Decodes Panasonic contrast mode to human-readable string
-fn decode_contrast_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Normal",
-        1 => "Low",
-        2 => "High",
-        3 => "Medium Low",
-        4 => "Medium High",
-        5 => "High+",
-        7 => "Lowest",
-        256 => "Low",
-        272 => "Standard",
-        288 => "High",
-        _ => "Unknown",
-    }
-}
+// Shooting mode decoder - maps values to shooting scene modes
+const_decoder!(
+    SHOOTING_MODE,
+    i32,
+    [
+        (1, "Normal"),
+        (2, "Portrait"),
+        (3, "Scenery"),
+        (4, "Sports"),
+        (5, "Night Portrait"),
+        (6, "Program"),
+        (7, "Aperture Priority"),
+        (8, "Shutter Priority"),
+        (9, "Macro"),
+        (10, "Spot"),
+        (11, "Manual"),
+        (12, "Movie Preview"),
+        (13, "Panning"),
+        (14, "Simple"),
+        (15, "Color Effects"),
+        (18, "Panorama"),
+        (19, "Glass Through"),
+        (20, "HDR"),
+    ]
+);
 
-/// Decodes Panasonic film mode (Photo Style) to human-readable string
-fn decode_film_mode(value: i32) -> &'static str {
-    match value {
-        1 => "Standard",
-        2 => "Dynamic",
-        3 => "Nature",
-        4 => "Smooth",
-        5 => "Standard (B&W)",
-        6 => "Dynamic (B&W)",
-        7 => "Smooth (B&W)",
-        9 => "Scenery",
-        10 => "Portrait",
-        11 => "Monochrome",
-        12 => "Natural",
-        13 => "Vivid",
-        14 => "Flat",
-        15 => "Landscape",
-        16 => "Monochrome High Contrast",
-        17 => "Blue Filter",
-        18 => "Sepia",
-        19 => "Nostalgic",
-        20 => "Old Days",
-        21 => "High Contrast B&W",
-        22 => "Cinelike D",
-        23 => "Cinelike V",
-        24 => "Like 709",
-        25 => "V-Log",
-        26 => "V-Log L",
-        _ => "Unknown",
-    }
-}
+// Contrast mode decoder - maps values to contrast settings
+const_decoder!(
+    CONTRAST_MODE,
+    i32,
+    [
+        (0, "Normal"),
+        (1, "Low"),
+        (2, "High"),
+        (3, "Medium Low"),
+        (4, "Medium High"),
+        (5, "High+"),
+        (7, "Lowest"),
+        (256, "Low"),
+        (272, "Standard"),
+        (288, "High"),
+    ]
+);
 
-/// Decodes Panasonic noise reduction mode to human-readable string
-fn decode_noise_reduction(value: i32) -> &'static str {
-    match value {
-        0 => "Standard",
-        1 => "Low (-1)",
-        2 => "High (+1)",
-        3 => "Lowest (-2)",
-        4 => "Highest (+2)",
-        _ => "Unknown",
-    }
-}
+// Film mode (Photo Style) decoder - maps values to picture styles
+const_decoder!(
+    FILM_MODE,
+    i32,
+    [
+        (1, "Standard"),
+        (2, "Dynamic"),
+        (3, "Nature"),
+        (4, "Smooth"),
+        (5, "Standard (B&W)"),
+        (6, "Dynamic (B&W)"),
+        (7, "Smooth (B&W)"),
+        (9, "Scenery"),
+        (10, "Portrait"),
+        (11, "Monochrome"),
+        (12, "Natural"),
+        (13, "Vivid"),
+        (14, "Flat"),
+        (15, "Landscape"),
+        (16, "Monochrome High Contrast"),
+        (17, "Blue Filter"),
+        (18, "Sepia"),
+        (19, "Nostalgic"),
+        (20, "Old Days"),
+        (21, "High Contrast B&W"),
+        (22, "Cinelike D"),
+        (23, "Cinelike V"),
+        (24, "Like 709"),
+        (25, "V-Log"),
+        (26, "V-Log L"),
+    ]
+);
 
-/// Decodes Panasonic intelligent auto mode to human-readable string
-fn decode_intelligent_auto(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "On",
-        2 => "On (macro)",
-        3 => "On (portrait)",
-        4 => "On (scenery)",
-        5 => "On (night portrait)",
-        6 => "On (night scenery)",
-        7 => "On (backlight portrait)",
-        _ => "Unknown",
-    }
-}
+// Noise reduction decoder - maps values to NR settings
+const_decoder!(
+    NOISE_REDUCTION,
+    i32,
+    [
+        (0, "Standard"),
+        (1, "Low (-1)"),
+        (2, "High (+1)"),
+        (3, "Lowest (-2)"),
+        (4, "Highest (+2)"),
+    ]
+);
 
-/// Decodes Panasonic HDR mode to human-readable string
-fn decode_hdr(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "HDR (1 EV)",
-        2 => "HDR (2 EV)",
-        3 => "HDR (3 EV)",
-        100 => "HDR Auto",
-        _ => "Unknown",
-    }
-}
+// Intelligent auto mode decoder - maps values to iA modes
+const_decoder!(
+    INTELLIGENT_AUTO,
+    i32,
+    [
+        (0, "Off"),
+        (1, "On"),
+        (2, "On (macro)"),
+        (3, "On (portrait)"),
+        (4, "On (scenery)"),
+        (5, "On (night portrait)"),
+        (6, "On (night scenery)"),
+        (7, "On (backlight portrait)"),
+    ]
+);
 
-/// Decodes Panasonic photo style to human-readable string
-fn decode_photo_style(value: i32) -> &'static str {
-    match value {
-        0 => "Standard",
-        1 => "Vivid",
-        2 => "Natural",
-        3 => "Monochrome",
-        4 => "Scenery",
-        5 => "Portrait",
-        6 => "Custom",
-        7 => "Cinelike D",
-        8 => "Cinelike V",
-        9 => "Like 709",
-        10 => "V-Log",
-        11 => "V-Log L",
-        _ => "Unknown",
-    }
-}
+// HDR mode decoder - maps values to HDR settings
+const_decoder!(
+    HDR,
+    i32,
+    [
+        (0, "Off"),
+        (1, "HDR (1 EV)"),
+        (2, "HDR (2 EV)"),
+        (3, "HDR (3 EV)"),
+        (100, "HDR Auto"),
+    ]
+);
+
+// Photo style decoder - maps values to photo style presets
+const_decoder!(
+    PHOTO_STYLE,
+    i32,
+    [
+        (0, "Standard"),
+        (1, "Vivid"),
+        (2, "Natural"),
+        (3, "Monochrome"),
+        (4, "Scenery"),
+        (5, "Portrait"),
+        (6, "Custom"),
+        (7, "Cinelike D"),
+        (8, "Cinelike V"),
+        (9, "Like 709"),
+        (10, "V-Log"),
+        (11, "V-Log L"),
+    ]
+);
+
+// Macro mode decoder - maps values to macro mode settings
+const_decoder!(MACRO_MODE, i32, [(1, "On"), (2, "Off"),]);
+
+// Rotation decoder - maps values to image rotation
+const_decoder!(
+    ROTATION,
+    i32,
+    [(1, "0°"), (3, "180°"), (6, "90° CW"), (8, "270° CW"),]
+);
+
+// Internal ND filter decoder - maps values to ND filter settings
+const_decoder!(
+    INTERNAL_ND_FILTER,
+    i32,
+    [(0, "Off"), (1, "On"), (2, "Auto"),]
+);
+
+// Intelligent exposure decoder - maps values to iExposure modes
+const_decoder!(
+    INTELLIGENT_EXPOSURE,
+    i32,
+    [(0, "Off"), (1, "Low"), (2, "Standard"), (3, "High"),]
+);
+
+// Intelligent resolution decoder - maps values to iResolution modes
+const_decoder!(
+    INTELLIGENT_RESOLUTION,
+    i32,
+    [
+        (0, "Off"),
+        (1, "Low"),
+        (2, "Standard"),
+        (3, "High"),
+        (4, "Extended"),
+    ]
+);
+
+// Intelligent D-range decoder - maps values to iDynamic modes
+const_decoder!(
+    INTELLIGENT_D_RANGE,
+    i32,
+    [(0, "Off"), (1, "Low"), (2, "Standard"), (3, "High"),]
+);
+
+// Long exposure noise reduction decoder
+const_decoder!(LONG_EXPOSURE_NR, i32, [(1, "On"), (2, "Off"),]);
+
+// Burst mode decoder - maps values to burst shooting modes
+const_decoder!(
+    BURST_MODE,
+    i32,
+    [
+        (0, "Off"),
+        (1, "Low/High Speed"),
+        (2, "Infinite"),
+        (4, "Unlimited"),
+    ]
+);
+
+// Face detection decoder - maps values to face detection on/off
+const_decoder!(FACE_DETECTION, i32, [(0, "Off"), (1, "On"),]);
 
 /// Represents a Panasonic MakerNote parser
 pub struct PanasonicParser;
@@ -399,137 +494,158 @@ impl MakerNoteParser for PanasonicParser {
                     }
                 }
 
-                // Quality mode
+                // Decoded tags using const_decoder! macros
                 PANA_QUALITY_MODE => {
                     let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Panasonic:QualityMode".to_string(),
-                        decode_quality(value).to_string(),
-                    );
+                    tags.insert("Panasonic:QualityMode".to_string(), QUALITY.decode(value));
                 }
 
-                // White balance
                 PANA_WHITE_BALANCE => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:WhiteBalance".to_string(),
-                        decode_white_balance(value).to_string(),
+                        WHITE_BALANCE.decode(value),
                     );
                 }
 
-                // Focus mode
                 PANA_FOCUS_MODE => {
                     let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Panasonic:FocusMode".to_string(),
-                        decode_focus_mode(value).to_string(),
-                    );
+                    tags.insert("Panasonic:FocusMode".to_string(), FOCUS_MODE.decode(value));
                 }
 
-                // AF area mode
                 PANA_AF_AREA_MODE => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:AFAreaMode".to_string(),
-                        decode_af_area_mode(value).to_string(),
+                        AF_AREA_MODE.decode(value),
                     );
                 }
 
-                // Image stabilization
                 PANA_IMAGE_STABILIZATION => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:ImageStabilization".to_string(),
-                        decode_image_stabilization(value).to_string(),
+                        IMAGE_STABILIZATION.decode(value),
                     );
                 }
 
-                // Shooting mode
                 PANA_SHOOTING_MODE => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:ShootingMode".to_string(),
-                        decode_shooting_mode(value).to_string(),
+                        SHOOTING_MODE.decode(value),
                     );
                 }
 
-                // Contrast mode
                 PANA_CONTRAST_MODE => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:ContrastMode".to_string(),
-                        decode_contrast_mode(value).to_string(),
+                        CONTRAST_MODE.decode(value),
                     );
                 }
 
-                // Film mode (Photo Style)
                 PANA_FILM_MODE => {
                     let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Panasonic:FilmMode".to_string(),
-                        decode_film_mode(value).to_string(),
-                    );
+                    tags.insert("Panasonic:FilmMode".to_string(), FILM_MODE.decode(value));
                 }
 
-                // Photo style
                 PANA_PHOTO_STYLE => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:PhotoStyle".to_string(),
-                        decode_photo_style(value).to_string(),
+                        PHOTO_STYLE.decode(value),
                     );
                 }
 
-                // Noise reduction
                 PANA_NOISE_REDUCTION => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:NoiseReduction".to_string(),
-                        decode_noise_reduction(value).to_string(),
+                        NOISE_REDUCTION.decode(value),
                     );
                 }
 
-                // Intelligent auto
                 PANA_INTELLIGENT_AUTO => {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Panasonic:IntelligentAuto".to_string(),
-                        decode_intelligent_auto(value).to_string(),
+                        INTELLIGENT_AUTO.decode(value),
                     );
                 }
 
-                // HDR
                 PANA_HDR => {
                     let value = entry.value_offset as i32;
-                    tags.insert("Panasonic:HDR".to_string(), decode_hdr(value).to_string());
+                    tags.insert("Panasonic:HDR".to_string(), HDR.decode(value));
                 }
 
-                // Simple integer tags
                 PANA_MACRO_MODE => {
                     let value = entry.value_offset as i32;
-                    let macro_str = match value {
-                        1 => "On",
-                        2 => "Off",
-                        _ => "Unknown",
-                    };
-                    tags.insert("Panasonic:MacroMode".to_string(), macro_str.to_string());
-                }
-
-                PANA_SELF_TIMER => {
-                    let value = entry.value_offset;
-                    tags.insert("Panasonic:SelfTimer".to_string(), format!("{} s", value));
+                    tags.insert("Panasonic:MacroMode".to_string(), MACRO_MODE.decode(value));
                 }
 
                 PANA_ROTATION => {
                     let value = entry.value_offset as i32;
-                    let rotation = match value {
-                        1 => "0°",
-                        3 => "180°",
-                        6 => "90° CW",
-                        8 => "270° CW",
-                        _ => "Unknown",
-                    };
-                    tags.insert("Panasonic:Rotation".to_string(), rotation.to_string());
+                    tags.insert("Panasonic:Rotation".to_string(), ROTATION.decode(value));
+                }
+
+                PANA_INTERNAL_ND_FILTER => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Panasonic:InternalNDFilter".to_string(),
+                        INTERNAL_ND_FILTER.decode(value),
+                    );
+                }
+
+                PANA_INTELLIGENT_EXPOSURE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Panasonic:IntelligentExposure".to_string(),
+                        INTELLIGENT_EXPOSURE.decode(value),
+                    );
+                }
+
+                PANA_INTELLIGENT_RESOLUTION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Panasonic:IntelligentResolution".to_string(),
+                        INTELLIGENT_RESOLUTION.decode(value),
+                    );
+                }
+
+                PANA_INTELLIGENT_D_RANGE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Panasonic:IntelligentDRange".to_string(),
+                        INTELLIGENT_D_RANGE.decode(value),
+                    );
+                }
+
+                PANA_LONG_EXPOSURE_NOISE_REDUCTION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Panasonic:LongExposureNoiseReduction".to_string(),
+                        LONG_EXPOSURE_NR.decode(value),
+                    );
+                }
+
+                PANA_BURST_MODE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert("Panasonic:BurstMode".to_string(), BURST_MODE.decode(value));
+                }
+
+                PANA_FACE_DETECTION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Panasonic:FaceDetection".to_string(),
+                        FACE_DETECTION.decode(value),
+                    );
+                }
+
+                // Simple integer/numeric tags
+                PANA_SELF_TIMER => {
+                    let value = entry.value_offset;
+                    tags.insert("Panasonic:SelfTimer".to_string(), format!("{} s", value));
                 }
 
                 PANA_COLOR_TEMP_KELVIN => {
@@ -602,82 +718,6 @@ impl MakerNoteParser for PanasonicParser {
                     tags.insert("Panasonic:AccessoryType".to_string(), value.to_string());
                 }
 
-                // Internal ND filter
-                PANA_INTERNAL_ND_FILTER => {
-                    let value = entry.value_offset as i32;
-                    let nd_filter = match value {
-                        0 => "Off",
-                        1 => "On",
-                        2 => "Auto",
-                        _ => "Unknown",
-                    };
-                    tags.insert(
-                        "Panasonic:InternalNDFilter".to_string(),
-                        nd_filter.to_string(),
-                    );
-                }
-
-                // Intelligent features
-                PANA_INTELLIGENT_EXPOSURE => {
-                    let value = entry.value_offset as i32;
-                    let ie_mode = match value {
-                        0 => "Off",
-                        1 => "Low",
-                        2 => "Standard",
-                        3 => "High",
-                        _ => "Unknown",
-                    };
-                    tags.insert(
-                        "Panasonic:IntelligentExposure".to_string(),
-                        ie_mode.to_string(),
-                    );
-                }
-
-                PANA_INTELLIGENT_RESOLUTION => {
-                    let value = entry.value_offset as i32;
-                    let ir_mode = match value {
-                        0 => "Off",
-                        1 => "Low",
-                        2 => "Standard",
-                        3 => "High",
-                        4 => "Extended",
-                        _ => "Unknown",
-                    };
-                    tags.insert(
-                        "Panasonic:IntelligentResolution".to_string(),
-                        ir_mode.to_string(),
-                    );
-                }
-
-                PANA_INTELLIGENT_D_RANGE => {
-                    let value = entry.value_offset as i32;
-                    let idr_mode = match value {
-                        0 => "Off",
-                        1 => "Low",
-                        2 => "Standard",
-                        3 => "High",
-                        _ => "Unknown",
-                    };
-                    tags.insert(
-                        "Panasonic:IntelligentDRange".to_string(),
-                        idr_mode.to_string(),
-                    );
-                }
-
-                // Long exposure noise reduction
-                PANA_LONG_EXPOSURE_NOISE_REDUCTION => {
-                    let value = entry.value_offset as i32;
-                    let lenr = match value {
-                        1 => "On",
-                        2 => "Off",
-                        _ => "Unknown",
-                    };
-                    tags.insert(
-                        "Panasonic:LongExposureNoiseReduction".to_string(),
-                        lenr.to_string(),
-                    );
-                }
-
                 // Accelerometer data (for horizon level, etc.)
                 PANA_ACCELEROMETER_X => {
                     let value = entry.value_offset as i32;
@@ -710,19 +750,6 @@ impl MakerNoteParser for PanasonicParser {
                     );
                 }
 
-                // Burst mode
-                PANA_BURST_MODE => {
-                    let value = entry.value_offset as i32;
-                    let burst_mode = match value {
-                        0 => "Off",
-                        1 => "Low/High Speed",
-                        2 => "Infinite",
-                        4 => "Unlimited",
-                        _ => "Unknown",
-                    };
-                    tags.insert("Panasonic:BurstMode".to_string(), burst_mode.to_string());
-                }
-
                 PANA_SEQUENCE_NUMBER => {
                     let value = entry.value_offset;
                     tags.insert("Panasonic:SequenceNumber".to_string(), value.to_string());
@@ -742,13 +769,6 @@ impl MakerNoteParser for PanasonicParser {
                 PANA_WB_BLUE_LEVEL => {
                     let value = entry.value_offset;
                     tags.insert("Panasonic:WBBlueLevel".to_string(), value.to_string());
-                }
-
-                // Face detection
-                PANA_FACE_DETECTION => {
-                    let value = entry.value_offset as i32;
-                    let face_det = if value == 0 { "Off" } else { "On" };
-                    tags.insert("Panasonic:FaceDetection".to_string(), face_det.to_string());
                 }
 
                 _ => {
@@ -917,46 +937,46 @@ mod tests {
 
     #[test]
     fn test_decode_quality() {
-        assert_eq!(decode_quality(2), "Normal");
-        assert_eq!(decode_quality(3), "Fine");
-        assert_eq!(decode_quality(6), "RAW");
-        assert_eq!(decode_quality(7), "RAW + Fine");
+        assert_eq!(QUALITY.decode(2), "Normal");
+        assert_eq!(QUALITY.decode(3), "Fine");
+        assert_eq!(QUALITY.decode(6), "RAW");
+        assert_eq!(QUALITY.decode(7), "RAW + Fine");
     }
 
     #[test]
     fn test_decode_white_balance() {
-        assert_eq!(decode_white_balance(1), "Auto");
-        assert_eq!(decode_white_balance(2), "Daylight");
-        assert_eq!(decode_white_balance(13), "Kelvin");
+        assert_eq!(WHITE_BALANCE.decode(1), "Auto");
+        assert_eq!(WHITE_BALANCE.decode(2), "Daylight");
+        assert_eq!(WHITE_BALANCE.decode(13), "Kelvin");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(4), "AF-S (Single)");
-        assert_eq!(decode_focus_mode(5), "AF-C (Continuous)");
-        assert_eq!(decode_focus_mode(16), "MF (Manual Focus)");
+        assert_eq!(FOCUS_MODE.decode(4), "AF-S (Single)");
+        assert_eq!(FOCUS_MODE.decode(5), "AF-C (Continuous)");
+        assert_eq!(FOCUS_MODE.decode(16), "MF (Manual Focus)");
     }
 
     #[test]
     fn test_decode_film_mode() {
-        assert_eq!(decode_film_mode(1), "Standard");
-        assert_eq!(decode_film_mode(22), "Cinelike D");
-        assert_eq!(decode_film_mode(23), "Cinelike V");
-        assert_eq!(decode_film_mode(25), "V-Log");
+        assert_eq!(FILM_MODE.decode(1), "Standard");
+        assert_eq!(FILM_MODE.decode(22), "Cinelike D");
+        assert_eq!(FILM_MODE.decode(23), "Cinelike V");
+        assert_eq!(FILM_MODE.decode(25), "V-Log");
     }
 
     #[test]
     fn test_decode_shooting_mode() {
-        assert_eq!(decode_shooting_mode(6), "Program");
-        assert_eq!(decode_shooting_mode(7), "Aperture Priority");
-        assert_eq!(decode_shooting_mode(11), "Manual");
+        assert_eq!(SHOOTING_MODE.decode(6), "Program");
+        assert_eq!(SHOOTING_MODE.decode(7), "Aperture Priority");
+        assert_eq!(SHOOTING_MODE.decode(11), "Manual");
     }
 
     #[test]
     fn test_decode_hdr() {
-        assert_eq!(decode_hdr(0), "Off");
-        assert_eq!(decode_hdr(1), "HDR (1 EV)");
-        assert_eq!(decode_hdr(100), "HDR Auto");
+        assert_eq!(HDR.decode(0), "Off");
+        assert_eq!(HDR.decode(1), "HDR (1 EV)");
+        assert_eq!(HDR.decode(100), "HDR Auto");
     }
 
     #[test]

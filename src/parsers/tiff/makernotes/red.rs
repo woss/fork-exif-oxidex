@@ -31,6 +31,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -74,93 +75,87 @@ const RED_NOISE_REDUCTION: u16 = 0x011D; // Noise reduction level
 
 const RED_SIGNATURE: &[u8] = b"RED";
 
-/// Decodes REDCODE compression ratio
-fn decode_redcode(value: i16) -> String {
-    match value {
-        2 => "2:1".to_string(),
-        3 => "3:1".to_string(),
-        4 => "4:1".to_string(),
-        5 => "5:1".to_string(),
-        6 => "6:1".to_string(),
-        7 => "7:1".to_string(),
-        8 => "8:1".to_string(),
-        9 => "9:1".to_string(),
-        10 => "10:1".to_string(),
-        12 => "12:1".to_string(),
-        16 => "16:1".to_string(),
-        22 => "22:1".to_string(),
-        _ => format!("{}:1", value),
-    }
+// Decodes REDCODE compression ratio
+const_decoder! {
+    DECODE_REDCODE, i16, [
+        (2, "2:1"),
+        (3, "3:1"),
+        (4, "4:1"),
+        (5, "5:1"),
+        (6, "6:1"),
+        (7, "7:1"),
+        (8, "8:1"),
+        (9, "9:1"),
+        (10, "10:1"),
+        (12, "12:1"),
+        (16, "16:1"),
+        (22, "22:1"),
+    ]
 }
 
-/// Decodes sensor resolution mode
-fn decode_resolution(value: i16) -> String {
-    match value {
-        0 => "Full".to_string(),
-        1 => "6K".to_string(),
-        2 => "5K".to_string(),
-        3 => "4K".to_string(),
-        4 => "3K".to_string(),
-        5 => "2K".to_string(),
-        6 => "8K".to_string(),
-        7 => "8K 2.4:1".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes sensor resolution mode
+const_decoder! {
+    DECODE_RESOLUTION, i16, [
+        (0, "Full"),
+        (1, "6K"),
+        (2, "5K"),
+        (3, "4K"),
+        (4, "3K"),
+        (5, "2K"),
+        (6, "8K"),
+        (7, "8K 2.4:1"),
+    ]
 }
 
-/// Decodes gamma curve
-fn decode_gamma(value: i16) -> String {
-    match value {
-        0 => "REDLog3G10".to_string(),
-        1 => "REDLogFilm".to_string(),
-        2 => "Rec709".to_string(),
-        3 => "REDgamma".to_string(),
-        4 => "REDgamma2".to_string(),
-        5 => "REDgamma3".to_string(),
-        6 => "REDgamma4".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes gamma curve
+const_decoder! {
+    DECODE_GAMMA, i16, [
+        (0, "REDLog3G10"),
+        (1, "REDLogFilm"),
+        (2, "Rec709"),
+        (3, "REDgamma"),
+        (4, "REDgamma2"),
+        (5, "REDgamma3"),
+        (6, "REDgamma4"),
+    ]
 }
 
-/// Decodes color space
-fn decode_color_space(value: i16) -> String {
-    match value {
-        0 => "REDWideGamutRGB".to_string(),
-        1 => "Rec709".to_string(),
-        2 => "DCI-P3".to_string(),
-        3 => "Rec2020".to_string(),
-        4 => "REDcolor".to_string(),
-        5 => "REDcolor2".to_string(),
-        6 => "REDcolor3".to_string(),
-        7 => "REDcolor4".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes color space
+const_decoder! {
+    DECODE_COLOR_SPACE, i16, [
+        (0, "REDWideGamutRGB"),
+        (1, "Rec709"),
+        (2, "DCI-P3"),
+        (3, "Rec2020"),
+        (4, "REDcolor"),
+        (5, "REDcolor2"),
+        (6, "REDcolor3"),
+        (7, "REDcolor4"),
+    ]
 }
 
-/// Decodes lens mount type
-fn decode_lens_type(value: i16) -> String {
-    match value {
-        0 => "Canon EF".to_string(),
-        1 => "PL Mount".to_string(),
-        2 => "Nikon F".to_string(),
-        3 => "Leica M".to_string(),
-        4 => "RED DSMC".to_string(),
-        5 => "Canon RF".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes lens mount type
+const_decoder! {
+    DECODE_LENS_TYPE, i16, [
+        (0, "Canon EF"),
+        (1, "PL Mount"),
+        (2, "Nikon F"),
+        (3, "Leica M"),
+        (4, "RED DSMC"),
+        (5, "Canon RF"),
+    ]
 }
 
-/// Decodes sensor crop mode
-fn decode_crop_mode(value: i16) -> String {
-    match value {
-        0 => "Full Frame".to_string(),
-        1 => "2:1".to_string(),
-        2 => "2.4:1".to_string(),
-        3 => "16:9".to_string(),
-        4 => "4:3".to_string(),
-        5 => "6:5".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes sensor crop mode
+const_decoder! {
+    DECODE_CROP_MODE, i16, [
+        (0, "Full Frame"),
+        (1, "2:1"),
+        (2, "2.4:1"),
+        (3, "16:9"),
+        (4, "4:3"),
+        (5, "6:5"),
+    ]
 }
 
 /// Formats frame rate
@@ -385,17 +380,17 @@ impl MakerNoteParser for RedParser {
                     if let Some(array) = extract_i16_array(&entry, parse_data, byte_order) {
                         if let Some(&val) = array.first() {
                             let (tag_name, formatted_value) = match tag {
-                                RED_RESOLUTION => ("Resolution", decode_resolution(val)),
-                                RED_REDCODE => ("REDCODE", decode_redcode(val)),
+                                RED_RESOLUTION => ("Resolution", DECODE_RESOLUTION.decode(val)),
+                                RED_REDCODE => ("REDCODE", DECODE_REDCODE.decode(val)),
                                 RED_FRAME_RATE => ("FrameRate", format_frame_rate(val)),
                                 RED_SHUTTER_ANGLE => ("ShutterAngle", format_shutter_angle(val)),
                                 RED_ISO => ("ISO", val.to_string()),
                                 RED_COLOR_TEMP => ("ColorTemperature", format_color_temp(val)),
                                 RED_TINT => ("Tint", format_tint(val)),
                                 RED_EXPOSURE => ("ExposureCompensation", format_exposure(val)),
-                                RED_GAMMA_CURVE => ("GammaCurve", decode_gamma(val)),
-                                RED_COLOR_SPACE => ("ColorSpace", decode_color_space(val)),
-                                RED_LENS_TYPE => ("LensMount", decode_lens_type(val)),
+                                RED_GAMMA_CURVE => ("GammaCurve", DECODE_GAMMA.decode(val)),
+                                RED_COLOR_SPACE => ("ColorSpace", DECODE_COLOR_SPACE.decode(val)),
+                                RED_LENS_TYPE => ("LensMount", DECODE_LENS_TYPE.decode(val)),
                                 RED_FOCAL_LENGTH => ("FocalLength", format_focal_length(val)),
                                 RED_FOCUS_DISTANCE => ("FocusDistance", format_focus_distance(val)),
                                 RED_APERTURE => ("Aperture", format_aperture(val)),
@@ -407,7 +402,7 @@ impl MakerNoteParser for RedParser {
                                         "Off".to_string()
                                     },
                                 ),
-                                RED_CROP_MODE => ("CropMode", decode_crop_mode(val)),
+                                RED_CROP_MODE => ("CropMode", DECODE_CROP_MODE.decode(val)),
                                 RED_PROJECT_FPS => ("ProjectFPS", format_frame_rate(val)),
                                 RED_KELVIN_OVERRIDE => (
                                     "KelvinOverride",
@@ -451,20 +446,20 @@ mod tests {
 
     #[test]
     fn test_decode_redcode() {
-        assert_eq!(decode_redcode(5), "5:1");
-        assert_eq!(decode_redcode(12), "12:1");
+        assert_eq!(DECODE_REDCODE.decode(5), "5:1");
+        assert_eq!(DECODE_REDCODE.decode(12), "12:1");
     }
 
     #[test]
     fn test_decode_resolution() {
-        assert_eq!(decode_resolution(6), "8K");
-        assert_eq!(decode_resolution(1), "6K");
+        assert_eq!(DECODE_RESOLUTION.decode(6), "8K");
+        assert_eq!(DECODE_RESOLUTION.decode(1), "6K");
     }
 
     #[test]
     fn test_decode_gamma() {
-        assert_eq!(decode_gamma(0), "REDLog3G10");
-        assert_eq!(decode_gamma(2), "Rec709");
+        assert_eq!(DECODE_GAMMA.decode(0), "REDLog3G10");
+        assert_eq!(DECODE_GAMMA.decode(2), "Rec709");
     }
 
     #[test]

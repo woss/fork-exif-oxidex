@@ -21,6 +21,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -48,65 +49,44 @@ const GOOGLE_EXPOSURE_STACK: u16 = 0x001B; // Multi-exposure stack info
 // Google signature for validation
 const GOOGLE_SIGNATURE: &[u8] = b"Google";
 
-/// Decodes Google HDR+ processing mode
-///
-/// # Arguments
-/// * `value` - HDR+ mode value from tag 0x0001
-///
-/// # Returns
-/// Human-readable HDR+ mode description
-fn decode_hdr_plus_mode(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "HDR+ On".to_string(),
-        2 => "HDR+ Enhanced".to_string(),
-        3 => "HDR+ Auto".to_string(),
-        4 => "HDR+ Bracketing".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Google
+const_decoder! {
+    DECODE_HDR_PLUS_MODE, i16, [
+        (0, "Off"),
+        (1, "HDR+ On"),
+        (2, "HDR+ Enhanced"),
+        (3, "HDR+ Auto"),
+        (4, "HDR+ Bracketing"),
+    ]
 }
 
-/// Decodes Night Sight status
-///
-/// # Arguments
-/// * `value` - Night Sight status value
-///
-/// # Returns
-/// Human-readable status
-fn decode_night_sight(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Auto".to_string(),
-        2 => "On".to_string(),
-        3 => "Astrophotography".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Google
+const_decoder! {
+    DECODE_NIGHT_SIGHT, i16, [
+        (0, "Off"),
+        (1, "Auto"),
+        (2, "On"),
+        (3, "Astrophotography"),
+    ]
 }
 
-/// Decodes AI scene detection result
-///
-/// # Arguments
-/// * `value` - Scene type value
-///
-/// # Returns
-/// Human-readable scene description
-fn decode_scene_type(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Sunset".to_string(),
-        2 => "Blue Sky".to_string(),
-        3 => "Snow".to_string(),
-        4 => "Greenery".to_string(),
-        5 => "Beach".to_string(),
-        6 => "Night".to_string(),
-        7 => "Food".to_string(),
-        8 => "Pet".to_string(),
-        9 => "Flower".to_string(),
-        10 => "Landmark".to_string(),
-        11 => "Document".to_string(),
-        12 => "Text".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Google
+const_decoder! {
+    DECODE_SCENE_TYPE, i16, [
+        (0, "None"),
+        (1, "Sunset"),
+        (2, "Blue Sky"),
+        (3, "Snow"),
+        (4, "Greenery"),
+        (5, "Beach"),
+        (6, "Night"),
+        (7, "Food"),
+        (8, "Pet"),
+        (9, "Flower"),
+        (10, "Landmark"),
+        (11, "Document"),
+        (12, "Text"),
+    ]
 }
 
 /// Decodes Super Res Zoom level
@@ -253,13 +233,16 @@ impl GoogleParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Google:HDRPlusMode".to_string(),
-                        decode_hdr_plus_mode(value),
+                        DECODE_HDR_PLUS_MODE.decode(value),
                     );
                 }
             }
             GOOGLE_NIGHT_SIGHT => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Google:NightSight".to_string(), decode_night_sight(value));
+                    tags.insert(
+                        "Google:NightSight".to_string(),
+                        DECODE_NIGHT_SIGHT.decode(value),
+                    );
                 }
             }
             GOOGLE_NIGHT_SIGHT_EXPOSURE => {
@@ -293,7 +276,7 @@ impl GoogleParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Google:SceneDetection".to_string(),
-                        decode_scene_type(value),
+                        DECODE_SCENE_TYPE.decode(value),
                     );
                 }
             }
@@ -483,23 +466,23 @@ mod tests {
 
     #[test]
     fn test_decode_hdr_plus_mode() {
-        assert_eq!(decode_hdr_plus_mode(0), "Off");
-        assert_eq!(decode_hdr_plus_mode(1), "HDR+ On");
-        assert_eq!(decode_hdr_plus_mode(2), "HDR+ Enhanced");
+        assert_eq!(DECODE_HDR_PLUS_MODE.decode(0), "Off");
+        assert_eq!(DECODE_HDR_PLUS_MODE.decode(1), "HDR+ On");
+        assert_eq!(DECODE_HDR_PLUS_MODE.decode(2), "HDR+ Enhanced");
     }
 
     #[test]
     fn test_decode_night_sight() {
-        assert_eq!(decode_night_sight(0), "Off");
-        assert_eq!(decode_night_sight(2), "On");
-        assert_eq!(decode_night_sight(3), "Astrophotography");
+        assert_eq!(DECODE_NIGHT_SIGHT.decode(0), "Off");
+        assert_eq!(DECODE_NIGHT_SIGHT.decode(2), "On");
+        assert_eq!(DECODE_NIGHT_SIGHT.decode(3), "Astrophotography");
     }
 
     #[test]
     fn test_decode_scene_type() {
-        assert_eq!(decode_scene_type(0), "None");
-        assert_eq!(decode_scene_type(7), "Food");
-        assert_eq!(decode_scene_type(11), "Document");
+        assert_eq!(DECODE_SCENE_TYPE.decode(0), "None");
+        assert_eq!(DECODE_SCENE_TYPE.decode(7), "Food");
+        assert_eq!(DECODE_SCENE_TYPE.decode(11), "Document");
     }
 
     #[test]

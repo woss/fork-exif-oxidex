@@ -22,9 +22,15 @@
 #![allow(dead_code)]
 
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
+use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+
+// Import macros for declarative decoder definitions
+use crate::const_decoder;
 
 // Motorola MakerNote Tag IDs
 const MOTOROLA_CAMERA_MODE: u16 = 0x0001;
@@ -36,31 +42,52 @@ const MOTOROLA_FLASH_MODE: u16 = 0x0006;
 const MOTOROLA_FOCUS_MODE: u16 = 0x0007;
 const MOTOROLA_PORTRAIT_MODE: u16 = 0x0008;
 
-fn decode_camera_mode(value: u16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Photo".to_string(),
-        2 => "Video".to_string(),
-        3 => "Portrait".to_string(),
-        4 => "Night".to_string(),
-        5 => "Pro".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// ============================================================================
+// Declarative Decoder Definitions
+// ============================================================================
 
-fn decode_scene_mode(value: u16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Portrait".to_string(),
-        2 => "Landscape".to_string(),
-        3 => "Food".to_string(),
-        4 => "Night".to_string(),
-        5 => "Document".to_string(),
-        6 => "Pet".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+/// Camera Mode decoder - Different shooting modes
+const_decoder!(
+    CAMERA_MODE,
+    u16,
+    [
+        (0, "Auto"),
+        (1, "Photo"),
+        (2, "Video"),
+        (3, "Portrait"),
+        (4, "Night"),
+        (5, "Pro"),
+    ]
+);
 
+/// Scene Mode decoder - Scene recognition modes
+const_decoder!(
+    SCENE_MODE,
+    u16,
+    [
+        (0, "None"),
+        (1, "Portrait"),
+        (2, "Landscape"),
+        (3, "Food"),
+        (4, "Night"),
+        (5, "Document"),
+        (6, "Pet"),
+    ]
+);
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/// Extracts u16 value from IFD entry
+///
+/// # Arguments
+/// * `entry` - The IFD entry
+/// * `_data` - The MakerNote data buffer (unused for inline values)
+/// * `byte_order` - Byte order for value extraction
+///
+/// # Returns
+/// The extracted u16 value, or None if extraction fails
 fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<u16> {
     if entry.value_count != 1 {
         return None;
@@ -71,6 +98,27 @@ fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> O
     };
     Some(value)
 }
+
+// ============================================================================
+// Tag Registry
+// ============================================================================
+
+/// Lazy-initialized tag registry for Motorola-specific tags
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
+    TagRegistry::with_capacity(8)
+        .register_simple_u16(MOTOROLA_CAMERA_MODE, "CameraMode", &CAMERA_MODE)
+        .register_simple_u16(MOTOROLA_SCENE_MODE, "SceneMode", &SCENE_MODE)
+        .register_raw(MOTOROLA_HDR_MODE, "HDRMode")
+        .register_raw(MOTOROLA_NIGHT_MODE, "NightMode")
+        .register_raw(MOTOROLA_BURST_MODE, "BurstMode")
+        .register_raw(MOTOROLA_FLASH_MODE, "FlashMode")
+        .register_raw(MOTOROLA_FOCUS_MODE, "FocusMode")
+        .register_raw(MOTOROLA_PORTRAIT_MODE, "PortraitMode")
+});
+
+// ============================================================================
+// Parser Implementation
+// ============================================================================
 
 /// Parser for Motorola camera MakerNotes
 pub struct MotorolaParser;
@@ -87,6 +135,7 @@ impl MotorolaParser {
         MotorolaParser
     }
 
+    /// Parses a single IFD entry and extracts the tag value
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -94,48 +143,34 @@ impl MotorolaParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) {
-        match entry.tag_id {
-            MOTOROLA_CAMERA_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Motorola:CameraMode".to_string(), decode_camera_mode(value));
+        let tag_id = entry.tag_id;
+
+        if let Some(value) = extract_u16_value(entry, data, byte_order) {
+            let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
+                Some(name) => name,
+                None => return,
+            };
+
+            let formatted_value = match tag_id {
+                MOTOROLA_CAMERA_MODE | MOTOROLA_SCENE_MODE => {
+                    TAG_REGISTRY.decode_u16(tag_id, value)
                 }
-            }
-            MOTOROLA_HDR_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
+                MOTOROLA_HDR_MODE
+                | MOTOROLA_NIGHT_MODE
+                | MOTOROLA_BURST_MODE
+                | MOTOROLA_FLASH_MODE
+                | MOTOROLA_PORTRAIT_MODE => {
                     let mode = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Motorola:HDRMode".to_string(), mode.to_string());
+                    mode.to_string()
                 }
-            }
-            MOTOROLA_NIGHT_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Motorola:NightMode".to_string(), mode.to_string());
+                MOTOROLA_FOCUS_MODE => {
+                    let mode = if value == 0 { "Auto" } else { "Manual" };
+                    mode.to_string()
                 }
-            }
-            MOTOROLA_BURST_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Motorola:BurstMode".to_string(), mode.to_string());
-                }
-            }
-            MOTOROLA_SCENE_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Motorola:SceneMode".to_string(), decode_scene_mode(value));
-                }
-            }
-            MOTOROLA_FLASH_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Motorola:FlashMode".to_string(), mode.to_string());
-                }
-            }
-            MOTOROLA_PORTRAIT_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Motorola:PortraitMode".to_string(), mode.to_string());
-                }
-            }
-            _ => {}
+                _ => return,
+            };
+
+            tags.insert(format!("Motorola:{}", tag_name), formatted_value);
         }
     }
 }
@@ -155,98 +190,37 @@ impl MakerNoteParser for MotorolaParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 2 {
-            return Err("Motorola MakerNote data too short".to_string());
-        }
-
-        let ifd_offset = 0;
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[ifd_offset], data[ifd_offset + 1]]),
+        let config = IfdParserConfig {
+            signature: None,
+            signature_offset: 0,
+            max_entries: 500,
         };
 
-        if entry_count == 0 || entry_count > 500 {
-            return Err(format!("Invalid entry count: {}", entry_count));
-        }
-
-        let entry_size = 12;
-        let mut offset = ifd_offset + 2;
-
-        for _ in 0..entry_count {
-            if offset + entry_size > data.len() {
-                break;
-            }
-
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset], data[offset + 1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset], data[offset + 1]]),
-            };
-
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset + 2], data[offset + 3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset + 2], data[offset + 3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            self.parse_entry(&entry, data, byte_order, tags);
-            offset += entry_size;
-        }
-
-        Ok(())
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
+            self.parse_entry(entry, parse_data, byte_order, tags);
+        })
     }
 }
+
+// ============================================================================
+// Unit Tests
+// ============================================================================
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_decode_camera_mode() {
-        assert_eq!(decode_camera_mode(0), "Auto");
-        assert_eq!(decode_camera_mode(3), "Portrait");
-        assert_eq!(decode_camera_mode(5), "Pro");
+    fn test_camera_mode_decoder() {
+        assert_eq!(CAMERA_MODE.decode(0), "Auto");
+        assert_eq!(CAMERA_MODE.decode(3), "Portrait");
+        assert_eq!(CAMERA_MODE.decode(5), "Pro");
     }
 
     #[test]
-    fn test_decode_scene_mode() {
-        assert_eq!(decode_scene_mode(0), "None");
-        assert_eq!(decode_scene_mode(3), "Food");
+    fn test_scene_mode_decoder() {
+        assert_eq!(SCENE_MODE.decode(0), "None");
+        assert_eq!(SCENE_MODE.decode(3), "Food");
     }
 
     #[test]
@@ -260,11 +234,11 @@ mod tests {
     fn test_parse_camera_mode() {
         let parser = MotorolaParser::new();
         let mut data = Vec::new();
-        data.extend_from_slice(&[0x01, 0x00]);
-        data.extend_from_slice(&[0x01, 0x00]);
-        data.extend_from_slice(&[0x03, 0x00]);
-        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]);
-        data.extend_from_slice(&[0x03, 0x00, 0x00, 0x00]);
+        data.extend_from_slice(&[0x01, 0x00]); // entry_count = 1
+        data.extend_from_slice(&[0x01, 0x00]); // tag = 0x0001 (MOTOROLA_CAMERA_MODE)
+        data.extend_from_slice(&[0x03, 0x00]); // field_type = 3
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // value_count = 1
+        data.extend_from_slice(&[0x03, 0x00, 0x00, 0x00]); // value_offset = 3
 
         let mut tags = HashMap::new();
         let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
@@ -279,15 +253,24 @@ mod tests {
     fn test_parse_hdr_mode() {
         let parser = MotorolaParser::new();
         let mut data = Vec::new();
-        data.extend_from_slice(&[0x01, 0x00]);
-        data.extend_from_slice(&[0x02, 0x00]);
-        data.extend_from_slice(&[0x03, 0x00]);
-        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]);
-        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]);
+        data.extend_from_slice(&[0x01, 0x00]); // entry_count = 1
+        data.extend_from_slice(&[0x02, 0x00]); // tag = 0x0002 (MOTOROLA_HDR_MODE)
+        data.extend_from_slice(&[0x03, 0x00]); // field_type = 3
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // value_count = 1
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // value_offset = 1
 
         let mut tags = HashMap::new();
         let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
         assert!(result.is_ok());
         assert_eq!(tags.get("Motorola:HDRMode"), Some(&"On".to_string()));
+    }
+
+    #[test]
+    fn test_tag_registry() {
+        assert_eq!(
+            TAG_REGISTRY.get_tag_name(MOTOROLA_CAMERA_MODE),
+            Some("CameraMode")
+        );
+        assert!(TAG_REGISTRY.has_tag(MOTOROLA_HDR_MODE));
     }
 }

@@ -39,6 +39,7 @@ use std::collections::HashMap;
 
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // Capture One MakerNote Tag IDs
 const C1_VERSION: u16 = 0x0001; // Capture One version
@@ -99,78 +100,50 @@ const C1_METADATA_TOOL_VERSION: u16 = 0x00F0; // Metadata tool version
 // Capture One signature
 const CAPTUREONE_SIGNATURE: &[u8] = b"CaptureOne";
 
-/// Decodes style type
-///
-/// # Arguments
-/// * `value` - Style type code
-///
-/// # Returns
-/// Human-readable style type
-fn decode_style_type(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Built-in".to_string(),
-        2 => "User".to_string(),
-        3 => "Custom".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes style type
+const_decoder! {
+    DECODE_STYLE_TYPE, i16, [
+        (0, "None"),
+        (1, "Built-in"),
+        (2, "User"),
+        (3, "Custom"),
+    ]
 }
 
-/// Decodes base characteristics
-///
-/// # Arguments
-/// * `value` - Base characteristics code
-///
-/// # Returns
-/// Human-readable base characteristics
-fn decode_base_char(value: i16) -> String {
-    match value {
-        0 => "Film Standard".to_string(),
-        1 => "Film Extra Shadow".to_string(),
-        2 => "Film High Contrast".to_string(),
-        3 => "Generic".to_string(),
-        4 => "Linear Scientific".to_string(),
-        5 => "Auto".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes base characteristics
+const_decoder! {
+    DECODE_BASE_CHAR, i16, [
+        (0, "Film Standard"),
+        (1, "Film Extra Shadow"),
+        (2, "Film High Contrast"),
+        (3, "Generic"),
+        (4, "Linear Scientific"),
+        (5, "Auto"),
+    ]
 }
 
-/// Decodes color space
-///
-/// # Arguments
-/// * `value` - Color space code
-///
-/// # Returns
-/// Human-readable color space name
-fn decode_color_space(value: i16) -> String {
-    match value {
-        0 => "sRGB".to_string(),
-        1 => "Adobe RGB".to_string(),
-        2 => "ProPhoto RGB".to_string(),
-        3 => "Wide Gamut RGB".to_string(),
-        4 => "Display P3".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes color space
+const_decoder! {
+    DECODE_COLOR_SPACE, i16, [
+        (0, "sRGB"),
+        (1, "Adobe RGB"),
+        (2, "ProPhoto RGB"),
+        (3, "Wide Gamut RGB"),
+        (4, "Display P3"),
+    ]
 }
 
-/// Decodes color tag
-///
-/// # Arguments
-/// * `value` - Color tag code
-///
-/// # Returns
-/// Human-readable color tag
-fn decode_color_tag(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Red".to_string(),
-        2 => "Orange".to_string(),
-        3 => "Yellow".to_string(),
-        4 => "Green".to_string(),
-        5 => "Blue".to_string(),
-        6 => "Purple".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes color tag
+const_decoder! {
+    DECODE_COLOR_TAG, i16, [
+        (0, "None"),
+        (1, "Red"),
+        (2, "Orange"),
+        (3, "Yellow"),
+        (4, "Green"),
+        (5, "Blue"),
+        (6, "Purple"),
+    ]
 }
 
 /// Formats exposure value
@@ -457,7 +430,7 @@ impl MakerNoteParser for CaptureOneParser {
                     if let Some(array) = extract_i16_array(&entry, parse_data, byte_order) {
                         if let Some(&val) = array.first() {
                             let (tag_name, formatted_value) = match tag {
-                                C1_STYLE_TYPE => ("StyleType", decode_style_type(val)),
+                                C1_STYLE_TYPE => ("StyleType", DECODE_STYLE_TYPE.decode(val)),
                                 C1_EXPOSURE => ("Exposure", format_exposure(val)),
                                 C1_CONTRAST => ("Contrast", format_percentage(val)),
                                 C1_BRIGHTNESS => ("Brightness", format_percentage(val)),
@@ -531,21 +504,21 @@ impl MakerNoteParser for CaptureOneParser {
                                     if val != 0 { "Yes" } else { "No" }.to_string(),
                                 ),
                                 C1_BASE_CHAR_FILM => {
-                                    ("BaseCharacteristicsFilm", decode_base_char(val))
+                                    ("BaseCharacteristicsFilm", DECODE_BASE_CHAR.decode(val))
                                 }
                                 C1_BASE_CHAR_GENERIC => {
-                                    ("BaseCharacteristicsGeneric", decode_base_char(val))
+                                    ("BaseCharacteristicsGeneric", DECODE_BASE_CHAR.decode(val))
                                 }
                                 C1_BASE_CHAR_LINEAR => {
-                                    ("BaseCharacteristicsLinear", decode_base_char(val))
+                                    ("BaseCharacteristicsLinear", DECODE_BASE_CHAR.decode(val))
                                 }
-                                C1_COLOR_SPACE => ("ColorSpace", decode_color_space(val)),
+                                C1_COLOR_SPACE => ("ColorSpace", DECODE_COLOR_SPACE.decode(val)),
                                 C1_TETHERED_CAPTURE => (
                                     "TetheredCapture",
                                     if val != 0 { "Yes" } else { "No" }.to_string(),
                                 ),
                                 C1_RATING => ("Rating", format_rating(val)),
-                                C1_COLOR_TAG => ("ColorTag", decode_color_tag(val)),
+                                C1_COLOR_TAG => ("ColorTag", DECODE_COLOR_TAG.decode(val)),
                                 _ => continue,
                             };
                             tags.insert(format!("CaptureOne:{}", tag_name), formatted_value);
@@ -574,14 +547,16 @@ mod tests {
 
     #[test]
     fn test_decode_style_type() {
-        assert_eq!(decode_style_type(1), "Built-in");
-        assert_eq!(decode_style_type(2), "User");
+        assert_eq!(DECODE_STYLE_TYPE.decode(1), "Built-in");
+        assert_eq!(DECODE_STYLE_TYPE.decode(2), "User");
+        assert_eq!(DECODE_STYLE_TYPE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_color_space() {
-        assert_eq!(decode_color_space(0), "sRGB");
-        assert_eq!(decode_color_space(2), "ProPhoto RGB");
+        assert_eq!(DECODE_COLOR_SPACE.decode(0), "sRGB");
+        assert_eq!(DECODE_COLOR_SPACE.decode(2), "ProPhoto RGB");
+        assert_eq!(DECODE_COLOR_SPACE.decode(99), "Unknown (99)");
     }
 
     #[test]
@@ -611,7 +586,8 @@ mod tests {
 
     #[test]
     fn test_decode_color_tag() {
-        assert_eq!(decode_color_tag(1), "Red");
-        assert_eq!(decode_color_tag(4), "Green");
+        assert_eq!(DECODE_COLOR_TAG.decode(1), "Red");
+        assert_eq!(DECODE_COLOR_TAG.decode(4), "Green");
+        assert_eq!(DECODE_COLOR_TAG.decode(99), "Unknown (99)");
     }
 }

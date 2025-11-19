@@ -13,6 +13,7 @@ pub mod file_reader_trait;
 pub mod format_parser_trait;
 pub mod metadata_map;
 pub mod operations;
+pub mod operations_helpers;
 pub mod tag_value;
 pub mod validation;
 

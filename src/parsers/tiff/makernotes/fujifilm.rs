@@ -23,6 +23,7 @@ use std::collections::HashMap;
 use super::fujifilm_lens_database::lookup_lens_name;
 use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // ===== Fujifilm MakerNote Tag IDs =====
 // Based on ExifTool Fujifilm.pm tag definitions
@@ -97,183 +98,177 @@ const FUJI_PIXEL_SHIFT_OFFSET: u16 = 0x9650;
 // Fujifilm uses "FUJIFILM" followed by IFD offset
 const FUJIFILM_HEADER: &[u8] = b"FUJIFILM";
 
-/// Decodes Fujifilm quality setting to human-readable string
-fn decode_quality(value: i32) -> &'static str {
-    match value {
-        1 => "F (Fine)",
-        2 => "N (Normal)",
-        3 => "Fine",
-        4 => "Normal",
-        5 => "Fine+RAW",
-        6 => "Normal+RAW",
-        _ => "Unknown",
-    }
+// ============================================================================
+// DECODERS - Fujifilm Value Decoders
+// ============================================================================
+// Following the shared decoder pattern from canon.rs and sony.rs
+// Each decoder is a constant that implements the Decode trait
+
+// Decodes Fujifilm quality setting to human-readable string
+const_decoder! {
+    DECODE_QUALITY, i32, [
+        (1, "F (Fine)"),
+        (2, "N (Normal)"),
+        (3, "Fine"),
+        (4, "Normal"),
+        (5, "Fine+RAW"),
+        (6, "Normal+RAW"),
+    ]
 }
 
-/// Decodes Fujifilm white balance setting to human-readable string
-fn decode_white_balance(value: i32) -> &'static str {
-    match value {
-        0x0000 => "Auto",
-        0x0001 => "Auto (White Priority)",
-        0x0002 => "Auto (Ambience Priority)",
-        0x0100 => "Daylight",
-        0x0200 => "Cloudy",
-        0x0300 => "Daylight Fluorescent",
-        0x0301 => "Day White Fluorescent",
-        0x0302 => "White Fluorescent",
-        0x0303 => "Warm White Fluorescent",
-        0x0304 => "Living Room Warm White Fluorescent",
-        0x0400 => "Incandescent",
-        0x0500 => "Flash",
-        0x0600 => "Underwater",
-        0x0F00 => "Custom",
-        0x0F01 => "Custom2",
-        0x0F02 => "Custom3",
-        0x0F03 => "Custom4",
-        0x0F04 => "Custom5",
-        0x0FF0 => "Kelvin",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm white balance setting to human-readable string
+const_decoder! {
+    DECODE_WHITE_BALANCE, i32, [
+        (0x0000, "Auto"),
+        (0x0001, "Auto (White Priority)"),
+        (0x0002, "Auto (Ambience Priority)"),
+        (0x0100, "Daylight"),
+        (0x0200, "Cloudy"),
+        (0x0300, "Daylight Fluorescent"),
+        (0x0301, "Day White Fluorescent"),
+        (0x0302, "White Fluorescent"),
+        (0x0303, "Warm White Fluorescent"),
+        (0x0304, "Living Room Warm White Fluorescent"),
+        (0x0400, "Incandescent"),
+        (0x0500, "Flash"),
+        (0x0600, "Underwater"),
+        (0x0F00, "Custom"),
+        (0x0F01, "Custom2"),
+        (0x0F02, "Custom3"),
+        (0x0F03, "Custom4"),
+        (0x0F04, "Custom5"),
+        (0x0FF0, "Kelvin"),
+    ]
 }
 
-/// Decodes Fujifilm focus mode to human-readable string
-fn decode_focus_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "Manual",
-        2 => "AF-S (Single)",
-        3 => "AF-C (Continuous)",
-        4 => "AF-A (Automatic)",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm focus mode to human-readable string
+const_decoder! {
+    DECODE_FOCUS_MODE, i32, [
+        (0, "Auto"),
+        (1, "Manual"),
+        (2, "AF-S (Single)"),
+        (3, "AF-C (Continuous)"),
+        (4, "AF-A (Automatic)"),
+    ]
 }
 
-/// Decodes Fujifilm flash mode to human-readable string
-fn decode_flash_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Auto",
-        1 => "On",
-        2 => "Off",
-        3 => "Red-eye Reduction",
-        4 => "External",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm flash mode to human-readable string
+const_decoder! {
+    DECODE_FLASH_MODE, i32, [
+        (0, "Auto"),
+        (1, "On"),
+        (2, "Off"),
+        (3, "Red-eye Reduction"),
+        (4, "External"),
+    ]
 }
 
-/// Decodes Fujifilm film simulation mode to human-readable string
-fn decode_film_mode(value: i32) -> &'static str {
-    match value {
-        0x0000 => "F0/Standard (Provia)",
-        0x0100 => "F1/Studio Portrait",
-        0x0110 => "F1a/Studio Portrait Enhanced Saturation",
-        0x0120 => "F1b/Studio Portrait Smooth Skin Tone",
-        0x0130 => "F1c/Studio Portrait Increased Sharpness",
-        0x0200 => "F2/Fujichrome (Velvia)",
-        0x0300 => "F3/Studio Portrait Ex",
-        0x0400 => "F4/Velvia",
-        0x0500 => "Pro Neg. Std",
-        0x0501 => "Pro Neg. Hi",
-        0x0600 => "Classic Chrome",
-        0x0700 => "Eterna",
-        0x0800 => "Classic Negative",
-        0x0900 => "Bleach Bypass",
-        0x0A00 => "Nostalgic Neg.",
-        0x0B00 => "Eterna Bleach Bypass",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm film simulation mode to human-readable string
+const_decoder! {
+    DECODE_FILM_MODE, i32, [
+        (0x0000, "F0/Standard (Provia)"),
+        (0x0100, "F1/Studio Portrait"),
+        (0x0110, "F1a/Studio Portrait Enhanced Saturation"),
+        (0x0120, "F1b/Studio Portrait Smooth Skin Tone"),
+        (0x0130, "F1c/Studio Portrait Increased Sharpness"),
+        (0x0200, "F2/Fujichrome (Velvia)"),
+        (0x0300, "F3/Studio Portrait Ex"),
+        (0x0400, "F4/Velvia"),
+        (0x0500, "Pro Neg. Std"),
+        (0x0501, "Pro Neg. Hi"),
+        (0x0600, "Classic Chrome"),
+        (0x0700, "Eterna"),
+        (0x0800, "Classic Negative"),
+        (0x0900, "Bleach Bypass"),
+        (0x0A00, "Nostalgic Neg."),
+        (0x0B00, "Eterna Bleach Bypass"),
+    ]
 }
 
-/// Decodes Fujifilm dynamic range setting to human-readable string
-fn decode_dynamic_range(value: i32) -> &'static str {
-    match value {
-        1 => "Standard (100%)",
-        2 => "Wide 1 (230%)",
-        3 => "Wide 2 (400%)",
-        4 => "Auto",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm dynamic range setting to human-readable string
+const_decoder! {
+    DECODE_DYNAMIC_RANGE, i32, [
+        (1, "Standard (100%)"),
+        (2, "Wide 1 (230%)"),
+        (3, "Wide 2 (400%)"),
+        (4, "Auto"),
+    ]
 }
 
-/// Decodes Fujifilm shutter type to human-readable string
-fn decode_shutter_type(value: i32) -> &'static str {
-    match value {
-        0 => "Mechanical",
-        1 => "Electronic",
-        2 => "Electronic (Silent)",
-        3 => "Mechanical + Electronic",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm shutter type to human-readable string
+const_decoder! {
+    DECODE_SHUTTER_TYPE, i32, [
+        (0, "Mechanical"),
+        (1, "Electronic"),
+        (2, "Electronic (Silent)"),
+        (3, "Mechanical + Electronic"),
+    ]
 }
 
-/// Decodes Fujifilm burst mode to human-readable string
-fn decode_burst_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "On (Low Speed)",
-        2 => "On (High Speed)",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm burst mode to human-readable string
+const_decoder! {
+    DECODE_BURST_MODE, i32, [
+        (0, "Off"),
+        (1, "On (Low Speed)"),
+        (2, "On (High Speed)"),
+    ]
 }
 
-/// Decodes Fujifilm picture mode to human-readable string
-fn decode_picture_mode(value: i32) -> &'static str {
-    match value {
-        0x0000 => "Auto",
-        0x0001 => "Portrait",
-        0x0002 => "Landscape",
-        0x0003 => "Macro",
-        0x0004 => "Sports",
-        0x0005 => "Night Scene",
-        0x0006 => "Program AE",
-        0x0007 => "Aperture Priority AE",
-        0x0008 => "Shutter Priority AE",
-        0x0009 => "Manual",
-        0x000A => "Portrait Enhancer",
-        0x000B => "Natural Light",
-        0x000D => "Beach",
-        0x000E => "Snow",
-        0x000F => "Fireworks",
-        0x0010 => "Underwater",
-        0x0011 => "Museum",
-        0x0012 => "Party",
-        0x0013 => "Flower",
-        0x0014 => "Text",
-        0x0018 => "Sunset",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm picture mode to human-readable string
+const_decoder! {
+    DECODE_PICTURE_MODE, i32, [
+        (0x0000, "Auto"),
+        (0x0001, "Portrait"),
+        (0x0002, "Landscape"),
+        (0x0003, "Macro"),
+        (0x0004, "Sports"),
+        (0x0005, "Night Scene"),
+        (0x0006, "Program AE"),
+        (0x0007, "Aperture Priority AE"),
+        (0x0008, "Shutter Priority AE"),
+        (0x0009, "Manual"),
+        (0x000A, "Portrait Enhancer"),
+        (0x000B, "Natural Light"),
+        (0x000D, "Beach"),
+        (0x000E, "Snow"),
+        (0x000F, "Fireworks"),
+        (0x0010, "Underwater"),
+        (0x0011, "Museum"),
+        (0x0012, "Party"),
+        (0x0013, "Flower"),
+        (0x0014, "Text"),
+        (0x0018, "Sunset"),
+    ]
 }
 
-/// Decodes Fujifilm drive mode to human-readable string
-fn decode_drive_mode(value: i32) -> &'static str {
-    match value {
-        0 => "Single Frame",
-        1 => "Continuous Low",
-        2 => "Continuous High",
-        3 => "Bracketing",
-        4 => "Self-timer",
-        5 => "Remote",
-        6 => "Interval Timer",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm drive mode to human-readable string
+const_decoder! {
+    DECODE_DRIVE_MODE, i32, [
+        (0, "Single Frame"),
+        (1, "Continuous Low"),
+        (2, "Continuous High"),
+        (3, "Bracketing"),
+        (4, "Self-timer"),
+        (5, "Remote"),
+        (6, "Interval Timer"),
+    ]
 }
 
-/// Decodes Fujifilm EXR mode to human-readable string
-fn decode_exr_mode(value: i32) -> &'static str {
-    match value {
-        256 => "HR (High Resolution)",
-        512 => "SN (Signal-to-Noise Priority)",
-        768 => "DR (Dynamic Range Priority)",
-        _ => "Unknown",
-    }
+// Decodes Fujifilm EXR mode to human-readable string
+const_decoder! {
+    DECODE_EXR_MODE, i32, [
+        (256, "HR (High Resolution)"),
+        (512, "SN (Signal-to-Noise Priority)"),
+        (768, "DR (Dynamic Range Priority)"),
+    ]
 }
 
-/// Decodes boolean/off-on value to human-readable string
-fn decode_off_on(value: i32) -> &'static str {
-    match value {
-        0 => "Off",
-        1 => "On",
-        _ => "Unknown",
-    }
+// Decodes boolean/off-on value to human-readable string
+const_decoder! {
+    DECODE_OFF_ON, i32, [
+        (0, "Off"),
+        (1, "On"),
+    ]
 }
 
 /// Represents a Fujifilm MakerNote parser
@@ -370,7 +365,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:Quality".to_string(),
-                        decode_quality(value).to_string(),
+                        DECODE_QUALITY.decode(value).to_string(),
                     );
                 }
 
@@ -378,7 +373,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:WhiteBalance".to_string(),
-                        decode_white_balance(value).to_string(),
+                        DECODE_WHITE_BALANCE.decode(value).to_string(),
                     );
                 }
 
@@ -386,7 +381,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:FocusMode".to_string(),
-                        decode_focus_mode(value).to_string(),
+                        DECODE_FOCUS_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -394,7 +389,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:FlashMode".to_string(),
-                        decode_flash_mode(value).to_string(),
+                        DECODE_FLASH_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -402,7 +397,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:FilmMode".to_string(),
-                        decode_film_mode(value).to_string(),
+                        DECODE_FILM_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -410,7 +405,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:DynamicRange".to_string(),
-                        decode_dynamic_range(value).to_string(),
+                        DECODE_DYNAMIC_RANGE.decode(value).to_string(),
                     );
                 }
 
@@ -418,7 +413,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:ShutterType".to_string(),
-                        decode_shutter_type(value).to_string(),
+                        DECODE_SHUTTER_TYPE.decode(value).to_string(),
                     );
                 }
 
@@ -426,7 +421,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:BurstMode".to_string(),
-                        decode_burst_mode(value).to_string(),
+                        DECODE_BURST_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -434,7 +429,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:PictureMode".to_string(),
-                        decode_picture_mode(value).to_string(),
+                        DECODE_PICTURE_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -442,7 +437,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:DriveMode".to_string(),
-                        decode_drive_mode(value).to_string(),
+                        DECODE_DRIVE_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -450,7 +445,7 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     tags.insert(
                         "Fujifilm:EXRMode".to_string(),
-                        decode_exr_mode(value).to_string(),
+                        DECODE_EXR_MODE.decode(value).to_string(),
                     );
                 }
 
@@ -493,7 +488,7 @@ impl MakerNoteParser for FujifilmParser {
                 FUJI_MACRO | FUJI_SLOW_SYNC | FUJI_EXR_AUTO | FUJI_AUTO_DYNAMIC_RANGE => {
                     let value = entry.value_offset as i32;
                     let tag_name = fujifilm_tag_to_name(entry.tag_id);
-                    tags.insert(tag_name, decode_off_on(value).to_string());
+                    tags.insert(tag_name, DECODE_OFF_ON.decode(value).to_string());
                 }
 
                 // Warning flags
@@ -799,64 +794,64 @@ mod tests {
 
     #[test]
     fn test_decode_quality() {
-        assert_eq!(decode_quality(1), "F (Fine)");
-        assert_eq!(decode_quality(3), "Fine");
-        assert_eq!(decode_quality(5), "Fine+RAW");
-        assert_eq!(decode_quality(99), "Unknown");
+        assert_eq!(DECODE_QUALITY.decode(1), "F (Fine)");
+        assert_eq!(DECODE_QUALITY.decode(3), "Fine");
+        assert_eq!(DECODE_QUALITY.decode(5), "Fine+RAW");
+        assert_eq!(DECODE_QUALITY.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_white_balance() {
-        assert_eq!(decode_white_balance(0x0000), "Auto");
-        assert_eq!(decode_white_balance(0x0100), "Daylight");
-        assert_eq!(decode_white_balance(0x0200), "Cloudy");
-        assert_eq!(decode_white_balance(0x0400), "Incandescent");
-        assert_eq!(decode_white_balance(0x9999), "Unknown");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0x0000), "Auto");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0x0100), "Daylight");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0x0200), "Cloudy");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0x0400), "Incandescent");
+        assert_eq!(DECODE_WHITE_BALANCE.decode(0x9999), "Unknown (39321)");
     }
 
     #[test]
     fn test_decode_focus_mode() {
-        assert_eq!(decode_focus_mode(0), "Auto");
-        assert_eq!(decode_focus_mode(1), "Manual");
-        assert_eq!(decode_focus_mode(2), "AF-S (Single)");
-        assert_eq!(decode_focus_mode(3), "AF-C (Continuous)");
-        assert_eq!(decode_focus_mode(99), "Unknown");
+        assert_eq!(DECODE_FOCUS_MODE.decode(0), "Auto");
+        assert_eq!(DECODE_FOCUS_MODE.decode(1), "Manual");
+        assert_eq!(DECODE_FOCUS_MODE.decode(2), "AF-S (Single)");
+        assert_eq!(DECODE_FOCUS_MODE.decode(3), "AF-C (Continuous)");
+        assert_eq!(DECODE_FOCUS_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_film_mode() {
-        assert_eq!(decode_film_mode(0x0000), "F0/Standard (Provia)");
-        assert_eq!(decode_film_mode(0x0200), "F2/Fujichrome (Velvia)");
-        assert_eq!(decode_film_mode(0x0600), "Classic Chrome");
-        assert_eq!(decode_film_mode(0x0700), "Eterna");
-        assert_eq!(decode_film_mode(0x0800), "Classic Negative");
-        assert_eq!(decode_film_mode(0x9999), "Unknown");
+        assert_eq!(DECODE_FILM_MODE.decode(0x0000), "F0/Standard (Provia)");
+        assert_eq!(DECODE_FILM_MODE.decode(0x0200), "F2/Fujichrome (Velvia)");
+        assert_eq!(DECODE_FILM_MODE.decode(0x0600), "Classic Chrome");
+        assert_eq!(DECODE_FILM_MODE.decode(0x0700), "Eterna");
+        assert_eq!(DECODE_FILM_MODE.decode(0x0800), "Classic Negative");
+        assert_eq!(DECODE_FILM_MODE.decode(0x9999), "Unknown (39321)");
     }
 
     #[test]
     fn test_decode_dynamic_range() {
-        assert_eq!(decode_dynamic_range(1), "Standard (100%)");
-        assert_eq!(decode_dynamic_range(2), "Wide 1 (230%)");
-        assert_eq!(decode_dynamic_range(3), "Wide 2 (400%)");
-        assert_eq!(decode_dynamic_range(4), "Auto");
-        assert_eq!(decode_dynamic_range(99), "Unknown");
+        assert_eq!(DECODE_DYNAMIC_RANGE.decode(1), "Standard (100%)");
+        assert_eq!(DECODE_DYNAMIC_RANGE.decode(2), "Wide 1 (230%)");
+        assert_eq!(DECODE_DYNAMIC_RANGE.decode(3), "Wide 2 (400%)");
+        assert_eq!(DECODE_DYNAMIC_RANGE.decode(4), "Auto");
+        assert_eq!(DECODE_DYNAMIC_RANGE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_shutter_type() {
-        assert_eq!(decode_shutter_type(0), "Mechanical");
-        assert_eq!(decode_shutter_type(1), "Electronic");
-        assert_eq!(decode_shutter_type(2), "Electronic (Silent)");
-        assert_eq!(decode_shutter_type(99), "Unknown");
+        assert_eq!(DECODE_SHUTTER_TYPE.decode(0), "Mechanical");
+        assert_eq!(DECODE_SHUTTER_TYPE.decode(1), "Electronic");
+        assert_eq!(DECODE_SHUTTER_TYPE.decode(2), "Electronic (Silent)");
+        assert_eq!(DECODE_SHUTTER_TYPE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_picture_mode() {
-        assert_eq!(decode_picture_mode(0x0000), "Auto");
-        assert_eq!(decode_picture_mode(0x0001), "Portrait");
-        assert_eq!(decode_picture_mode(0x0002), "Landscape");
-        assert_eq!(decode_picture_mode(0x0006), "Program AE");
-        assert_eq!(decode_picture_mode(0x0009), "Manual");
+        assert_eq!(DECODE_PICTURE_MODE.decode(0x0000), "Auto");
+        assert_eq!(DECODE_PICTURE_MODE.decode(0x0001), "Portrait");
+        assert_eq!(DECODE_PICTURE_MODE.decode(0x0002), "Landscape");
+        assert_eq!(DECODE_PICTURE_MODE.decode(0x0006), "Program AE");
+        assert_eq!(DECODE_PICTURE_MODE.decode(0x0009), "Manual");
     }
 
     #[test]
@@ -886,23 +881,23 @@ mod tests {
 
     #[test]
     fn test_decode_off_on() {
-        assert_eq!(decode_off_on(0), "Off");
-        assert_eq!(decode_off_on(1), "On");
-        assert_eq!(decode_off_on(2), "Unknown");
+        assert_eq!(DECODE_OFF_ON.decode(0), "Off");
+        assert_eq!(DECODE_OFF_ON.decode(1), "On");
+        assert_eq!(DECODE_OFF_ON.decode(2), "Unknown (2)");
     }
 
     #[test]
     fn test_decode_drive_mode() {
-        assert_eq!(decode_drive_mode(0), "Single Frame");
-        assert_eq!(decode_drive_mode(1), "Continuous Low");
-        assert_eq!(decode_drive_mode(2), "Continuous High");
-        assert_eq!(decode_drive_mode(4), "Self-timer");
+        assert_eq!(DECODE_DRIVE_MODE.decode(0), "Single Frame");
+        assert_eq!(DECODE_DRIVE_MODE.decode(1), "Continuous Low");
+        assert_eq!(DECODE_DRIVE_MODE.decode(2), "Continuous High");
+        assert_eq!(DECODE_DRIVE_MODE.decode(4), "Self-timer");
     }
 
     #[test]
     fn test_decode_exr_mode() {
-        assert_eq!(decode_exr_mode(256), "HR (High Resolution)");
-        assert_eq!(decode_exr_mode(512), "SN (Signal-to-Noise Priority)");
-        assert_eq!(decode_exr_mode(768), "DR (Dynamic Range Priority)");
+        assert_eq!(DECODE_EXR_MODE.decode(256), "HR (High Resolution)");
+        assert_eq!(DECODE_EXR_MODE.decode(512), "SN (Signal-to-Noise Priority)");
+        assert_eq!(DECODE_EXR_MODE.decode(768), "DR (Dynamic Range Priority)");
     }
 }

@@ -28,6 +28,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -52,51 +53,36 @@ const SCALADO_TOUCHUP_COUNT: u16 = 0x0043; // Touch-up areas
 // Scalado signature
 const SCALADO_SIGNATURE: &[u8] = b"Scalado";
 
-/// Decodes filter type
-///
-/// # Arguments
-/// * `value` - Filter type code
-///
-/// # Returns
-/// Human-readable filter name
-fn decode_filter_type(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Vintage".to_string(),
-        2 => "Sepia".to_string(),
-        3 => "Black & White".to_string(),
-        4 => "Cool".to_string(),
-        5 => "Warm".to_string(),
-        6 => "Vivid".to_string(),
-        7 => "Soft".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// ============================================================================
+// Declarative Decoder Definitions
+// ============================================================================
+
+// Decodes Scalado filter type
+const_decoder! {
+    DECODE_FILTER_TYPE, i16, [
+        (0, "None"),
+        (1, "Vintage"),
+        (2, "Sepia"),
+        (3, "Black & White"),
+        (4, "Cool"),
+        (5, "Warm"),
+        (6, "Vivid"),
+        (7, "Soft"),
+    ]
 }
 
-/// Decodes auto-enhance level
-///
-/// # Arguments
-/// * `value` - Auto-enhance code
-///
-/// # Returns
-/// Human-readable level
-fn decode_auto_enhance(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Low".to_string(),
-        2 => "Medium".to_string(),
-        3 => "High".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Scalado auto-enhance level
+const_decoder! {
+    DECODE_AUTO_ENHANCE, i16, [
+        (0, "Off"),
+        (1, "Low"),
+        (2, "Medium"),
+        (3, "High"),
+    ]
 }
 
-/// Formats adjustment percentage
-///
-/// # Arguments
-/// * `value` - Adjustment value (-100 to +100)
-///
-/// # Returns
-/// Formatted string
+/// Formats adjustment percentage (-100 to +100) with proper +/- sign
+/// Used for brightness, contrast, and saturation adjustments
 fn format_adjustment(value: i16) -> String {
     if value >= 0 {
         format!("+{}", value)
@@ -107,13 +93,10 @@ fn format_adjustment(value: i16) -> String {
 
 /// Extracts an ASCII string from IFD entry
 ///
-/// # Arguments
-/// * `entry` - IFD entry containing the string
-/// * `data` - Raw MakerNote data
-///
-/// # Returns
-/// Extracted string or None if extraction fails
+/// Handles both inline strings (<=4 bytes stored in value_offset)
+/// and external strings (>4 bytes stored at offset in data buffer)
 fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
+    // Field type 2 indicates ASCII string
     if entry.field_type != 2 {
         return None;
     }
@@ -121,6 +104,7 @@ fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
     let offset = entry.value_offset as usize;
     let count = entry.value_count as usize;
 
+    // Handle inline strings (4 bytes or less)
     if count <= 4 {
         let bytes = entry.value_offset.to_le_bytes();
         let s = String::from_utf8_lossy(&bytes[..count.min(4)])
@@ -129,6 +113,7 @@ fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
         return if s.is_empty() { None } else { Some(s) };
     }
 
+    // Handle external strings
     if offset + count > data.len() {
         return None;
     }
@@ -171,16 +156,32 @@ impl MakerNoteParser for ScaladoParser {
         data.starts_with(SCALADO_SIGNATURE) || data.len() >= 8
     }
 
+    /// Parses Scalado MakerNote data and extracts editing metadata
+    ///
+    /// Scalado MakerNotes may optionally start with a signature, followed by
+    /// standard IFD format. This method handles both cases and extracts all
+    /// photo editing metadata tags.
+    ///
+    /// # Arguments
+    /// * `data` - The raw MakerNote data buffer
+    /// * `byte_order` - The byte order to use for multi-byte values
+    /// * `tags` - HashMap to populate with extracted tag name/value pairs
+    ///
+    /// # Returns
+    /// * `Ok(())` if parsing succeeded
+    /// * `Err(String)` if data is too short
     fn parse(
         &self,
         data: &[u8],
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
+        // Validate minimum data length
         if data.len() < 8 {
             return Err("Scalado MakerNote data too short".to_string());
         }
 
+        // Skip optional Scalado signature (7 bytes)
         let start_offset = if data.starts_with(SCALADO_SIGNATURE) {
             7
         } else {
@@ -188,15 +189,18 @@ impl MakerNoteParser for ScaladoParser {
         };
         let parse_data = &data[start_offset..];
 
+        // Need at least 2 bytes for entry count
         if parse_data.len() < 2 {
             return Ok(());
         }
 
+        // Read the number of IFD entries
         let num_entries = match byte_order {
             ByteOrder::LittleEndian => u16::from_le_bytes([parse_data[0], parse_data[1]]),
             ByteOrder::BigEndian => u16::from_be_bytes([parse_data[0], parse_data[1]]),
         } as usize;
 
+        // Sanity check: entry count should be reasonable
         if num_entries == 0 || num_entries > 100 {
             return Ok(());
         }
@@ -204,23 +208,28 @@ impl MakerNoteParser for ScaladoParser {
         let mut offset = 2;
         let entry_size = 12;
 
+        // Iterate through all IFD entries
         for _ in 0..num_entries {
+            // Ensure we have enough data for a complete entry
             if offset + entry_size > parse_data.len() {
                 break;
             }
 
             let entry_data = &parse_data[offset..offset + entry_size];
 
+            // Parse the tag ID (2 bytes)
             let tag = match byte_order {
                 ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[0], entry_data[1]]),
                 ByteOrder::BigEndian => u16::from_be_bytes([entry_data[0], entry_data[1]]),
             };
 
+            // Parse the field type (2 bytes)
             let field_type = match byte_order {
                 ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[2], entry_data[3]]),
                 ByteOrder::BigEndian => u16::from_be_bytes([entry_data[2], entry_data[3]]),
             };
 
+            // Parse the value count (4 bytes)
             let count = match byte_order {
                 ByteOrder::LittleEndian => {
                     u32::from_le_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
@@ -230,6 +239,7 @@ impl MakerNoteParser for ScaladoParser {
                 }
             };
 
+            // Parse the value/offset field (4 bytes)
             let value_offset = match byte_order {
                 ByteOrder::LittleEndian => u32::from_le_bytes([
                     entry_data[8],
@@ -245,6 +255,7 @@ impl MakerNoteParser for ScaladoParser {
                 ]),
             };
 
+            // Create IFD entry structure
             let entry = IfdEntry {
                 tag_id: tag,
                 field_type,
@@ -252,19 +263,27 @@ impl MakerNoteParser for ScaladoParser {
                 value_offset,
             };
 
+            // Parse the tag based on its ID
             match tag {
                 SCALADO_VERSION => {
+                    // Version is stored as a string
                     if let Some(s) = extract_string(&entry, parse_data) {
                         tags.insert("Scalado:Version".to_string(), s);
                     }
                 }
 
                 _ => {
+                    // All other tags are stored as i16 arrays
                     if let Some(array) = extract_i16_array(&entry, parse_data, byte_order) {
                         if let Some(&val) = array.first() {
+                            // Decode the value based on the tag ID using const decoders
                             let (tag_name, formatted_value) = match tag {
-                                SCALADO_FILTER_TYPE => ("FilterType", decode_filter_type(val)),
-                                SCALADO_AUTO_ENHANCE => ("AutoEnhance", decode_auto_enhance(val)),
+                                SCALADO_FILTER_TYPE => {
+                                    ("FilterType", DECODE_FILTER_TYPE.decode(val))
+                                }
+                                SCALADO_AUTO_ENHANCE => {
+                                    ("AutoEnhance", DECODE_AUTO_ENHANCE.decode(val))
+                                }
                                 SCALADO_RED_EYE => (
                                     "RedEyeReduction",
                                     if val != 0 { "Yes" } else { "No" }.to_string(),
@@ -315,16 +334,16 @@ mod tests {
 
     #[test]
     fn test_decode_filter_type() {
-        assert_eq!(decode_filter_type(1), "Vintage");
-        assert_eq!(decode_filter_type(2), "Sepia");
-        assert_eq!(decode_filter_type(6), "Vivid");
+        assert_eq!(DECODE_FILTER_TYPE.decode(1), "Vintage");
+        assert_eq!(DECODE_FILTER_TYPE.decode(2), "Sepia");
+        assert_eq!(DECODE_FILTER_TYPE.decode(6), "Vivid");
     }
 
     #[test]
     fn test_decode_auto_enhance() {
-        assert_eq!(decode_auto_enhance(0), "Off");
-        assert_eq!(decode_auto_enhance(2), "Medium");
-        assert_eq!(decode_auto_enhance(3), "High");
+        assert_eq!(DECODE_AUTO_ENHANCE.decode(0), "Off");
+        assert_eq!(DECODE_AUTO_ENHANCE.decode(2), "Medium");
+        assert_eq!(DECODE_AUTO_ENHANCE.decode(3), "High");
     }
 
     #[test]

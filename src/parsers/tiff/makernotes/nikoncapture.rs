@@ -38,6 +38,7 @@ use std::collections::HashMap;
 
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // Nikon Capture MakerNote Tag IDs
 const NC_VERSION: u16 = 0x0001; // Nikon Capture version
@@ -85,161 +86,105 @@ const NC_EDIT_STATUS: u16 = 0x00B0; // Edit status
 // Nikon Capture signature
 const NIKON_CAPTURE_SIGNATURE: &[u8] = b"NikonNX";
 
-/// Decodes Picture Control name
-///
-/// # Arguments
-/// * `value` - Picture Control code
-///
-/// # Returns
-/// Human-readable Picture Control name
-fn decode_picture_control(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Standard".to_string(),
-        2 => "Neutral".to_string(),
-        3 => "Vivid".to_string(),
-        4 => "Monochrome".to_string(),
-        5 => "Portrait".to_string(),
-        6 => "Landscape".to_string(),
-        7 => "Flat".to_string(),
-        8 => "Creative".to_string(),
-        100 => "Custom".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Picture Control name
+const_decoder! {
+    DECODE_PICTURE_CONTROL, i16, [
+        (0, "None"),
+        (1, "Standard"),
+        (2, "Neutral"),
+        (3, "Vivid"),
+        (4, "Monochrome"),
+        (5, "Portrait"),
+        (6, "Landscape"),
+        (7, "Flat"),
+        (8, "Creative"),
+        (100, "Custom"),
+    ]
 }
 
-/// Decodes Active D-Lighting level
-///
-/// # Arguments
-/// * `value` - Active D-Lighting code
-///
-/// # Returns
-/// Human-readable level
-fn decode_active_d_lighting(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Low".to_string(),
-        2 => "Normal".to_string(),
-        3 => "High".to_string(),
-        4 => "Extra High".to_string(),
-        5 => "Auto".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Active D-Lighting level
+const_decoder! {
+    DECODE_ACTIVE_D_LIGHTING, i16, [
+        (0, "Off"),
+        (1, "Low"),
+        (2, "Normal"),
+        (3, "High"),
+        (4, "Extra High"),
+        (5, "Auto"),
+    ]
 }
 
-/// Decodes Vignette Control level
-///
-/// # Arguments
-/// * `value` - Vignette Control code
-///
-/// # Returns
-/// Human-readable level
-fn decode_vignette_control(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Low".to_string(),
-        2 => "Normal".to_string(),
-        3 => "High".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Vignette Control level
+const_decoder! {
+    DECODE_VIGNETTE_CONTROL, i16, [
+        (0, "Off"),
+        (1, "Low"),
+        (2, "Normal"),
+        (3, "High"),
+    ]
 }
 
-/// Decodes filter effect
-///
-/// # Arguments
-/// * `value` - Filter effect code
-///
-/// # Returns
-/// Human-readable filter name
-fn decode_filter_effect(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Yellow".to_string(),
-        2 => "Orange".to_string(),
-        3 => "Red".to_string(),
-        4 => "Green".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes filter effect
+const_decoder! {
+    DECODE_FILTER_EFFECT, i16, [
+        (0, "None"),
+        (1, "Yellow"),
+        (2, "Orange"),
+        (3, "Red"),
+        (4, "Green"),
+    ]
 }
 
-/// Decodes toning effect
-///
-/// # Arguments
-/// * `value` - Toning effect code
-///
-/// # Returns
-/// Human-readable toning name
-fn decode_toning_effect(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Blue".to_string(),
-        2 => "Red".to_string(),
-        3 => "Yellow".to_string(),
-        4 => "Green".to_string(),
-        5 => "Blue-Green".to_string(),
-        6 => "Blue-Purple".to_string(),
-        7 => "Red-Purple".to_string(),
-        8 => "Sepia".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes toning effect
+const_decoder! {
+    DECODE_TONING_EFFECT, i16, [
+        (0, "None"),
+        (1, "Blue"),
+        (2, "Red"),
+        (3, "Yellow"),
+        (4, "Green"),
+        (5, "Blue-Green"),
+        (6, "Blue-Purple"),
+        (7, "Red-Purple"),
+        (8, "Sepia"),
+    ]
 }
 
-/// Decodes noise reduction level
-///
-/// # Arguments
-/// * `value` - Noise reduction code
-///
-/// # Returns
-/// Human-readable level
-fn decode_noise_reduction(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Low".to_string(),
-        2 => "Medium".to_string(),
-        3 => "High".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes noise reduction level
+const_decoder! {
+    DECODE_NOISE_REDUCTION, i16, [
+        (0, "Off"),
+        (1, "Low"),
+        (2, "Medium"),
+        (3, "High"),
+    ]
 }
 
-/// Decodes white balance mode
-///
-/// # Arguments
-/// * `value` - White balance code
-///
-/// # Returns
-/// Human-readable mode
-fn decode_white_balance(value: i16) -> String {
-    match value {
-        0 => "Auto".to_string(),
-        1 => "Daylight".to_string(),
-        2 => "Cloudy".to_string(),
-        3 => "Shade".to_string(),
-        4 => "Tungsten".to_string(),
-        5 => "Fluorescent".to_string(),
-        6 => "Flash".to_string(),
-        7 => "Custom".to_string(),
-        8 => "Preset".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes white balance mode
+const_decoder! {
+    DECODE_WHITE_BALANCE, i16, [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Cloudy"),
+        (3, "Shade"),
+        (4, "Tungsten"),
+        (5, "Fluorescent"),
+        (6, "Flash"),
+        (7, "Custom"),
+        (8, "Preset"),
+    ]
 }
 
-/// Decodes label color
-///
-/// # Arguments
-/// * `value` - Label code
-///
-/// # Returns
-/// Human-readable label
-fn decode_label(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Red".to_string(),
-        2 => "Yellow".to_string(),
-        3 => "Green".to_string(),
-        4 => "Blue".to_string(),
-        5 => "Purple".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes label color
+const_decoder! {
+    DECODE_LABEL, i16, [
+        (0, "None"),
+        (1, "Red"),
+        (2, "Yellow"),
+        (3, "Green"),
+        (4, "Blue"),
+        (5, "Purple"),
+    ]
 }
 
 /// Formats adjustment level (-20 to +20)
@@ -479,23 +424,27 @@ impl MakerNoteParser for NikonCaptureParser {
                         if let Some(&val) = array.first() {
                             let (tag_name, formatted_value) = match tag {
                                 NC_PICTURE_CONTROL_ADJUST => {
-                                    ("PictureControlAdjust", decode_picture_control(val))
+                                    ("PictureControlAdjust", DECODE_PICTURE_CONTROL.decode(val))
                                 }
                                 NC_SHARPENING => ("Sharpening", format_adjustment(val)),
                                 NC_CONTRAST => ("Contrast", format_adjustment(val)),
                                 NC_BRIGHTNESS => ("Brightness", format_adjustment(val)),
                                 NC_SATURATION => ("Saturation", format_adjustment(val)),
                                 NC_HUE_ADJUSTMENT => ("HueAdjustment", format_adjustment(val)),
-                                NC_FILTER_EFFECT => ("FilterEffect", decode_filter_effect(val)),
-                                NC_TONING_EFFECT => ("ToningEffect", decode_toning_effect(val)),
+                                NC_FILTER_EFFECT => {
+                                    ("FilterEffect", DECODE_FILTER_EFFECT.decode(val))
+                                }
+                                NC_TONING_EFFECT => {
+                                    ("ToningEffect", DECODE_TONING_EFFECT.decode(val))
+                                }
                                 NC_TONING_SATURATION => {
                                     ("ToningSaturation", format_adjustment(val))
                                 }
                                 NC_ACTIVE_D_LIGHTING => {
-                                    ("ActiveDLighting", decode_active_d_lighting(val))
+                                    ("ActiveDLighting", DECODE_ACTIVE_D_LIGHTING.decode(val))
                                 }
                                 NC_VIGNETTE_CONTROL => {
-                                    ("VignetteControl", decode_vignette_control(val))
+                                    ("VignetteControl", DECODE_VIGNETTE_CONTROL.decode(val))
                                 }
                                 NC_AUTO_DISTORTION => (
                                     "AutoDistortion",
@@ -518,13 +467,13 @@ impl MakerNoteParser for NikonCaptureParser {
                                 }
                                 NC_COLOR_CONTROL_POINTS => ("ColorControlPoints", val.to_string()),
                                 NC_NOISE_REDUCTION => {
-                                    ("NoiseReduction", decode_noise_reduction(val))
+                                    ("NoiseReduction", DECODE_NOISE_REDUCTION.decode(val))
                                 }
                                 NC_NOISE_REDUCTION_EDGE => {
-                                    ("EdgeNoiseReduction", decode_noise_reduction(val))
+                                    ("EdgeNoiseReduction", DECODE_NOISE_REDUCTION.decode(val))
                                 }
                                 NC_NOISE_REDUCTION_COLOR => {
-                                    ("ColorNoiseReduction", decode_noise_reduction(val))
+                                    ("ColorNoiseReduction", DECODE_NOISE_REDUCTION.decode(val))
                                 }
                                 NC_UNSHARP_MASK => (
                                     "UnsharpMask",
@@ -541,19 +490,19 @@ impl MakerNoteParser for NikonCaptureParser {
                                     if val != 0 { "On" } else { "Off" }.to_string(),
                                 ),
                                 NC_WHITE_BALANCE_MODE => {
-                                    ("WhiteBalanceMode", decode_white_balance(val))
+                                    ("WhiteBalanceMode", DECODE_WHITE_BALANCE.decode(val))
                                 }
                                 NC_WHITE_BALANCE_FINE => {
                                     ("WhiteBalanceFine", format_adjustment(val))
                                 }
                                 NC_EXPOSURE_COMP => ("ExposureComp", format_exposure_comp(val)),
-                                NC_HIGH_ISO_NR => ("HighISONR", decode_noise_reduction(val)),
+                                NC_HIGH_ISO_NR => ("HighISONR", DECODE_NOISE_REDUCTION.decode(val)),
                                 NC_LONG_EXPOSURE_NR => (
                                     "LongExposureNR",
                                     if val != 0 { "On" } else { "Off" }.to_string(),
                                 ),
                                 NC_RATING => ("Rating", format_rating(val)),
-                                NC_LABEL => ("Label", decode_label(val)),
+                                NC_LABEL => ("Label", DECODE_LABEL.decode(val)),
                                 NC_EDIT_STATUS => (
                                     "EditStatus",
                                     if val != 0 { "Edited" } else { "Original" }.to_string(),
@@ -586,22 +535,25 @@ mod tests {
 
     #[test]
     fn test_decode_picture_control() {
-        assert_eq!(decode_picture_control(1), "Standard");
-        assert_eq!(decode_picture_control(3), "Vivid");
-        assert_eq!(decode_picture_control(4), "Monochrome");
+        assert_eq!(DECODE_PICTURE_CONTROL.decode(1), "Standard");
+        assert_eq!(DECODE_PICTURE_CONTROL.decode(3), "Vivid");
+        assert_eq!(DECODE_PICTURE_CONTROL.decode(4), "Monochrome");
+        assert_eq!(DECODE_PICTURE_CONTROL.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_active_d_lighting() {
-        assert_eq!(decode_active_d_lighting(0), "Off");
-        assert_eq!(decode_active_d_lighting(3), "High");
-        assert_eq!(decode_active_d_lighting(5), "Auto");
+        assert_eq!(DECODE_ACTIVE_D_LIGHTING.decode(0), "Off");
+        assert_eq!(DECODE_ACTIVE_D_LIGHTING.decode(3), "High");
+        assert_eq!(DECODE_ACTIVE_D_LIGHTING.decode(5), "Auto");
+        assert_eq!(DECODE_ACTIVE_D_LIGHTING.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_vignette_control() {
-        assert_eq!(decode_vignette_control(0), "Off");
-        assert_eq!(decode_vignette_control(2), "Normal");
+        assert_eq!(DECODE_VIGNETTE_CONTROL.decode(0), "Off");
+        assert_eq!(DECODE_VIGNETTE_CONTROL.decode(2), "Normal");
+        assert_eq!(DECODE_VIGNETTE_CONTROL.decode(99), "Unknown (99)");
     }
 
     #[test]
@@ -625,7 +577,8 @@ mod tests {
 
     #[test]
     fn test_decode_filter_effect() {
-        assert_eq!(decode_filter_effect(1), "Yellow");
-        assert_eq!(decode_filter_effect(3), "Red");
+        assert_eq!(DECODE_FILTER_EFFECT.decode(1), "Yellow");
+        assert_eq!(DECODE_FILTER_EFFECT.decode(3), "Red");
+        assert_eq!(DECODE_FILTER_EFFECT.decode(99), "Unknown (99)");
     }
 }

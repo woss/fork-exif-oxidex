@@ -26,6 +26,7 @@ use std::collections::HashMap;
 
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use crate::const_decoder;
 
 // Microsoft Lumia MakerNote Tag IDs
 // Note: Microsoft's tag structure is proprietary and reverse-engineered
@@ -48,111 +49,69 @@ const MICROSOFT_LENS_TYPE: u16 = 0x001A; // Lens attachment type
 // Microsoft signature for validation
 const MICROSOFT_SIGNATURE: &[u8] = b"Microsoft";
 
-/// Decodes Rich Capture mode
-///
-/// # Arguments
-/// * `value` - Rich Capture status value
-///
-/// # Returns
-/// Human-readable mode description
-fn decode_rich_capture(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "On".to_string(),
-        2 => "Auto".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Rich Capture mode
+const_decoder! {
+    DECODE_RICH_CAPTURE, i16, [
+        (0, "Off"),
+        (1, "On"),
+        (2, "Auto"),
+    ]
 }
 
-/// Decodes Rich Capture variant type
-///
-/// # Arguments
-/// * `value` - Rich Capture mode variant
-///
-/// # Returns
-/// Human-readable variant description
-fn decode_rich_capture_mode(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "HDR".to_string(),
-        2 => "HDR + Flash".to_string(),
-        3 => "Flash Variants".to_string(),
-        4 => "Motion Blur Removal".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Rich Capture variant type
+const_decoder! {
+    DECODE_RICH_CAPTURE_MODE, i16, [
+        (0, "None"),
+        (1, "HDR"),
+        (2, "HDR + Flash"),
+        (3, "Flash Variants"),
+        (4, "Motion Blur Removal"),
+    ]
 }
 
-/// Decodes Dynamic Flash status
-///
-/// # Arguments
-/// * `value` - Dynamic Flash mode
-///
-/// # Returns
-/// Human-readable status
-fn decode_dynamic_flash(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Flash + No Flash Blend".to_string(),
-        2 => "Multi-Flash Blend".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Dynamic Flash status
+const_decoder! {
+    DECODE_DYNAMIC_FLASH, i16, [
+        (0, "Off"),
+        (1, "Flash + No Flash Blend"),
+        (2, "Multi-Flash Blend"),
+    ]
 }
 
-/// Decodes PureView oversampling mode
-///
-/// # Arguments
-/// * `value` - PureView mode value
-///
-/// # Returns
-/// Human-readable mode description
-fn decode_pureview_mode(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "5MP Oversampled".to_string(),
-        2 => "8MP Oversampled".to_string(),
-        3 => "Full Resolution".to_string(),
-        4 => "Lossless Zoom".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes PureView oversampling mode
+const_decoder! {
+    DECODE_PUREVIEW_MODE, i16, [
+        (0, "Off"),
+        (1, "5MP Oversampled"),
+        (2, "8MP Oversampled"),
+        (3, "Full Resolution"),
+        (4, "Lossless Zoom"),
+    ]
 }
 
-/// Decodes Creative Studio effect type
-///
-/// # Arguments
-/// * `value` - Effect type value
-///
-/// # Returns
-/// Human-readable effect description
-fn decode_creative_effect(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Black & White".to_string(),
-        2 => "Sepia".to_string(),
-        3 => "Vintage".to_string(),
-        4 => "Vivid".to_string(),
-        5 => "Warm".to_string(),
-        6 => "Cool".to_string(),
-        7 => "Stamp".to_string(),
-        8 => "Posterize".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes Creative Studio effect type
+const_decoder! {
+    DECODE_CREATIVE_EFFECT, i16, [
+        (0, "None"),
+        (1, "Black & White"),
+        (2, "Sepia"),
+        (3, "Vintage"),
+        (4, "Vivid"),
+        (5, "Warm"),
+        (6, "Cool"),
+        (7, "Stamp"),
+        (8, "Posterize"),
+    ]
 }
 
-/// Decodes lens attachment type
-///
-/// # Arguments
-/// * `value` - Lens type identifier
-///
-/// # Returns
-/// Human-readable lens description
-fn decode_lens_type(value: i16) -> String {
-    match value {
-        0 => "Built-in".to_string(),
-        1 => "Wide Angle Attachment".to_string(),
-        2 => "Telephoto Attachment".to_string(),
-        3 => "Macro Attachment".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
+// Decodes lens attachment type
+const_decoder! {
+    DECODE_LENS_TYPE, i16, [
+        (0, "Built-in"),
+        (1, "Wide Angle Attachment"),
+        (2, "Telephoto Attachment"),
+        (3, "Macro Attachment"),
+    ]
 }
 
 /// Extracts a 16-bit signed value from IFD entry
@@ -284,7 +243,7 @@ impl MicrosoftParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Microsoft:RichCapture".to_string(),
-                        decode_rich_capture(value),
+                        DECODE_RICH_CAPTURE.decode(value),
                     );
                 }
             }
@@ -292,7 +251,7 @@ impl MicrosoftParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Microsoft:RichCaptureMode".to_string(),
-                        decode_rich_capture_mode(value),
+                        DECODE_RICH_CAPTURE_MODE.decode(value),
                     );
                 }
             }
@@ -306,7 +265,7 @@ impl MicrosoftParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Microsoft:DynamicFlash".to_string(),
-                        decode_dynamic_flash(value),
+                        DECODE_DYNAMIC_FLASH.decode(value),
                     );
                 }
             }
@@ -332,7 +291,7 @@ impl MicrosoftParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Microsoft:PureViewMode".to_string(),
-                        decode_pureview_mode(value),
+                        DECODE_PUREVIEW_MODE.decode(value),
                     );
                 }
             }
@@ -348,7 +307,7 @@ impl MicrosoftParser {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Microsoft:CreativeEffect".to_string(),
-                        decode_creative_effect(value),
+                        DECODE_CREATIVE_EFFECT.decode(value),
                     );
                 }
             }
@@ -390,7 +349,10 @@ impl MicrosoftParser {
             }
             MICROSOFT_LENS_TYPE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Microsoft:LensType".to_string(), decode_lens_type(value));
+                    tags.insert(
+                        "Microsoft:LensType".to_string(),
+                        DECODE_LENS_TYPE.decode(value),
+                    );
                 }
             }
             _ => {
@@ -534,42 +496,48 @@ mod tests {
 
     #[test]
     fn test_decode_rich_capture() {
-        assert_eq!(decode_rich_capture(0), "Off");
-        assert_eq!(decode_rich_capture(1), "On");
-        assert_eq!(decode_rich_capture(2), "Auto");
+        assert_eq!(DECODE_RICH_CAPTURE.decode(0), "Off");
+        assert_eq!(DECODE_RICH_CAPTURE.decode(1), "On");
+        assert_eq!(DECODE_RICH_CAPTURE.decode(2), "Auto");
+        assert_eq!(DECODE_RICH_CAPTURE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_rich_capture_mode() {
-        assert_eq!(decode_rich_capture_mode(0), "None");
-        assert_eq!(decode_rich_capture_mode(1), "HDR");
-        assert_eq!(decode_rich_capture_mode(2), "HDR + Flash");
+        assert_eq!(DECODE_RICH_CAPTURE_MODE.decode(0), "None");
+        assert_eq!(DECODE_RICH_CAPTURE_MODE.decode(1), "HDR");
+        assert_eq!(DECODE_RICH_CAPTURE_MODE.decode(2), "HDR + Flash");
+        assert_eq!(DECODE_RICH_CAPTURE_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_dynamic_flash() {
-        assert_eq!(decode_dynamic_flash(0), "Off");
-        assert_eq!(decode_dynamic_flash(1), "Flash + No Flash Blend");
+        assert_eq!(DECODE_DYNAMIC_FLASH.decode(0), "Off");
+        assert_eq!(DECODE_DYNAMIC_FLASH.decode(1), "Flash + No Flash Blend");
+        assert_eq!(DECODE_DYNAMIC_FLASH.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_pureview_mode() {
-        assert_eq!(decode_pureview_mode(0), "Off");
-        assert_eq!(decode_pureview_mode(1), "5MP Oversampled");
-        assert_eq!(decode_pureview_mode(4), "Lossless Zoom");
+        assert_eq!(DECODE_PUREVIEW_MODE.decode(0), "Off");
+        assert_eq!(DECODE_PUREVIEW_MODE.decode(1), "5MP Oversampled");
+        assert_eq!(DECODE_PUREVIEW_MODE.decode(4), "Lossless Zoom");
+        assert_eq!(DECODE_PUREVIEW_MODE.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_creative_effect() {
-        assert_eq!(decode_creative_effect(0), "None");
-        assert_eq!(decode_creative_effect(1), "Black & White");
-        assert_eq!(decode_creative_effect(4), "Vivid");
+        assert_eq!(DECODE_CREATIVE_EFFECT.decode(0), "None");
+        assert_eq!(DECODE_CREATIVE_EFFECT.decode(1), "Black & White");
+        assert_eq!(DECODE_CREATIVE_EFFECT.decode(4), "Vivid");
+        assert_eq!(DECODE_CREATIVE_EFFECT.decode(99), "Unknown (99)");
     }
 
     #[test]
     fn test_decode_lens_type() {
-        assert_eq!(decode_lens_type(0), "Built-in");
-        assert_eq!(decode_lens_type(1), "Wide Angle Attachment");
+        assert_eq!(DECODE_LENS_TYPE.decode(0), "Built-in");
+        assert_eq!(DECODE_LENS_TYPE.decode(1), "Wide Angle Attachment");
+        assert_eq!(DECODE_LENS_TYPE.decode(99), "Unknown (99)");
     }
 
     #[test]
