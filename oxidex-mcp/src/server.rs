@@ -83,14 +83,14 @@ pub async fn run_server() -> Result<()> {
     while let Some(line) = lines.next_line().await? {
         let request: JsonRpcRequest = serde_json::from_str(&line)?;
 
-        let response = match request.method.as_str() {
-            "initialize" => handle_initialize(request.id),
-            "tools/list" => handle_tools_list(request.id),
-            "tools/call" => handle_tool_call(request.id, request.params).await?,
-            _ => create_error_response(request.id, -32601, "Method not found"),
+        let response_json = match request.method.as_str() {
+            "initialize" => serde_json::to_string(&handle_initialize(request.id))?,
+            "tools/list" => serde_json::to_string(&handle_tools_list(request.id))?,
+            "tools/call" => serde_json::to_string(&handle_tool_call(request.id, request.params).await?)?,
+            _ => serde_json::to_string(&create_error_response(request.id, -32601, "Method not found"))?,
         };
 
-        println!("{}", serde_json::to_string(&response)?);
+        println!("{}", response_json);
     }
 
     Ok(())
@@ -124,7 +124,7 @@ fn handle_tools_list(id: u64) -> JsonRpcResponse {
 }
 
 async fn handle_tool_call(id: u64, params: Option<Value>) -> Result<JsonRpcResponse> {
-    let params: ToolCallParams = serde_json::from_value(
+    let _params: ToolCallParams = serde_json::from_value(
         params.ok_or_else(|| anyhow::anyhow!("Missing params"))?
     )?;
 
@@ -141,15 +141,14 @@ async fn handle_tool_call(id: u64, params: Option<Value>) -> Result<JsonRpcRespo
     })
 }
 
-fn create_error_response(id: u64, code: i32, message: &str) -> JsonRpcResponse {
-    JsonRpcResponse {
+fn create_error_response(id: u64, code: i32, message: &str) -> JsonRpcError {
+    JsonRpcError {
         jsonrpc: "2.0".to_string(),
         id,
-        result: serde_json::json!({
-            "error": {
-                "code": code,
-                "message": message
-            }
-        }),
+        error: ErrorObject {
+            code,
+            message: message.to_string(),
+            data: None,
+        },
     }
 }
