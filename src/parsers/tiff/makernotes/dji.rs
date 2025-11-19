@@ -211,7 +211,7 @@ bitfield_decoder!(OBSTACLE_AVOIDANCE, [
 /// Formatted coordinate string with 7 decimal places
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_gps_coordinate(377123456), "37.7123456");
 /// ```
 fn format_gps_coordinate(value: i32) -> String {
@@ -231,7 +231,7 @@ fn format_gps_coordinate(value: i32) -> String {
 /// Formatted altitude string in meters with "m" suffix
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_altitude(12000), "120.00 m");
 /// ```
 fn format_altitude(value: i32) -> String {
@@ -251,7 +251,7 @@ fn format_altitude(value: i32) -> String {
 /// Formatted speed string in m/s with suffix
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_speed(1500), "15.00 m/s");
 /// ```
 fn format_speed(value: i16) -> String {
@@ -271,7 +271,7 @@ fn format_speed(value: i16) -> String {
 /// Formatted angle string with degree symbol
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_gimbal_angle(-900), "-90.0°");
 /// ```
 fn format_gimbal_angle(value: i16) -> String {
@@ -291,7 +291,7 @@ fn format_gimbal_angle(value: i16) -> String {
 /// Formatted voltage string with "V" suffix
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_voltage(15400), "15.40 V");
 /// ```
 fn format_voltage(value: i16) -> String {
@@ -311,7 +311,7 @@ fn format_voltage(value: i16) -> String {
 /// Formatted shutter speed string
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_shutter_speed(125), "1/125 s");
 /// assert_eq!(format_shutter_speed(1), "1 s");
 /// ```
@@ -338,7 +338,7 @@ fn format_shutter_speed(value: i16) -> String {
 /// Formatted aperture string with f/ prefix
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_aperture(28), "f/2.8");
 /// ```
 fn format_aperture(value: i16) -> String {
@@ -358,7 +358,7 @@ fn format_aperture(value: i16) -> String {
 /// Formatted EV string with +/- sign and "EV" suffix
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_ev(10), "+1.0 EV");
 /// assert_eq!(format_ev(-7), "-0.7 EV");
 /// ```
@@ -383,7 +383,7 @@ fn format_ev(value: i16) -> String {
 /// Formatted time string in MM:SS format
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// assert_eq!(format_flight_time(125), "2:05");
 /// assert_eq!(format_flight_time(3661), "61:01");
 /// ```

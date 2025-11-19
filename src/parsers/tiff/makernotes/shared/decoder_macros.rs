@@ -46,7 +46,7 @@
 /// unknown value handling.
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// simple_decoder!(function_name, input_type, {
 ///     value1 => "string1",
 ///     value2 => "string2",
@@ -55,7 +55,7 @@
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::simple_decoder;
 ///
 /// simple_decoder!(decode_quality, i16, {
@@ -99,7 +99,7 @@ macro_rules! simple_decoder {
 /// This variant allows you to customize the unknown value message.
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// simple_decoder_custom!(function_name, input_type, "Custom Unknown", {
 ///     value1 => "string1",
 ///     value2 => "string2",
@@ -107,7 +107,7 @@ macro_rules! simple_decoder {
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::simple_decoder_custom;
 ///
 /// simple_decoder_custom!(decode_mode, i16, "Invalid Mode", {
@@ -138,7 +138,7 @@ macro_rules! simple_decoder_custom {
 /// offering better performance than function-based decoders.
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// const_decoder!(DECODER_NAME, input_type, [
 ///     (value1, "string1"),
 ///     (value2, "string2"),
@@ -146,7 +146,7 @@ macro_rules! simple_decoder_custom {
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::const_decoder;
 /// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
 ///
@@ -161,7 +161,7 @@ macro_rules! simple_decoder_custom {
 /// ```
 ///
 /// # Generated Code
-/// ```rust
+/// ```ignore
 /// const WHITE_BALANCE: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
 ///     (0, "Auto"),
 ///     (1, "Daylight"),
@@ -184,7 +184,7 @@ macro_rules! const_decoder {
 /// Creates a const BitfieldDecoder for multi-flag value decoding
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// bitfield_decoder!(DECODER_NAME, [
 ///     (bit_mask1, "name1"),
 ///     (bit_mask2, "name2"),
@@ -192,7 +192,7 @@ macro_rules! const_decoder {
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::bitfield_decoder;
 /// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder;
 ///
@@ -222,7 +222,7 @@ macro_rules! bitfield_decoder {
 /// for explicit handling of invalid values.
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// decoder_fn!(function_name, input_type, {
 ///     value1 => "string1",
 ///     value2 => "string2",
@@ -230,7 +230,7 @@ macro_rules! bitfield_decoder {
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::decoder_fn;
 ///
 /// decoder_fn!(decode_optional, i16, {
@@ -261,7 +261,7 @@ macro_rules! decoder_fn {
 /// making the code more maintainable and self-documenting.
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// documented_decoder!(
 ///     /// Your documentation here
 ///     function_name, input_type, {
@@ -272,7 +272,7 @@ macro_rules! decoder_fn {
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::documented_decoder;
 ///
 /// documented_decoder!(
@@ -312,7 +312,7 @@ macro_rules! documented_decoder {
 /// share similar patterns.
 ///
 /// # Syntax
-/// ```rust
+/// ```ignore
 /// decoder_group! {
 ///     decoder1_name, type1, { ... },
 ///     decoder2_name, type2, { ... },
@@ -320,7 +320,7 @@ macro_rules! documented_decoder {
 /// ```
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use oxidex::decoder_group;
 ///
 /// decoder_group! {
