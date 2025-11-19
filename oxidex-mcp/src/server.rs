@@ -126,7 +126,8 @@ fn handle_initialize(id: u64) -> JsonRpcResponse {
             "serverInfo": {
                 "name": "oxidex-mcp",
                 "version": "0.1.0"
-            }
+            },
+            "instructions": "Use this server to extract, analyze, search, and manage EXIF and metadata from image files. Supports glob patterns for batch operations."
         }),
     }
 }
