@@ -606,11 +606,9 @@ static DJI_TAGS: Lazy<TagRegistry> = Lazy::new(|| {
 /// Extracted i32 value or None if extraction fails
 fn extract_i32(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<i32> {
     // For LONG/SLONG types with count=1, value might be inline
-    if entry.value_count == 1 {
-        if entry.field_type == 4 || entry.field_type == 9 {
-            // LONG (4) or SLONG (9) - value is inline in value_offset field
-            return Some(entry.value_offset as i32);
-        }
+    if entry.value_count == 1 && (entry.field_type == 4 || entry.field_type == 9) {
+        // LONG (4) or SLONG (9) - value is inline in value_offset field
+        return Some(entry.value_offset as i32);
     }
 
     // Read from offset in data buffer

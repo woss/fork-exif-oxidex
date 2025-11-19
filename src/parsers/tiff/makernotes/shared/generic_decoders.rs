@@ -55,7 +55,7 @@ use std::hash::Hash;
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
 ///
 /// const QUALITY: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
 ///     (1, "Low"),
@@ -135,7 +135,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::DynamicValueDecoder;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::DynamicValueDecoder;
 /// use std::collections::HashMap;
 ///
 /// let mut mappings = HashMap::new();
@@ -176,7 +176,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder;
 ///
 /// const FEATURES: BitfieldDecoder = BitfieldDecoder::new(&[
 ///     (0x01, "HDR"),
@@ -233,7 +233,7 @@ impl BitfieldDecoder {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::RangeDecoder;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::RangeDecoder;
 ///
 /// const BRIGHTNESS: RangeDecoder<i16> = RangeDecoder::new(&[
 ///     (0..30, "Dark"),
@@ -288,7 +288,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::ON_OFF;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::ON_OFF;
 ///
 /// assert_eq!(ON_OFF.decode(0), "Off");
 /// assert_eq!(ON_OFF.decode(1), "On");
@@ -299,7 +299,7 @@ pub const ON_OFF: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[(0, "Off")
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::YES_NO;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::YES_NO;
 ///
 /// assert_eq!(YES_NO.decode(0), "No");
 /// assert_eq!(YES_NO.decode(1), "Yes");
@@ -310,7 +310,7 @@ pub const YES_NO: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[(0, "No"),
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::ENABLED_DISABLED;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::ENABLED_DISABLED;
 ///
 /// assert_eq!(ENABLED_DISABLED.decode(0), "Disabled");
 /// assert_eq!(ENABLED_DISABLED.decode(1), "Enabled");
@@ -322,7 +322,7 @@ pub const ENABLED_DISABLED: SimpleValueDecoder<i16> =
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::AUTO_MANUAL;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::AUTO_MANUAL;
 ///
 /// assert_eq!(AUTO_MANUAL.decode(0), "Auto");
 /// assert_eq!(AUTO_MANUAL.decode(1), "Manual");
@@ -334,7 +334,7 @@ pub const AUTO_MANUAL: SimpleValueDecoder<i16> =
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::QUALITY_LMH;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::QUALITY_LMH;
 ///
 /// assert_eq!(QUALITY_LMH.decode(1), "Low");
 /// assert_eq!(QUALITY_LMH.decode(2), "Medium");
@@ -347,7 +347,7 @@ pub const QUALITY_LMH: SimpleValueDecoder<i16> =
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::QUALITY_NORMAL_FINE;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::QUALITY_NORMAL_FINE;
 ///
 /// assert_eq!(QUALITY_NORMAL_FINE.decode(0), "Normal");
 /// assert_eq!(QUALITY_NORMAL_FINE.decode(1), "Fine");
@@ -370,7 +370,7 @@ pub const QUALITY_NORMAL_FINE: SimpleValueDecoder<i16> =
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::format_unknown;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::format_unknown;
 ///
 /// assert_eq!(format_unknown(42), "Unknown (42)");
 /// ```
@@ -389,7 +389,7 @@ pub fn format_unknown<T: Display>(value: T) -> String {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::format_unknown_with_prefix;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::format_unknown_with_prefix;
 ///
 /// assert_eq!(
 ///     format_unknown_with_prefix("Unknown Mode", 5),
@@ -410,7 +410,7 @@ pub fn format_unknown_with_prefix<T: Display>(prefix: &str, value: T) -> String 
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::format_hex;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::format_hex;
 ///
 /// assert_eq!(format_hex(255u8), "0xFF");
 /// ```

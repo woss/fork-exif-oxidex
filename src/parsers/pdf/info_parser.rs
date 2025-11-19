@@ -83,11 +83,8 @@ pub fn parse_info_dict(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Find and parse the Info dictionary
     let info_ref = find_dict_reference(&context.xref_data, "/Info")?;
     let info_offset = context.get_object_offset(info_ref.object_num, "Info")?;
-    let info_data = reader.read(
-        info_offset,
-        std::cmp::min(4096, reader.size().saturating_sub(info_offset) as usize),
-    )?;
-    let info_dict = parse_info_object(&info_data)?;
+    let info_data = reader.read(info_offset, std::cmp::min(4096, reader.size().saturating_sub(info_offset) as usize))?;
+    let info_dict = parse_info_object(info_data)?;
 
     // Convert dictionary to metadata map with proper formatting
     let mut metadata = convert_info_dict_to_metadata(info_dict);
@@ -133,14 +130,14 @@ impl PdfContext {
         let tail_data = reader.read(tail_offset, tail_size)?;
 
         // Find startxref and get xref offset
-        let xref_offset = find_xref_offset(&tail_data)?;
+        let xref_offset = find_xref_offset(tail_data)?;
 
         // Read xref table and trailer region (up to 8KB should be enough)
         let xref_size = std::cmp::min(8192, file_size.saturating_sub(xref_offset) as usize);
         let xref_data = reader.read(xref_offset, xref_size)?;
 
         // Parse xref table to build object offset map
-        let xref_map = parse_xref_table(&xref_data)?;
+        let xref_map = parse_xref_table(xref_data)?;
 
         Ok(PdfContext {
             xref_data: xref_data.to_vec(),
@@ -346,7 +343,7 @@ fn navigate_to_pages_object(reader: &dyn FileReader, context: &PdfContext) -> Re
     let root_data = reader.read(root_offset, root_size)?;
 
     // Find /Pages reference in Root object
-    let pages_ref = find_dict_reference(&root_data, "/Pages")?;
+    let pages_ref = find_dict_reference(root_data, "/Pages")?;
     let pages_offset = context.get_object_offset(pages_ref.object_num, "Pages")?;
 
     // Read Pages object
@@ -665,9 +662,8 @@ fn parse_string_literal(input: &[u8]) -> IResult<&[u8], String> {
 
 /// Extracts content from a parenthesized string, handling escapes and nesting.
 /// Returns (content_bytes, closing_paren_position)
-fn extract_parenthesized_content(
-    input: &[u8],
-) -> std::result::Result<(Vec<u8>, usize), nom::Err<nom::error::Error<&[u8]>>> {
+#[allow(clippy::type_complexity)]
+fn extract_parenthesized_content(input: &[u8]) -> std::result::Result<(Vec<u8>, usize), nom::Err<nom::error::Error<&[u8]>>> {
     let mut content = Vec::new();
     let mut i = 0;
     let mut depth = 1; // Track nested parentheses

@@ -56,7 +56,7 @@
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::simple_decoder;
+/// use oxidex::simple_decoder;
 ///
 /// simple_decoder!(decode_quality, i16, {
 ///     1 => "Low",
@@ -108,7 +108,7 @@ macro_rules! simple_decoder {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::simple_decoder_custom;
+/// use oxidex::simple_decoder_custom;
 ///
 /// simple_decoder_custom!(decode_mode, i16, "Invalid Mode", {
 ///     0 => "Normal",
@@ -147,8 +147,8 @@ macro_rules! simple_decoder_custom {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::const_decoder;
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
+/// use oxidex::const_decoder;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
 ///
 /// const_decoder!(WHITE_BALANCE, i16, [
 ///     (0, "Auto"),
@@ -193,8 +193,8 @@ macro_rules! const_decoder {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::bitfield_decoder;
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder;
+/// use oxidex::bitfield_decoder;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder;
 ///
 /// bitfield_decoder!(CAMERA_FEATURES, [
 ///     (0x01, "HDR"),
@@ -231,7 +231,7 @@ macro_rules! bitfield_decoder {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::decoder_fn;
+/// use oxidex::decoder_fn;
 ///
 /// decoder_fn!(decode_optional, i16, {
 ///     0 => "Zero",
@@ -273,7 +273,7 @@ macro_rules! decoder_fn {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::documented_decoder;
+/// use oxidex::documented_decoder;
 ///
 /// documented_decoder!(
 ///     /// Decodes the camera's shooting mode
@@ -321,7 +321,7 @@ macro_rules! documented_decoder {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::decoder_group;
+/// use oxidex::decoder_group;
 ///
 /// decoder_group! {
 ///     decode_on_off, i16, {
