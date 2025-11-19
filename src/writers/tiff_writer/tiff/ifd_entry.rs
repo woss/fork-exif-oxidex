@@ -172,12 +172,7 @@ fn convert_integer_to_entry(
             ByteOrder::BigEndian => value_u16.to_be_bytes().to_vec(),
         };
 
-        Ok(Some(IfdEntryData::new(
-            tag_id,
-            ExifType::Short,
-            1,
-            bytes,
-        )))
+        Ok(Some(IfdEntryData::new(tag_id, ExifType::Short, 1, bytes)))
     } else if value >= 0 && value <= u32::MAX as i64 {
         // Fits in u32 - use Long
         let value_u32 = value as u32;
@@ -240,10 +235,16 @@ mod tests {
 
     #[test]
     fn test_entry_is_inline() {
-        let entry_inline = IfdEntryData::new(0x0110, ExifType::Ascii, 4, vec![0x41, 0x42, 0x43, 0x00]);
+        let entry_inline =
+            IfdEntryData::new(0x0110, ExifType::Ascii, 4, vec![0x41, 0x42, 0x43, 0x00]);
         assert!(entry_inline.is_inline());
 
-        let entry_offset = IfdEntryData::new(0x010F, ExifType::Ascii, 6, vec![0x41, 0x42, 0x43, 0x44, 0x45, 0x00]);
+        let entry_offset = IfdEntryData::new(
+            0x010F,
+            ExifType::Ascii,
+            6,
+            vec![0x41, 0x42, 0x43, 0x44, 0x45, 0x00],
+        );
         assert!(!entry_offset.is_inline());
     }
 

@@ -55,9 +55,8 @@ pub fn validate_tag_for_tiff(tag_name: &str) -> Result<u16> {
     }
 
     // Look up tag in registry
-    let tag_descriptor = tag_registry::get_tag_descriptor(tag_name).ok_or_else(|| {
-        ExifToolError::unsupported_format(format!("Unknown tag: {}", tag_name))
-    })?;
+    let tag_descriptor = tag_registry::get_tag_descriptor(tag_name)
+        .ok_or_else(|| ExifToolError::unsupported_format(format!("Unknown tag: {}", tag_name)))?;
 
     // Extract numeric tag ID
     match &tag_descriptor.tag_id {
@@ -108,9 +107,7 @@ pub fn filter_tiff_writable_tags(metadata: &MetadataMap) -> MetadataMap {
 /// # Returns
 ///
 /// Tuple of (ifd0_metadata, exif_ifd_metadata, gps_ifd_metadata)
-pub fn separate_by_ifd(
-    metadata: &MetadataMap,
-) -> (MetadataMap, MetadataMap, MetadataMap) {
+pub fn separate_by_ifd(metadata: &MetadataMap) -> (MetadataMap, MetadataMap, MetadataMap) {
     let mut ifd0_metadata = MetadataMap::new();
     let mut exif_ifd_metadata = MetadataMap::new();
     let mut gps_ifd_metadata = MetadataMap::new();

@@ -149,11 +149,7 @@ impl TiffBuilder {
     /// 2. Calculate where sub-IFDs will be located
     /// 3. Rebuild IFD0 with correct pointer offsets
     /// 4. Build sub-IFDs
-    fn build_with_sub_ifds(
-        &self,
-        has_exif_ifd: bool,
-        has_gps_ifd: bool,
-    ) -> Result<BuildResult> {
+    fn build_with_sub_ifds(&self, has_exif_ifd: bool, has_gps_ifd: bool) -> Result<BuildResult> {
         let ifd0_start = 8u64;
 
         // First pass: build IFD0 with placeholder pointers to determine size
@@ -227,7 +223,11 @@ impl TiffBuilder {
     }
 
     /// Creates placeholder pointer entries (with offset 0).
-    fn create_placeholder_pointers(&self, has_exif_ifd: bool, has_gps_ifd: bool) -> Vec<(u16, u32)> {
+    fn create_placeholder_pointers(
+        &self,
+        has_exif_ifd: bool,
+        has_gps_ifd: bool,
+    ) -> Vec<(u16, u32)> {
         let mut pointers = Vec::new();
         if has_exif_ifd {
             pointers.push((EXIF_IFD_POINTER, 0));
