@@ -37,7 +37,7 @@
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::shared::array_extractors::extract_i16_array;
+use super::shared::array_extractors::{extract_i16_array, extract_string};
 use super::shared::generic_decoders::{BitfieldDecoder, SimpleValueDecoder, YES_NO};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
@@ -277,50 +277,6 @@ fn decode_layer_effects(value: i16) -> String {
     LAYER_EFFECTS.decode(value as u32)
 }
 
-/// Extracts an ASCII string from IFD entry
-///
-/// Handles both inline strings (4 bytes or less) and offset-based strings.
-/// Strips null terminators and validates UTF-8 encoding.
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the string data
-/// * `data` - Raw MakerNote data buffer
-///
-/// # Returns
-/// Extracted string or None if extraction fails or string is empty
-fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
-    // Only handle ASCII/string field type (2)
-    if entry.field_type != 2 {
-        return None;
-    }
-
-    let offset = entry.value_offset as usize;
-    let count = entry.value_count as usize;
-
-    // Handle inline strings (4 bytes or less stored directly in value_offset field)
-    if count <= 4 {
-        let bytes = entry.value_offset.to_le_bytes();
-        let s = String::from_utf8_lossy(&bytes[..count.min(4)])
-            .trim_end_matches('\0')
-            .to_string();
-        return if s.is_empty() { None } else { Some(s) };
-    }
-
-    // Handle offset-based strings
-    if offset + count > data.len() {
-        return None;
-    }
-
-    let s = String::from_utf8_lossy(&data[offset..offset + count])
-        .trim_end_matches('\0')
-        .to_string();
-
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
-}
 
 // ============================================================================
 // Tag Registry
@@ -559,49 +515,49 @@ impl PhotoshopParser {
         // Handle string-based tags (not in registry)
         match tag {
             PS_VERSION => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:Version".to_string(), s);
                 }
                 return;
             }
             PS_LAYER_NAMES => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:LayerNames".to_string(), s);
                 }
                 return;
             }
             PS_ADJUSTMENT_TYPES => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:AdjustmentTypes".to_string(), s);
                 }
                 return;
             }
             PS_FILTER_NAMES => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:FiltersApplied".to_string(), s);
                 }
                 return;
             }
             PS_ACTIVE_LAYER_COMP => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:ActiveLayerComp".to_string(), s);
                 }
                 return;
             }
             PS_COLOR_PROFILE => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:ColorProfile".to_string(), s);
                 }
                 return;
             }
             PS_PROOF_SETUP => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:ProofSetup".to_string(), s);
                 }
                 return;
             }
             PS_WORKING_COLOR_SPACE => {
-                if let Some(s) = extract_string(entry, data) {
+                if let Some(s) = extract_string(entry, data, byte_order) {
                     tags.insert("Photoshop:WorkingColorSpace".to_string(), s);
                 }
                 return;

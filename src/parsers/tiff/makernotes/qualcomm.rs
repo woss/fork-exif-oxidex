@@ -27,7 +27,7 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use super::shared::array_extractors::extract_i16_array;
+use super::shared::array_extractors::{extract_i16_array, extract_i16_value, extract_u32_value};
 use super::shared::generic_decoders::{SimpleValueDecoder, ON_OFF};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
@@ -237,55 +237,6 @@ static QUALCOMM_TAGS: LazyLock<TagRegistry> = LazyLock::new(|| {
         // Frame merge count (raw numeric value)
         .register_raw(QUALCOMM_FRAME_MERGE_COUNT, "FrameMergeCount")
 });
-
-/// Extracts a 16-bit signed value from IFD entry
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the value
-/// * `_data` - Full MakerNote data buffer (unused for inline values)
-/// * `byte_order` - Byte order for parsing multi-byte values
-///
-/// # Returns
-/// Extracted value or None if invalid
-///
-/// # Implementation Notes
-/// For SHORT type with count=1, the value is stored inline in the value_offset field.
-/// The byte order determines which 16 bits of the 32-bit value_offset to use.
-fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<i16> {
-    if entry.value_count != 1 {
-        return None;
-    }
-
-    // For SHORT type (count=1), value is inline in value_offset field
-    // Little endian: use lower 16 bits
-    // Big endian: use upper 16 bits
-    let value = match byte_order {
-        ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as i16,
-        ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as i16,
-    };
-
-    Some(value)
-}
-
-/// Extracts a 32-bit unsigned value from IFD entry
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the value
-/// * `_data` - Full MakerNote data buffer (unused for inline values)
-/// * `_byte_order` - Byte order (unused as value_offset is already parsed)
-///
-/// # Returns
-/// Extracted value or None if invalid
-///
-/// # Implementation Notes
-/// For LONG type with count=1, the entire value_offset field is the value.
-fn extract_u32_value(entry: &IfdEntry, _data: &[u8], _byte_order: ByteOrder) -> Option<u32> {
-    if entry.value_count != 1 {
-        return None;
-    }
-
-    Some(entry.value_offset)
-}
 
 /// Qualcomm MakerNote parser implementation
 pub struct QualcommParser;

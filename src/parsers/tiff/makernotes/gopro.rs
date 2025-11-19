@@ -40,7 +40,7 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 use once_cell::sync::Lazy;
 
-use super::shared::array_extractors::extract_i16_array;
+use super::shared::array_extractors::{extract_i16_array, extract_string};
 use super::shared::generic_decoders::{ON_OFF, YES_NO};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
@@ -451,54 +451,6 @@ fn decode_yes_no(value: i16) -> String {
     YES_NO.decode(if value != 0 { 1 } else { 0 })
 }
 
-// ============================================================================
-// String Extraction Helper
-// ============================================================================
-
-/// Extracts an ASCII string from IFD entry
-///
-/// Handles both inline strings (count <= 4, stored in value_offset) and
-/// external strings (offset points to data buffer).
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the string
-/// * `data` - Raw MakerNote data
-///
-/// # Returns
-/// Extracted string or None if extraction fails or string is empty
-fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
-    if entry.field_type != 2 {
-        return None;
-    }
-
-    let offset = entry.value_offset as usize;
-    let count = entry.value_count as usize;
-
-    if count <= 4 {
-        // Inline string - stored in value_offset bytes
-        let bytes = entry.value_offset.to_le_bytes();
-        let s = String::from_utf8_lossy(&bytes[..count.min(4)])
-            .trim_end_matches('\0')
-            .to_string();
-        return if s.is_empty() { None } else { Some(s) };
-    }
-
-    // External string - offset points to data
-    if offset + count > data.len() {
-        return None;
-    }
-
-    let s = String::from_utf8_lossy(&data[offset..offset + count])
-        .trim_end_matches('\0')
-        .to_string();
-
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
-}
-
 /// GoPro MakerNote parser implementing the MakerNoteParser trait
 #[derive(Default)]
 pub struct GoProParser;
@@ -612,7 +564,7 @@ impl MakerNoteParser for GoProParser {
             // Extract value based on tag type
             // String tags - firmware version, model, serial, lens
             if matches!(tag, GOPRO_VERSION | GOPRO_MODEL | GOPRO_SERIAL | GOPRO_LENS_MODEL) {
-                if let Some(s) = extract_string(&entry, parse_data) {
+                if let Some(s) = extract_string(&entry, parse_data, byte_order) {
                     let tag_name = match tag {
                         GOPRO_VERSION => "Version",
                         GOPRO_MODEL => "Model",

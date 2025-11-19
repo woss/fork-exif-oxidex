@@ -32,7 +32,7 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 use once_cell::sync::Lazy;
 
-use super::shared::array_extractors::extract_i16_array;
+use super::shared::array_extractors::{extract_i16_array, extract_i16_value, extract_u32_value, extract_string};
 use super::shared::generic_decoders::{SimpleValueDecoder, ON_OFF};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
@@ -186,114 +186,6 @@ static SAMSUNG_TAGS: Lazy<TagRegistry> = Lazy::new(|| {
         .register_i16(SAMSUNG_SUPER_STEADY, "SuperSteady", decode_binary_onoff)
         .register_i16(SAMSUNG_FOOD_MODE, "FoodMode", decode_binary_onoff)
 });
-
-// ============================================================================
-// Value Extraction Helpers
-// ============================================================================
-// These functions extract values from IFD entries based on their type and
-// byte order. They handle inline vs. offset-based storage automatically.
-
-/// Extracts a 16-bit signed value from IFD entry
-///
-/// For SHORT type with count=1, the value is stored inline in the value_offset
-/// field. This function handles byte order correctly.
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the value
-/// * `_data` - Full MakerNote data buffer (unused for inline values)
-/// * `byte_order` - Byte order for parsing
-///
-/// # Returns
-/// Extracted value or None if count != 1
-fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<i16> {
-    if entry.value_count != 1 {
-        return None;
-    }
-
-    // For SHORT type (count=1), value is inline in value_offset field
-    let value = match byte_order {
-        ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as i16,
-        ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as i16,
-    };
-
-    Some(value)
-}
-
-/// Extracts a 32-bit unsigned value from IFD entry
-///
-/// For LONG type with count=1, the value is stored directly in value_offset.
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the value
-/// * `_data` - Full MakerNote data buffer (unused for inline values)
-/// * `_byte_order` - Byte order (unused for u32, already parsed)
-///
-/// # Returns
-/// Extracted value or None if count != 1
-fn extract_u32_value(entry: &IfdEntry, _data: &[u8], _byte_order: ByteOrder) -> Option<u32> {
-    if entry.value_count != 1 {
-        return None;
-    }
-
-    Some(entry.value_offset)
-}
-
-/// Extracts an ASCII string from IFD entry
-///
-/// Handles both inline strings (count <= 4) and offset-based strings.
-/// Inline strings are stored in the value_offset field with byte order handling.
-/// External strings use value_offset as a pointer to the data buffer.
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the string
-/// * `data` - Full MakerNote data buffer
-/// * `byte_order` - Byte order for parsing inline strings
-///
-/// # Returns
-/// Extracted string or None if invalid/empty
-fn extract_string(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<String> {
-    if entry.value_count == 0 {
-        return None;
-    }
-
-    let value_bytes = if entry.value_count <= 4 {
-        // Inline string (stored in value_offset field)
-        let mut bytes = Vec::new();
-        for i in 0..entry.value_count as usize {
-            let byte = match byte_order {
-                ByteOrder::LittleEndian => ((entry.value_offset >> (i * 8)) & 0xFF) as u8,
-                ByteOrder::BigEndian => ((entry.value_offset >> (24 - i * 8)) & 0xFF) as u8,
-            };
-            if byte == 0 {
-                break;
-            }
-            bytes.push(byte);
-        }
-        bytes
-    } else {
-        // External string (offset points to data)
-        let offset = entry.value_offset as usize;
-        if offset >= data.len() {
-            return None;
-        }
-        let end = std::cmp::min(offset + entry.value_count as usize, data.len());
-        data[offset..end].to_vec()
-    };
-
-    if value_bytes.is_empty() {
-        return None;
-    }
-
-    let string = String::from_utf8_lossy(&value_bytes)
-        .trim_end_matches('\0')
-        .to_string();
-
-    if string.is_empty() {
-        None
-    } else {
-        Some(string)
-    }
-}
 
 /// Samsung MakerNote parser implementation
 pub struct SamsungParser;

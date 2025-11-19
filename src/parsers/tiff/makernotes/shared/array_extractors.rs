@@ -161,6 +161,153 @@ pub fn extract_i32_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
     Some(array)
 }
 
+/// Extract single i16 value from IFD entry
+///
+/// For SHORT type with count=1, value is stored inline in value_offset field.
+/// Used by: Most single-value enum tags
+///
+/// # Parameters
+/// - `entry`: IFD entry containing the value
+/// - `_data`: Data buffer (unused for inline values)
+/// - `byte_order`: Byte order for parsing
+///
+/// # Returns
+/// Single i16 value, or None if count != 1
+pub fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<i16> {
+    if entry.value_count != 1 {
+        return None;
+    }
+
+    // For SHORT type (count=1), value is inline in value_offset field
+    let value = match byte_order {
+        ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as i16,
+        ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as i16,
+    };
+
+    Some(value)
+}
+
+/// Extract single u32 value from IFD entry
+///
+/// For LONG type with count=1, value is stored directly in value_offset.
+/// Used by: Timestamps, file sizes, offsets
+///
+/// # Parameters
+/// - `entry`: IFD entry containing the value
+/// - `_data`: Data buffer (unused for inline values)
+/// - `_byte_order`: Byte order (unused, u32 already parsed)
+///
+/// # Returns
+/// Single u32 value, or None if count != 1
+pub fn extract_u32_value(entry: &IfdEntry, _data: &[u8], _byte_order: ByteOrder) -> Option<u32> {
+    if entry.value_count != 1 {
+        return None;
+    }
+
+    Some(entry.value_offset)
+}
+
+/// Extract single i32 value from IFD entry
+///
+/// For SLONG type with count=1, value is stored directly in value_offset.
+/// Used by: GPS coordinates, signed offsets
+///
+/// # Parameters
+/// - `entry`: IFD entry containing the value
+/// - `data`: Data buffer for offset-based reads
+/// - `byte_order`: Byte order for parsing
+///
+/// # Returns
+/// Single i32 value, or None if count != 1
+pub fn extract_i32_value(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<i32> {
+    if entry.value_count != 1 {
+        return None;
+    }
+
+    // For SLONG with count=1, check if inline or offset-based
+    if entry.field_type == 9 {
+        // SLONG type - value is inline in value_offset
+        Some(entry.value_offset as i32)
+    } else {
+        // Offset-based - read from data buffer
+        let offset = entry.value_offset as usize;
+        if offset + 4 > data.len() {
+            return None;
+        }
+        let value = match byte_order {
+            ByteOrder::LittleEndian => i32::from_le_bytes([
+                data[offset],
+                data[offset + 1],
+                data[offset + 2],
+                data[offset + 3],
+            ]),
+            ByteOrder::BigEndian => i32::from_be_bytes([
+                data[offset],
+                data[offset + 1],
+                data[offset + 2],
+                data[offset + 3],
+            ]),
+        };
+        Some(value)
+    }
+}
+
+/// Extract ASCII string from IFD entry
+///
+/// Handles both inline strings (count ≤ 4) and offset-based strings.
+/// Used by: Make, Model, Software, Copyright tags
+///
+/// # Parameters
+/// - `entry`: IFD entry containing the string
+/// - `data`: Data buffer for offset-based reads
+/// - `byte_order`: Byte order for inline string parsing
+///
+/// # Returns
+/// Extracted string (trimmed of null bytes), or None if invalid/empty
+pub fn extract_string(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<String> {
+    if entry.value_count == 0 {
+        return None;
+    }
+
+    let value_bytes = if entry.value_count <= 4 {
+        // Inline string (stored in value_offset field)
+        let mut bytes = Vec::new();
+        for i in 0..entry.value_count as usize {
+            let byte = match byte_order {
+                ByteOrder::LittleEndian => ((entry.value_offset >> (i * 8)) & 0xFF) as u8,
+                ByteOrder::BigEndian => ((entry.value_offset >> (24 - i * 8)) & 0xFF) as u8,
+            };
+            if byte == 0 {
+                break;
+            }
+            bytes.push(byte);
+        }
+        bytes
+    } else {
+        // External string (offset points to data)
+        let offset = entry.value_offset as usize;
+        if offset >= data.len() {
+            return None;
+        }
+        let end = std::cmp::min(offset + entry.value_count as usize, data.len());
+        data[offset..end].to_vec()
+    };
+
+    if value_bytes.is_empty() {
+        return None;
+    }
+
+    let string = String::from_utf8_lossy(&value_bytes)
+        .trim_end_matches('\0')
+        .to_string();
+
+    if string.is_empty() {
+        None
+    } else {
+        Some(string)
+    }
+}
+
 /// Extract rational (u32/u32) array from IFD entry
 ///
 /// Used by: GPS coordinates, exposure times, focal lengths
