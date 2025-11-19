@@ -122,7 +122,7 @@ async fn test_initialize_handler_response() {
 fn test_tools_list_contains_all_tools() {
     let tools = oxidex_mcp::tools::list_tools();
 
-    assert_eq!(tools.len(), 5, "Should have exactly 5 tools");
+    assert_eq!(tools.len(), 9, "Should have exactly 9 tools");
 
     let tool_names: Vec<&str> = tools.iter().map(|t| t.name.as_str()).collect();
     assert!(tool_names.contains(&"extract_metadata"));
@@ -130,6 +130,10 @@ fn test_tools_list_contains_all_tools() {
     assert!(tool_names.contains(&"search_metadata"));
     assert!(tool_names.contains(&"analyze_metadata"));
     assert!(tool_names.contains(&"copy_metadata"));
+    assert!(tool_names.contains(&"detect_format"));
+    assert!(tool_names.contains(&"list_tags"));
+    assert!(tool_names.contains(&"get_tag_info"));
+    assert!(tool_names.contains(&"list_tag_groups"));
 
     // Verify each tool has input schema
     for tool in tools {
