@@ -212,7 +212,7 @@ mv docs/plans/2025-11-[0-1][0-7]-*.md docs/plans/archived/2025-11/
 
 2. **contributing/index.md** (synthesize from):
    - docs/testing/integration_test_plan.md
-   - comparison_results/README.md
+   - docs/testing/comparison/README.md
    - General contributing guidelines
 
 3. **guide/migration.md** (create new):
@@ -340,10 +340,10 @@ mv docs/plans/2025-11-[0-1][0-7]-*.md docs/plans/archived/2025-11/
 - `docs/IMPLEMENTATION_ROADMAP.md` (active planning)
 - `docs/DEBUG_MODE_OOM_FIXES.md` (debugging notes)
 - `docs/testing/*.md` (test infrastructure)
-- `comparison_results/*.md` (test methodology)
+- `docs/testing/comparison/*.md` (test methodology)
 - `tests/integration/README.md` (test guide)
 - `tests/integration/KNOWN_DISCREPANCIES.md` (test reference)
-- `PACKAGING.md`, `FIXTURE_REMOVAL_ANALYSIS.md`, `REPO_CLEANUP_PLAN.md`
+- `docs/packaging/packaging-guide.md`, `docs/analysis/fixture-removal-analysis.md`, `docs/plans/archived/2025-11/repo-cleanup-plan.md`
 - `docs/analysis/exiftool-module-audit.md` (historical analysis)
 - `docs/plans/archived/` (historical plans)
 

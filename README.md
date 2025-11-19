@@ -36,7 +36,7 @@ This design ensures:
 
 ## Current Status
 
-🎉 **v1.0.0 Stable Release** - Production-ready metadata management tool
+🎉 **v1.2.1 Stable Release** - Production-ready metadata management tool
 
 ### Completed Features
 - ✅ 140+ format families with complete ExifTool parity
@@ -111,7 +111,7 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 - **CPU**: x86_64 (4 cores)
 - **Memory**: 8GB RAM
 - **Perl ExifTool**: version latest
-- **ExifTool-RS**: version 1.0.0
+- **OxiDex**: version 1.2.1
 
 ### Benchmark Results
 
@@ -160,7 +160,7 @@ cargo bench
 
 ## Installation
 
-OxiDex v1.0.0 is now production-ready! Install via cargo, package managers, or pre-built binaries.
+OxiDex v1.2.1 is now production-ready! Install via cargo, package managers, or pre-built binaries.
 
 ### From crates.io (Recommended)
 
@@ -197,7 +197,7 @@ Static binaries are available for all major platforms on the [GitHub Releases](h
 
 ```bash
 # Example: Install on Linux (x86_64)
-wget https://github.com/swack-tools/oxidex/releases/download/v1.0.0/oxidex-x86_64-linux-musl.tar.gz
+wget https://github.com/swack-tools/oxidex/releases/download/v1.2.1/oxidex-x86_64-linux-musl.tar.gz
 tar xzf oxidex-x86_64-linux-musl.tar.gz
 sudo mv oxidex /usr/local/bin/
 oxidex --version
@@ -565,7 +565,7 @@ See the [project documentation](docs/) for detailed architectural decisions, imp
 ---
 
 **Status**: Stable Release
-**Current Version**: 1.0.0
+**Current Version**: 1.2.1
 **License**: GPL-3.0
 **Documentation**: [User Guide](https://swack-tools.github.io/oxidex/) | [API Docs](https://docs.rs/oxidex)
 **Issues**: [GitHub Issues](https://github.com/swack-tools/oxidex/issues)

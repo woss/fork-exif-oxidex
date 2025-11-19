@@ -1,7 +1,7 @@
 # Implementation Roadmap - oxidex
 
 > **Last Updated:** November 19, 2025
-> **Current Version:** v1.1.0
+> **Current Version:** v1.2.1
 > **Overall Parity:** 62.5% tag group coverage (20/32 groups)
 
 ## Executive Summary
