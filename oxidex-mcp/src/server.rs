@@ -118,24 +118,25 @@ fn handle_tools_list(id: u64) -> JsonRpcResponse {
         jsonrpc: "2.0".to_string(),
         id,
         result: serde_json::json!({
-            "tools": []
+            "tools": crate::tools::list_tools()
         }),
     }
 }
 
 async fn handle_tool_call(id: u64, params: Option<Value>) -> Result<JsonRpcResponse> {
-    let _params: ToolCallParams = serde_json::from_value(
+    let params: ToolCallParams = serde_json::from_value(
         params.ok_or_else(|| anyhow::anyhow!("Missing params"))?
     )?;
 
-    // Tool dispatch will be added later
+    let result = crate::tools::dispatch_tool(&params.name, params.arguments).await?;
+
     Ok(JsonRpcResponse {
         jsonrpc: "2.0".to_string(),
         id,
         result: serde_json::json!({
             "content": [{
                 "type": "text",
-                "text": "Tool not implemented yet"
+                "text": result
             }]
         }),
     })
