@@ -39,6 +39,7 @@ use std::collections::HashMap;
 
 use super::shared::array_extractors::{extract_i16_array, extract_string};
 use super::shared::generic_decoders::{BitfieldDecoder, SimpleValueDecoder, YES_NO};
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 
@@ -402,91 +403,17 @@ impl MakerNoteParser for PhotoshopParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 8 {
-            return Err("Photoshop MakerNote data too short".to_string());
-        }
-
-        // Skip Photoshop signature if present
-        let start_offset = if data.starts_with(PHOTOSHOP_SIGNATURE) {
-            15
-        } else {
-            0
+        // Configure IFD parser with Photoshop-specific settings
+        let config = IfdParserConfig {
+            signature: Some(PHOTOSHOP_SIGNATURE),
+            signature_offset: 15,
+            max_entries: 500,
         };
-        let parse_data = &data[start_offset..];
 
-        if parse_data.len() < 2 {
-            return Ok(());
-        }
-
-        // Read number of IFD entries
-        let num_entries = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([parse_data[0], parse_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([parse_data[0], parse_data[1]]),
-        } as usize;
-
-        // Validate entry count (sanity check to avoid processing corrupted data)
-        if num_entries == 0 || num_entries > 500 {
-            return Ok(());
-        }
-
-        let mut offset = 2;
-        let entry_size = 12; // Standard IFD entry size
-
-        // Process each IFD entry
-        for _ in 0..num_entries {
-            if offset + entry_size > parse_data.len() {
-                break;
-            }
-
-            let entry_data = &parse_data[offset..offset + entry_size];
-
-            // Parse IFD entry fields based on byte order
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[0], entry_data[1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[0], entry_data[1]]),
-            };
-
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[2], entry_data[3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[2], entry_data[3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            // Extract and decode value based on tag type
-            self.process_tag(tag, &entry, parse_data, byte_order, tags);
-
-            offset += entry_size;
-        }
+        // Use shared IFD parser to eliminate boilerplate
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
+            self.process_tag(entry.tag_id, entry, parse_data, byte_order, tags);
+        })?;
 
         Ok(())
     }

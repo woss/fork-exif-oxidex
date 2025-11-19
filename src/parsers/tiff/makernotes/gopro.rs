@@ -42,6 +42,7 @@ use once_cell::sync::Lazy;
 
 use super::shared::array_extractors::{extract_i16_array, extract_string};
 use super::shared::generic_decoders::{ON_OFF, YES_NO};
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 
@@ -484,93 +485,30 @@ impl MakerNoteParser for GoProParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 8 {
-            return Err("GoPro MakerNote data too short".to_string());
-        }
-
-        // Skip GoPro signature if present
-        let start_offset = if data.starts_with(GOPRO_SIGNATURE) {
-            5
-        } else {
-            0
+        // Configure IFD parser for GoPro MakerNote format
+        // GoPro uses a 5-byte signature "GoPro" followed by standard IFD structure
+        let config = IfdParserConfig {
+            signature: Some(GOPRO_SIGNATURE),
+            signature_offset: 5,
+            max_entries: 200,
         };
-        let parse_data = &data[start_offset..];
 
-        if parse_data.len() < 2 {
-            return Ok(());
-        }
-
-        // Read number of entries
-        let num_entries = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([parse_data[0], parse_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([parse_data[0], parse_data[1]]),
-        } as usize;
-
-        if num_entries == 0 || num_entries > 200 {
-            return Ok(());
-        }
-
-        let mut offset = 2;
-        let entry_size = 12;
-
-        for _ in 0..num_entries {
-            if offset + entry_size > parse_data.len() {
-                break;
-            }
-
-            let entry_data = &parse_data[offset..offset + entry_size];
-
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[0], entry_data[1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[0], entry_data[1]]),
-            };
-
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[2], entry_data[3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[2], entry_data[3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
+        // Use shared IFD parser to eliminate 88 lines of boilerplate
+        // The callback processes each parsed IFD entry with tag-specific logic
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
             // Extract value based on tag type
             // String tags - firmware version, model, serial, lens
-            if matches!(tag, GOPRO_VERSION | GOPRO_MODEL | GOPRO_SERIAL | GOPRO_LENS_MODEL) {
-                if let Some(s) = extract_string(&entry, parse_data, byte_order) {
-                    let tag_name = match tag {
+            if matches!(
+                entry.tag_id,
+                GOPRO_VERSION | GOPRO_MODEL | GOPRO_SERIAL | GOPRO_LENS_MODEL
+            ) {
+                if let Some(s) = extract_string(entry, parse_data, byte_order) {
+                    let tag_name = match entry.tag_id {
                         GOPRO_VERSION => "Version",
                         GOPRO_MODEL => "Model",
                         GOPRO_SERIAL => "SerialNumber",
                         GOPRO_LENS_MODEL => "LensModel",
-                        _ => continue,
+                        _ => return,
                     };
                     tags.insert(format!("GoPro:{}", tag_name), s);
                 }
@@ -578,19 +516,17 @@ impl MakerNoteParser for GoProParser {
                 // Try to extract as i16 array - most GoPro tags use this type
                 // The registry automatically handles all tag decoding, eliminating
                 // the need for a large match statement (136% duplication reduction)
-                if let Some(array) = extract_i16_array(&entry, parse_data, byte_order) {
+                if let Some(array) = extract_i16_array(entry, parse_data, byte_order) {
                     if let Some(&val) = array.first() {
                         // Registry lookup: get tag name and decode value in one step
-                        if let Some(tag_name) = GOPRO_TAGS.get_tag_name(tag) {
-                            let formatted_value = GOPRO_TAGS.decode_i16(tag, val);
+                        if let Some(tag_name) = GOPRO_TAGS.get_tag_name(entry.tag_id) {
+                            let formatted_value = GOPRO_TAGS.decode_i16(entry.tag_id, val);
                             tags.insert(format!("GoPro:{}", tag_name), formatted_value);
                         }
                     }
                 }
             }
-
-            offset += entry_size;
-        }
+        })?;
 
         Ok(())
     }

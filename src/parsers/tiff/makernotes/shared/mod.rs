@@ -32,6 +32,8 @@ pub mod byte_utils;
 pub mod decoder_macros;
 /// Generic decoders for common MakerNote value patterns
 pub mod generic_decoders;
+/// Shared IFD parsing implementation to eliminate parse() duplication
+pub mod ifd_parser_base;
 /// Common trait definition for all MakerNotes parsers
 pub mod makernote_parser;
 /// Tag registry system for organizing and managing MakerNote tags

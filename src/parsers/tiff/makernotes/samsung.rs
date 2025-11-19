@@ -34,6 +34,7 @@ use once_cell::sync::Lazy;
 
 use super::shared::array_extractors::{extract_i16_array, extract_i16_value, extract_u32_value, extract_string};
 use super::shared::generic_decoders::{SimpleValueDecoder, ON_OFF};
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 
@@ -248,97 +249,19 @@ impl MakerNoteParser for SamsungParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 8 {
-            return Err("Samsung MakerNote data too short".to_string());
-        }
-
-        // Samsung MakerNotes may start with "Samsung" signature
-        let ifd_offset = if data.len() >= 7 && &data[0..7] == SAMSUNG_SIGNATURE {
-            // Skip signature and padding (usually 8 bytes total)
-            8
-        } else {
-            // Assume IFD starts immediately
-            0
+        // Configure IFD parser with Samsung-specific settings
+        // Samsung signature is 7 bytes ("Samsung"), followed by 1 padding byte
+        let config = IfdParserConfig {
+            signature: Some(SAMSUNG_SIGNATURE),
+            signature_offset: 8, // Skip "Samsung" + padding byte to reach IFD
+            max_entries: 500,
         };
 
-        if ifd_offset + 2 > data.len() {
-            return Err("Invalid IFD offset".to_string());
-        }
-
-        // Read number of IFD entries
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-        };
-
-        if entry_count == 0 || entry_count > 500 {
-            return Err(format!(
-                "Invalid entry count: {} (expected 1-500)",
-                entry_count
-            ));
-        }
-
-        // Parse each IFD entry
-        let entry_size = 12; // Standard IFD entry size
-        let mut offset = ifd_offset + 2;
-
-        for _ in 0..entry_count {
-            if offset + entry_size > data.len() {
-                break;
-            }
-
-            // Parse IFD entry manually
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset], data[offset + 1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset], data[offset + 1]]),
-            };
-
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset + 2], data[offset + 3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset + 2], data[offset + 3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            self.parse_entry(&entry, data, byte_order, tags);
-
-            offset += entry_size;
-        }
+        // Use shared IFD parser to eliminate ~113 lines of boilerplate
+        // The callback receives parse_data (after skipping signature) and processes each entry
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
+            self.parse_entry(entry, parse_data, byte_order, tags);
+        })?;
 
         Ok(())
     }
