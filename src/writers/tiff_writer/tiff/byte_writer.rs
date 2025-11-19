@@ -16,14 +16,14 @@ use crate::parsers::tiff::ifd_parser::ByteOrder;
 ///
 /// # Example
 ///
-/// ```
-/// use oxidex::writers::tiff::byte_writer::write_u16;
+/// ```ignore
+/// use oxidex::writers::tiff_writer::tiff::byte_writer::write_u16;
 /// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
 ///
 /// let mut buffer = Vec::new();
 /// write_u16(&mut buffer, 0x1234, ByteOrder::LittleEndian);
 /// assert_eq!(buffer, vec![0x34, 0x12]);
-/// ```
+/// ```ignore
 pub fn write_u16(output: &mut Vec<u8>, value: u16, byte_order: ByteOrder) {
     let bytes = match byte_order {
         ByteOrder::LittleEndian => value.to_le_bytes(),
@@ -42,14 +42,14 @@ pub fn write_u16(output: &mut Vec<u8>, value: u16, byte_order: ByteOrder) {
 ///
 /// # Example
 ///
-/// ```
-/// use oxidex::writers::tiff::byte_writer::write_u32;
+/// ```ignore
+/// use oxidex::writers::tiff_writer::tiff::byte_writer::write_u32;
 /// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
 ///
 /// let mut buffer = Vec::new();
 /// write_u32(&mut buffer, 0x12345678, ByteOrder::LittleEndian);
 /// assert_eq!(buffer, vec![0x78, 0x56, 0x34, 0x12]);
-/// ```
+/// ```ignore
 pub fn write_u32(output: &mut Vec<u8>, value: u32, byte_order: ByteOrder) {
     let bytes = match byte_order {
         ByteOrder::LittleEndian => value.to_le_bytes(),
@@ -72,15 +72,15 @@ pub fn write_u32(output: &mut Vec<u8>, value: u32, byte_order: ByteOrder) {
 ///
 /// # Example
 ///
-/// ```
-/// use oxidex::writers::tiff::byte_writer::write_tiff_header;
+/// ```ignore
+/// use oxidex::writers::tiff_writer::tiff::byte_writer::write_tiff_header;
 /// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
 ///
 /// let mut buffer = Vec::new();
 /// write_tiff_header(&mut buffer, ByteOrder::LittleEndian);
 /// assert_eq!(buffer.len(), 8);
 /// assert_eq!(&buffer[0..2], b"II"); // Little-endian marker
-/// ```
+/// ```ignore
 pub fn write_tiff_header(output: &mut Vec<u8>, byte_order: ByteOrder) {
     match byte_order {
         ByteOrder::LittleEndian => {

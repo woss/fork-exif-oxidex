@@ -27,7 +27,7 @@ pub const GPS_INFO_IFD_POINTER: u16 = 0x8825;
 /// use oxidex::core::metadata_map::MetadataMap;
 /// use oxidex::core::tag_value::TagValue;
 /// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
-/// use oxidex::writers::tiff::ifd_builder::IfdBuilder;
+/// use oxidex::writers::tiff_writer::IfdBuilder;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut metadata = MetadataMap::new();

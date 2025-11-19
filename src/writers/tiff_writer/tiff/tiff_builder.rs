@@ -34,7 +34,7 @@ type BuildResult = (Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 /// use oxidex::core::metadata_map::MetadataMap;
 /// use oxidex::core::tag_value::TagValue;
 /// use oxidex::parsers::tiff::ifd_parser::ByteOrder;
-/// use oxidex::writers::tiff::tiff_builder::TiffBuilder;
+/// use oxidex::writers::tiff_writer::TiffBuilder;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut metadata = MetadataMap::new();
