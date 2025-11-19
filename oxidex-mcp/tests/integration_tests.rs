@@ -31,7 +31,7 @@ fn test_mcp_initialize_request() {
     let request: oxidex_mcp::server::JsonRpcRequest = serde_json::from_str(&request_str).unwrap();
 
     assert_eq!(request.jsonrpc, "2.0");
-    assert_eq!(request.id, 1);
+    assert_eq!(request.id, Some(1));
     assert_eq!(request.method, "initialize");
 }
 
@@ -84,7 +84,7 @@ async fn test_initialize_handler_response() {
 
     let request = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
-        id: 1,
+        id: Some(1),
         method: "initialize".to_string(),
         params: Some(json!({})),
     };

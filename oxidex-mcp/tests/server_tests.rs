@@ -17,7 +17,7 @@ fn test_parse_jsonrpc_request() {
 
     let request: oxidex_mcp::server::JsonRpcRequest = serde_json::from_value(input).unwrap();
 
-    assert_eq!(request.id, 1);
+    assert_eq!(request.id, Some(1));
     assert_eq!(request.method, "tools/call");
 }
 

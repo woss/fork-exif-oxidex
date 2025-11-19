@@ -8,7 +8,8 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct JsonRpcRequest {
     pub jsonrpc: String,
-    pub id: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<u64>,
     pub method: String,
     pub params: Option<Value>,
 }
@@ -63,10 +64,12 @@ pub async fn handle_single_request<R: BufRead>(reader: R) -> Result<JsonRpcRespo
         let line = line?;
         let request: JsonRpcRequest = serde_json::from_str(&line)?;
 
+        let id = request.id.ok_or_else(|| anyhow::anyhow!("Missing id field"))?;
+
         // For now, just echo back a success response
         Ok(JsonRpcResponse {
             jsonrpc: "2.0".to_string(),
-            id: request.id,
+            id,
             result: serde_json::json!({"status": "ok"}),
         })
     } else {
@@ -83,14 +86,23 @@ pub async fn run_server() -> Result<()> {
     while let Some(line) = lines.next_line().await? {
         let request: JsonRpcRequest = serde_json::from_str(&line)?;
 
+        // Handle notifications (no id field, no response needed)
+        if request.id.is_none() {
+            tracing::debug!("Received notification: {}", request.method);
+            // Notifications don't require a response
+            continue;
+        }
+
+        let id = request.id.unwrap();
+
         let response_json = match request.method.as_str() {
-            "initialize" => serde_json::to_string(&handle_initialize(request.id))?,
-            "tools/list" => serde_json::to_string(&handle_tools_list(request.id))?,
+            "initialize" => serde_json::to_string(&handle_initialize(id))?,
+            "tools/list" => serde_json::to_string(&handle_tools_list(id))?,
             "tools/call" => {
-                serde_json::to_string(&handle_tool_call(request.id, request.params).await?)?
+                serde_json::to_string(&handle_tool_call(id, request.params).await?)?
             }
             _ => serde_json::to_string(&create_error_response(
-                request.id,
+                id,
                 -32601,
                 "Method not found",
             ))?,
