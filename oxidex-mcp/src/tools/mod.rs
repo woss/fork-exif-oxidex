@@ -110,6 +110,7 @@ pub fn list_tools() -> Vec<ToolInfo> {
 pub struct ToolInfo {
     pub name: String,
     pub description: String,
+    #[serde(rename = "inputSchema")]
     pub input_schema: Value,
 }
 
