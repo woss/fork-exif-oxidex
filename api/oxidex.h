@@ -344,6 +344,13 @@
 #define IMAGE_DEBUG_TYPE_REPRO 16
 
 /*
+ Special tag IDs for IFD pointers
+ */
+#define EXIF_IFD_POINTER 34665
+
+#define GPS_INFO_IFD_POINTER 34853
+
+/*
  Opaque handle type for C API.
  C code receives a pointer to this type but cannot access its contents.
  */
