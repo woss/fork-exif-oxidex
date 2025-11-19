@@ -583,7 +583,7 @@ fn parse_header_basic_info(data: &[u8], metadata: &mut HashMap<String, TagValue>
 
 /// Maps ICC profile class signature to human-readable name
 fn get_profile_class_name(class: &str) -> &str {
-    match class.as_ref() {
+    match class {
         "scnr" => "Input Device Profile",
         "mntr" => "Display Device Profile",
         "prtr" => "Output Device Profile",

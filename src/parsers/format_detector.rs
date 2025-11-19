@@ -731,10 +731,10 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         if sig.offset == 0 {
             // Optimization: most signatures are at offset 0
             if magic_bytes.starts_with(sig.bytes) {
-                return Ok(sig.format.clone());
+                return Ok(sig.format);
             }
         } else if matches_at_offset(magic_bytes, sig.bytes, sig.offset as usize) {
-            return Ok(sig.format.clone());
+            return Ok(sig.format);
         }
     }
 

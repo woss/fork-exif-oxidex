@@ -113,8 +113,8 @@ pub enum TagDecoder {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::parsers::tiff::makernotes::shared::tag_registry::TagRegistry;
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
+/// use oxidex::parsers::tiff::makernotes::shared::tag_registry::TagRegistry;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
 ///
 /// const QUALITY: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
 ///     (1, "Low"),
@@ -536,8 +536,8 @@ impl Default for TagRegistry {
 ///
 /// # Example
 /// ```rust
-/// use exiftool_rs::tag_registry;
-/// use exiftool_rs::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
+/// use oxidex::tag_registry;
+/// use oxidex::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder;
 ///
 /// const QUALITY: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
 ///     (1, "Low"),
