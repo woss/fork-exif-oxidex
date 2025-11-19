@@ -221,6 +221,20 @@ cargo build --release
 cargo install --path .
 ```
 
+### MCP Server
+
+For AI assistant integration via Model Context Protocol:
+
+```bash
+# Build MCP server
+cargo build --release -p oxidex-mcp
+
+# Binary location
+./target/release/oxidex-mcp
+```
+
+The MCP server enables AI assistants (Claude, Cline, etc.) to extract, search, analyze, and modify file metadata. See [oxidex-mcp/README.md](oxidex-mcp/README.md) for detailed configuration and usage instructions.
+
 ## Usage
 
 ### CLI
