@@ -1,3 +1,4 @@
+use oxidex_tags_shared::TagDatabase;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -18,29 +19,6 @@ fn main() {
     // Read the YAML source file
     let yaml_path = "src/core_tags.yaml";
     let yaml_content = fs::read_to_string(yaml_path).expect("Failed to read core_tags.yaml");
-
-    // Deserialize YAML into TagDatabase structure
-    // We need to use the same types that will be used at runtime
-    #[derive(serde::Deserialize, serde::Serialize)]
-    struct Tag {
-        id: String,
-        name: String,
-        writable: bool,
-        #[serde(rename = "type")]
-        type_name: Option<String>,
-        description: Option<String>,
-    }
-
-    #[derive(serde::Deserialize, serde::Serialize)]
-    struct TagTable {
-        name: String,
-        tags: Vec<Tag>,
-    }
-
-    #[derive(serde::Deserialize, serde::Serialize)]
-    struct TagDatabase {
-        tables: Vec<TagTable>,
-    }
 
     let tag_database: TagDatabase =
         serde_yaml::from_str(&yaml_content).expect("Failed to parse core_tags.yaml during build");

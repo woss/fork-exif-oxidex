@@ -9,9 +9,11 @@
 //! directly in the compiled binary, eliminating the ~40ms cold start penalty
 //! from parsing YAML files on first access.
 
+use oxidex_tags_shared::find_table;
 use std::sync::LazyLock;
 
 pub mod types;
+pub use oxidex_tags_shared::{Tag, TagDatabase, TagTable};
 pub use types::*;
 
 // Include pre-compiled binary tag data generated at build time
@@ -38,7 +40,7 @@ pub static CORE_TAGS: LazyLock<TagDatabase> = LazyLock::new(|| {
 ///
 /// An Option containing a reference to the TagTable if found, or None if not found
 pub fn get_tag_table(name: &str) -> Option<&'static TagTable> {
-    CORE_TAGS.tables.iter().find(|t| t.name == name)
+    find_table(&CORE_TAGS, name).ok()
 }
 
 #[cfg(test)]

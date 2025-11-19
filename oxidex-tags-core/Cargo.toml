@@ -11,10 +11,11 @@ name = "oxidex_tags_core"
 path = "src/lib.rs"
 
 [dependencies]
+oxidex-tags-shared = { path = "../oxidex-tags-shared" }
 serde = { version = "1.0", features = ["derive"] }
 bincode = { version = "2.0", features = ["serde"] }
 
 [build-dependencies]
 bincode = { version = "2.0", features = ["serde"] }
 serde_yaml = "0.9"
-serde = { version = "1.0", features = ["derive"] }
+oxidex-tags-shared = { path = "../oxidex-tags-shared" }

@@ -17,6 +17,4 @@ oxidex-tags-media = { path = "../oxidex-tags-media" }
 oxidex-tags-image = { path = "../oxidex-tags-image" }
 oxidex-tags-document = { path = "../oxidex-tags-document" }
 oxidex-tags-specialty = { path = "../oxidex-tags-specialty" }
-
-# Re-export common dependencies
-serde = { version = "1.0", features = ["derive"] }
+oxidex-tags-shared = { path = "../oxidex-tags-shared" }
