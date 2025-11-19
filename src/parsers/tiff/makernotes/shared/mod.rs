@@ -26,6 +26,8 @@
 
 /// Array extraction utilities for IFD entries
 pub mod array_extractors;
+/// Array schema system for declarative CameraSettings-style array parsing
+pub mod array_schemas;
 /// Low-level byte parsing helper functions
 pub mod byte_utils;
 /// Declarative macros for creating decoders with minimal boilerplate
@@ -41,4 +43,8 @@ pub mod tag_registry;
 /// Common value interpretation and decoding functions
 pub mod value_decoders;
 
+pub use array_schemas::{ArrayIndexDef, ArraySchema};
 pub use makernote_parser::MakerNoteParser;
+
+#[cfg(test)]
+mod tests;
