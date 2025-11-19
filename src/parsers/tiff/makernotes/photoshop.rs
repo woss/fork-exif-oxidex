@@ -27,8 +27,9 @@
 //!
 //! ## Architecture
 //! Photoshop stores extensive editing metadata in proprietary formats.
-//! This parser extracts the most commonly needed information from
-//! the MakerNotes structure using shared utilities to minimize duplication.
+//! This parser uses the TagRegistry pattern to eliminate code duplication,
+//! with all tag definitions centralized in a static registry for O(1) lookup
+//! and automatic value decoding.
 
 #![allow(dead_code)]
 #![allow(unused_imports)]
@@ -38,10 +39,14 @@ use std::collections::HashMap;
 
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::generic_decoders::{BitfieldDecoder, SimpleValueDecoder, YES_NO};
+use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 
 // Import macros for declarative decoder definitions
 use crate::{bitfield_decoder, const_decoder};
+
+// Import once_cell for static lazy initialization of the tag registry
+use once_cell::sync::Lazy;
 
 // ============================================================================
 // Tag ID Constants
@@ -244,6 +249,34 @@ fn format_timestamp(value: i16) -> String {
     format!("Timestamp: {}", value)
 }
 
+/// Decodes blending modes bitfield
+///
+/// Converts i16 to u32 and uses the BLENDING_MODES decoder.
+/// This wrapper function adapts the i16 tag value to the u32 bitfield decoder.
+///
+/// # Arguments
+/// * `value` - Bitfield value as i16
+///
+/// # Returns
+/// Comma-separated list of active blending modes
+fn decode_blending_modes(value: i16) -> String {
+    BLENDING_MODES.decode(value as u32)
+}
+
+/// Decodes layer effects bitfield
+///
+/// Converts i16 to u32 and uses the LAYER_EFFECTS decoder.
+/// This wrapper function adapts the i16 tag value to the u32 bitfield decoder.
+///
+/// # Arguments
+/// * `value` - Bitfield value as i16
+///
+/// # Returns
+/// Comma-separated list of active layer effects
+fn decode_layer_effects(value: i16) -> String {
+    LAYER_EFFECTS.decode(value as u32)
+}
+
 /// Extracts an ASCII string from IFD entry
 ///
 /// Handles both inline strings (4 bytes or less) and offset-based strings.
@@ -288,6 +321,89 @@ fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
         Some(s)
     }
 }
+
+// ============================================================================
+// Tag Registry
+// ============================================================================
+
+/// Static tag registry for Photoshop MakerNote tags
+///
+/// This registry centralizes all tag definitions and their decoders,
+/// eliminating the need for large match statements and reducing code duplication.
+///
+/// The registry uses once_cell::sync::Lazy for thread-safe lazy initialization,
+/// ensuring the registry is built only once on first access.
+///
+/// ## Benefits of the Registry Pattern:
+/// - **Eliminates duplication**: Single source of truth for tag definitions
+/// - **O(1) lookups**: Fast HashMap-based tag name and decoder lookups
+/// - **Type safety**: Compile-time validation of decoder types
+/// - **Maintainability**: Easy to add/modify tags in one location
+/// - **Self-documenting**: Tag definitions serve as documentation
+///
+/// ## Tag Categories:
+/// - String tags: Handled separately (version, names, profiles, etc.)
+/// - Raw count tags: Simple numeric values with no decoding
+/// - Decoder tags: Use shared decoders (color mode, bit depth, etc.)
+/// - Custom formatter tags: DPI, time, timestamps
+/// - Boolean tags: Yes/No values using shared YES_NO decoder
+/// - Bitfield tags: Blending modes and layer effects
+static PHOTOSHOP_TAGS: Lazy<TagRegistry> = Lazy::new(|| {
+    TagRegistry::with_capacity(70)
+        // Raw count tags - no decoding needed
+        .register_raw(PS_LAYER_COUNT, "LayerCount")
+        .register_raw(PS_ADJUSTMENT_COUNT, "AdjustmentCount")
+        .register_raw(PS_FILTER_COUNT, "FilterCount")
+        .register_raw(PS_EDIT_COUNT, "EditCount")
+        .register_raw(PS_ACTION_COUNT, "ActionCount")
+        .register_raw(PS_SMART_OBJECT_COUNT, "SmartObjectCount")
+        .register_raw(PS_TEXT_LAYER_COUNT, "TextLayerCount")
+        .register_raw(PS_SHAPE_LAYER_COUNT, "ShapeLayerCount")
+        .register_raw(PS_ADJUSTMENT_LAYER_COUNT, "AdjustmentLayerCount")
+        .register_raw(PS_FILL_LAYER_COUNT, "FillLayerCount")
+        .register_raw(PS_MASK_COUNT, "MaskCount")
+        .register_raw(PS_VECTOR_MASK_COUNT, "VectorMaskCount")
+        .register_raw(PS_CLIPPING_MASK_COUNT, "ClippingMaskCount")
+        .register_raw(PS_ALPHA_CHANNEL_COUNT, "AlphaChannelCount")
+        .register_raw(PS_SPOT_CHANNEL_COUNT, "SpotChannelCount")
+        .register_raw(PS_GAUSSIAN_BLUR_COUNT, "GaussianBlurCount")
+        .register_raw(PS_SHARPEN_COUNT, "SharpenCount")
+        .register_raw(PS_SMART_SHARPEN_COUNT, "SmartSharpenCount")
+        .register_raw(PS_UNSHARP_MASK_COUNT, "UnsharpMaskCount")
+        .register_raw(PS_NOISE_REDUCTION_COUNT, "NoiseReductionCount")
+        .register_raw(PS_LIQUIFY_COUNT, "LiquifyCount")
+        .register_raw(PS_CAMERA_RAW_COUNT, "CameraRawFilterCount")
+        .register_raw(PS_NEURAL_FILTER_COUNT, "NeuralFilterCount")
+        .register_raw(PS_BACKUP_COUNT, "BackupCount")
+        .register_raw(PS_LAYER_COMP_COUNT, "LayerCompCount")
+        .register_raw(PS_GUIDE_COUNT, "GuideCount")
+        .register_raw(PS_WIDTH_PIXELS, "WidthPixels")
+        .register_raw(PS_HEIGHT_PIXELS, "HeightPixels")
+        // Tags using shared decoders
+        .register_simple_i16(PS_COLOR_MODE, "ColorMode", &COLOR_MODE)
+        .register_simple_i16(PS_BIT_DEPTH, "BitDepth", &BIT_DEPTH)
+        .register_simple_i16(PS_RULER_UNITS, "RulerUnits", &RULER_UNITS)
+        // Custom formatter tags
+        .register_i16(PS_DPI_HORIZONTAL, "HorizontalDPI", format_dpi)
+        .register_i16(PS_DPI_VERTICAL, "VerticalDPI", format_dpi)
+        .register_i16(PS_LAST_SAVE_TIME, "LastSaveTime", format_timestamp)
+        .register_i16(PS_CREATION_TIME, "CreationTime", format_timestamp)
+        .register_i16(PS_TOTAL_EDIT_TIME, "TotalEditTime", format_time_duration)
+        // Boolean tags using shared YES_NO decoder
+        .register_simple_i16(PS_HAS_CURVES, "HasCurves", &YES_NO)
+        .register_simple_i16(PS_HAS_LEVELS, "HasLevels", &YES_NO)
+        .register_simple_i16(PS_HAS_HUE_SAT, "HasHueSaturation", &YES_NO)
+        .register_simple_i16(PS_HAS_COLOR_BALANCE, "HasColorBalance", &YES_NO)
+        .register_simple_i16(PS_HAS_BRIGHTNESS_CONTRAST, "HasBrightnessContrast", &YES_NO)
+        .register_simple_i16(PS_HAS_VIBRANCE, "HasVibrance", &YES_NO)
+        .register_simple_i16(PS_HAS_EXPOSURE, "HasExposure", &YES_NO)
+        .register_simple_i16(PS_HAS_SHADOWS_HIGHLIGHTS, "HasShadowsHighlights", &YES_NO)
+        .register_simple_i16(PS_MODIFIED_FLAG, "Modified", &YES_NO)
+        .register_simple_i16(PS_GRID_ENABLED, "GridEnabled", &YES_NO)
+        // Bitfield tags
+        .register_i16(PS_BLENDING_MODES, "BlendingModes", decode_blending_modes)
+        .register_i16(PS_LAYER_EFFECTS, "LayerEffects", decode_layer_effects)
+});
 
 // ============================================================================
 // Parser Implementation
@@ -423,8 +539,8 @@ impl MakerNoteParser for PhotoshopParser {
 impl PhotoshopParser {
     /// Processes a single tag entry and adds it to the tags map
     ///
-    /// This method handles both string-based and numeric tags, applying
-    /// appropriate decoders based on the tag ID.
+    /// This method handles both string-based and numeric tags, using the
+    /// PHOTOSHOP_TAGS registry for O(1) tag name lookups and automatic decoding.
     ///
     /// # Arguments
     /// * `tag` - Tag ID to process
@@ -440,130 +556,68 @@ impl PhotoshopParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) {
-        // Handle string-based tags
+        // Handle string-based tags (not in registry)
         match tag {
-            PS_VERSION
-            | PS_LAYER_NAMES
-            | PS_ADJUSTMENT_TYPES
-            | PS_FILTER_NAMES
-            | PS_ACTIVE_LAYER_COMP
-            | PS_COLOR_PROFILE
-            | PS_PROOF_SETUP
-            | PS_WORKING_COLOR_SPACE => {
+            PS_VERSION => {
                 if let Some(s) = extract_string(entry, data) {
-                    let tag_name = self.get_string_tag_name(tag);
-                    tags.insert(format!("Photoshop:{}", tag_name), s);
+                    tags.insert("Photoshop:Version".to_string(), s);
+                }
+                return;
+            }
+            PS_LAYER_NAMES => {
+                if let Some(s) = extract_string(entry, data) {
+                    tags.insert("Photoshop:LayerNames".to_string(), s);
+                }
+                return;
+            }
+            PS_ADJUSTMENT_TYPES => {
+                if let Some(s) = extract_string(entry, data) {
+                    tags.insert("Photoshop:AdjustmentTypes".to_string(), s);
+                }
+                return;
+            }
+            PS_FILTER_NAMES => {
+                if let Some(s) = extract_string(entry, data) {
+                    tags.insert("Photoshop:FiltersApplied".to_string(), s);
+                }
+                return;
+            }
+            PS_ACTIVE_LAYER_COMP => {
+                if let Some(s) = extract_string(entry, data) {
+                    tags.insert("Photoshop:ActiveLayerComp".to_string(), s);
+                }
+                return;
+            }
+            PS_COLOR_PROFILE => {
+                if let Some(s) = extract_string(entry, data) {
+                    tags.insert("Photoshop:ColorProfile".to_string(), s);
+                }
+                return;
+            }
+            PS_PROOF_SETUP => {
+                if let Some(s) = extract_string(entry, data) {
+                    tags.insert("Photoshop:ProofSetup".to_string(), s);
+                }
+                return;
+            }
+            PS_WORKING_COLOR_SPACE => {
+                if let Some(s) = extract_string(entry, data) {
+                    tags.insert("Photoshop:WorkingColorSpace".to_string(), s);
                 }
                 return;
             }
             _ => {}
         }
 
-        // Handle numeric tags (i16 values)
-        if let Some(array) = extract_i16_array(entry, data, byte_order) {
-            if let Some(&val) = array.first() {
-                if let Some((tag_name, formatted_value)) = self.decode_numeric_tag(tag, val) {
-                    tags.insert(format!("Photoshop:{}", tag_name), formatted_value);
+        // Handle numeric tags using registry for O(1) lookup and automatic decoding
+        if let Some(tag_name) = PHOTOSHOP_TAGS.get_tag_name(tag) {
+            if let Some(array) = extract_i16_array(entry, data, byte_order) {
+                if let Some(&val) = array.first() {
+                    let decoded = PHOTOSHOP_TAGS.decode_i16(tag, val);
+                    tags.insert(format!("Photoshop:{}", tag_name), decoded);
                 }
             }
         }
-    }
-
-    /// Gets the tag name for string-based tags
-    ///
-    /// # Arguments
-    /// * `tag` - Tag ID
-    ///
-    /// # Returns
-    /// Human-readable tag name
-    fn get_string_tag_name(&self, tag: u16) -> &'static str {
-        match tag {
-            PS_VERSION => "Version",
-            PS_LAYER_NAMES => "LayerNames",
-            PS_ADJUSTMENT_TYPES => "AdjustmentTypes",
-            PS_FILTER_NAMES => "FiltersApplied",
-            PS_ACTIVE_LAYER_COMP => "ActiveLayerComp",
-            PS_COLOR_PROFILE => "ColorProfile",
-            PS_PROOF_SETUP => "ProofSetup",
-            PS_WORKING_COLOR_SPACE => "WorkingColorSpace",
-            _ => "Unknown",
-        }
-    }
-
-    /// Decodes a numeric tag value using appropriate decoder
-    ///
-    /// This method centralizes all numeric tag decoding logic, using
-    /// shared decoders where possible to eliminate duplication.
-    ///
-    /// # Arguments
-    /// * `tag` - Tag ID to decode
-    /// * `val` - Numeric value to decode
-    ///
-    /// # Returns
-    /// Tuple of (tag_name, formatted_value) or None if tag is unknown
-    fn decode_numeric_tag(&self, tag: u16, val: i16) -> Option<(&'static str, String)> {
-        let result = match tag {
-            // Simple count tags (no decoding needed)
-            PS_LAYER_COUNT => ("LayerCount", val.to_string()),
-            PS_ADJUSTMENT_COUNT => ("AdjustmentCount", val.to_string()),
-            PS_FILTER_COUNT => ("FilterCount", val.to_string()),
-            PS_EDIT_COUNT => ("EditCount", val.to_string()),
-            PS_ACTION_COUNT => ("ActionCount", val.to_string()),
-            PS_SMART_OBJECT_COUNT => ("SmartObjectCount", val.to_string()),
-            PS_TEXT_LAYER_COUNT => ("TextLayerCount", val.to_string()),
-            PS_SHAPE_LAYER_COUNT => ("ShapeLayerCount", val.to_string()),
-            PS_ADJUSTMENT_LAYER_COUNT => ("AdjustmentLayerCount", val.to_string()),
-            PS_FILL_LAYER_COUNT => ("FillLayerCount", val.to_string()),
-            PS_MASK_COUNT => ("MaskCount", val.to_string()),
-            PS_VECTOR_MASK_COUNT => ("VectorMaskCount", val.to_string()),
-            PS_CLIPPING_MASK_COUNT => ("ClippingMaskCount", val.to_string()),
-            PS_ALPHA_CHANNEL_COUNT => ("AlphaChannelCount", val.to_string()),
-            PS_SPOT_CHANNEL_COUNT => ("SpotChannelCount", val.to_string()),
-            PS_GAUSSIAN_BLUR_COUNT => ("GaussianBlurCount", val.to_string()),
-            PS_SHARPEN_COUNT => ("SharpenCount", val.to_string()),
-            PS_SMART_SHARPEN_COUNT => ("SmartSharpenCount", val.to_string()),
-            PS_UNSHARP_MASK_COUNT => ("UnsharpMaskCount", val.to_string()),
-            PS_NOISE_REDUCTION_COUNT => ("NoiseReductionCount", val.to_string()),
-            PS_LIQUIFY_COUNT => ("LiquifyCount", val.to_string()),
-            PS_CAMERA_RAW_COUNT => ("CameraRawFilterCount", val.to_string()),
-            PS_NEURAL_FILTER_COUNT => ("NeuralFilterCount", val.to_string()),
-            PS_BACKUP_COUNT => ("BackupCount", val.to_string()),
-            PS_LAYER_COMP_COUNT => ("LayerCompCount", val.to_string()),
-            PS_GUIDE_COUNT => ("GuideCount", val.to_string()),
-            PS_WIDTH_PIXELS => ("WidthPixels", val.to_string()),
-            PS_HEIGHT_PIXELS => ("HeightPixels", val.to_string()),
-
-            // Tags using shared decoders
-            PS_COLOR_MODE => ("ColorMode", COLOR_MODE.decode(val)),
-            PS_BIT_DEPTH => ("BitDepth", BIT_DEPTH.decode(val)),
-            PS_RULER_UNITS => ("RulerUnits", RULER_UNITS.decode(val)),
-            PS_BLENDING_MODES => ("BlendingModes", BLENDING_MODES.decode(val as u32)),
-            PS_LAYER_EFFECTS => ("LayerEffects", LAYER_EFFECTS.decode(val as u32)),
-
-            // Custom formatter tags
-            PS_DPI_HORIZONTAL => ("HorizontalDPI", format_dpi(val)),
-            PS_DPI_VERTICAL => ("VerticalDPI", format_dpi(val)),
-            PS_LAST_SAVE_TIME => ("LastSaveTime", format_timestamp(val)),
-            PS_CREATION_TIME => ("CreationTime", format_timestamp(val)),
-            PS_TOTAL_EDIT_TIME => ("TotalEditTime", format_time_duration(val)),
-
-            // Boolean tags using shared YES_NO decoder
-            PS_HAS_CURVES => ("HasCurves", YES_NO.decode(val)),
-            PS_HAS_LEVELS => ("HasLevels", YES_NO.decode(val)),
-            PS_HAS_HUE_SAT => ("HasHueSaturation", YES_NO.decode(val)),
-            PS_HAS_COLOR_BALANCE => ("HasColorBalance", YES_NO.decode(val)),
-            PS_HAS_BRIGHTNESS_CONTRAST => ("HasBrightnessContrast", YES_NO.decode(val)),
-            PS_HAS_VIBRANCE => ("HasVibrance", YES_NO.decode(val)),
-            PS_HAS_EXPOSURE => ("HasExposure", YES_NO.decode(val)),
-            PS_HAS_SHADOWS_HIGHLIGHTS => ("HasShadowsHighlights", YES_NO.decode(val)),
-            PS_MODIFIED_FLAG => ("Modified", YES_NO.decode(val)),
-            PS_GRID_ENABLED => ("GridEnabled", YES_NO.decode(val)),
-
-            // Unknown tag
-            _ => return None,
-        };
-
-        Some(result)
     }
 }
 
