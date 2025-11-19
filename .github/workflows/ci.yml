@@ -37,28 +37,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y wget build-essential
-
       - name: Build
         run: cargo build --release --verbose --all-features
 
       - name: Run tests
         run: cargo test --verbose --all-features
-
-      - name: Install cbindgen
-        run: |
-          if ! command -v cbindgen &> /dev/null; then
-            echo "cbindgen not found in cache, installing..."
-            cargo install cbindgen --locked
-          else
-            echo "cbindgen found in cache: $(cbindgen --version)"
-          fi
 
       - name: Verify C header is up-to-date
         run: |
@@ -81,15 +64,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y wget build-essential
-          rustup component add clippy rustfmt
 
       - name: Run cargo-audit
         uses: rustsec/audit-check@e9159ac5f7d7d873ce074ca134da2f445c0a4a61 # v1
@@ -115,13 +89,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y wget build-essential pkg-config libssl-dev
 
       - name: Install Perl ExifTool
         run: |
@@ -178,19 +145,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y wget build-essential pkg-config libssl-dev
-
-      - name: Clean cargo to avoid cache corruption
-        run: |
-          cargo clean
-          rm -rf ~/.cargo/registry/cache
-          rm -rf ~/.cargo/git/db
 
       - name: Run benchmarks
         run: cargo bench --bench integration_benchmarks --bench parse_benchmarks
@@ -278,23 +232,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@5d458579430fc14a04a08a1e7d3694f545e91ce6 # stable
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y wget build-essential pkg-config libssl-dev
-
-      - name: Install cargo-tarpaulin
-        run: |
-          if ! command -v cargo-tarpaulin &> /dev/null; then
-            echo "cargo-tarpaulin not found, installing..."
-            cargo install cargo-tarpaulin --locked
-          else
-            echo "cargo-tarpaulin found: $(cargo-tarpaulin --version)"
-          fi
 
       - name: Generate coverage
         run: |
