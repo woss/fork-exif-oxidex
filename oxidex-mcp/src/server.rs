@@ -86,8 +86,14 @@ pub async fn run_server() -> Result<()> {
         let response_json = match request.method.as_str() {
             "initialize" => serde_json::to_string(&handle_initialize(request.id))?,
             "tools/list" => serde_json::to_string(&handle_tools_list(request.id))?,
-            "tools/call" => serde_json::to_string(&handle_tool_call(request.id, request.params).await?)?,
-            _ => serde_json::to_string(&create_error_response(request.id, -32601, "Method not found"))?,
+            "tools/call" => {
+                serde_json::to_string(&handle_tool_call(request.id, request.params).await?)?
+            }
+            _ => serde_json::to_string(&create_error_response(
+                request.id,
+                -32601,
+                "Method not found",
+            ))?,
         };
 
         println!("{}", response_json);
@@ -124,9 +130,8 @@ fn handle_tools_list(id: u64) -> JsonRpcResponse {
 }
 
 async fn handle_tool_call(id: u64, params: Option<Value>) -> Result<JsonRpcResponse> {
-    let params: ToolCallParams = serde_json::from_value(
-        params.ok_or_else(|| anyhow::anyhow!("Missing params"))?
-    )?;
+    let params: ToolCallParams =
+        serde_json::from_value(params.ok_or_else(|| anyhow::anyhow!("Missing params"))?)?;
 
     let result = crate::tools::dispatch_tool(&params.name, params.arguments).await?;
 

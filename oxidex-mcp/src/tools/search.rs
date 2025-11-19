@@ -11,8 +11,8 @@ struct SearchParams {
 }
 
 pub async fn handle(arguments: Value) -> Result<String> {
-    let params: SearchParams = serde_json::from_value(arguments)
-        .context("Invalid arguments for search_metadata")?;
+    let params: SearchParams =
+        serde_json::from_value(arguments).context("Invalid arguments for search_metadata")?;
 
     // Validate directory
     crate::utils::validate_path(&params.directory)?;
@@ -29,7 +29,10 @@ pub async fn handle(arguments: Value) -> Result<String> {
     };
 
     if files.is_empty() {
-        return Ok(format!("No files found in directory '{}'", params.directory));
+        return Ok(format!(
+            "No files found in directory '{}'",
+            params.directory
+        ));
     }
 
     // Parse filters
@@ -52,7 +55,10 @@ pub async fn handle(arguments: Value) -> Result<String> {
     }
 
     if matches.is_empty() {
-        Ok(format!("No files matched criteria: {}", params.filters.join(", ")))
+        Ok(format!(
+            "No files matched criteria: {}",
+            params.filters.join(", ")
+        ))
     } else {
         let summary = format!("Found {} file(s) matching criteria:\n\n", matches.len());
         Ok(summary + &crate::format::format_multiple_files(matches))
@@ -134,8 +140,15 @@ fn extract_metadata(path: &PathBuf) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
 
     result.insert("FileSize".to_string(), metadata.len().to_string());
-    result.insert("FileType".to_string(),
-        if metadata.is_file() { "File" } else { "Directory" }.to_string());
+    result.insert(
+        "FileType".to_string(),
+        if metadata.is_file() {
+            "File"
+        } else {
+            "Directory"
+        }
+        .to_string(),
+    );
 
     Ok(result)
 }

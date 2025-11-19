@@ -18,7 +18,9 @@ pub fn validate_path(path: &str) -> Result<()> {
     // Check for directory traversal components
     for component in path.components() {
         if component == Component::ParentDir {
-            anyhow::bail!("Path contains parent directory reference (directory traversal not allowed)");
+            anyhow::bail!(
+                "Path contains parent directory reference (directory traversal not allowed)"
+            );
         }
     }
 

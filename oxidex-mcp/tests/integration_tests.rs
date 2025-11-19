@@ -28,8 +28,7 @@ fn test_mcp_initialize_request() {
 
     // Test that we can deserialize the request
     let request_str = serde_json::to_string(&input).unwrap();
-    let request: oxidex_mcp::server::JsonRpcRequest =
-        serde_json::from_str(&request_str).unwrap();
+    let request: oxidex_mcp::server::JsonRpcRequest = serde_json::from_str(&request_str).unwrap();
 
     assert_eq!(request.jsonrpc, "2.0");
     assert_eq!(request.id, 1);
@@ -47,8 +46,7 @@ fn test_mcp_tools_list_request() {
     });
 
     let request_str = serde_json::to_string(&input).unwrap();
-    let request: oxidex_mcp::server::JsonRpcRequest =
-        serde_json::from_str(&request_str).unwrap();
+    let request: oxidex_mcp::server::JsonRpcRequest = serde_json::from_str(&request_str).unwrap();
 
     assert_eq!(request.method, "tools/list");
 }
@@ -69,8 +67,7 @@ fn test_mcp_tools_call_request() {
     });
 
     let request_str = serde_json::to_string(&input).unwrap();
-    let request: oxidex_mcp::server::JsonRpcRequest =
-        serde_json::from_str(&request_str).unwrap();
+    let request: oxidex_mcp::server::JsonRpcRequest = serde_json::from_str(&request_str).unwrap();
 
     assert_eq!(request.method, "tools/call");
 
@@ -136,19 +133,24 @@ fn test_tools_list_contains_all_tools() {
 
     // Verify each tool has input schema
     for tool in tools {
-        assert!(!tool.description.is_empty(), "Tool {} has empty description", tool.name);
-        assert!(!tool.input_schema.is_null(), "Tool {} has null input_schema", tool.name);
+        assert!(
+            !tool.description.is_empty(),
+            "Tool {} has empty description",
+            tool.name
+        );
+        assert!(
+            !tool.input_schema.is_null(),
+            "Tool {} has null input_schema",
+            tool.name
+        );
     }
 }
 
 /// Test that extract_metadata tool can be dispatched
 #[tokio::test]
 async fn test_dispatch_extract_metadata_tool() {
-    let result = oxidex_mcp::tools::dispatch_tool(
-        "extract_metadata",
-        json!({"path": "Cargo.toml"}),
-    )
-    .await;
+    let result =
+        oxidex_mcp::tools::dispatch_tool("extract_metadata", json!({"path": "Cargo.toml"})).await;
 
     assert!(result.is_ok(), "extract_metadata should succeed");
     let output = result.unwrap();
@@ -217,11 +219,7 @@ async fn test_dispatch_copy_metadata_tool() {
 /// Test that unknown tool returns error
 #[tokio::test]
 async fn test_dispatch_unknown_tool_returns_error() {
-    let result = oxidex_mcp::tools::dispatch_tool(
-        "unknown_tool",
-        json!({}),
-    )
-    .await;
+    let result = oxidex_mcp::tools::dispatch_tool("unknown_tool", json!({})).await;
 
     assert!(result.is_err(), "unknown_tool should fail");
 }

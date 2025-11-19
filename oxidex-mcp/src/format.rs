@@ -43,7 +43,11 @@ pub fn format_batch_results(
     failures: Vec<(String, String)>,
 ) -> String {
     let total = successes.len() + failures.len();
-    let mut output = format!("Processed {}/{} files successfully:\n\n", successes.len(), total);
+    let mut output = format!(
+        "Processed {}/{} files successfully:\n\n",
+        successes.len(),
+        total
+    );
 
     if !successes.is_empty() {
         for (filename, _) in &successes {

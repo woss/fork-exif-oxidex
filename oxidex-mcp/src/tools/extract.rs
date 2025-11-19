@@ -10,8 +10,8 @@ struct ExtractParams {
 }
 
 pub async fn handle(arguments: Value) -> Result<String> {
-    let params: ExtractParams = serde_json::from_value(arguments)
-        .context("Invalid arguments for extract_metadata")?;
+    let params: ExtractParams =
+        serde_json::from_value(arguments).context("Invalid arguments for extract_metadata")?;
 
     // Validate path
     crate::utils::validate_path(&params.path)?;
@@ -36,7 +36,8 @@ async fn handle_single_file(path: &str) -> Result<String> {
     // Use OxiDex to extract metadata
     match extract_metadata_from_file(&path_buf) {
         Ok(metadata) => {
-            let filename = path_buf.file_name()
+            let filename = path_buf
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or(path);
             Ok(crate::format::format_metadata_map(filename, &metadata))
@@ -49,14 +50,18 @@ async fn handle_glob_pattern(pattern: &str) -> Result<String> {
     let files = crate::utils::expand_glob(pattern)?;
 
     if files.is_empty() {
-        return Ok(format!("No files matched pattern '{}' in current directory", pattern));
+        return Ok(format!(
+            "No files matched pattern '{}' in current directory",
+            pattern
+        ));
     }
 
     // Process files in parallel using rayon
     let results: Vec<(String, Result<HashMap<String, String>>)> = files
         .iter()
         .map(|path| {
-            let filename = path.file_name()
+            let filename = path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown")
                 .to_string();
@@ -77,11 +82,14 @@ async fn handle_glob_pattern(pattern: &str) -> Result<String> {
     }
 
     if successes.is_empty() && !failures.is_empty() {
-        Ok(format!("Could not extract metadata from any files:\n{}",
-            failures.iter()
+        Ok(format!(
+            "Could not extract metadata from any files:\n{}",
+            failures
+                .iter()
                 .map(|(f, e)| format!("✗ {}: {}", f, e))
                 .collect::<Vec<_>>()
-                .join("\n")))
+                .join("\n")
+        ))
     } else {
         Ok(crate::format::format_multiple_files(successes))
     }
@@ -96,8 +104,15 @@ fn extract_metadata_from_file(path: &PathBuf) -> Result<HashMap<String, String>>
     let mut result = HashMap::new();
 
     result.insert("FileSize".to_string(), metadata.len().to_string());
-    result.insert("FileType".to_string(),
-        if metadata.is_file() { "File" } else { "Directory" }.to_string());
+    result.insert(
+        "FileType".to_string(),
+        if metadata.is_file() {
+            "File"
+        } else {
+            "Directory"
+        }
+        .to_string(),
+    );
 
     // TODO: In production, use oxidex library:
     // let metadata_map = oxidex::core::MetadataMap::from_file(path)?;

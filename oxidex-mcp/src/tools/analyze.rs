@@ -10,8 +10,8 @@ struct AnalyzeParams {
 }
 
 pub async fn handle(arguments: Value) -> Result<String> {
-    let params: AnalyzeParams = serde_json::from_value(arguments)
-        .context("Invalid arguments for analyze_metadata")?;
+    let params: AnalyzeParams =
+        serde_json::from_value(arguments).context("Invalid arguments for analyze_metadata")?;
 
     // Validate path
     crate::utils::validate_path(&params.path)?;
@@ -46,8 +46,15 @@ fn extract_metadata(path: &PathBuf) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
 
     result.insert("FileSize".to_string(), metadata.len().to_string());
-    result.insert("FileType".to_string(),
-        if metadata.is_file() { "File" } else { "Directory" }.to_string());
+    result.insert(
+        "FileType".to_string(),
+        if metadata.is_file() {
+            "File"
+        } else {
+            "Directory"
+        }
+        .to_string(),
+    );
 
     // TODO: Use oxidex library for real metadata
     Ok(result)
@@ -63,7 +70,7 @@ fn analyze_all_metadata(all_metadata: &[HashMap<String, String>]) -> String {
         for (key, value) in metadata {
             tag_counts
                 .entry(key.clone())
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .entry(value.clone())
                 .and_modify(|c| *c += 1)
                 .or_insert(1);
@@ -82,7 +89,7 @@ fn analyze_all_metadata(all_metadata: &[HashMap<String, String>]) -> String {
             if !sizes.is_empty() {
                 let total: u64 = sizes.iter().sum();
                 let avg = total / sizes.len() as u64;
-                output.push_str(&format!("File Sizes:\n"));
+                output.push_str("File Sizes:\n");
                 output.push_str(&format!("  Total: {} bytes\n", total));
                 output.push_str(&format!("  Average: {} bytes\n", avg));
                 output.push('\n');

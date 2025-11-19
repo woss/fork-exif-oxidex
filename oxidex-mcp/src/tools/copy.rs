@@ -13,8 +13,8 @@ struct CopyParams {
 }
 
 pub async fn handle(arguments: Value) -> Result<String> {
-    let params: CopyParams = serde_json::from_value(arguments)
-        .context("Invalid arguments for copy_metadata")?;
+    let params: CopyParams =
+        serde_json::from_value(arguments).context("Invalid arguments for copy_metadata")?;
 
     // Validate paths
     crate::utils::validate_path(&params.source)?;
@@ -32,9 +32,21 @@ pub async fn handle(arguments: Value) -> Result<String> {
     let is_glob = params.destination.contains('*') || params.destination.contains('?');
 
     if is_glob {
-        handle_glob_destination(&params.source, &params.destination, &source_metadata, params.dry_run).await
+        handle_glob_destination(
+            &params.source,
+            &params.destination,
+            &source_metadata,
+            params.dry_run,
+        )
+        .await
     } else {
-        handle_single_destination(&params.source, &params.destination, &source_metadata, params.dry_run).await
+        handle_single_destination(
+            &params.source,
+            &params.destination,
+            &source_metadata,
+            params.dry_run,
+        )
+        .await
     }
 }
 
@@ -50,12 +62,16 @@ async fn handle_single_destination(
         return Ok(format!("Destination file not found: {}", destination));
     }
 
-    let dest_filename = dest_path.file_name()
+    let dest_filename = dest_path
+        .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or(destination);
 
     if dry_run {
-        let mut preview = format!("[DRY RUN] Would copy metadata from {} to {}:\n", source, dest_filename);
+        let mut preview = format!(
+            "[DRY RUN] Would copy metadata from {} to {}:\n",
+            source, dest_filename
+        );
         for (key, value) in source_metadata {
             preview.push_str(&format!("  {}: {}\n", key, value));
         }
@@ -63,7 +79,10 @@ async fn handle_single_destination(
         Ok(preview)
     } else {
         match copy_metadata_to_file(&dest_path, source_metadata) {
-            Ok(_) => Ok(format!("✓ Successfully copied metadata to {}", dest_filename)),
+            Ok(_) => Ok(format!(
+                "✓ Successfully copied metadata to {}",
+                dest_filename
+            )),
             Err(e) => Ok(crate::format::format_error(dest_filename, &e.to_string())),
         }
     }
@@ -82,9 +101,14 @@ async fn handle_glob_destination(
     }
 
     if dry_run {
-        let mut preview = format!("[DRY RUN] Would copy metadata from {} to {} files:\n\n", source, files.len());
+        let mut preview = format!(
+            "[DRY RUN] Would copy metadata from {} to {} files:\n\n",
+            source,
+            files.len()
+        );
         for path in files.iter().take(3) {
-            let filename = path.file_name()
+            let filename = path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown");
             preview.push_str(&format!("{}:\n", filename));
@@ -103,7 +127,8 @@ async fn handle_glob_destination(
         let mut failures = Vec::new();
 
         for path in files {
-            let filename = path.file_name()
+            let filename = path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown")
                 .to_string();
@@ -123,8 +148,15 @@ fn extract_metadata(path: &PathBuf) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
 
     result.insert("FileSize".to_string(), metadata.len().to_string());
-    result.insert("FileType".to_string(),
-        if metadata.is_file() { "File" } else { "Directory" }.to_string());
+    result.insert(
+        "FileType".to_string(),
+        if metadata.is_file() {
+            "File"
+        } else {
+            "Directory"
+        }
+        .to_string(),
+    );
 
     // TODO: In production, use oxidex library to extract real metadata
     Ok(result)

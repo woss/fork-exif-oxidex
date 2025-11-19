@@ -13,8 +13,8 @@ struct WriteParams {
 }
 
 pub async fn handle(arguments: Value) -> Result<String> {
-    let params: WriteParams = serde_json::from_value(arguments)
-        .context("Invalid arguments for write_metadata")?;
+    let params: WriteParams =
+        serde_json::from_value(arguments).context("Invalid arguments for write_metadata")?;
 
     // Validate path
     crate::utils::validate_path(&params.path)?;
@@ -40,7 +40,8 @@ async fn handle_single_file(
         return Ok(format!("File not found: {}", path));
     }
 
-    let filename = path_buf.file_name()
+    let filename = path_buf
+        .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or(path);
 
@@ -76,7 +77,8 @@ async fn handle_glob_pattern(
         // Show preview for all files
         let mut preview = format!("[DRY RUN] Would update {} files:\n\n", files.len());
         for path in files.iter().take(5) {
-            let filename = path.file_name()
+            let filename = path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown");
             preview.push_str(&format!("{}:\n", filename));
@@ -96,7 +98,8 @@ async fn handle_glob_pattern(
         let mut failures = Vec::new();
 
         for path in files {
-            let filename = path.file_name()
+            let filename = path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown")
                 .to_string();

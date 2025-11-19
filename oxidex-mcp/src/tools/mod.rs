@@ -1,10 +1,10 @@
 //! MCP Tool Handlers
 
-pub mod extract;
-pub mod write;
-pub mod search;
 pub mod analyze;
 pub mod copy;
+pub mod extract;
+pub mod search;
+pub mod write;
 
 use anyhow::Result;
 use serde_json::Value;
@@ -14,7 +14,8 @@ pub fn list_tools() -> Vec<ToolInfo> {
     vec![
         ToolInfo {
             name: "extract_metadata".to_string(),
-            description: "Extract metadata from files (supports glob patterns like *.jpg)".to_string(),
+            description: "Extract metadata from files (supports glob patterns like *.jpg)"
+                .to_string(),
             input_schema: serde_json::json!({
                 "type": "object",
                 "properties": {
