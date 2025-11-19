@@ -407,6 +407,15 @@ jobs:
           # Clean up
           rm -f main-changelog.md version-entry.md
 
+      - name: Update VitePress version dropdown
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Update the version in .vitepress/config.mts
+          sed -i "s/text: 'v[0-9.]*',/text: 'v$VERSION',/" .vitepress/config.mts
+
+          echo "✓ Updated version dropdown to v$VERSION"
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
@@ -414,11 +423,11 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add changelog.md
+          git add changelog.md .vitepress/config.mts
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "docs: add v${{ steps.version.outputs.version }} to changelog"
+            git commit -m "docs: update to v${{ steps.version.outputs.version }}"
             git push origin gh-pages
-            echo "✓ Changelog updated on gh-pages"
+            echo "✓ Documentation updated on gh-pages"
           fi
