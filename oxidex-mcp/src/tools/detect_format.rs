@@ -166,9 +166,13 @@ fn get_mime_type(format: &oxidex::core::FileFormat) -> String {
 
         // Document formats
         FileFormat::PDF => "application/pdf",
-        FileFormat::DOCX => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        FileFormat::DOCX => {
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
         FileFormat::XLSX => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        FileFormat::PPTX => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        FileFormat::PPTX => {
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        }
         FileFormat::Pages => "application/x-iwork-pages-sffpages",
         FileFormat::Numbers => "application/x-iwork-numbers-sffnumbers",
         FileFormat::Keynote => "application/x-iwork-keynote-sffkey",
@@ -446,13 +450,13 @@ fn get_metadata_groups(format: &oxidex::core::FileFormat) -> Vec<MetadataGroup> 
         }],
 
         // Font formats
-        FileFormat::TTF | FileFormat::OTF | FileFormat::WOFF | FileFormat::WOFF2 => vec![
-            MetadataGroup {
+        FileFormat::TTF | FileFormat::OTF | FileFormat::WOFF | FileFormat::WOFF2 => {
+            vec![MetadataGroup {
                 name: "Font",
                 readable: true,
                 writable: false,
-            },
-        ],
+            }]
+        }
 
         // Executable formats
         FileFormat::PE => vec![MetadataGroup {
@@ -618,7 +622,10 @@ mod tests {
         assert_eq!(get_mime_type(&FileFormat::PDF), "application/pdf");
         assert_eq!(get_mime_type(&FileFormat::MP3), "audio/mpeg");
         assert_eq!(get_mime_type(&FileFormat::FLAC), "audio/flac");
-        assert_eq!(get_mime_type(&FileFormat::Unknown), "application/octet-stream");
+        assert_eq!(
+            get_mime_type(&FileFormat::Unknown),
+            "application/octet-stream"
+        );
     }
 
     #[test]
@@ -658,7 +665,10 @@ mod tests {
         use oxidex::core::FileFormat;
 
         let groups = get_metadata_groups(&FileFormat::Unknown);
-        assert!(groups.is_empty(), "Unknown format should have no metadata groups");
+        assert!(
+            groups.is_empty(),
+            "Unknown format should have no metadata groups"
+        );
     }
 
     #[test]
@@ -757,7 +767,10 @@ mod tests {
             ),
         ];
 
-        let failures = vec![("bad.file".to_string(), "Could not detect format".to_string())];
+        let failures = vec![(
+            "bad.file".to_string(),
+            "Could not detect format".to_string(),
+        )];
 
         let output = format_multiple_files(results, failures);
 

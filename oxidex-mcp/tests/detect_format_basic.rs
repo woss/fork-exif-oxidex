@@ -19,7 +19,13 @@ async fn test_detect_format_basic() {
     println!("==================");
 
     // Basic checks
-    assert!(output.contains("sample.jpg"), "Output should contain filename");
+    assert!(
+        output.contains("sample.jpg"),
+        "Output should contain filename"
+    );
     assert!(output.contains("Format:"), "Output should show format");
-    assert!(output.contains("MIME Type:"), "Output should show MIME type");
+    assert!(
+        output.contains("MIME Type:"),
+        "Output should show MIME type"
+    );
 }

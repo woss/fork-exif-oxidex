@@ -148,7 +148,13 @@ fn find_tag_in_yaml_databases(tag_name: &str) -> Option<YamlTagInfo> {
         .or_else(|| search_database(&oxidex::tag_db::media::MEDIA_TAGS, prefix, base_name))
         .or_else(|| search_database(&oxidex::tag_db::image::IMAGE_TAGS, prefix, base_name))
         .or_else(|| search_database(&oxidex::tag_db::document::DOCUMENT_TAGS, prefix, base_name))
-        .or_else(|| search_database(&oxidex::tag_db::specialty::SPECIALTY_TAGS, prefix, base_name))
+        .or_else(|| {
+            search_database(
+                &oxidex::tag_db::specialty::SPECIALTY_TAGS,
+                prefix,
+                base_name,
+            )
+        })
 }
 
 /// Format a TagDescriptor from the tag registry (rich metadata)
@@ -260,7 +266,9 @@ fn format_yaml_tag_info(tag_name: &str, info: &YamlTagInfo) -> String {
         ));
     }
 
-    output.push_str("\nNote: This tag is from the YAML database. Additional metadata may be available.\n");
+    output.push_str(
+        "\nNote: This tag is from the YAML database. Additional metadata may be available.\n",
+    );
 
     output
 }
@@ -285,7 +293,9 @@ fn format_tag_not_found(tag_name: &str) -> String {
 
     output.push_str("Troubleshooting:\n");
     output.push_str("  • Check that the tag name is spelled correctly\n");
-    output.push_str("  • Ensure you're using the correct format family prefix (e.g., EXIF:, XMP:, GPS:)\n");
+    output.push_str(
+        "  • Ensure you're using the correct format family prefix (e.g., EXIF:, XMP:, GPS:)\n",
+    );
     output.push_str("  • Try using list_tags to browse available tags\n");
     output.push_str("  • Try searching: list_tags with search parameter\n\n");
 

@@ -19,7 +19,8 @@ async fn test_detect_format_with_real_jpeg() {
 
     // Write test file
     let mut file = fs::File::create(test_file).expect("Failed to create test file");
-    file.write_all(&jpeg_data).expect("Failed to write test data");
+    file.write_all(&jpeg_data)
+        .expect("Failed to write test data");
     drop(file);
 
     // Test format detection
@@ -37,11 +38,20 @@ async fn test_detect_format_with_real_jpeg() {
 
     // Verify output
     assert!(output.contains("Format: JPEG"), "Should detect JPEG format");
-    assert!(output.contains("MIME Type: image/jpeg"), "Should show JPEG MIME type");
+    assert!(
+        output.contains("MIME Type: image/jpeg"),
+        "Should show JPEG MIME type"
+    );
     assert!(output.contains("EXIF"), "Should list EXIF support");
     assert!(output.contains("XMP"), "Should list XMP support");
-    assert!(output.contains("Supported Operations:"), "Should show supported operations");
-    assert!(output.contains("Extract metadata"), "Should support extraction");
+    assert!(
+        output.contains("Supported Operations:"),
+        "Should show supported operations"
+    );
+    assert!(
+        output.contains("Extract metadata"),
+        "Should support extraction"
+    );
     assert!(output.contains("Write metadata"), "Should support writing");
 
     // Clean up
@@ -69,7 +79,8 @@ async fn test_detect_format_with_real_png() {
 
     // Write test file
     let mut file = fs::File::create(test_file).expect("Failed to create test file");
-    file.write_all(&png_data).expect("Failed to write test data");
+    file.write_all(&png_data)
+        .expect("Failed to write test data");
     drop(file);
 
     // Test format detection
@@ -87,9 +98,15 @@ async fn test_detect_format_with_real_png() {
 
     // Verify output
     assert!(output.contains("Format: PNG"), "Should detect PNG format");
-    assert!(output.contains("MIME Type: image/png"), "Should show PNG MIME type");
+    assert!(
+        output.contains("MIME Type: image/png"),
+        "Should show PNG MIME type"
+    );
     assert!(output.contains("XMP"), "Should list XMP support");
-    assert!(output.contains("read/write"), "Should show read/write capability");
+    assert!(
+        output.contains("read/write"),
+        "Should show read/write capability"
+    );
 
     // Clean up
     fs::remove_file(test_file).ok();
@@ -103,21 +120,24 @@ async fn test_detect_format_glob_multiple_files() {
 
     // Create JPEG
     let jpeg_data = vec![
-        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46,
-        0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
-        0xFF, 0xD9,
+        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00,
+        0x01, 0x00, 0x01, 0x00, 0x00, 0xFF, 0xD9,
     ];
-    fs::File::create(jpeg_file).unwrap().write_all(&jpeg_data).unwrap();
+    fs::File::create(jpeg_file)
+        .unwrap()
+        .write_all(&jpeg_data)
+        .unwrap();
 
     // Create PNG
     let png_data = vec![
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE,
-        0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,
+        0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90,
+        0x77, 0x53, 0xDE, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
     ];
-    fs::File::create(png_file).unwrap().write_all(&png_data).unwrap();
+    fs::File::create(png_file)
+        .unwrap()
+        .write_all(&png_data)
+        .unwrap();
 
     // Test glob pattern
     let args = json!({
@@ -132,7 +152,10 @@ async fn test_detect_format_glob_multiple_files() {
     println!("{}", output);
     println!("===============================\n");
 
-    assert!(output.contains("Detected formats for"), "Should show file count");
+    assert!(
+        output.contains("Detected formats for"),
+        "Should show file count"
+    );
     assert!(output.contains("Format: JPEG"), "Should detect JPEG format");
 
     // Clean up

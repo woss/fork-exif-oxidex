@@ -96,7 +96,10 @@ fn collect_all_tags(params: &ListTagsParams) -> Result<Vec<TagEntry>> {
             "PDF"
         } else if table_name.starts_with("QuickTime::") {
             "QuickTime"
-        } else if table_name.contains("Canon") || table_name.contains("Nikon") || table_name.contains("Sony") {
+        } else if table_name.contains("Canon")
+            || table_name.contains("Nikon")
+            || table_name.contains("Sony")
+        {
             "MakerNotes"
         } else {
             "Other"
@@ -148,9 +151,15 @@ fn collect_all_tags(params: &ListTagsParams) -> Result<Vec<TagEntry>> {
             // Add the tag
             tags.push(TagEntry {
                 name: full_name.clone(),
-                description: tag.description.clone().unwrap_or_else(|| "No description available".to_string()),
+                description: tag
+                    .description
+                    .clone()
+                    .unwrap_or_else(|| "No description available".to_string()),
                 writable: tag.writable,
-                type_name: tag.type_name.clone().unwrap_or_else(|| "unknown".to_string()),
+                type_name: tag
+                    .type_name
+                    .clone()
+                    .unwrap_or_else(|| "unknown".to_string()),
                 format_family: format_family.to_string(),
             });
 
@@ -216,7 +225,11 @@ fn format_tags_by_group(mut tags: Vec<TagEntry>) -> String {
     }
 
     // Format output
-    let mut output = format!("Found {} tags across {} format families:\n\n", tags.len(), grouped.len());
+    let mut output = format!(
+        "Found {} tags across {} format families:\n\n",
+        tags.len(),
+        grouped.len()
+    );
 
     // Sort format families for consistent output
     let mut families: Vec<String> = grouped.keys().cloned().collect();
@@ -224,7 +237,11 @@ fn format_tags_by_group(mut tags: Vec<TagEntry>) -> String {
 
     for family in families {
         if let Some(family_tags) = grouped.get(&family) {
-            output.push_str(&format!("━━━ {} ({} tags) ━━━\n", family, family_tags.len()));
+            output.push_str(&format!(
+                "━━━ {} ({} tags) ━━━\n",
+                family,
+                family_tags.len()
+            ));
 
             for tag in family_tags {
                 let writable_marker = if tag.writable { "✓" } else { "✗" };

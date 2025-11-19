@@ -207,11 +207,7 @@ fn get_group_metadata(group_name: &str) -> (String, Vec<String>) {
         ),
         "Photoshop" => (
             "Adobe Photoshop metadata - Photoshop-specific tags".to_string(),
-            vec![
-                "PSD".to_string(),
-                "JPEG".to_string(),
-                "TIFF".to_string(),
-            ],
+            vec!["PSD".to_string(), "JPEG".to_string(), "TIFF".to_string()],
         ),
         "JFIF" => (
             "JPEG File Interchange Format - JPEG container metadata".to_string(),
@@ -248,11 +244,19 @@ fn get_group_metadata(group_name: &str) -> (String, Vec<String>) {
         ),
         "Canon" => (
             "Canon camera maker notes - Canon-specific camera settings".to_string(),
-            vec!["Canon RAW".to_string(), "CR2".to_string(), "CR3".to_string()],
+            vec![
+                "Canon RAW".to_string(),
+                "CR2".to_string(),
+                "CR3".to_string(),
+            ],
         ),
         "Nikon" => (
             "Nikon camera maker notes - Nikon-specific camera settings".to_string(),
-            vec!["Nikon RAW".to_string(), "NEF".to_string(), "NRW".to_string()],
+            vec![
+                "Nikon RAW".to_string(),
+                "NEF".to_string(),
+                "NRW".to_string(),
+            ],
         ),
         "Sony" => (
             "Sony camera maker notes - Sony-specific camera settings".to_string(),
@@ -272,7 +276,11 @@ fn get_group_metadata(group_name: &str) -> (String, Vec<String>) {
         ),
         "Pentax" => (
             "Pentax camera maker notes - Pentax-specific camera settings".to_string(),
-            vec!["Pentax RAW".to_string(), "PEF".to_string(), "DNG".to_string()],
+            vec![
+                "Pentax RAW".to_string(),
+                "PEF".to_string(),
+                "DNG".to_string(),
+            ],
         ),
         "Leica" => (
             "Leica camera maker notes - Leica-specific camera settings".to_string(),
@@ -307,7 +315,10 @@ fn format_tag_groups(groups: Vec<TagGroupInfo>) -> String {
     ));
 
     for group in groups {
-        output.push_str(&format!("━━━ {} ({} tags) ━━━\n", group.name, group.tag_count));
+        output.push_str(&format!(
+            "━━━ {} ({} tags) ━━━\n",
+            group.name, group.tag_count
+        ));
         output.push_str(&format!("  Description: {}\n", group.description));
         output.push_str(&format!(
             "  Supported Formats: {}\n",
@@ -335,10 +346,7 @@ mod tests {
 
         // Check for expected major groups
         let group_names: Vec<&str> = groups.iter().map(|g| g.name.as_str()).collect();
-        assert!(
-            group_names.contains(&"EXIF"),
-            "Should include EXIF group"
-        );
+        assert!(group_names.contains(&"EXIF"), "Should include EXIF group");
     }
 
     #[test]
