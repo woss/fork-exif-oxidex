@@ -117,19 +117,19 @@ ExifTool-RS demonstrates exceptional performance improvements over the original 
 
 | Scenario | Perl ExifTool | ExifTool-RS | Speedup |
 |----------|---------------|-------------|---------|
-| Single JPEG Read | 119.9ms ± 15.9ms | 25.9ms ± 7.5ms | **4.6x faster** |
-| Batch Processing (1000 files) | 1748.3ms ± 84.4ms | 515.5ms ± 542.2ms | **3.4x faster** |
-| Write Operation (modify EXIF tag) | 237.2ms ± 64.6ms | 32.7ms ± 17.6ms | **7.2x faster** |
-| Format Detection | 107.0ms ± 28.0ms | 10.5ms ± 1.8ms | **10.2x faster** |
+| Single JPEG Read | 68.8ms ± 20.5ms | 9.2ms ± 0.7ms | **7.5x faster** |
+| Batch Processing (1000 files) | 2609.7ms ± 1070.2ms | 399.1ms ± 13.7ms | **6.5x faster** |
+| Write Operation (modify EXIF tag) | 237.8ms ± 26.6ms | 33.0ms ± 29.2ms | **7.2x faster** |
+| Format Detection | 57.8ms ± 2.6ms | 10.2ms ± 1.6ms | **5.7x faster** |
 
 *Benchmarks performed using [hyperfine](https://github.com/sharkdp/hyperfine) with multiple runs and warmup periods.*
 
 ### Key Performance Improvements
 
-- **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 4.6x faster metadata extraction
-- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 515.5ms ± 542.2ms vs. 1748.3ms ± 84.4ms for single-threaded Perl
+- **Single file operations**: Zero-cost abstractions and compiled code eliminate Perl interpreter overhead, achieving 7.5x faster metadata extraction
+- **Batch processing**: Parallel processing with Rayon leverages all CPU cores, processing 1000 files in 399.1ms ± 13.7ms vs. 2609.7ms ± 1070.2ms for single-threaded Perl
 - **Write operations**: Efficient binary manipulation and atomic file operations provide 7.2x faster EXIF tag modifications
-- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (10.2x faster)
+- **Format detection**: Native compiled code dramatically outperforms interpreted Perl for magic byte detection (5.7x faster)
 
 ### Reproducing These Benchmarks
 
