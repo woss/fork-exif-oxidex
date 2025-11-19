@@ -428,11 +428,8 @@ mod tests {
 
     #[test]
     fn test_simple_value_decoder() {
-        const TEST_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
-            (0, "Zero"),
-            (1, "One"),
-            (2, "Two"),
-        ]);
+        const TEST_DECODER: SimpleValueDecoder<i16> =
+            SimpleValueDecoder::new(&[(0, "Zero"), (1, "One"), (2, "Two")]);
 
         assert_eq!(TEST_DECODER.decode(0), "Zero");
         assert_eq!(TEST_DECODER.decode(1), "One");
@@ -442,9 +439,7 @@ mod tests {
 
     #[test]
     fn test_simple_value_decoder_with_custom_formatter() {
-        const TEST_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
-            (0, "Known"),
-        ]);
+        const TEST_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[(0, "Known")]);
 
         let result = TEST_DECODER.decode_with(99, |v| format!("Invalid: {}", v));
         assert_eq!(result, "Invalid: 99");
@@ -481,11 +476,7 @@ mod tests {
     #[test]
     fn test_range_decoder() {
         const BRIGHTNESS: RangeDecoder<i16> = RangeDecoder::new(
-            &[
-                (0..30, "Dark"),
-                (30..70, "Normal"),
-                (70..100, "Bright"),
-            ],
+            &[(0..30, "Dark"), (30..70, "Normal"), (70..100, "Bright")],
             "Very Bright",
         );
 

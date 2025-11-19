@@ -119,7 +119,10 @@ fn tag_value_to_string(value: &oxidex::core::tag_value::TagValue) -> String {
         TagValue::String(s) => s.clone(),
         TagValue::Integer(i) => i.to_string(),
         TagValue::Float(f) => f.to_string(),
-        TagValue::Rational { numerator, denominator } => {
+        TagValue::Rational {
+            numerator,
+            denominator,
+        } => {
             if *denominator == 1 {
                 numerator.to_string()
             } else {

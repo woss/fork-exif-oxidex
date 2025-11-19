@@ -64,7 +64,9 @@ pub async fn handle_single_request<R: BufRead>(reader: R) -> Result<JsonRpcRespo
         let line = line?;
         let request: JsonRpcRequest = serde_json::from_str(&line)?;
 
-        let id = request.id.ok_or_else(|| anyhow::anyhow!("Missing id field"))?;
+        let id = request
+            .id
+            .ok_or_else(|| anyhow::anyhow!("Missing id field"))?;
 
         // For now, just echo back a success response
         Ok(JsonRpcResponse {
@@ -98,14 +100,8 @@ pub async fn run_server() -> Result<()> {
         let response_json = match request.method.as_str() {
             "initialize" => serde_json::to_string(&handle_initialize(id))?,
             "tools/list" => serde_json::to_string(&handle_tools_list(id))?,
-            "tools/call" => {
-                serde_json::to_string(&handle_tool_call(id, request.params).await?)?
-            }
-            _ => serde_json::to_string(&create_error_response(
-                id,
-                -32601,
-                "Method not found",
-            ))?,
+            "tools/call" => serde_json::to_string(&handle_tool_call(id, request.params).await?)?,
+            _ => serde_json::to_string(&create_error_response(id, -32601, "Method not found"))?,
         };
 
         println!("{}", response_json);
