@@ -51,7 +51,7 @@ sudo dtrace -x ustackframes=100 -n 'profile-997 /execname == "parse_benchmarks"/
 inferno-collapse-dtrace dtrace.out > stacks.txt
 
 # 3. Analyze the text (accessible!)
-python3 analyze_folded_stacks.py stacks.txt
+python3 scripts/analyze_folded_stacks.py stacks.txt
 ```
 
 **On Linux with perf (no sudo):**
@@ -63,7 +63,7 @@ perf record -F 997 -g cargo bench --bench parse_benchmarks full_read_metadata
 perf script | inferno-collapse-perf > stacks.txt
 
 # 3. Analyze
-python3 analyze_folded_stacks.py stacks.txt
+python3 scripts/analyze_folded_stacks.py stacks.txt
 ```
 
 ### Analysis Output (Text)
@@ -121,10 +121,10 @@ If you have a flamegraph SVG file, you can extract text information:
 
 ```bash
 # Extract function names and times from SVG
-python3 parse_flamegraph.py flamegraph.svg
+python3 scripts/parse_flamegraph.py flamegraph.svg
 ```
 
-See `parse_flamegraph.py` for implementation.
+See `scripts/parse_flamegraph.py` for implementation.
 
 ## Flame Graph Interpretation
 
