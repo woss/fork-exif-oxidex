@@ -1051,9 +1051,9 @@ mod tests {
     #[test]
     fn test_contains_text() {
         let data = b"This is a test string with some content";
-        assert!(contains_text(data, "test", 40));
-        assert!(contains_text(data, "content", 40));
-        assert!(!contains_text(data, "missing", 40));
+        assert!(contains_text(data, "test", 39));
+        assert!(contains_text(data, "content", 39));
+        assert!(!contains_text(data, "missing", 39));
         assert!(!contains_text(data, "test", 10)); // Not enough bytes
     }
 }
