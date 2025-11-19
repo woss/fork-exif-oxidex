@@ -27,6 +27,7 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
 use super::shared::array_extractors::extract_i16_array;
+use super::shared::generic_decoders::{SimpleValueDecoder, ON_OFF};
 use super::shared::MakerNoteParser;
 
 // Qualcomm MakerNote Tag IDs
@@ -51,122 +52,84 @@ const QUALCOMM_FRAME_MERGE_COUNT: u16 = 0x001B; // Merged frame count
 // Qualcomm signature for validation
 const QUALCOMM_SIGNATURE: &[u8] = b"Qualcomm";
 
-/// Decodes Clear Sight dual-camera fusion status
-///
-/// # Arguments
-/// * `value` - Clear Sight status value
-///
-/// # Returns
-/// Human-readable status description
-fn decode_clear_sight(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "On".to_string(),
-        2 => "Auto".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+// ============================================================================
+// Decoders - Using Shared Utilities
+// ============================================================================
 
-/// Decodes Clear Sight fusion mode variant
-///
-/// # Arguments
-/// * `value` - Fusion mode value
-///
-/// # Returns
-/// Human-readable mode description
-fn decode_clear_sight_mode(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Monochrome + RGB Fusion".to_string(),
-        2 => "Wide + Telephoto Fusion".to_string(),
-        3 => "Multi-Camera Fusion".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+/// Decoder for Clear Sight fusion status
+/// Maps 0=Off, 1=On, 2=Auto
+const CLEAR_SIGHT_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
+    (0, "Off"),
+    (1, "On"),
+    (2, "Auto"),
+]);
 
-/// Decodes Chroma Flash status
-///
-/// # Arguments
-/// * `value` - Chroma Flash status
-///
-/// # Returns
-/// Human-readable status
-fn decode_chroma_flash(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Flash + No Flash Blend".to_string(),
-        2 => "Multi-Flash Blend".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+/// Decoder for Clear Sight fusion mode variant
+/// Different types of camera fusion modes available
+const CLEAR_SIGHT_MODE_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
+    (0, "None"),
+    (1, "Monochrome + RGB Fusion"),
+    (2, "Wide + Telephoto Fusion"),
+    (3, "Multi-Camera Fusion"),
+]);
 
-/// Decodes HDR mode
-///
-/// # Arguments
-/// * `value` - HDR mode value
-///
-/// # Returns
-/// Human-readable mode description
-fn decode_hdr_mode(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "HDR".to_string(),
-        2 => "Auto HDR".to_string(),
-        3 => "HDR+".to_string(),
-        4 => "Staggered HDR".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+/// Decoder for Chroma Flash multi-frame blending status
+/// Flash fusion techniques for improved lighting
+const CHROMA_FLASH_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
+    (0, "Off"),
+    (1, "Flash + No Flash Blend"),
+    (2, "Multi-Flash Blend"),
+]);
 
-/// Decodes AI scene detection result
-///
-/// # Arguments
-/// * `value` - Scene type value
-///
-/// # Returns
-/// Human-readable scene description
-fn decode_scene_type(value: i16) -> String {
-    match value {
-        0 => "None".to_string(),
-        1 => "Portrait".to_string(),
-        2 => "Landscape".to_string(),
-        3 => "Food".to_string(),
-        4 => "Night".to_string(),
-        5 => "Sunset".to_string(),
-        6 => "Beach".to_string(),
-        7 => "Snow".to_string(),
-        8 => "Flower".to_string(),
-        9 => "Pet".to_string(),
-        10 => "Document".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+/// Decoder for HDR processing mode
+/// Various HDR capture and processing techniques
+const HDR_MODE_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
+    (0, "Off"),
+    (1, "HDR"),
+    (2, "Auto HDR"),
+    (3, "HDR+"),
+    (4, "Staggered HDR"),
+]);
 
-/// Decodes OptiZoom enhancement level
-///
-/// # Arguments
-/// * `value` - OptiZoom level
-///
-/// # Returns
-/// Human-readable level description
-fn decode_optizoom(value: i16) -> String {
-    match value {
-        0 => "Off".to_string(),
-        1 => "Low".to_string(),
-        2 => "Medium".to_string(),
-        3 => "High".to_string(),
-        4 => "Maximum".to_string(),
-        _ => format!("Unknown ({})", value),
-    }
-}
+/// Decoder for AI scene detection results
+/// Automatically detected scene types for optimal processing
+const SCENE_TYPE_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
+    (0, "None"),
+    (1, "Portrait"),
+    (2, "Landscape"),
+    (3, "Food"),
+    (4, "Night"),
+    (5, "Sunset"),
+    (6, "Beach"),
+    (7, "Snow"),
+    (8, "Flower"),
+    (9, "Pet"),
+    (10, "Document"),
+]);
 
-/// Decodes zoom level
+/// Decoder for OptiZoom enhancement level
+/// Digital zoom quality enhancement levels
+const OPTIZOOM_DECODER: SimpleValueDecoder<i16> = SimpleValueDecoder::new(&[
+    (0, "Off"),
+    (1, "Low"),
+    (2, "Medium"),
+    (3, "High"),
+    (4, "Maximum"),
+]);
+
+/// Decodes zoom level from encoded value
 ///
 /// # Arguments
 /// * `value` - Zoom level (10 = 1.0x, 100 = 10.0x)
 ///
 /// # Returns
-/// Human-readable zoom level
+/// Human-readable zoom level with 'x' suffix
+///
+/// # Encoding
+/// The zoom level is encoded as value/10, so:
+/// - 10 = 1.0x
+/// - 25 = 2.5x
+/// - 100 = 10.0x
 fn decode_zoom_level(value: i16) -> String {
     if value <= 0 {
         return "1.0x".to_string();
@@ -179,17 +142,23 @@ fn decode_zoom_level(value: i16) -> String {
 ///
 /// # Arguments
 /// * `entry` - IFD entry containing the value
-/// * `data` - Full MakerNote data buffer
-/// * `byte_order` - Byte order for parsing
+/// * `_data` - Full MakerNote data buffer (unused for inline values)
+/// * `byte_order` - Byte order for parsing multi-byte values
 ///
 /// # Returns
 /// Extracted value or None if invalid
+///
+/// # Implementation Notes
+/// For SHORT type with count=1, the value is stored inline in the value_offset field.
+/// The byte order determines which 16 bits of the 32-bit value_offset to use.
 fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<i16> {
     if entry.value_count != 1 {
         return None;
     }
 
     // For SHORT type (count=1), value is inline in value_offset field
+    // Little endian: use lower 16 bits
+    // Big endian: use upper 16 bits
     let value = match byte_order {
         ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as i16,
         ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as i16,
@@ -202,70 +171,20 @@ fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> O
 ///
 /// # Arguments
 /// * `entry` - IFD entry containing the value
-/// * `data` - Full MakerNote data buffer
-/// * `byte_order` - Byte order for parsing
+/// * `_data` - Full MakerNote data buffer (unused for inline values)
+/// * `_byte_order` - Byte order (unused as value_offset is already parsed)
 ///
 /// # Returns
 /// Extracted value or None if invalid
+///
+/// # Implementation Notes
+/// For LONG type with count=1, the entire value_offset field is the value.
 fn extract_u32_value(entry: &IfdEntry, _data: &[u8], _byte_order: ByteOrder) -> Option<u32> {
     if entry.value_count != 1 {
         return None;
     }
 
     Some(entry.value_offset)
-}
-
-/// Extracts an ASCII string from IFD entry
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the string
-/// * `data` - Full MakerNote data buffer
-/// * `byte_order` - Byte order for parsing
-///
-/// # Returns
-/// Extracted string or None if invalid
-fn extract_string(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<String> {
-    if entry.value_count == 0 {
-        return None;
-    }
-
-    let value_bytes = if entry.value_count <= 4 {
-        // Inline string (stored in value_offset field)
-        let mut bytes = Vec::new();
-        for i in 0..entry.value_count as usize {
-            let byte = match byte_order {
-                ByteOrder::LittleEndian => ((entry.value_offset >> (i * 8)) & 0xFF) as u8,
-                ByteOrder::BigEndian => ((entry.value_offset >> (24 - i * 8)) & 0xFF) as u8,
-            };
-            if byte == 0 {
-                break;
-            }
-            bytes.push(byte);
-        }
-        bytes
-    } else {
-        // External string (offset points to data)
-        let offset = entry.value_offset as usize;
-        if offset >= data.len() {
-            return None;
-        }
-        let end = std::cmp::min(offset + entry.value_count as usize, data.len());
-        data[offset..end].to_vec()
-    };
-
-    if value_bytes.is_empty() {
-        return None;
-    }
-
-    let string = String::from_utf8_lossy(&value_bytes)
-        .trim_end_matches('\0')
-        .to_string();
-
-    if string.is_empty() {
-        None
-    } else {
-        Some(string)
-    }
 }
 
 /// Qualcomm MakerNote parser implementation
@@ -290,6 +209,10 @@ impl QualcommParser {
     /// * `data` - Full MakerNote data buffer
     /// * `byte_order` - Byte order for multi-byte values
     /// * `tags` - HashMap to insert extracted tags into
+    ///
+    /// # Implementation Strategy
+    /// Uses shared decoders for common patterns (On/Off, match-based)
+    /// and custom logic only for unique transformations (zoom level, ISP version)
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -300,24 +223,27 @@ impl QualcommParser {
         let tag_id = entry.tag_id;
 
         match tag_id {
+            // Clear Sight dual-camera fusion
             QUALCOMM_CLEAR_SIGHT => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Qualcomm:ClearSight".to_string(), decode_clear_sight(value));
+                    tags.insert("Qualcomm:ClearSight".to_string(), CLEAR_SIGHT_DECODER.decode(value));
                 }
             }
             QUALCOMM_CLEAR_SIGHT_MODE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Qualcomm:ClearSightMode".to_string(),
-                        decode_clear_sight_mode(value),
+                        CLEAR_SIGHT_MODE_DECODER.decode(value),
                     );
                 }
             }
+
+            // Chroma Flash multi-frame blending
             QUALCOMM_CHROMA_FLASH => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Qualcomm:ChromaFlash".to_string(),
-                        decode_chroma_flash(value),
+                        CHROMA_FLASH_DECODER.decode(value),
                     );
                 }
             }
@@ -326,9 +252,11 @@ impl QualcommParser {
                     tags.insert("Qualcomm:ChromaFlashFrames".to_string(), value.to_string());
                 }
             }
+
+            // OptiZoom digital enhancement
             QUALCOMM_OPTIZOOM => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Qualcomm:OptiZoom".to_string(), decode_optizoom(value));
+                    tags.insert("Qualcomm:OptiZoom".to_string(), OPTIZOOM_DECODER.decode(value));
                 }
             }
             QUALCOMM_ZOOM_LEVEL => {
@@ -336,32 +264,41 @@ impl QualcommParser {
                     tags.insert("Qualcomm:ZoomLevel".to_string(), decode_zoom_level(value));
                 }
             }
+
+            // HDR processing
             QUALCOMM_HDR_MODE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Qualcomm:HDRMode".to_string(), decode_hdr_mode(value));
+                    tags.insert("Qualcomm:HDRMode".to_string(), HDR_MODE_DECODER.decode(value));
                 }
             }
+
+            // Multi-frame noise reduction (binary On/Off)
             QUALCOMM_MULTI_FRAME_NR => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    let status = if value > 0 { "On" } else { "Off" };
+                    // Normalize to 0/1 for ON_OFF decoder
+                    let normalized = if value > 0 { 1 } else { 0 };
                     tags.insert(
                         "Qualcomm:MultiFrameNoiseReduction".to_string(),
-                        status.to_string(),
+                        ON_OFF.decode(normalized),
                     );
                 }
             }
+
+            // AI scene detection
             QUALCOMM_SCENE_DETECTION => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert(
                         "Qualcomm:SceneDetection".to_string(),
-                        decode_scene_type(value),
+                        SCENE_TYPE_DECODER.decode(value),
                     );
                 }
             }
+
+            // Bokeh depth processing (binary On/Off)
             QUALCOMM_BOKEH_MODE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    let status = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Qualcomm:BokehMode".to_string(), status.to_string());
+                    let normalized = if value > 0 { 1 } else { 0 };
+                    tags.insert("Qualcomm:BokehMode".to_string(), ON_OFF.decode(normalized));
                 }
             }
             QUALCOMM_BOKEH_LEVEL => {
@@ -369,39 +306,51 @@ impl QualcommParser {
                     tags.insert("Qualcomm:BokehLevel".to_string(), value.to_string());
                 }
             }
+
+            // Low-light enhancement (binary On/Off)
             QUALCOMM_LOW_LIGHT_MODE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    let status = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Qualcomm:LowLightMode".to_string(), status.to_string());
+                    let normalized = if value > 0 { 1 } else { 0 };
+                    tags.insert("Qualcomm:LowLightMode".to_string(), ON_OFF.decode(normalized));
                 }
             }
+
+            // Night mode processing (binary On/Off)
             QUALCOMM_NIGHT_MODE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    let status = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Qualcomm:NightMode".to_string(), status.to_string());
+                    let normalized = if value > 0 { 1 } else { 0 };
+                    tags.insert("Qualcomm:NightMode".to_string(), ON_OFF.decode(normalized));
                 }
             }
+
+            // Phase detection autofocus (Active/Inactive)
             QUALCOMM_PHASE_DETECT_AF => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     let status = if value > 0 { "Active" } else { "Inactive" };
                     tags.insert("Qualcomm:PhaseDetectAF".to_string(), status.to_string());
                 }
             }
+
+            // ISP version (major.minor format from u32)
             QUALCOMM_ISP_VERSION => {
                 if let Some(value) = extract_u32_value(entry, data, byte_order) {
+                    // Upper 16 bits = major version, lower 16 bits = minor version
                     tags.insert(
                         "Qualcomm:ISPVersion".to_string(),
                         format!("{}.{}", value >> 16, value & 0xFFFF),
                     );
                 }
             }
+
+            // Frame merge count (raw numeric value)
             QUALCOMM_FRAME_MERGE_COUNT => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
                     tags.insert("Qualcomm:FrameMergeCount".to_string(), value.to_string());
                 }
             }
+
             _ => {
-                // Unknown tag - skip or log for debugging
+                // Unknown tag - skip silently for forward compatibility
             }
         }
     }
@@ -427,6 +376,7 @@ impl MakerNoteParser for QualcommParser {
         }
 
         // Qualcomm MakerNotes may start with "Qualcomm" signature
+        // If present, skip it to find the IFD start
         let ifd_offset = if data.len() >= 8 && &data[0..8] == QUALCOMM_SIGNATURE {
             // Skip signature and padding (usually 8-10 bytes total)
             10
@@ -439,12 +389,13 @@ impl MakerNoteParser for QualcommParser {
             return Err("Invalid IFD offset".to_string());
         }
 
-        // Read number of IFD entries
+        // Read number of IFD entries (2 bytes at IFD start)
         let entry_count = match byte_order {
             ByteOrder::LittleEndian => u16::from_le_bytes([data[ifd_offset], data[ifd_offset + 1]]),
             ByteOrder::BigEndian => u16::from_be_bytes([data[ifd_offset], data[ifd_offset + 1]]),
         };
 
+        // Sanity check: entry count should be reasonable
         if entry_count == 0 || entry_count > 500 {
             return Err(format!(
                 "Invalid entry count: {} (expected 1-500)",
@@ -452,16 +403,17 @@ impl MakerNoteParser for QualcommParser {
             ));
         }
 
-        // Parse each IFD entry
+        // Parse each IFD entry (12 bytes each)
         let entry_size = 12; // Standard IFD entry size
         let mut offset = ifd_offset + 2;
 
         for _ in 0..entry_count {
             if offset + entry_size > data.len() {
-                break;
+                break; // Incomplete entry, stop parsing
             }
 
-            // Parse IFD entry manually
+            // Parse IFD entry manually from raw bytes
+            // Format: [tag:2][type:2][count:4][value_offset:4]
             let tag = match byte_order {
                 ByteOrder::LittleEndian => u16::from_le_bytes([data[offset], data[offset + 1]]),
                 ByteOrder::BigEndian => u16::from_be_bytes([data[offset], data[offset + 1]]),
@@ -502,6 +454,7 @@ impl MakerNoteParser for QualcommParser {
                 ]),
             };
 
+            // Create IFD entry structure
             let entry = IfdEntry {
                 tag_id: tag,
                 field_type,
@@ -509,6 +462,7 @@ impl MakerNoteParser for QualcommParser {
                 value_offset,
             };
 
+            // Parse this entry's tag value
             self.parse_entry(&entry, data, byte_order, tags);
 
             offset += entry_size;
@@ -518,12 +472,12 @@ impl MakerNoteParser for QualcommParser {
     }
 
     fn validate_header(&self, data: &[u8]) -> bool {
-        // Accept data with or without Qualcomm signature
+        // Accept data with Qualcomm signature
         if data.len() >= 8 && &data[0..8] == QUALCOMM_SIGNATURE {
             return true;
         }
 
-        // Also accept if it looks like valid IFD data
+        // Also accept if it looks like valid IFD data (reasonable entry count)
         if data.len() >= 2 {
             let entry_count = u16::from_le_bytes([data[0], data[1]]);
             if entry_count > 0 && entry_count < 500 {
@@ -540,44 +494,44 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_decode_clear_sight() {
-        assert_eq!(decode_clear_sight(0), "Off");
-        assert_eq!(decode_clear_sight(1), "On");
-        assert_eq!(decode_clear_sight(2), "Auto");
+    fn test_clear_sight_decoder() {
+        assert_eq!(CLEAR_SIGHT_DECODER.decode(0), "Off");
+        assert_eq!(CLEAR_SIGHT_DECODER.decode(1), "On");
+        assert_eq!(CLEAR_SIGHT_DECODER.decode(2), "Auto");
     }
 
     #[test]
-    fn test_decode_clear_sight_mode() {
-        assert_eq!(decode_clear_sight_mode(0), "None");
-        assert_eq!(decode_clear_sight_mode(1), "Monochrome + RGB Fusion");
-        assert_eq!(decode_clear_sight_mode(3), "Multi-Camera Fusion");
+    fn test_clear_sight_mode_decoder() {
+        assert_eq!(CLEAR_SIGHT_MODE_DECODER.decode(0), "None");
+        assert_eq!(CLEAR_SIGHT_MODE_DECODER.decode(1), "Monochrome + RGB Fusion");
+        assert_eq!(CLEAR_SIGHT_MODE_DECODER.decode(3), "Multi-Camera Fusion");
     }
 
     #[test]
-    fn test_decode_chroma_flash() {
-        assert_eq!(decode_chroma_flash(0), "Off");
-        assert_eq!(decode_chroma_flash(1), "Flash + No Flash Blend");
+    fn test_chroma_flash_decoder() {
+        assert_eq!(CHROMA_FLASH_DECODER.decode(0), "Off");
+        assert_eq!(CHROMA_FLASH_DECODER.decode(1), "Flash + No Flash Blend");
     }
 
     #[test]
-    fn test_decode_hdr_mode() {
-        assert_eq!(decode_hdr_mode(0), "Off");
-        assert_eq!(decode_hdr_mode(1), "HDR");
-        assert_eq!(decode_hdr_mode(4), "Staggered HDR");
+    fn test_hdr_mode_decoder() {
+        assert_eq!(HDR_MODE_DECODER.decode(0), "Off");
+        assert_eq!(HDR_MODE_DECODER.decode(1), "HDR");
+        assert_eq!(HDR_MODE_DECODER.decode(4), "Staggered HDR");
     }
 
     #[test]
-    fn test_decode_scene_type() {
-        assert_eq!(decode_scene_type(0), "None");
-        assert_eq!(decode_scene_type(1), "Portrait");
-        assert_eq!(decode_scene_type(10), "Document");
+    fn test_scene_type_decoder() {
+        assert_eq!(SCENE_TYPE_DECODER.decode(0), "None");
+        assert_eq!(SCENE_TYPE_DECODER.decode(1), "Portrait");
+        assert_eq!(SCENE_TYPE_DECODER.decode(10), "Document");
     }
 
     #[test]
-    fn test_decode_optizoom() {
-        assert_eq!(decode_optizoom(0), "Off");
-        assert_eq!(decode_optizoom(2), "Medium");
-        assert_eq!(decode_optizoom(4), "Maximum");
+    fn test_optizoom_decoder() {
+        assert_eq!(OPTIZOOM_DECODER.decode(0), "Off");
+        assert_eq!(OPTIZOOM_DECODER.decode(2), "Medium");
+        assert_eq!(OPTIZOOM_DECODER.decode(4), "Maximum");
     }
 
     #[test]
@@ -585,6 +539,13 @@ mod tests {
         assert_eq!(decode_zoom_level(10), "1.0x");
         assert_eq!(decode_zoom_level(50), "5.0x");
         assert_eq!(decode_zoom_level(100), "10.0x");
+    }
+
+    #[test]
+    fn test_on_off_decoder() {
+        // Test the shared ON_OFF decoder
+        assert_eq!(ON_OFF.decode(0), "Off");
+        assert_eq!(ON_OFF.decode(1), "On");
     }
 
     #[test]

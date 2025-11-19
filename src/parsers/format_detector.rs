@@ -44,11 +44,611 @@ use crate::core::{FileFormat, FileReader};
 use crate::parsers::raw;
 use std::io;
 
+/// A signature definition for format detection
+///
+/// This structure describes a file format signature including:
+/// - The byte pattern to match
+/// - The offset where the pattern should be found
+/// - The format to return if matched
+#[derive(Debug)]
+struct Signature {
+    /// Magic bytes to match against
+    bytes: &'static [u8],
+    /// Offset in the file where signature should be found (0 = file start)
+    offset: u64,
+    /// Format to return when this signature matches
+    format: FileFormat,
+}
+
+/// Macro to simplify signature table creation
+///
+/// Usage: signature!(bytes, offset, format)
+/// Example: signature!(b"PNG", 0, FileFormat::PNG)
+macro_rules! signature {
+    ($bytes:expr, $offset:expr, $format:expr) => {
+        Signature {
+            bytes: $bytes,
+            offset: $offset,
+            format: $format,
+        }
+    };
+}
+
+/// Check if bytes at a specific offset match a pattern
+///
+/// # Arguments
+///
+/// * `data` - The data buffer to search within
+/// * `pattern` - The byte pattern to match
+/// * `offset` - The offset within data where pattern should start
+///
+/// # Returns
+///
+/// `true` if the pattern matches at the specified offset, `false` otherwise
+#[inline]
+fn matches_at_offset(data: &[u8], pattern: &[u8], offset: usize) -> bool {
+    if offset + pattern.len() > data.len() {
+        return false;
+    }
+    &data[offset..offset + pattern.len()] == pattern
+}
+
+/// Check if data starts with any of the provided patterns
+///
+/// # Arguments
+///
+/// * `data` - The data buffer to check
+/// * `patterns` - Slice of byte patterns to test against
+///
+/// # Returns
+///
+/// `true` if data starts with any of the patterns, `false` otherwise
+#[inline]
+fn starts_with_any(data: &[u8], patterns: &[&[u8]]) -> bool {
+    patterns.iter().any(|pattern| data.starts_with(pattern))
+}
+
+/// Check if data contains a text pattern within the first N bytes
+///
+/// # Arguments
+///
+/// * `data` - The data buffer to search
+/// * `pattern` - The text pattern to find
+/// * `limit` - Maximum bytes to search from start
+///
+/// # Returns
+///
+/// `true` if pattern is found within the first `limit` bytes as valid UTF-8
+#[inline]
+fn contains_text(data: &[u8], pattern: &str, limit: usize) -> bool {
+    if data.len() < limit {
+        return false;
+    }
+    if let Ok(text) = std::str::from_utf8(&data[0..limit]) {
+        text.contains(pattern)
+    } else {
+        false
+    }
+}
+
+/// Static signature table for simple format detection
+///
+/// This table contains signatures that can be checked with simple byte matching
+/// at fixed offsets. More complex formats requiring additional logic are handled
+/// separately in the detect_format function.
+///
+/// Signatures are ordered from most specific to least specific to ensure
+/// correct detection when multiple formats share similar patterns.
+static SIMPLE_SIGNATURES: &[Signature] = &[
+    // Camera Raw formats with unique signatures
+    signature!(b"FUJIFILMCCD-RAW ", 0, FileFormat::CameraRaw(raw::RawFormat::FujifilmRAF)),
+    signature!(b"FOVb", 0, FileFormat::CameraRaw(raw::RawFormat::SigmaX3F)),
+    signature!(b"\x00MRM", 0, FileFormat::CameraRaw(raw::RawFormat::MinoltaMRW)),
+
+    // Image formats
+    signature!(b"\x89PNG", 0, FileFormat::PNG),
+    signature!(b"GIF87a", 0, FileFormat::GIF),
+    signature!(b"GIF89a", 0, FileFormat::GIF),
+    signature!(b"BM", 0, FileFormat::BMP),
+    signature!(b"8BPS", 0, FileFormat::PSD),
+    signature!(b"\x00\x00\x01\x00", 0, FileFormat::ICO),
+    signature!(b"FLIF", 0, FileFormat::FLIF),
+    signature!(b"\x76\x2F\x31\x01", 0, FileFormat::EXR),
+    signature!(b"\x42\x50\x47\xFB", 0, FileFormat::BPG),
+    signature!(b"\xFF\x0A", 0, FileFormat::JXL),
+
+    // Audio formats
+    signature!(b"fLaC", 0, FileFormat::FLAC),
+    signature!(b"ID3", 0, FileFormat::MP3),
+    signature!(b"FLV", 0, FileFormat::FLV),
+    signature!(b"MAC ", 0, FileFormat::APE),
+    signature!(b"\x1A\x45\xDF\xA3", 0, FileFormat::MKV),
+    signature!(b"OggS", 0, FileFormat::OGG),
+
+    // Document formats
+    signature!(b"%PDF", 0, FileFormat::PDF),
+
+    // Archive formats
+    signature!(b"PK", 0, FileFormat::ZIP),
+    signature!(b"Rar!", 0, FileFormat::RAR),
+    signature!(b"\x37\x7A\xBC\xAF\x27\x1C", 0, FileFormat::SevenZ),
+    signature!(b"\x1F\x8B", 0, FileFormat::GZ),
+
+    // Font formats
+    signature!(b"OTTO", 0, FileFormat::OTF),
+    signature!(b"wOFF", 0, FileFormat::WOFF),
+    signature!(b"wOF2", 0, FileFormat::WOFF2),
+    signature!(b"\x00\x01\x00\x00", 0, FileFormat::TTF),
+    signature!(b"true", 0, FileFormat::TTF),
+
+    // Binary formats
+    signature!(b"\x7FELF", 0, FileFormat::ELF),
+    signature!(b"\x89HDF\x0D\x0A\x1A\x0A", 0, FileFormat::HDF5),
+    signature!(b"SIMPLE", 0, FileFormat::FITS),
+    signature!(b"BEGIN:VCARD", 0, FileFormat::VCF),
+    signature!(b"\x4C\x00\x00\x00", 0, FileFormat::LNK),
+
+    // Archive formats with offset signatures
+    signature!(b"ustar", 257, FileFormat::TAR),
+    signature!(b"CD001", 32769, FileFormat::ISO),
+];
+
+/// Detect TIFF-based formats
+///
+/// TIFF and TIFF-based raw camera formats share similar byte-order markers
+/// but differ in magic numbers. This function consolidates the detection
+/// logic for all TIFF variants.
+///
+/// # TIFF Variants
+///
+/// - Standard TIFF: II/MM + 0x002A (42)
+/// - Panasonic RW2: II + 0x0055 (85)
+/// - Olympus ORF: II + "RO" or "RS", MM + "OR"
+/// - Canon CR2: II + 0x002A + "CR\x02\x00" at offset 8
+/// - Canon CRW: II + 0x001A + "HEAPCCDR" at offset 6
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 16 bytes recommended)
+///
+/// # Returns
+///
+/// `Some(FileFormat)` if TIFF variant detected, `None` otherwise
+fn detect_tiff_variants(data: &[u8]) -> Option<FileFormat> {
+    if data.len() < 4 {
+        return None;
+    }
+
+    // Canon CR2: Little-endian TIFF with "CR\x02\x00" at offset 8
+    if data.len() >= 12
+        && data.starts_with(&[0x49, 0x49, 0x2A, 0x00])
+        && matches_at_offset(data, b"CR\x02\x00", 8) {
+        return Some(FileFormat::CameraRaw(raw::RawFormat::CanonCR2));
+    }
+
+    // Canon CRW: CIFF format with "II\x1a\x00" + "HEAPCCDR"
+    if data.len() >= 14
+        && matches_at_offset(data, &[0x49, 0x49, 0x1A, 0x00], 0)
+        && matches_at_offset(data, b"HEAPCCDR", 6) {
+        return Some(FileFormat::CameraRaw(raw::RawFormat::CanonCRW));
+    }
+
+    // All TIFF variants (group by byte order for efficiency)
+    let tiff_signatures = [
+        ([0x49, 0x49, 0x2A, 0x00], "standard LE"),
+        ([0x49, 0x49, 0x55, 0x00], "Panasonic RW2"),
+        ([0x49, 0x49, 0x52, 0x4F], "Olympus ORF (RO)"),
+        ([0x49, 0x49, 0x52, 0x53], "Olympus ORF (RS)"),
+        ([0x4D, 0x4D, 0x00, 0x2A], "standard BE"),
+        ([0x4D, 0x4D, 0x4F, 0x52], "Olympus ORF (OR)"),
+    ];
+
+    for (sig, _desc) in &tiff_signatures {
+        if data.starts_with(sig) {
+            return Some(FileFormat::TIFF);
+        }
+    }
+
+    None
+}
+
+/// Detect ISO Base Media File Format (BMFF) variants
+///
+/// Many modern formats use the BMFF container with "ftyp" at offset 4.
+/// This function checks the brand identifier to distinguish between:
+/// - Canon CR3 (ftypcrx)
+/// - AVIF (ftypavif)
+/// - HEIF/HEIC (ftyp + HEIF brands)
+/// - Generic QuickTime/MP4
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 12 bytes recommended)
+///
+/// # Returns
+///
+/// `Some(FileFormat)` if BMFF variant detected, `None` otherwise
+fn detect_bmff_variants(data: &[u8]) -> Option<FileFormat> {
+    if data.len() < 8 || !matches_at_offset(data, b"ftyp", 4) {
+        return None;
+    }
+
+    // Check brand identifier at offset 8
+    if data.len() < 12 {
+        // Has ftyp but not enough bytes for brand
+        return Some(FileFormat::QuickTime);
+    }
+
+    let brand = &data[8..12];
+
+    // Canon CR3
+    if brand == b"crx " {
+        return Some(FileFormat::CameraRaw(raw::RawFormat::CanonCR3));
+    }
+
+    // AVIF
+    if brand == b"avif" {
+        return Some(FileFormat::AVIF);
+    }
+
+    // HEIF brands
+    let heif_brands = [
+        b"heic", b"heix", b"hevc", b"hevx",
+        b"heim", b"heis", b"hevm", b"hevs", b"mif1",
+    ];
+
+    if heif_brands.iter().any(|b| brand == *b) {
+        return Some(FileFormat::HEIF);
+    }
+
+    // Default to QuickTime/MP4
+    Some(FileFormat::QuickTime)
+}
+
+/// Detect RIFF-based formats
+///
+/// RIFF (Resource Interchange File Format) is used by multiple formats:
+/// - WAV audio (RIFF...WAVE)
+/// - AVI video (RIFF...AVI )
+/// - WebP image (RIFF...WEBP)
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 12 bytes recommended)
+///
+/// # Returns
+///
+/// `Some(FileFormat)` if RIFF format detected, `None` otherwise
+fn detect_riff_formats(data: &[u8]) -> Option<FileFormat> {
+    if data.len() < 12 || !data.starts_with(b"RIFF") {
+        return None;
+    }
+
+    let format_type = &data[8..12];
+    match format_type {
+        b"WAVE" => Some(FileFormat::WAV),
+        b"AVI " => Some(FileFormat::AVI),
+        b"WEBP" => Some(FileFormat::WebP),
+        _ => None,
+    }
+}
+
+/// Detect MP3 format via MPEG sync pattern
+///
+/// MP3 files without ID3 tags start with MPEG frame sync bytes.
+/// Valid sync: 0xFF followed by 0xEx where x is not E or F (UTF-16 BOM)
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 2 bytes)
+///
+/// # Returns
+///
+/// `true` if MPEG sync pattern detected
+fn is_mp3_sync(data: &[u8]) -> bool {
+    data.len() >= 2
+        && data[0] == 0xFF
+        && (data[1] & 0xE0) == 0xE0
+        && data[1] != 0xFE
+        && data[1] != 0xFF
+}
+
+/// Detect AAC format via ADTS sync word
+///
+/// AAC files use ADTS framing with sync word 0xFFF in first 12 bits.
+/// Common patterns: 0xFF 0xF1 or 0xFF 0xF9
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 2 bytes)
+///
+/// # Returns
+///
+/// `true` if ADTS sync pattern detected
+fn is_aac_adts(data: &[u8]) -> bool {
+    data.len() >= 2
+        && data[0] == 0xFF
+        && (data[1] == 0xF1 || data[1] == 0xF9)
+}
+
+/// Detect MPEG Transport Stream (MTS/M2TS) format
+///
+/// MTS uses sync byte 0x47 repeating every 188 bytes (standard TS)
+/// or every 192 bytes (M2TS with 4-byte timestamp header).
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 576 bytes for reliable detection)
+///
+/// # Returns
+///
+/// `true` if MTS sync pattern detected
+fn is_mts_stream(data: &[u8]) -> bool {
+    // Standard TS: 188-byte packets
+    if data.len() >= 564
+        && data[0] == 0x47
+        && data[188] == 0x47
+        && data[376] == 0x47 {
+        return true;
+    }
+
+    // M2TS: 192-byte packets with timestamp
+    if data.len() >= 576
+        && data[4] == 0x47
+        && data[196] == 0x47
+        && data[388] == 0x47 {
+        return true;
+    }
+
+    false
+}
+
+/// Detect Opus audio within OGG container
+///
+/// Opus uses OGG container with "OpusHead" signature at offset 28.
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 36 bytes)
+///
+/// # Returns
+///
+/// `Some(FileFormat::OPUS)` if Opus detected, `Some(FileFormat::OGG)` for generic OGG
+fn detect_ogg_variant(data: &[u8]) -> Option<FileFormat> {
+    if data.len() >= 36 && matches_at_offset(data, b"OpusHead", 28) {
+        Some(FileFormat::OPUS)
+    } else {
+        Some(FileFormat::OGG)
+    }
+}
+
+/// Detect Portable Executable (PE) format
+///
+/// PE files start with MZ (DOS stub) followed by PE signature.
+/// The e_lfanew field at offset 0x3C points to the PE header.
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer
+/// * `reader` - File reader for additional validation
+///
+/// # Returns
+///
+/// `Some(FileFormat::PE)` if valid PE detected, `None` otherwise
+fn detect_pe_format(data: &[u8], reader: &dyn FileReader) -> Option<FileFormat> {
+    // Check for MZ signature
+    if data.len() < 64 || !data.starts_with(&[0x4D, 0x5A]) {
+        return None;
+    }
+
+    // Read e_lfanew field at offset 0x3C
+    if data.len() < 0x40 {
+        return None;
+    }
+
+    let e_lfanew = u32::from_le_bytes([
+        data[0x3C], data[0x3D], data[0x3E], data[0x3F],
+    ]) as u64;
+
+    // Verify PE signature at e_lfanew offset
+    if e_lfanew < reader.size() && e_lfanew + 4 <= reader.size() {
+        if let Ok(pe_sig) = reader.read(e_lfanew, 4) {
+            if pe_sig == [0x50, 0x45, 0x00, 0x00] {
+                return Some(FileFormat::PE);
+            }
+        }
+    }
+
+    None
+}
+
+/// Detect ZIP-based document formats
+///
+/// Many document formats use ZIP containers. This function examines
+/// internal structure to distinguish between:
+/// - EPUB, DOCX, XLSX, PPTX (Office Open XML)
+/// - Pages, Numbers, Keynote (iWork)
+/// - Generic ZIP
+///
+/// # Arguments
+///
+/// * `reader` - File reader for reading ZIP contents
+///
+/// # Returns
+///
+/// `FileFormat` variant for detected format
+fn detect_zip_variant(reader: &dyn FileReader) -> FileFormat {
+    use std::io::Cursor;
+    use zip::ZipArchive;
+
+    let size = reader.size() as usize;
+    if let Ok(all_data) = reader.read(0, size) {
+        if let Ok(mut archive) = ZipArchive::new(Cursor::new(all_data)) {
+            // Check for specific marker files in priority order
+
+            if archive.by_name("mimetype").is_ok() {
+                return FileFormat::EPUB;
+            }
+
+            if archive.by_name("word/document.xml").is_ok() {
+                return FileFormat::DOCX;
+            }
+
+            if archive.by_name("xl/workbook.xml").is_ok() {
+                return FileFormat::XLSX;
+            }
+
+            if archive.by_name("ppt/presentation.xml").is_ok() {
+                return FileFormat::PPTX;
+            }
+
+            if archive.by_name("Index/Presentation.iwa").is_ok() {
+                return FileFormat::Keynote;
+            }
+
+            // Numbers and Pages both have Document.iwa, check for Tables
+            if archive.by_name("Index/Document.iwa").is_ok() {
+                if archive.by_name("Index/Tables/").is_ok() {
+                    return FileFormat::Numbers;
+                }
+                return FileFormat::Pages;
+            }
+        }
+    }
+
+    FileFormat::ZIP
+}
+
+/// Detect Mach-O binary format
+///
+/// Mach-O has several magic numbers for different architectures and endianness.
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 4 bytes)
+///
+/// # Returns
+///
+/// `true` if Mach-O magic number detected
+fn is_macho(data: &[u8]) -> bool {
+    if data.len() < 4 {
+        return false;
+    }
+
+    let macho_signatures = [
+        [0xFE, 0xED, 0xFA, 0xCE],
+        [0xFE, 0xED, 0xFA, 0xCF],
+        [0xCE, 0xFA, 0xED, 0xFE],
+        [0xCF, 0xFA, 0xED, 0xFE],
+    ];
+
+    macho_signatures.iter().any(|sig| data.starts_with(sig))
+}
+
+/// Detect DWG (AutoCAD Drawing) format
+///
+/// DWG files have version-specific signatures like "AC1015", "AC1018", etc.
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 6 bytes)
+///
+/// # Returns
+///
+/// `true` if DWG signature detected
+fn is_dwg(data: &[u8]) -> bool {
+    data.len() >= 6
+        && matches_at_offset(data, b"AC", 0)
+        && data[2] >= b'1'
+        && data[3] >= b'0'
+}
+
+/// Detect text-based 3D and interchange formats
+///
+/// Several formats use text-based representations with distinctive patterns:
+/// - DXF: AutoCAD exchange format
+/// - OBJ: Wavefront 3D object
+/// - GLTF: GL Transmission Format (JSON)
+/// - STL: Stereolithography (ASCII variant)
+///
+/// # Arguments
+///
+/// * `data` - Magic bytes buffer (at least 100 bytes recommended)
+///
+/// # Returns
+///
+/// `Some(FileFormat)` if text format detected, `None` otherwise
+fn detect_text_formats(data: &[u8]) -> Option<FileFormat> {
+    if data.len() < 100 {
+        return None;
+    }
+
+    let text = std::str::from_utf8(&data[0..100]).ok()?;
+
+    // DXF: starts with "0\n" and contains "SECTION"
+    if text.starts_with("0\n") && text.contains("SECTION") {
+        return Some(FileFormat::DXF);
+    }
+
+    // OBJ: contains vertex definitions
+    if text.contains("v ") || text.contains("vn ") || text.contains("vt ") {
+        return Some(FileFormat::OBJ);
+    }
+
+    // GLTF: JSON with "asset" field
+    if text.contains("\"asset\"") && text.contains("{") {
+        return Some(FileFormat::GLTF);
+    }
+
+    // STL ASCII: starts with "solid"
+    if text.starts_with("solid") {
+        return Some(FileFormat::STL);
+    }
+
+    None
+}
+
+/// Detect Casio CAM proprietary format
+///
+/// Casio CAM files have a 70-byte proprietary header followed by JPEG data.
+/// The header contains "MM" marker at offset 2.
+///
+/// # Arguments
+///
+/// * `data` - Initial magic bytes buffer
+/// * `reader` - File reader for additional validation
+///
+/// # Returns
+///
+/// `Some(FileFormat::CasioCAM)` if detected, `None` otherwise
+fn detect_casio_cam(data: &[u8], reader: &dyn FileReader) -> Option<FileFormat> {
+    if reader.size() <= 73 {
+        return None;
+    }
+
+    // Check for JPEG at offset 70
+    if let Ok(header_check) = reader.read(70, 3) {
+        if header_check.starts_with(&[0xFF, 0xD8, 0xFF]) {
+            // Verify "MM" marker at offset 2
+            if data.len() >= 4 && data[2] == 0x4D && data[3] == 0x4D {
+                return Some(FileFormat::CasioCAM);
+            }
+        }
+    }
+
+    None
+}
+
 /// Detects the file format by examining magic bytes.
 ///
-/// This function reads the first 16 bytes of the file (or fewer if the file is smaller)
-/// and matches them against known format signatures. Format detection is performed
-/// by checking byte sequences in order from most specific to least specific.
+/// This function reads the first 600 bytes of the file (or fewer if the file is smaller)
+/// and matches them against known format signatures using a combination of:
+/// 1. Simple signature table lookup
+/// 2. Specialized detection functions for complex formats
+/// 3. Text-based format detection
+///
+/// Format detection is performed by checking byte sequences in order from most
+/// specific to least specific to avoid false positives.
 ///
 /// # Arguments
 ///
@@ -61,17 +661,9 @@ use std::io;
 ///
 /// # Error Handling
 ///
-/// This function gracefully handles files smaller than 16 bytes by reading only the
+/// This function gracefully handles files smaller than 600 bytes by reading only the
 /// available bytes and attempting format detection with the partial data. Empty files
 /// return `Ok(FileFormat::Unknown)`.
-///
-/// # Magic Byte Sequences
-///
-/// - **JPEG**: `FF D8 FF` (3 bytes) - JPEG Start of Image marker
-/// - **TIFF (LE)**: `49 49 2A 00` (4 bytes) - "II" + magic number 42 (little-endian)
-/// - **TIFF (BE)**: `4D 4D 00 2A` (4 bytes) - "MM" + magic number 42 (big-endian)
-/// - **PNG**: `89 50 4E 47` (4 bytes) - PNG signature (first 4 of 8 bytes)
-/// - **PDF**: `25 50 44 46` (4 bytes) - "%PDF" ASCII signature
 ///
 /// # Examples
 ///
@@ -97,548 +689,123 @@ use std::io;
 /// # }
 /// ```
 pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
-    // Attempt to read 600 bytes for magic byte detection (increased to support MTS which needs 3 packets)
-    // If the file is smaller, read only what's available
+    // Read magic bytes for detection (600 bytes needed for MTS which requires 3 packets)
     let magic_bytes = match reader.read(0, 600) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
-            // File is smaller than 600 bytes, try reading available bytes
+            // File is smaller than 600 bytes, read what's available
             let size = reader.size() as usize;
             if size == 0 {
-                // Empty file - cannot determine format
                 return Ok(FileFormat::Unknown);
             }
-            // Read whatever is available
             reader.read(0, size)?
         }
         Err(e) => return Err(e),
     };
 
-    // Check for empty result (edge case)
+    // Empty file check
     if magic_bytes.is_empty() {
         return Ok(FileFormat::Unknown);
     }
 
-    // Check for raw formats first (before TIFF check)
-    // Many raw formats are TIFF-based, so we need to check for raw-specific signatures
-    // before falling back to generic TIFF detection
-    //
-    // Note: Without filename context, we can only detect raw formats with unique magic bytes
-    // (CR2, CR3, RAF, X3F, MRW). TIFF-based raw formats without distinctive markers
-    // (NEF, ARW, DNG, etc.) will be detected as TIFF and require filename-based detection
-    // at a higher level.
+    // Phase 1: Check complex formats that need special handling
+    // These must be checked before simple signatures to ensure correct priority
 
-    // Canon CR2 has "CR\x02\x00" marker at offset 8
-    if magic_bytes.len() >= 12
-        && magic_bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00])
-        && &magic_bytes[8..12] == b"CR\x02\x00"
-    {
-        return Ok(FileFormat::CameraRaw(raw::RawFormat::CanonCR2));
+    // TIFF and raw camera formats (many share similar signatures)
+    if let Some(format) = detect_tiff_variants(magic_bytes) {
+        return Ok(format);
     }
 
-    // Canon CR3 uses ISO Base Media Format with "ftypcrx " marker
-    if magic_bytes.len() >= 12 && &magic_bytes[4..12] == b"ftypcrx " {
-        return Ok(FileFormat::CameraRaw(raw::RawFormat::CanonCR3));
+    // ISO Base Media File Format variants (ftyp-based)
+    if let Some(format) = detect_bmff_variants(magic_bytes) {
+        return Ok(format);
     }
 
-    // Fujifilm RAF has "FUJIFILMCCD-RAW " signature
-    if magic_bytes.len() >= 16 && &magic_bytes[0..16] == b"FUJIFILMCCD-RAW " {
-        return Ok(FileFormat::CameraRaw(raw::RawFormat::FujifilmRAF));
+    // RIFF-based formats (WAV, AVI, WebP)
+    if let Some(format) = detect_riff_formats(magic_bytes) {
+        return Ok(format);
     }
 
-    // Sigma X3F has "FOVb" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"FOVb" {
-        return Ok(FileFormat::CameraRaw(raw::RawFormat::SigmaX3F));
+    // Phase 2: Check simple signatures from lookup table
+    for sig in SIMPLE_SIGNATURES {
+        if sig.offset == 0 {
+            // Optimization: most signatures are at offset 0
+            if magic_bytes.starts_with(sig.bytes) {
+                return Ok(sig.format.clone());
+            }
+        } else if matches_at_offset(magic_bytes, sig.bytes, sig.offset as usize) {
+            return Ok(sig.format.clone());
+        }
     }
 
-    // Minolta MRW has "\x00MRM" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"\x00MRM" {
-        return Ok(FileFormat::CameraRaw(raw::RawFormat::MinoltaMRW));
+    // Phase 3: Check formats with special detection logic
+
+    // OGG/Opus (already checked in table, but need variant detection)
+    if magic_bytes.starts_with(b"OggS") {
+        if let Some(format) = detect_ogg_variant(magic_bytes) {
+            return Ok(format);
+        }
     }
 
-    // Canon CRW (CIFF format) has "II\x1a\x00" + "HEAPCCDR" signature
-    if magic_bytes.len() >= 14
-        && &magic_bytes[0..4] == b"II\x1a\x00"
-        && &magic_bytes[6..14] == b"HEAPCCDR"
-    {
-        return Ok(FileFormat::CameraRaw(raw::RawFormat::CanonCRW));
-    }
-
-    // Check formats in order from most specific to least specific
-    // Start with 4-byte signatures, then 3-byte signatures
-
-    // TIFF Little-Endian: 0x49 0x49 0x2A 0x00 ("II" + 42 in LE)
-    // Note: Many raw formats (NEF, ARW, DNG, PEF, etc.) are TIFF-based
-    // and will be detected here. Higher-level code should use filename to distinguish.
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00]) {
-        return Ok(FileFormat::TIFF);
-    }
-
-    // TIFF Big-Endian: 0x4D 0x4D 0x00 0x2A ("MM" + 42 in BE)
-    // Note: NEF and some other raw formats use this signature
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x4D, 0x4D, 0x00, 0x2A]) {
-        return Ok(FileFormat::TIFF);
-    }
-
-    // Panasonic RW2: 0x49 0x49 0x55 0x00 ("II" + 0x55 instead of 42)
-    // RW2 files use a TIFF variant with magic number 0x55 (85) instead of 0x2A (42)
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x55, 0x00]) {
-        return Ok(FileFormat::TIFF);
-    }
-
-    // Olympus ORF: 0x49 0x49 0x52 0x4F ("II" + "RO" instead of 42)
-    // ORF files use "IIRO" header where "RO" stands for "Raw Olympus"
-    // The "RO" (0x52 0x4F) replaces the standard TIFF magic number 42 (0x2A)
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x52, 0x4F]) {
-        return Ok(FileFormat::TIFF);
-    }
-
-    // Olympus ORF (variant): 0x49 0x49 0x52 0x53 ("II" + "RS" instead of 42)
-    // Older Olympus compact cameras (C5050Z, C5060WZ, C7070WZ, SP350, SP500UZ, SP510UZ, SP550UZ, SP565UZ, SP570UZ, C8080WZ)
-    // use "IIRS" header. The "RS" (0x52 0x53) replaces the standard TIFF magic number
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x49, 0x49, 0x52, 0x53]) {
-        return Ok(FileFormat::TIFF);
-    }
-
-    // Olympus ORF (Big-Endian variant): 0x4D 0x4D 0x4F 0x52 ("MM" + "OR")
-    // Some Olympus cameras use big-endian byte order with "MMOR" header
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x4D, 0x4D, 0x4F, 0x52]) {
-        return Ok(FileFormat::TIFF);
-    }
-
-    // PNG: 0x89 0x50 0x4E 0x47 (first 4 bytes of 8-byte signature)
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
-        return Ok(FileFormat::PNG);
-    }
-
-    // GIF: "GIF87a" or "GIF89a"
-    if magic_bytes.len() >= 6
-        && (&magic_bytes[0..6] == b"GIF87a" || &magic_bytes[0..6] == b"GIF89a")
-    {
-        return Ok(FileFormat::GIF);
-    }
-
-    // BMP: "BM" (0x42 0x4D)
-    if magic_bytes.len() >= 2 && &magic_bytes[0..2] == b"BM" {
-        return Ok(FileFormat::BMP);
-    }
-
-    // WebP: "RIFF" + size (4 bytes) + "WEBP"
-    if magic_bytes.len() >= 12 && &magic_bytes[0..4] == b"RIFF" && &magic_bytes[8..12] == b"WEBP" {
-        return Ok(FileFormat::WebP);
-    }
-
-    // FLAC: "fLaC" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"fLaC" {
-        return Ok(FileFormat::FLAC);
-    }
-
-    // MP3: ID3v2 tag or MPEG frame sync
-    // ID3v2: "ID3" signature at start
-    if magic_bytes.len() >= 3 && &magic_bytes[0..3] == b"ID3" {
-        return Ok(FileFormat::MP3);
-    }
-    // MPEG frame sync: FF Fx where x is E0-FF but not FE/FF (those are UTF-16 BOM)
-    // Valid MPEG sync: FF FB, FF FA, FF F3, FF F2, FF E0-FF (excluding FE/FF)
-    if magic_bytes.len() >= 2
-        && magic_bytes[0] == 0xFF
-        && (magic_bytes[1] & 0xE0) == 0xE0
-        && magic_bytes[1] != 0xFE
-        && magic_bytes[1] != 0xFF
-    {
+    // MP3 (MPEG sync pattern, not in simple table due to bit masking)
+    if is_mp3_sync(magic_bytes) {
         return Ok(FileFormat::MP3);
     }
 
-    // FLV: "FLV" signature
-    if magic_bytes.len() >= 3 && &magic_bytes[0..3] == b"FLV" {
-        return Ok(FileFormat::FLV);
-    }
-
-    // MTS/M2TS: MPEG-TS sync byte pattern (0x47 repeating every 188 or 192 bytes)
-    // Check for standard TS (188 bytes)
-    if magic_bytes.len() >= 564  // 3 packets
-        && magic_bytes[0] == 0x47
-        && magic_bytes[188] == 0x47
-        && magic_bytes[376] == 0x47
-    {
-        return Ok(FileFormat::MTS);
-    }
-    // Check for M2TS (192 bytes with 4-byte timestamp)
-    if magic_bytes.len() >= 576  // 3 packets
-        && magic_bytes[4] == 0x47
-        && magic_bytes[196] == 0x47
-        && magic_bytes[388] == 0x47
-    {
-        return Ok(FileFormat::MTS);
-    }
-
-    // AAC: ADTS sync word (0xFFF in first 12 bits)
-    // 0xFF 0xF1 or 0xFF 0xF9 are common ADTS patterns
-    if magic_bytes.len() >= 2
-        && magic_bytes[0] == 0xFF
-        && (magic_bytes[1] == 0xF1 || magic_bytes[1] == 0xF9)
-    {
+    // AAC (ADTS sync pattern)
+    if is_aac_adts(magic_bytes) {
         return Ok(FileFormat::AAC);
     }
 
-    // APE: "MAC " signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"MAC " {
-        return Ok(FileFormat::APE);
+    // MTS/M2TS (transport stream sync pattern)
+    if is_mts_stream(magic_bytes) {
+        return Ok(FileFormat::MTS);
     }
 
-    // MKV/Matroska/WebM: EBML signature 0x1A 0x45 0xDF 0xA3
-    // Note: Both MKV and WebM use EBML, need to parse DocType to distinguish
-    // For now, detect as MKV (can be refined later with DocType parsing)
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"\x1A\x45\xDF\xA3" {
-        // TODO: Parse EBML header to check DocType ("matroska" vs "webm")
-        return Ok(FileFormat::MKV);
+    // ZIP-based formats (requires archive inspection)
+    if magic_bytes.starts_with(&[0x50, 0x4B]) {
+        return Ok(detect_zip_variant(reader));
     }
 
-    // OGG: "OggS" signature (used by Vorbis and Opus)
-    // Need to peek into first page to distinguish Opus from Vorbis
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"OggS" {
-        // Check for Opus signature ("OpusHead" at typical offset)
-        if magic_bytes.len() >= 36 && &magic_bytes[28..36] == b"OpusHead" {
-            return Ok(FileFormat::OPUS);
-        }
-        // Default to OGG Vorbis
-        return Ok(FileFormat::OGG);
+    // PE format (requires DOS stub validation)
+    if let Some(format) = detect_pe_format(magic_bytes, reader) {
+        return Ok(format);
     }
 
-    // RIFF-based formats (WAV, AVI)
-    // RIFF header: "RIFF" + 4 bytes size + format type
-    if magic_bytes.len() >= 12 && &magic_bytes[0..4] == b"RIFF" {
-        let format_type = &magic_bytes[8..12];
-        if format_type == b"WAVE" {
-            return Ok(FileFormat::WAV);
-        } else if format_type == b"AVI " {
-            return Ok(FileFormat::AVI);
-        }
+    // Mach-O (multiple magic numbers)
+    if is_macho(magic_bytes) {
+        return Ok(FileFormat::MachO);
     }
 
-    // PDF: 0x25 0x50 0x44 0x46 ("%PDF")
-    if magic_bytes.len() >= 4 && magic_bytes.starts_with(&[0x25, 0x50, 0x44, 0x46]) {
-        return Ok(FileFormat::PDF);
+    // DWG (version-based signature)
+    if is_dwg(magic_bytes) {
+        return Ok(FileFormat::DWG);
     }
 
-    // IMPORTANT: Check specific BMFF (ISO Base Media File Format) variants BEFORE generic QuickTime/MP4
-    // Many formats use "ftyp" at offset 4, so we must check for specific brands first
-
-    // AVIF: ISO BMFF with "ftyp" at offset 4 and "avif" brand
-    // AVIF is the AV1 Image File Format, which uses BMFF container
-    if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" && &magic_bytes[8..12] == b"avif" {
-        return Ok(FileFormat::AVIF);
+    // Text-based formats (DXF, OBJ, GLTF, STL)
+    if let Some(format) = detect_text_formats(magic_bytes) {
+        return Ok(format);
     }
 
-    // HEIF: ISO BMFF with "ftyp" at offset 4 and HEIF brands
-    // HEIF (High Efficiency Image Format) supports multiple brands:
-    // - heic, heix: HEVC (H.265) image sequence
-    // - hevc, hevx: HEVC image
-    // - heim, heis: HEVC image sequence with auxiliary images
-    // - hevm, hevs: HEVC multiview image
-    // - mif1: HEIF brand for multi-image format
-    if magic_bytes.len() >= 12 && &magic_bytes[4..8] == b"ftyp" {
-        let brand = &magic_bytes[8..12];
-        if brand == b"heic"
-            || brand == b"heix"
-            || brand == b"hevc"
-            || brand == b"hevx"
-            || brand == b"heim"
-            || brand == b"heis"
-            || brand == b"hevm"
-            || brand == b"hevs"
-            || brand == b"mif1"
-        {
-            return Ok(FileFormat::HEIF);
-        }
+    // SVG (XML-based, separate check)
+    if contains_text(magic_bytes, "<svg", 100) {
+        return Ok(FileFormat::SVG);
     }
 
-    // QuickTime/MP4: Check for "ftyp" atom at bytes 4-7
-    // MP4/MOV files have structure: [4 bytes size][4 bytes type "ftyp"]
-    // Common types after ftyp: "isom", "mp42", "mp41", "M4V ", "qt  ", etc.
-    // This MUST come after AVIF and HEIF checks since they also use "ftyp"
-    if magic_bytes.len() >= 8 && &magic_bytes[4..8] == b"ftyp" {
-        return Ok(FileFormat::QuickTime);
+    // Casio CAM (JPEG at offset 70)
+    if let Some(format) = detect_casio_cam(magic_bytes, reader) {
+        return Ok(format);
     }
 
-    // PE (Portable Executable): 0x4D 0x5A ("MZ") DOS signature
-    // Must verify this is actually a PE file, not just an old DOS executable
-    if magic_bytes.len() >= 64 && magic_bytes.starts_with(&[0x4D, 0x5A]) {
-        // Read e_lfanew field at offset 0x3C (4 bytes, little-endian)
-        // This points to the PE signature
-        if magic_bytes.len() >= 0x40 {
-            let e_lfanew_bytes = &magic_bytes[0x3C..0x40];
-            let e_lfanew = u32::from_le_bytes([
-                e_lfanew_bytes[0],
-                e_lfanew_bytes[1],
-                e_lfanew_bytes[2],
-                e_lfanew_bytes[3],
-            ]) as u64;
-
-            // Verify PE signature exists at e_lfanew offset
-            // PE signature is "PE\0\0" (0x50 0x45 0x00 0x00)
-            if e_lfanew < reader.size() && e_lfanew + 4 <= reader.size() {
-                if let Ok(pe_sig) = reader.read(e_lfanew, 4) {
-                    if pe_sig == [0x50, 0x45, 0x00, 0x00] {
-                        return Ok(FileFormat::PE);
-                    }
-                }
-            }
-        }
-    }
-
-    // ZIP-based formats: Check for "PK" signature (0x50 0x4B)
-    // This includes ZIP, DOCX, XLSX, PPTX, Pages, Numbers, Keynote, EPUB
-    if magic_bytes.len() >= 2 && magic_bytes.starts_with(&[0x50, 0x4B]) {
-        // Need to read more to distinguish ZIP-based formats
-        // Try to detect Office Open XML formats by checking for specific files
-        let size = reader.size() as usize;
-        if let Ok(all_data) = reader.read(0, size) {
-            use std::io::Cursor;
-            use zip::ZipArchive;
-
-            if let Ok(mut archive) = ZipArchive::new(Cursor::new(all_data)) {
-                // Check for EPUB (mimetype file)
-                if archive.by_name("mimetype").is_ok() {
-                    return Ok(FileFormat::EPUB);
-                }
-
-                // Check for DOCX
-                if archive.by_name("word/document.xml").is_ok() {
-                    return Ok(FileFormat::DOCX);
-                }
-
-                // Check for XLSX
-                if archive.by_name("xl/workbook.xml").is_ok() {
-                    return Ok(FileFormat::XLSX);
-                }
-
-                // Check for PPTX
-                if archive.by_name("ppt/presentation.xml").is_ok() {
-                    return Ok(FileFormat::PPTX);
-                }
-
-                // Check for Pages
-                if archive.by_name("Index/Document.iwa").is_ok() {
-                    return Ok(FileFormat::Pages);
-                }
-
-                // Check for Numbers
-                if archive.by_name("Index/Document.iwa").is_ok()
-                    && archive.by_name("Index/Tables/").is_ok()
-                {
-                    return Ok(FileFormat::Numbers);
-                }
-
-                // Check for Keynote
-                if archive.by_name("Index/Presentation.iwa").is_ok() {
-                    return Ok(FileFormat::Keynote);
-                }
-
-                // Generic ZIP archive
-                return Ok(FileFormat::ZIP);
-            }
-        }
-
-        // If we can't read it as a ZIP, still recognize it as ZIP
-        return Ok(FileFormat::ZIP);
-    }
-
-    // Casio CAM: Proprietary format with 70-byte header followed by JPEG
-    // Check for JPEG signature at offset 70 (0x46)
-    if reader.size() > 73 {
-        let header_check = reader.read(70, 3)?;
-        if header_check.starts_with(&[0xFF, 0xD8, 0xFF]) {
-            // This might be a Casio CAM file - verify with header pattern
-            // Casio CAM files often start with specific byte patterns
-            if magic_bytes.len() >= 4 && magic_bytes[2] == 0x4D && magic_bytes[3] == 0x4D {
-                // "MM" marker found - likely Casio CAM format
-                return Ok(FileFormat::CasioCAM);
-            }
-        }
-    }
-
-    // JPEG: 0xFF 0xD8 0xFF (SOI marker + start of next marker)
-    // Note: JPEG signature is 3 bytes, checked after 4-byte signatures
+    // JPEG (checked late due to Casio CAM sharing similar pattern)
     if magic_bytes.len() >= 3 && magic_bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
         return Ok(FileFormat::JPEG);
     }
 
-    // Phase 3: Archive formats
-
-    // RAR: "Rar!" signature (0x52 0x61 0x72 0x21)
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"Rar!" {
-        return Ok(FileFormat::RAR);
-    }
-
-    // 7z: 0x37 0x7A 0xBC 0xAF 0x27 0x1C signature
-    if magic_bytes.len() >= 6 && magic_bytes[0..6] == [0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C] {
-        return Ok(FileFormat::SevenZ);
-    }
-
-    // TAR: "ustar" at offset 257
-    if reader.size() >= 262 {
-        if let Ok(tar_sig) = reader.read(257, 5) {
-            if tar_sig == b"ustar" {
-                return Ok(FileFormat::TAR);
-            }
-        }
-    }
-
-    // ISO: "CD001" at offset 32769
-    if reader.size() >= 32774 {
-        if let Ok(iso_sig) = reader.read(32769, 5) {
-            if iso_sig == b"CD001" {
-                return Ok(FileFormat::ISO);
-            }
-        }
-    }
-
-    // GZIP: 0x1F 0x8B
-    if magic_bytes.len() >= 2 && magic_bytes.starts_with(&[0x1F, 0x8B]) {
-        return Ok(FileFormat::GZ);
-    }
-
-    // Phase 4: Font formats
-
-    // OTF: "OTTO" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"OTTO" {
-        return Ok(FileFormat::OTF);
-    }
-
-    // WOFF: "wOFF" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"wOFF" {
-        return Ok(FileFormat::WOFF);
-    }
-
-    // WOFF2: "wOF2" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"wOF2" {
-        return Ok(FileFormat::WOFF2);
-    }
-
-    // TTF: 0x00 0x01 0x00 0x00 or "true"
-    if magic_bytes.len() >= 4
-        && (magic_bytes.starts_with(&[0x00, 0x01, 0x00, 0x00]) || &magic_bytes[0..4] == b"true")
-    {
-        return Ok(FileFormat::TTF);
-    }
-
-    // Phase 5: Advanced image formats
-
-    // PSD: "8BPS" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"8BPS" {
-        return Ok(FileFormat::PSD);
-    }
-
-    // ICO: 0x00 0x00 0x01 0x00
-    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x00, 0x00, 0x01, 0x00] {
-        return Ok(FileFormat::ICO);
-    }
-
-    // SVG: Check for "<svg" in first 100 bytes
-    if magic_bytes.len() >= 100 {
-        if let Ok(text) = std::str::from_utf8(&magic_bytes[0..100]) {
-            if text.contains("<svg") {
-                return Ok(FileFormat::SVG);
-            }
-        }
-    }
-
-    // FLIF: "FLIF" signature
-    if magic_bytes.len() >= 4 && &magic_bytes[0..4] == b"FLIF" {
-        return Ok(FileFormat::FLIF);
-    }
-
-    // EXR: 0x76 0x2F 0x31 0x01
-    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x76, 0x2F, 0x31, 0x01] {
-        return Ok(FileFormat::EXR);
-    }
-
-    // BPG: 0x42 0x50 0x47 0xFB
-    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x42, 0x50, 0x47, 0xFB] {
-        return Ok(FileFormat::BPG);
-    }
-
-    // JXL: 0xFF 0x0A or 0x00 0x00 0x00 0x0C 0x4A 0x58 0x4C 0x20
-    if magic_bytes.len() >= 2 && magic_bytes[0..2] == [0xFF, 0x0A] {
-        return Ok(FileFormat::JXL);
-    }
+    // JXL (second variant with longer signature)
     if magic_bytes.len() >= 12
-        && magic_bytes[0..8] == [0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20]
-    {
+        && matches_at_offset(magic_bytes, &[0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20], 0) {
         return Ok(FileFormat::JXL);
-    }
-
-    // Phase 6: Specialized formats
-
-    // ELF: 0x7F 0x45 0x4C 0x46 ("\x7FELF")
-    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x7F, 0x45, 0x4C, 0x46] {
-        return Ok(FileFormat::ELF);
-    }
-
-    // Mach-O: 0xFE 0xED 0xFA 0xCE or reversed variants
-    if magic_bytes.len() >= 4 {
-        let sig = &magic_bytes[0..4];
-        if sig == [0xFE, 0xED, 0xFA, 0xCE]
-            || sig == [0xFE, 0xED, 0xFA, 0xCF]
-            || sig == [0xCE, 0xFA, 0xED, 0xFE]
-            || sig == [0xCF, 0xFA, 0xED, 0xFE]
-        {
-            return Ok(FileFormat::MachO);
-        }
-    }
-
-    // HDF5: 0x89 0x48 0x44 0x46 (PNG-like signature)
-    if magic_bytes.len() >= 8
-        && magic_bytes[0..8] == [0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A]
-    {
-        return Ok(FileFormat::HDF5);
-    }
-
-    // FITS: "SIMPLE" signature
-    if magic_bytes.len() >= 6 && &magic_bytes[0..6] == b"SIMPLE" {
-        return Ok(FileFormat::FITS);
-    }
-
-    // DWG: "AC10" through "AC32" signatures
-    if magic_bytes.len() >= 6
-        && &magic_bytes[0..2] == b"AC"
-        && magic_bytes[2] >= b'1'
-        && magic_bytes[3] >= b'0'
-    {
-        return Ok(FileFormat::DWG);
-    }
-
-    // Text-based formats (DXF, OBJ, GLTF, STL ASCII)
-    if magic_bytes.len() >= 100 {
-        if let Ok(text) = std::str::from_utf8(&magic_bytes[0..100]) {
-            // DXF: starts with "0\n" and contains "SECTION"
-            if text.starts_with("0\n") && text.contains("SECTION") {
-                return Ok(FileFormat::DXF);
-            }
-            // OBJ: contains vertex definitions
-            if text.contains("v ") || text.contains("vn ") || text.contains("vt ") {
-                return Ok(FileFormat::OBJ);
-            }
-            // GLTF: JSON with "asset" field
-            if text.contains("\"asset\"") && text.contains("{") {
-                return Ok(FileFormat::GLTF);
-            }
-            // STL ASCII: starts with "solid"
-            if text.starts_with("solid") {
-                return Ok(FileFormat::STL);
-            }
-        }
-    }
-
-    // VCF: "BEGIN:VCARD"
-    if magic_bytes.len() >= 11 && &magic_bytes[0..11] == b"BEGIN:VCARD" {
-        return Ok(FileFormat::VCF);
-    }
-
-    // LNK: 0x4C 0x00 0x00 0x00 (Windows shortcut magic number)
-    if magic_bytes.len() >= 4 && magic_bytes[0..4] == [0x4C, 0x00, 0x00, 0x00] {
-        return Ok(FileFormat::LNK);
     }
 
     // No known format matched
@@ -690,7 +857,6 @@ mod tests {
 
     #[test]
     fn test_detect_jpeg() {
-        // Valid JPEG magic bytes: FF D8 FF
         let data = vec![0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -699,7 +865,6 @@ mod tests {
 
     #[test]
     fn test_detect_tiff_little_endian() {
-        // TIFF Little-Endian: 49 49 2A 00 ("II" + 42 in LE)
         let data = vec![0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -708,7 +873,6 @@ mod tests {
 
     #[test]
     fn test_detect_tiff_big_endian() {
-        // TIFF Big-Endian: 4D 4D 00 2A ("MM" + 42 in BE)
         let data = vec![0x4D, 0x4D, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x08];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -717,7 +881,6 @@ mod tests {
 
     #[test]
     fn test_detect_png() {
-        // PNG signature (first 8 bytes, but we only check first 4)
         let data = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -726,7 +889,6 @@ mod tests {
 
     #[test]
     fn test_detect_pdf() {
-        // PDF signature: "%PDF"
         let data = vec![0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -735,7 +897,6 @@ mod tests {
 
     #[test]
     fn test_detect_unknown() {
-        // Random bytes that don't match any format
         let data = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -744,7 +905,6 @@ mod tests {
 
     #[test]
     fn test_empty_file() {
-        // Empty file (0 bytes)
         let data = vec![];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -753,7 +913,6 @@ mod tests {
 
     #[test]
     fn test_file_too_small_one_byte() {
-        // File with only 1 byte (smaller than any magic byte sequence)
         let data = vec![0xFF];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -762,7 +921,6 @@ mod tests {
 
     #[test]
     fn test_file_too_small_two_bytes() {
-        // File with 2 bytes (still too small for any format)
         let data = vec![0xFF, 0xD8];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -771,7 +929,6 @@ mod tests {
 
     #[test]
     fn test_short_file_matches_jpeg() {
-        // File with exactly 3 bytes that match JPEG
         let data = vec![0xFF, 0xD8, 0xFF];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -780,7 +937,6 @@ mod tests {
 
     #[test]
     fn test_short_file_matches_pdf() {
-        // File with exactly 4 bytes that match PDF
         let data = vec![0x25, 0x50, 0x44, 0x46];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -789,9 +945,8 @@ mod tests {
 
     #[test]
     fn test_jpeg_with_padding() {
-        // JPEG with additional data after magic bytes
         let mut data = vec![0xFF, 0xD8, 0xFF, 0xE1];
-        data.extend_from_slice(&[0x00; 20]); // Add padding
+        data.extend_from_slice(&[0x00; 20]);
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
         assert_eq!(format, FileFormat::JPEG);
@@ -799,7 +954,6 @@ mod tests {
 
     #[test]
     fn test_tiff_little_endian_minimal() {
-        // Minimal TIFF LE header (exactly 4 bytes)
         let data = vec![0x49, 0x49, 0x2A, 0x00];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -808,7 +962,6 @@ mod tests {
 
     #[test]
     fn test_tiff_big_endian_minimal() {
-        // Minimal TIFF BE header (exactly 4 bytes)
         let data = vec![0x4D, 0x4D, 0x00, 0x2A];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -817,7 +970,6 @@ mod tests {
 
     #[test]
     fn test_png_full_signature() {
-        // Full 8-byte PNG signature
         let data = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -826,8 +978,7 @@ mod tests {
 
     #[test]
     fn test_partial_match_not_detected() {
-        // Bytes that partially match JPEG but not completely
-        let data = vec![0xFF, 0xD8, 0x00, 0x00]; // Missing third 0xFF
+        let data = vec![0xFF, 0xD8, 0x00, 0x00];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
         assert_eq!(format, FileFormat::Unknown);
@@ -835,7 +986,6 @@ mod tests {
 
     #[test]
     fn test_pdf_with_version() {
-        // PDF with version string "%PDF-1.7"
         let data = vec![0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x37, 0x0A];
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -844,17 +994,13 @@ mod tests {
 
     #[test]
     fn test_detect_pe_mz_signature() {
-        // PE files start with "MZ" (0x4D 0x5A) DOS signature
-        // Followed by DOS stub and NT headers
-        let mut data = vec![0x4D, 0x5A]; // MZ signature
-        data.extend_from_slice(&[0x90, 0x00]); // e_cblp
-        data.extend_from_slice(&[0x03, 0x00]); // e_cp
-                                               // Add padding to reach e_lfanew at offset 0x3C
+        let mut data = vec![0x4D, 0x5A];
+        data.extend_from_slice(&[0x90, 0x00]);
+        data.extend_from_slice(&[0x03, 0x00]);
         data.resize(0x3C, 0x00);
-        data.extend_from_slice(&[0x80, 0x00, 0x00, 0x00]); // e_lfanew = 0x80
-                                                           // Add padding and PE signature at offset 0x80
+        data.extend_from_slice(&[0x80, 0x00, 0x00, 0x00]);
         data.resize(0x80, 0x00);
-        data.extend_from_slice(&[0x50, 0x45, 0x00, 0x00]); // "PE\0\0" signature
+        data.extend_from_slice(&[0x50, 0x45, 0x00, 0x00]);
 
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -863,12 +1009,11 @@ mod tests {
 
     #[test]
     fn test_detect_pe_with_nt_signature() {
-        // Complete PE file with NT signature
-        let mut data = vec![0x4D, 0x5A]; // MZ
+        let mut data = vec![0x4D, 0x5A];
         data.resize(0x3C, 0x00);
-        data.extend_from_slice(&[0x40, 0x00, 0x00, 0x00]); // e_lfanew = 0x40
+        data.extend_from_slice(&[0x40, 0x00, 0x00, 0x00]);
         data.resize(0x40, 0x00);
-        data.extend_from_slice(&[0x50, 0x45, 0x00, 0x00]); // "PE\0\0" signature
+        data.extend_from_slice(&[0x50, 0x45, 0x00, 0x00]);
 
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
@@ -877,13 +1022,38 @@ mod tests {
 
     #[test]
     fn test_detect_non_pe_mz_file() {
-        // Old DOS executable without PE signature
-        let mut data = vec![0x4D, 0x5A]; // MZ
-        data.resize(64, 0x00); // DOS header but no PE
+        let mut data = vec![0x4D, 0x5A];
+        data.resize(64, 0x00);
 
         let reader = TestReader::new(data);
         let format = detect_format(&reader).unwrap();
-        // Should be Unknown since no valid PE signature
         assert_eq!(format, FileFormat::Unknown);
+    }
+
+    // Tests for helper functions
+    #[test]
+    fn test_matches_at_offset() {
+        let data = b"Hello World";
+        assert!(matches_at_offset(data, b"Hello", 0));
+        assert!(matches_at_offset(data, b"World", 6));
+        assert!(!matches_at_offset(data, b"World", 0));
+        assert!(!matches_at_offset(data, b"TooLong", 10));
+    }
+
+    #[test]
+    fn test_starts_with_any() {
+        let data = b"Test Data";
+        assert!(starts_with_any(data, &[b"Test", b"Data"]));
+        assert!(starts_with_any(data, &[b"Wrong", b"Test"]));
+        assert!(!starts_with_any(data, &[b"Wrong", b"Data"]));
+    }
+
+    #[test]
+    fn test_contains_text() {
+        let data = b"This is a test string with some content";
+        assert!(contains_text(data, "test", 40));
+        assert!(contains_text(data, "content", 40));
+        assert!(!contains_text(data, "missing", 40));
+        assert!(!contains_text(data, "test", 10)); // Not enough bytes
     }
 }

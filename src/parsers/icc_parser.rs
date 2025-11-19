@@ -50,6 +50,10 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::str;
 
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+
 /// Extracts ICC profile metadata from a PDF file.
 ///
 /// This function searches for ICC profiles in the PDF's OutputIntents,
@@ -113,6 +117,43 @@ pub fn extract_icc_profile(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     Ok(metadata)
 }
+
+/// Parses ICC profile binary data and extracts metadata.
+///
+/// This is the main entry point for parsing ICC profile data from any source
+/// (JPEG APP2 segments, PDF streams, PNG chunks, etc.).
+///
+/// # ICC Profile Format
+///
+/// The profile starts with a 128-byte header followed by a tag table.
+/// Each tag has a 4-byte signature, 4-byte offset, and 4-byte size.
+///
+/// # Parameters
+///
+/// - `data`: Raw ICC profile binary data
+///
+/// # Returns
+///
+/// - `Ok(HashMap)`: Map of ICC tag names to their values (without "Profile:" prefix)
+/// - `Err(ExifToolError)`: Parse error
+///
+/// # Example
+///
+/// ```no_run
+/// use oxidex::parsers::icc_parser::parse_icc_profile_data;
+///
+/// # fn example(icc_data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+/// let metadata = parse_icc_profile_data(icc_data)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn parse_icc_profile_data(data: &[u8]) -> Result<HashMap<String, TagValue>> {
+    parse_icc_profile(data)
+}
+
+// ============================================================================
+// PDF EXTRACTION FUNCTIONS
+// ============================================================================
 
 /// Extracts the raw ICC profile data from a PDF file.
 ///
@@ -436,40 +477,13 @@ fn parse_xref_table(xref_data: &[u8]) -> Result<HashMap<u32, u64>> {
     Ok(xref_map)
 }
 
-/// Parses ICC profile binary data and extracts metadata.
-///
-/// This is the main entry point for parsing ICC profile data from any source
-/// (JPEG APP2 segments, PDF streams, PNG chunks, etc.).
-///
-/// # ICC Profile Format
-///
-/// The profile starts with a 128-byte header followed by a tag table.
-/// Each tag has a 4-byte signature, 4-byte offset, and 4-byte size.
-///
-/// # Parameters
-///
-/// - `data`: Raw ICC profile binary data
-///
-/// # Returns
-///
-/// - `Ok(HashMap)`: Map of ICC tag names to their values (without "Profile:" prefix)
-/// - `Err(ExifToolError)`: Parse error
-///
-/// # Example
-///
-/// ```no_run
-/// use oxidex::parsers::icc_parser::parse_icc_profile_data;
-///
-/// # fn example(icc_data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
-/// let metadata = parse_icc_profile_data(icc_data)?;
-/// # Ok(())
-/// # }
-/// ```
-pub fn parse_icc_profile_data(data: &[u8]) -> Result<HashMap<String, TagValue>> {
-    parse_icc_profile(data)
-}
+// ============================================================================
+// ICC PROFILE PARSING FUNCTIONS
+// ============================================================================
 
 /// Internal ICC profile parser.
+///
+/// Parses both the header and tags from ICC profile binary data.
 ///
 /// # Parameters
 ///
@@ -500,6 +514,10 @@ fn parse_icc_profile(data: &[u8]) -> Result<HashMap<String, TagValue>> {
     Ok(metadata)
 }
 
+// ============================================================================
+// ICC HEADER PARSING
+// ============================================================================
+
 /// Parses the ICC profile header (first 128 bytes).
 ///
 /// Extracts metadata from the fixed-format header including:
@@ -509,6 +527,34 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
     // Profile size (bytes 0-3, big-endian u32)
     let _profile_size = read_u32_be(data, 0)?;
 
+    // Parse basic header fields (4-19)
+    parse_header_basic_info(data, metadata)?;
+
+    // Parse color space and PCS (20-23)
+    parse_header_color_spaces(data, metadata)?;
+
+    // Parse date and time (24-35)
+    parse_header_datetime(data, metadata)?;
+
+    // Parse signatures and platform (36-43)
+    parse_header_signatures(data, metadata)?;
+
+    // Parse flags and device info (44-63)
+    parse_header_device_info(data, metadata)?;
+
+    // Parse rendering intent and illuminant (64-79)
+    parse_header_rendering_info(data, metadata)?;
+
+    // Parse creator and ID (80-99)
+    parse_header_creator_info(data, metadata)?;
+
+    Ok(())
+}
+
+/// Parses basic header information (CMM type, version, class)
+///
+/// Extracts fields from bytes 4-19 of the ICC header
+fn parse_header_basic_info(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // CMM Type (bytes 4-7, 4-char signature)
     let cmm_type = read_signature(data, 4)?;
     if !cmm_type.is_empty() {
@@ -526,7 +572,18 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
 
     // Profile Class (bytes 12-15, e.g., "mntr" for display device)
     let class = read_signature(data, 12)?;
-    let class_name = match class.as_str() {
+    let class_name = get_profile_class_name(&class);
+    metadata.insert(
+        "ProfileClass".to_string(),
+        TagValue::new_string(class_name.to_string()),
+    );
+
+    Ok(())
+}
+
+/// Maps ICC profile class signature to human-readable name
+fn get_profile_class_name(class: &str) -> &str {
+    match class.as_ref() {
         "scnr" => "Input Device Profile",
         "mntr" => "Display Device Profile",
         "prtr" => "Output Device Profile",
@@ -534,13 +591,14 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
         "spac" => "ColorSpace Profile",
         "abst" => "Abstract Profile",
         "nmcl" => "Named Color Profile",
-        _ => &class,
-    };
-    metadata.insert(
-        "ProfileClass".to_string(),
-        TagValue::new_string(class_name.to_string()),
-    );
+        _ => class,
+    }
+}
 
+/// Parses color space information from header
+///
+/// Extracts color space data and PCS from bytes 16-23
+fn parse_header_color_spaces(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // Color Space Data (bytes 16-19, e.g., "RGB ")
     let color_space = read_signature(data, 16)?.trim().to_string();
     metadata.insert(
@@ -555,24 +613,41 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
         TagValue::new_string(pcs),
     );
 
+    Ok(())
+}
+
+/// Parses date and time from header
+///
+/// Extracts creation timestamp from bytes 24-35
+fn parse_header_datetime(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // Date and Time (bytes 24-35)
-    if data.len() >= 36 {
-        let year = read_u16_be(data, 24)?;
-        let month = read_u16_be(data, 26)?;
-        let day = read_u16_be(data, 28)?;
-        let hour = read_u16_be(data, 30)?;
-        let minute = read_u16_be(data, 32)?;
-        let second = read_u16_be(data, 34)?;
-        let datetime = format!(
-            "{}:{:02}:{:02} {:02}:{:02}:{:02}",
-            year, month, day, hour, minute, second
-        );
-        metadata.insert(
-            "ProfileDateTime".to_string(),
-            TagValue::new_string(datetime),
-        );
+    if data.len() < 36 {
+        return Ok(());
     }
 
+    let year = read_u16_be(data, 24)?;
+    let month = read_u16_be(data, 26)?;
+    let day = read_u16_be(data, 28)?;
+    let hour = read_u16_be(data, 30)?;
+    let minute = read_u16_be(data, 32)?;
+    let second = read_u16_be(data, 34)?;
+
+    let datetime = format!(
+        "{}:{:02}:{:02} {:02}:{:02}:{:02}",
+        year, month, day, hour, minute, second
+    );
+    metadata.insert(
+        "ProfileDateTime".to_string(),
+        TagValue::new_string(datetime),
+    );
+
+    Ok(())
+}
+
+/// Parses signature and platform information from header
+///
+/// Extracts file signature and primary platform from bytes 36-43
+fn parse_header_signatures(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // Profile File Signature (bytes 36-39, should be 'acsp')
     let signature = read_signature(data, 36)?;
     metadata.insert(
@@ -582,13 +657,7 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
 
     // Primary Platform (bytes 40-43)
     let platform = read_signature(data, 40)?;
-    let platform_name = match platform.trim() {
-        "APPL" => "Apple Computer Inc.",
-        "MSFT" => "Microsoft Corporation",
-        "SGI" => "Silicon Graphics Inc.",
-        "SUNW" => "Sun Microsystems",
-        _ => platform.trim(),
-    };
+    let platform_name = get_platform_name(&platform);
     if !platform_name.is_empty() {
         metadata.insert(
             "PrimaryPlatform".to_string(),
@@ -596,6 +665,24 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
         );
     }
 
+    Ok(())
+}
+
+/// Maps platform signature to human-readable name
+fn get_platform_name(platform: &str) -> &str {
+    match platform.trim() {
+        "APPL" => "Apple Computer Inc.",
+        "MSFT" => "Microsoft Corporation",
+        "SGI" => "Silicon Graphics Inc.",
+        "SUNW" => "Sun Microsystems",
+        _ => platform.trim(),
+    }
+}
+
+/// Parses device information from header
+///
+/// Extracts flags, manufacturer, model, and attributes from bytes 44-63
+fn parse_header_device_info(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // CMM Flags (bytes 44-47)
     let flags = read_u32_be(data, 44)?;
     let embedded = if flags & 0x01 == 0 {
@@ -634,43 +721,57 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
 
     // Device Attributes (bytes 56-63)
     if data.len() >= 64 {
-        let attrs = read_u64_be(data, 56)?;
-        let reflective = if attrs & 0x01 == 0 {
-            "Reflective"
-        } else {
-            "Transparency"
-        };
-        let glossy = if attrs & 0x02 == 0 { "Glossy" } else { "Matte" };
-        let positive = if attrs & 0x04 == 0 {
-            "Positive"
-        } else {
-            "Negative"
-        };
-        let color = if attrs & 0x08 == 0 { "Color" } else { "B&W" };
-        metadata.insert(
-            "DeviceAttributes".to_string(),
-            TagValue::new_string(format!(
-                "{}, {}, {}, {}",
-                reflective, glossy, positive, color
-            )),
-        );
+        parse_device_attributes(data, metadata)?;
     }
 
+    Ok(())
+}
+
+/// Parses device attributes bitfield
+///
+/// Extracts device characteristics from bytes 56-63
+fn parse_device_attributes(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
+    let attrs = read_u64_be(data, 56)?;
+
+    let reflective = if attrs & 0x01 == 0 {
+        "Reflective"
+    } else {
+        "Transparency"
+    };
+    let glossy = if attrs & 0x02 == 0 { "Glossy" } else { "Matte" };
+    let positive = if attrs & 0x04 == 0 {
+        "Positive"
+    } else {
+        "Negative"
+    };
+    let color = if attrs & 0x08 == 0 { "Color" } else { "B&W" };
+
+    metadata.insert(
+        "DeviceAttributes".to_string(),
+        TagValue::new_string(format!(
+            "{}, {}, {}, {}",
+            reflective, glossy, positive, color
+        )),
+    );
+
+    Ok(())
+}
+
+/// Parses rendering intent and illuminant from header
+///
+/// Extracts rendering intent and connection space illuminant from bytes 64-79
+fn parse_header_rendering_info(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // Rendering Intent (bytes 64-67)
-    if data.len() >= 68 {
-        let intent = read_u32_be(data, 64)?;
-        let intent_name = match intent {
-            0 => "Perceptual",
-            1 => "Relative Colorimetric",
-            2 => "Saturation",
-            3 => "Absolute Colorimetric",
-            _ => "Unknown",
-        };
-        metadata.insert(
-            "RenderingIntent".to_string(),
-            TagValue::new_string(intent_name.to_string()),
-        );
+    if data.len() < 68 {
+        return Ok(());
     }
+
+    let intent = read_u32_be(data, 64)?;
+    let intent_name = get_rendering_intent_name(intent);
+    metadata.insert(
+        "RenderingIntent".to_string(),
+        TagValue::new_string(intent_name.to_string()),
+    );
 
     // Connection Space Illuminant (bytes 68-79, XYZ values)
     if data.len() >= 80 {
@@ -683,6 +784,24 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
         );
     }
 
+    Ok(())
+}
+
+/// Maps rendering intent code to human-readable name
+fn get_rendering_intent_name(intent: u32) -> &'static str {
+    match intent {
+        0 => "Perceptual",
+        1 => "Relative Colorimetric",
+        2 => "Saturation",
+        3 => "Absolute Colorimetric",
+        _ => "Unknown",
+    }
+}
+
+/// Parses creator and profile ID from header
+///
+/// Extracts profile creator and MD5 hash from bytes 80-99
+fn parse_header_creator_info(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // Profile Creator (bytes 80-83)
     if data.len() >= 84 {
         let creator = read_signature(data, 80)?;
@@ -712,24 +831,18 @@ fn parse_icc_header(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Re
     Ok(())
 }
 
+// ============================================================================
+// ICC TAG PARSING
+// ============================================================================
+
 /// Parses ICC profile tags from the tag table.
 ///
 /// After the 128-byte header, the tag table contains:
 /// - Tag count (4 bytes)
 /// - Tag table entries (12 bytes each): signature, offset, size
 ///
-/// This function extracts common tags like:
-/// - desc (description)
-/// - cprt (copyright)
-/// - wtpt (white point)
-/// - bkpt (black point)
-/// - rXYZ, gXYZ, bXYZ (RGB matrix columns)
-/// - rTRC, gTRC, bTRC (tone reproduction curves)
-/// - dmnd, dmdd (device manufacturer/model descriptions)
-/// - vued, view (viewing conditions)
-/// - lumi (luminance)
-/// - meas (measurement)
-/// - tech (technology)
+/// This function extracts common tags like description, copyright,
+/// white/black points, RGB matrix columns, tone curves, and more.
 fn parse_icc_tags(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Result<()> {
     // Tag count at offset 128
     if data.len() < 132 {
@@ -757,201 +870,281 @@ fn parse_icc_tags(data: &[u8], metadata: &mut HashMap<String, TagValue>) -> Resu
 
         let tag_data = &data[tag_offset..tag_offset + tag_size];
 
-        // Parse tag based on signature
-        match tag_signature.trim() {
-            "desc" => {
-                if let Ok(desc) = parse_text_description_type(tag_data) {
-                    metadata.insert("ProfileDescription".to_string(), TagValue::new_string(desc));
-                }
-            }
-            "cprt" => {
-                if let Ok(cprt) = parse_text_type(tag_data) {
-                    metadata.insert("ProfileCopyright".to_string(), TagValue::new_string(cprt));
-                }
-            }
-            "wtpt" => {
-                if let Ok(xyz) = parse_xyz_type(tag_data) {
-                    metadata.insert(
-                        "MediaWhitePoint".to_string(),
-                        TagValue::new_string(format!("{} {} {}", xyz.0, xyz.1, xyz.2)),
-                    );
-                }
-            }
-            "bkpt" => {
-                if let Ok(xyz) = parse_xyz_type(tag_data) {
-                    metadata.insert(
-                        "MediaBlackPoint".to_string(),
-                        TagValue::new_string(format!("{} {} {}", xyz.0, xyz.1, xyz.2)),
-                    );
-                }
-            }
-            "rXYZ" => {
-                if let Ok(xyz) = parse_xyz_type(tag_data) {
-                    metadata.insert(
-                        "RedMatrixColumn".to_string(),
-                        TagValue::new_string(format!("{} {} {}", xyz.0, xyz.1, xyz.2)),
-                    );
-                }
-            }
-            "gXYZ" => {
-                if let Ok(xyz) = parse_xyz_type(tag_data) {
-                    metadata.insert(
-                        "GreenMatrixColumn".to_string(),
-                        TagValue::new_string(format!("{} {} {}", xyz.0, xyz.1, xyz.2)),
-                    );
-                }
-            }
-            "bXYZ" => {
-                if let Ok(xyz) = parse_xyz_type(tag_data) {
-                    metadata.insert(
-                        "BlueMatrixColumn".to_string(),
-                        TagValue::new_string(format!("{} {} {}", xyz.0, xyz.1, xyz.2)),
-                    );
-                }
-            }
-            "rTRC" => {
-                let desc = format!("(Binary data {} bytes, use -b option to extract)", tag_size);
-                metadata.insert(
-                    "RedToneReproductionCurve".to_string(),
-                    TagValue::new_string(desc),
-                );
-            }
-            "gTRC" => {
-                let desc = format!("(Binary data {} bytes, use -b option to extract)", tag_size);
-                metadata.insert(
-                    "GreenToneReproductionCurve".to_string(),
-                    TagValue::new_string(desc),
-                );
-            }
-            "bTRC" => {
-                let desc = format!("(Binary data {} bytes, use -b option to extract)", tag_size);
-                metadata.insert(
-                    "BlueToneReproductionCurve".to_string(),
-                    TagValue::new_string(desc),
-                );
-            }
-            "dmnd" => {
-                if let Ok(desc) = parse_text_description_type(tag_data) {
-                    metadata.insert("DeviceMfgDesc".to_string(), TagValue::new_string(desc));
-                }
-            }
-            "dmdd" => {
-                if let Ok(desc) = parse_text_description_type(tag_data) {
-                    metadata.insert("DeviceModelDesc".to_string(), TagValue::new_string(desc));
-                }
-            }
-            "vued" => {
-                if let Ok(desc) = parse_text_description_type(tag_data) {
-                    metadata.insert("ViewingCondDesc".to_string(), TagValue::new_string(desc));
-                }
-            }
-            "view" => {
-                if let Ok(viewing_cond) = parse_viewing_conditions(tag_data) {
-                    if let Some(illuminant) = viewing_cond.get("illuminant") {
-                        metadata.insert(
-                            "ViewingCondIlluminant".to_string(),
-                            TagValue::new_string(illuminant.clone()),
-                        );
-                    }
-                    if let Some(surround) = viewing_cond.get("surround") {
-                        metadata.insert(
-                            "ViewingCondSurround".to_string(),
-                            TagValue::new_string(surround.clone()),
-                        );
-                    }
-                    if let Some(illum_type) = viewing_cond.get("illuminant_type") {
-                        metadata.insert(
-                            "ViewingCondIlluminantType".to_string(),
-                            TagValue::new_string(illum_type.clone()),
-                        );
-                    }
-                }
-            }
-            "lumi" => {
-                if let Ok(xyz) = parse_xyz_type(tag_data) {
-                    metadata.insert(
-                        "Luminance".to_string(),
-                        TagValue::new_string(format!("{} {} {}", xyz.0, xyz.1, xyz.2)),
-                    );
-                }
-            }
-            "meas" => {
-                if let Ok(measurement) = parse_measurement(tag_data) {
-                    if let Some(observer) = measurement.get("observer") {
-                        metadata.insert(
-                            "MeasurementObserver".to_string(),
-                            TagValue::new_string(observer.clone()),
-                        );
-                    }
-                    if let Some(backing) = measurement.get("backing") {
-                        metadata.insert(
-                            "MeasurementBacking".to_string(),
-                            TagValue::new_string(backing.clone()),
-                        );
-                    }
-                    if let Some(geometry) = measurement.get("geometry") {
-                        metadata.insert(
-                            "MeasurementGeometry".to_string(),
-                            TagValue::new_string(geometry.clone()),
-                        );
-                    }
-                    if let Some(flare) = measurement.get("flare") {
-                        metadata.insert(
-                            "MeasurementFlare".to_string(),
-                            TagValue::new_string(flare.clone()),
-                        );
-                    }
-                    if let Some(illuminant) = measurement.get("illuminant") {
-                        metadata.insert(
-                            "MeasurementIlluminant".to_string(),
-                            TagValue::new_string(illuminant.clone()),
-                        );
-                    }
-                }
-            }
-            "tech" => {
-                if let Ok(tech) = parse_signature_type(tag_data) {
-                    let tech_name = match tech.trim() {
-                        "fscn" => "Film Scanner",
-                        "dcam" => "Digital Camera",
-                        "rscn" => "Reflective Scanner",
-                        "ijet" => "Ink Jet Printer",
-                        "twax" => "Thermal Wax Printer",
-                        "epho" => "Electrophotographic Printer",
-                        "esta" => "Electrostatic Printer",
-                        "dsub" => "Dye Sublimation Printer",
-                        "rpho" => "Photographic Paper Printer",
-                        "fprn" => "Film Writer",
-                        "vidm" => "Video Monitor",
-                        "vidc" => "Video Camera",
-                        "pjtv" => "Projection Television",
-                        "CRT" => "Cathode Ray Tube Display",
-                        "PMD" => "Passive Matrix Display",
-                        "AMD" => "Active Matrix Display",
-                        "KPCD" => "Photo CD",
-                        "imgs" => "Photo Image Setter",
-                        "grav" => "Gravure",
-                        "offs" => "Offset Lithography",
-                        "silk" => "Silkscreen",
-                        "flex" => "Flexography",
-                        _ => &tech,
-                    };
-                    metadata.insert(
-                        "Technology".to_string(),
-                        TagValue::new_string(tech_name.to_string()),
-                    );
-                }
-            }
-            _ => {
-                // Unknown or unhandled tag
-            }
-        }
+        // Parse tag based on signature - dispatch to appropriate handler
+        parse_single_tag(&tag_signature, tag_data, tag_size, metadata);
     }
 
     Ok(())
 }
 
+/// Dispatches a single ICC tag to the appropriate parsing function
+///
+/// This function routes tags to specialized handlers based on their signature.
+/// Using a dispatch function instead of a giant match statement improves
+/// maintainability and reduces cyclomatic complexity.
+fn parse_single_tag(
+    tag_sig: &str,
+    tag_data: &[u8],
+    tag_size: usize,
+    metadata: &mut HashMap<String, TagValue>,
+) {
+    let sig = tag_sig.trim();
+
+    // Text description tags
+    if handle_text_description_tags(sig, tag_data, metadata) {
+        return;
+    }
+
+    // XYZ coordinate tags
+    if handle_xyz_tags(sig, tag_data, metadata) {
+        return;
+    }
+
+    // Tone reproduction curve tags
+    if handle_curve_tags(sig, tag_size, metadata) {
+        return;
+    }
+
+    // Viewing conditions and measurement tags
+    if handle_viewing_measurement_tags(sig, tag_data, metadata) {
+        return;
+    }
+
+    // Technology tag
+    if sig == "tech" {
+        if let Ok(tech) = parse_signature_type(tag_data) {
+            let tech_name = get_technology_name(&tech);
+            metadata.insert(
+                "Technology".to_string(),
+                TagValue::new_string(tech_name.to_string()),
+            );
+        }
+    }
+
+    // Unknown or unhandled tags are silently ignored
+}
+
+/// Handles text description type tags (desc, cprt)
+///
+/// Returns true if the tag was handled, false otherwise
+fn handle_text_description_tags(
+    sig: &str,
+    tag_data: &[u8],
+    metadata: &mut HashMap<String, TagValue>,
+) -> bool {
+    match sig {
+        "desc" => {
+            if let Ok(desc) = parse_text_description_type(tag_data) {
+                metadata.insert("ProfileDescription".to_string(), TagValue::new_string(desc));
+            }
+            true
+        }
+        "cprt" => {
+            if let Ok(cprt) = parse_text_type(tag_data) {
+                metadata.insert("ProfileCopyright".to_string(), TagValue::new_string(cprt));
+            }
+            true
+        }
+        "dmnd" => {
+            if let Ok(desc) = parse_text_description_type(tag_data) {
+                metadata.insert("DeviceMfgDesc".to_string(), TagValue::new_string(desc));
+            }
+            true
+        }
+        "dmdd" => {
+            if let Ok(desc) = parse_text_description_type(tag_data) {
+                metadata.insert("DeviceModelDesc".to_string(), TagValue::new_string(desc));
+            }
+            true
+        }
+        "vued" => {
+            if let Ok(desc) = parse_text_description_type(tag_data) {
+                metadata.insert("ViewingCondDesc".to_string(), TagValue::new_string(desc));
+            }
+            true
+        }
+        _ => false,
+    }
+}
+
+/// Handles XYZ coordinate type tags (wtpt, bkpt, rXYZ, gXYZ, bXYZ, lumi)
+///
+/// Returns true if the tag was handled, false otherwise
+fn handle_xyz_tags(
+    sig: &str,
+    tag_data: &[u8],
+    metadata: &mut HashMap<String, TagValue>,
+) -> bool {
+    let (key, handled) = match sig {
+        "wtpt" => ("MediaWhitePoint", true),
+        "bkpt" => ("MediaBlackPoint", true),
+        "rXYZ" => ("RedMatrixColumn", true),
+        "gXYZ" => ("GreenMatrixColumn", true),
+        "bXYZ" => ("BlueMatrixColumn", true),
+        "lumi" => ("Luminance", true),
+        _ => ("", false),
+    };
+
+    if handled {
+        if let Ok(xyz) = parse_xyz_type(tag_data) {
+            metadata.insert(
+                key.to_string(),
+                TagValue::new_string(format!("{} {} {}", xyz.0, xyz.1, xyz.2)),
+            );
+        }
+    }
+
+    handled
+}
+
+/// Handles tone reproduction curve tags (rTRC, gTRC, bTRC)
+///
+/// These contain binary curve data that should be extracted with -b option.
+/// Returns true if the tag was handled, false otherwise
+fn handle_curve_tags(
+    sig: &str,
+    tag_size: usize,
+    metadata: &mut HashMap<String, TagValue>,
+) -> bool {
+    let (key, handled) = match sig {
+        "rTRC" => ("RedToneReproductionCurve", true),
+        "gTRC" => ("GreenToneReproductionCurve", true),
+        "bTRC" => ("BlueToneReproductionCurve", true),
+        _ => ("", false),
+    };
+
+    if handled {
+        let desc = format!("(Binary data {} bytes, use -b option to extract)", tag_size);
+        metadata.insert(key.to_string(), TagValue::new_string(desc));
+    }
+
+    handled
+}
+
+/// Handles viewing conditions and measurement tags (view, meas)
+///
+/// Returns true if the tag was handled, false otherwise
+fn handle_viewing_measurement_tags(
+    sig: &str,
+    tag_data: &[u8],
+    metadata: &mut HashMap<String, TagValue>,
+) -> bool {
+    match sig {
+        "view" => {
+            if let Ok(viewing_cond) = parse_viewing_conditions(tag_data) {
+                insert_viewing_conditions(viewing_cond, metadata);
+            }
+            true
+        }
+        "meas" => {
+            if let Ok(measurement) = parse_measurement(tag_data) {
+                insert_measurement_data(measurement, metadata);
+            }
+            true
+        }
+        _ => false,
+    }
+}
+
+/// Inserts viewing conditions data into metadata map
+fn insert_viewing_conditions(
+    viewing_cond: HashMap<String, String>,
+    metadata: &mut HashMap<String, TagValue>,
+) {
+    if let Some(illuminant) = viewing_cond.get("illuminant") {
+        metadata.insert(
+            "ViewingCondIlluminant".to_string(),
+            TagValue::new_string(illuminant.clone()),
+        );
+    }
+    if let Some(surround) = viewing_cond.get("surround") {
+        metadata.insert(
+            "ViewingCondSurround".to_string(),
+            TagValue::new_string(surround.clone()),
+        );
+    }
+    if let Some(illum_type) = viewing_cond.get("illuminant_type") {
+        metadata.insert(
+            "ViewingCondIlluminantType".to_string(),
+            TagValue::new_string(illum_type.clone()),
+        );
+    }
+}
+
+/// Inserts measurement data into metadata map
+fn insert_measurement_data(
+    measurement: HashMap<String, String>,
+    metadata: &mut HashMap<String, TagValue>,
+) {
+    if let Some(observer) = measurement.get("observer") {
+        metadata.insert(
+            "MeasurementObserver".to_string(),
+            TagValue::new_string(observer.clone()),
+        );
+    }
+    if let Some(backing) = measurement.get("backing") {
+        metadata.insert(
+            "MeasurementBacking".to_string(),
+            TagValue::new_string(backing.clone()),
+        );
+    }
+    if let Some(geometry) = measurement.get("geometry") {
+        metadata.insert(
+            "MeasurementGeometry".to_string(),
+            TagValue::new_string(geometry.clone()),
+        );
+    }
+    if let Some(flare) = measurement.get("flare") {
+        metadata.insert(
+            "MeasurementFlare".to_string(),
+            TagValue::new_string(flare.clone()),
+        );
+    }
+    if let Some(illuminant) = measurement.get("illuminant") {
+        metadata.insert(
+            "MeasurementIlluminant".to_string(),
+            TagValue::new_string(illuminant.clone()),
+        );
+    }
+}
+
+/// Maps technology signature to human-readable name
+fn get_technology_name(tech: &str) -> &str {
+    match tech.trim() {
+        "fscn" => "Film Scanner",
+        "dcam" => "Digital Camera",
+        "rscn" => "Reflective Scanner",
+        "ijet" => "Ink Jet Printer",
+        "twax" => "Thermal Wax Printer",
+        "epho" => "Electrophotographic Printer",
+        "esta" => "Electrostatic Printer",
+        "dsub" => "Dye Sublimation Printer",
+        "rpho" => "Photographic Paper Printer",
+        "fprn" => "Film Writer",
+        "vidm" => "Video Monitor",
+        "vidc" => "Video Camera",
+        "pjtv" => "Projection Television",
+        "CRT" => "Cathode Ray Tube Display",
+        "PMD" => "Passive Matrix Display",
+        "AMD" => "Active Matrix Display",
+        "KPCD" => "Photo CD",
+        "imgs" => "Photo Image Setter",
+        "grav" => "Gravure",
+        "offs" => "Offset Lithography",
+        "silk" => "Silkscreen",
+        "flex" => "Flexography",
+        _ => tech,
+    }
+}
+
+// ============================================================================
+// ICC DATA TYPE PARSERS
+// ============================================================================
+
 /// Parses ICC textDescriptionType (old-style text)
+///
+/// This type is used for text descriptions in older ICC profiles.
+/// Modern profiles use multiLocalizedUnicodeType (mluc) instead.
 fn parse_text_description_type(data: &[u8]) -> Result<String> {
     if data.len() < 12 {
         return Err(ExifToolError::parse_error("textDescriptionType too small"));
@@ -981,6 +1174,9 @@ fn parse_text_description_type(data: &[u8]) -> Result<String> {
 }
 
 /// Parses ICC multiLocalizedUnicodeType (modern text format)
+///
+/// This type stores text in multiple languages using UTF-16 encoding.
+/// We extract the first record for simplicity.
 fn parse_mluc_type(data: &[u8]) -> Result<String> {
     if data.len() < 16 {
         return Err(ExifToolError::parse_error("mluc type too small"));
@@ -1026,6 +1222,9 @@ fn parse_mluc_type(data: &[u8]) -> Result<String> {
 }
 
 /// Parses ICC textType (simple text)
+///
+/// This is a simpler text type that stores ASCII text directly.
+/// Also supports mluc as a fallback for modern profiles.
 fn parse_text_type(data: &[u8]) -> Result<String> {
     if data.len() < 8 {
         return Err(ExifToolError::parse_error("textType too small"));
@@ -1052,6 +1251,9 @@ fn parse_text_type(data: &[u8]) -> Result<String> {
 }
 
 /// Parses ICC XYZType (XYZ color values)
+///
+/// XYZ values are encoded as s15Fixed16Number (signed 15.16 fixed-point).
+/// Used for white point, black point, RGB matrix columns, luminance, etc.
 fn parse_xyz_type(data: &[u8]) -> Result<(f64, f64, f64)> {
     if data.len() < 20 {
         return Err(ExifToolError::parse_error("XYZType too small"));
@@ -1068,6 +1270,8 @@ fn parse_xyz_type(data: &[u8]) -> Result<(f64, f64, f64)> {
 }
 
 /// Parses ICC signatureType (4-byte signature)
+///
+/// Used for technology tags and other signature-based fields
 fn parse_signature_type(data: &[u8]) -> Result<String> {
     if data.len() < 12 {
         return Err(ExifToolError::parse_error("signatureType too small"));
@@ -1081,6 +1285,8 @@ fn parse_signature_type(data: &[u8]) -> Result<String> {
 }
 
 /// Parses ICC viewing conditions structure
+///
+/// Contains illuminant XYZ, surround XYZ, and illuminant type
 fn parse_viewing_conditions(data: &[u8]) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
 
@@ -1111,24 +1317,31 @@ fn parse_viewing_conditions(data: &[u8]) -> Result<HashMap<String, String>> {
     // Illuminant type at offset 32-35
     if data.len() >= 36 {
         let illum_type = read_u32_be(data, 32)?;
-        let illum_name = match illum_type {
-            1 => "D50",
-            2 => "D65",
-            3 => "D93",
-            4 => "F2",
-            5 => "D55",
-            6 => "A",
-            7 => "Equi-Power (E)",
-            8 => "F8",
-            _ => "Unknown",
-        };
+        let illum_name = get_illuminant_type_name(illum_type);
         result.insert("illuminant_type".to_string(), illum_name.to_string());
     }
 
     Ok(result)
 }
 
+/// Maps illuminant type code to human-readable name
+fn get_illuminant_type_name(illum_type: u32) -> &'static str {
+    match illum_type {
+        1 => "D50",
+        2 => "D65",
+        3 => "D93",
+        4 => "F2",
+        5 => "D55",
+        6 => "A",
+        7 => "Equi-Power (E)",
+        8 => "F8",
+        _ => "Unknown",
+    }
+}
+
 /// Parses ICC measurement structure
+///
+/// Contains observer type, measurement backing, geometry, flare, and illuminant
 fn parse_measurement(data: &[u8]) -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
 
@@ -1138,13 +1351,10 @@ fn parse_measurement(data: &[u8]) -> Result<HashMap<String, String>> {
 
     // Type signature at offset 0 (should be "meas")
     // Reserved at offset 4-7
+
     // Standard observer at offset 8-11
     let observer = read_u32_be(data, 8)?;
-    let observer_name = match observer {
-        1 => "CIE 1931",
-        2 => "CIE 1964",
-        _ => "Unknown",
-    };
+    let observer_name = get_observer_name(observer);
     result.insert("observer".to_string(), observer_name.to_string());
 
     // Measurement backing XYZ at offset 12-23
@@ -1158,12 +1368,7 @@ fn parse_measurement(data: &[u8]) -> Result<HashMap<String, String>> {
 
     // Measurement geometry at offset 24-27
     let geometry = read_u32_be(data, 24)?;
-    let geometry_name = match geometry {
-        0 => "Unknown",
-        1 => "0/45 or 45/0",
-        2 => "0/d or d/0",
-        _ => "Unknown",
-    };
+    let geometry_name = get_geometry_name(geometry);
     result.insert("geometry".to_string(), geometry_name.to_string());
 
     // Measurement flare at offset 28-31 (u16Fixed16Number)
@@ -1175,24 +1380,39 @@ fn parse_measurement(data: &[u8]) -> Result<HashMap<String, String>> {
     // Standard illuminant at offset 32-35
     if data.len() >= 36 {
         let illuminant = read_u32_be(data, 32)?;
-        let illuminant_name = match illuminant {
-            1 => "D50",
-            2 => "D65",
-            3 => "D93",
-            4 => "F2",
-            5 => "D55",
-            6 => "A",
-            7 => "Equi-Power (E)",
-            8 => "F8",
-            _ => "Unknown",
-        };
+        let illuminant_name = get_illuminant_type_name(illuminant);
         result.insert("illuminant".to_string(), illuminant_name.to_string());
     }
 
     Ok(result)
 }
 
+/// Maps observer type code to human-readable name
+fn get_observer_name(observer: u32) -> &'static str {
+    match observer {
+        1 => "CIE 1931",
+        2 => "CIE 1964",
+        _ => "Unknown",
+    }
+}
+
+/// Maps geometry type code to human-readable name
+fn get_geometry_name(geometry: u32) -> &'static str {
+    match geometry {
+        0 => "Unknown",
+        1 => "0/45 or 45/0",
+        2 => "0/d or d/0",
+        _ => "Unknown",
+    }
+}
+
+// ============================================================================
+// BINARY DATA READERS
+// ============================================================================
+
 /// Reads a 4-byte big-endian unsigned integer.
+///
+/// Used throughout ICC profile parsing for reading lengths, offsets, and counts.
 fn read_u32_be(data: &[u8], offset: usize) -> Result<u32> {
     if offset + 4 > data.len() {
         return Err(ExifToolError::parse_error("Offset out of bounds"));
@@ -1206,6 +1426,8 @@ fn read_u32_be(data: &[u8], offset: usize) -> Result<u32> {
 }
 
 /// Reads a 2-byte big-endian unsigned integer.
+///
+/// Used for reading date/time fields in the ICC header.
 fn read_u16_be(data: &[u8], offset: usize) -> Result<u16> {
     if offset + 2 > data.len() {
         return Err(ExifToolError::parse_error("Offset out of bounds"));
@@ -1214,6 +1436,8 @@ fn read_u16_be(data: &[u8], offset: usize) -> Result<u16> {
 }
 
 /// Reads an 8-byte big-endian unsigned integer.
+///
+/// Used for reading device attributes bitfield in the ICC header.
 fn read_u64_be(data: &[u8], offset: usize) -> Result<u64> {
     if offset + 8 > data.len() {
         return Err(ExifToolError::parse_error("Offset out of bounds"));
@@ -1231,6 +1455,9 @@ fn read_u64_be(data: &[u8], offset: usize) -> Result<u64> {
 }
 
 /// Reads a 4-byte signature as a trimmed ASCII string.
+///
+/// ICC profiles use 4-character ASCII signatures extensively for
+/// identifying types, tags, manufacturers, etc.
 fn read_signature(data: &[u8], offset: usize) -> Result<String> {
     if offset + 4 > data.len() {
         return Err(ExifToolError::parse_error("Offset out of bounds"));
@@ -1253,7 +1480,8 @@ fn read_s15fixed16(data: &[u8], offset: usize) -> Result<f64> {
 
 /// Reads an unsigned 16.16 fixed-point number and converts to f64.
 ///
-/// Similar to s15Fixed16Number but unsigned.
+/// Similar to s15Fixed16Number but unsigned. Used for flare percentage
+/// in measurement data.
 fn read_u16fixed16(data: &[u8], offset: usize) -> Result<f64> {
     let value = read_u32_be(data, offset)?;
     let integer_part = (value >> 16) as f64;
