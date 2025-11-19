@@ -96,27 +96,42 @@ async fn handle_glob_pattern(pattern: &str) -> Result<String> {
 }
 
 fn extract_metadata_from_file(path: &PathBuf) -> Result<HashMap<String, String>> {
-    // For now, use a simple approach - read file system metadata
-    // In a full implementation, we'd use oxidex::core::MetadataMap::from_file()
-    // but that requires test fixtures with proper metadata
+    // Use OxiDex to extract real metadata
+    let metadata_map = oxidex::core::operations::read_metadata(path)?;
 
-    let metadata = std::fs::metadata(path)?;
+    // Convert MetadataMap to HashMap<String, String>
     let mut result = HashMap::new();
 
-    result.insert("FileSize".to_string(), metadata.len().to_string());
-    result.insert(
-        "FileType".to_string(),
-        if metadata.is_file() {
-            "File"
-        } else {
-            "Directory"
-        }
-        .to_string(),
-    );
-
-    // TODO: In production, use oxidex library:
-    // let metadata_map = oxidex::core::MetadataMap::from_file(path)?;
-    // Convert to HashMap<String, String>
+    // Extract all metadata tags and convert TagValue to String
+    for (key, value) in metadata_map.iter() {
+        let value_str = tag_value_to_string(value);
+        result.insert(key.to_string(), value_str);
+    }
 
     Ok(result)
+}
+
+/// Converts a TagValue to a human-readable string
+fn tag_value_to_string(value: &oxidex::core::tag_value::TagValue) -> String {
+    use oxidex::core::tag_value::TagValue;
+
+    match value {
+        TagValue::String(s) => s.clone(),
+        TagValue::Integer(i) => i.to_string(),
+        TagValue::Float(f) => f.to_string(),
+        TagValue::Rational { numerator, denominator } => {
+            if *denominator == 1 {
+                numerator.to_string()
+            } else {
+                format!("{}/{}", numerator, denominator)
+            }
+        }
+        TagValue::Binary(data) => format!("(Binary, {} bytes)", data.len()),
+        TagValue::DateTime(dt) => dt.to_rfc3339(),
+        TagValue::Struct(_) => "(Structured data)".to_string(),
+        TagValue::Array(values) => {
+            let items: Vec<String> = values.iter().map(tag_value_to_string).collect();
+            format!("[{}]", items.join(", "))
+        }
+    }
 }
