@@ -12,7 +12,7 @@
 //! ## Before & After Example
 //!
 //! **Before** (manual decoder function):
-//! ```rust
+//! ```ignore
 //! fn decode_scene_type(value: i16) -> String {
 //!     match value {
 //!         0 => "None".to_string(),
@@ -25,7 +25,7 @@
 //! ```
 //!
 //! **After** (using simple_decoder! macro):
-//! ```rust
+//! ```ignore
 //! simple_decoder!(decode_scene_type, i16, {
 //!     0 => "None",
 //!     1 => "Food",

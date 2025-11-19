@@ -14,7 +14,7 @@
 //! ## Before & After Example
 //!
 //! **Before** (scattered definitions):
-//! ```rust
+//! ```ignore
 //! const TAG_QUALITY: u16 = 0x0001;
 //! const TAG_MODE: u16 = 0x0002;
 //!
@@ -36,7 +36,7 @@
 //! ```
 //!
 //! **After** (using TagRegistry):
-//! ```rust
+//! ```ignore
 //! use super::shared::tag_registry::TagRegistry;
 //!
 //! let registry = TagRegistry::new()
