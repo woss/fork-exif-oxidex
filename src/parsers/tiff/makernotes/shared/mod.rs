@@ -36,6 +36,8 @@ pub mod decoder_macros;
 pub mod generic_decoders;
 /// Shared IFD parsing implementation to eliminate parse() duplication
 pub mod ifd_parser_base;
+/// Unified lens database infrastructure
+pub mod lens_database;
 /// Common trait definition for all MakerNotes parsers
 pub mod makernote_parser;
 /// Tag registry system for organizing and managing MakerNote tags
@@ -44,6 +46,7 @@ pub mod tag_registry;
 pub mod value_decoders;
 
 pub use array_schemas::{ArrayIndexDef, ArraySchema};
+pub use lens_database::{CombinedLensDb, LensDatabase, RangeLensDb, StaticLensDb};
 pub use makernote_parser::MakerNoteParser;
 
 #[cfg(test)]
