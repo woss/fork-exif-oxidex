@@ -81,10 +81,10 @@ const EXIF_IFD_POINTER: u16 = 0x8769;
 const GPS_INFO_IFD_POINTER: u16 = 0x8825;
 const INTEROPERABILITY_IFD_POINTER: u16 = 0xA005;
 const SUB_IFDS: u16 = 0x014A;
-const MAKERNOTE: u16 = 0x927C;  // MakerNote tag
+const MAKERNOTE: u16 = 0x927C; // MakerNote tag
 
 // Tag IDs for camera detection
-const MAKE: u16 = 0x010F;  // Camera manufacturer (e.g., "Canon", "Nikon")
+const MAKE: u16 = 0x010F; // Camera manufacturer (e.g., "Canon", "Nikon")
 
 /// Parses the 8-byte TIFF file header.
 ///
@@ -245,6 +245,39 @@ fn extract_u32_from_tag_value(value: &[u8], byte_order: ByteOrder) -> Option<u32
     };
 
     Some(offset)
+}
+
+/// Extracts the camera Make string from tag values
+///
+/// Searches through tags for the Make tag (0x010F) and extracts it as a string.
+///
+/// # Parameters
+///
+/// - `tags`: Vector of (tag_id, field_type, value_count, raw_value) tuples
+///
+/// # Returns
+///
+/// - `Some(String)`: Camera make if found
+/// - `None`: Make tag not found or invalid data
+fn extract_make_from_tags(tags: &IfdEntries) -> Option<String> {
+    for (tag_id, _field_type, _count, value) in tags {
+        if *tag_id == MAKE {
+            // Make is ASCII string, typically null-terminated
+            let value_bytes = value.as_ref();
+
+            // Find null terminator or use full length
+            let end = value_bytes
+                .iter()
+                .position(|&b| b == 0)
+                .unwrap_or(value_bytes.len());
+
+            // Convert to string, trimming whitespace
+            if let Ok(make) = String::from_utf8(value_bytes[..end].to_vec()) {
+                return Some(make.trim().to_string());
+            }
+        }
+    }
+    None
 }
 
 /// Parses a complete TIFF file and extracts all metadata tags.
@@ -782,5 +815,31 @@ mod tests {
         let value = vec![0x12, 0x34];
         let result = extract_u32_from_tag_value(&value, ByteOrder::LittleEndian);
         assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_extract_make_from_tags() {
+        use std::borrow::Cow;
+
+        // Create tags with Make tag
+        let tags = vec![
+            (0x010F, 2, 6, Cow::Owned(b"Canon\0".to_vec())),  // Make tag
+            (0x0110, 2, 6, Cow::Owned(b"EOS 5D".to_vec())),   // Model tag
+        ];
+
+        let make = extract_make_from_tags(&tags);
+        assert_eq!(make, Some("Canon".to_string()));
+    }
+
+    #[test]
+    fn test_extract_make_from_tags_not_found() {
+        use std::borrow::Cow;
+
+        let tags = vec![
+            (0x0110, 2, 6, Cow::Owned(b"EOS 5D".to_vec())),  // Model but no Make
+        ];
+
+        let make = extract_make_from_tags(&tags);
+        assert_eq!(make, None);
     }
 }
