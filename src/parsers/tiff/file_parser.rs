@@ -81,6 +81,10 @@ const EXIF_IFD_POINTER: u16 = 0x8769;
 const GPS_INFO_IFD_POINTER: u16 = 0x8825;
 const INTEROPERABILITY_IFD_POINTER: u16 = 0xA005;
 const SUB_IFDS: u16 = 0x014A;
+const MAKERNOTE: u16 = 0x927C;  // MakerNote tag
+
+// Tag IDs for camera detection
+const MAKE: u16 = 0x010F;  // Camera manufacturer (e.g., "Canon", "Nikon")
 
 /// Parses the 8-byte TIFF file header.
 ///
