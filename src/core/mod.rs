@@ -17,6 +17,7 @@ pub mod operations;
 pub mod operations_helpers;
 pub mod tag_conversion;
 pub mod tag_value;
+pub mod tiff_helpers;
 pub mod validation;
 
 // Re-export tag descriptor types from exiftool-tags crate
