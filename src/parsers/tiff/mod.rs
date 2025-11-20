@@ -11,6 +11,7 @@ pub mod makernote_parser;
 pub mod makernotes;
 pub mod tag_parser;
 pub mod tiff_enums;
+pub mod tiff_subreader;
 
 // Re-export main parsing functions for convenience
 pub use file_parser::parse_tiff_file;

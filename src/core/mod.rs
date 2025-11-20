@@ -12,6 +12,7 @@ pub mod file_metadata;
 pub mod file_reader_trait;
 pub mod format_dispatch;
 pub mod format_parser_trait;
+pub mod jpeg_helpers;
 pub mod metadata_map;
 pub mod operations;
 pub mod operations_helpers;
