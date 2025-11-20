@@ -60,7 +60,8 @@
 use crate::core::FileReader;
 use crate::error::{ExifToolError, Result};
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder, IfdEntries};
-use std::collections::HashSet;
+use crate::parsers::tiff::makernote_dispatcher::dispatch_makernote;
+use std::collections::{HashMap, HashSet};
 
 /// TIFF header structure
 ///
@@ -367,7 +368,7 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
         // Parse this IFD and collect tags
         let tags = parse_ifd(reader, current_offset, byte_order)?;
 
-        // Check for sub-IFD pointers and recursively parse them
+        // Check for sub-IFD pointers and MakerNote, and recursively parse them
         for (tag_id, _field_type, _value_count, value) in &tags {
             match *tag_id {
                 EXIF_IFD_POINTER | GPS_INFO_IFD_POINTER | INTEROPERABILITY_IFD_POINTER => {
@@ -418,6 +419,36 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
                                         );
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+                MAKERNOTE => {
+                    // MakerNote handling
+                    // Extract camera make from current tags
+                    if let Some(make) = extract_make_from_tags(&all_tags) {
+                        // Parse MakerNote using dispatcher
+                        let mut makernote_tags = HashMap::new();
+                        let makernote_data = value.as_ref();
+
+                        match dispatch_makernote(&make, makernote_data, byte_order, &mut makernote_tags) {
+                            Ok(()) => {
+                                // Convert HashMap<String, String> to IfdEntries format
+                                // Tag ID 0x927C, Type 7 (UNDEFINED), count = data length
+                                for (key, val) in makernote_tags {
+                                    // Create synthetic tag entries for MakerNote tags
+                                    // We use a synthetic tag ID and store the key:value as a string
+                                    let synthetic_value = format!("{}: {}", key, val);
+                                    all_tags.push((
+                                        MAKERNOTE,  // Use MakerNote tag ID
+                                        7,  // Type UNDEFINED
+                                        synthetic_value.len() as u32,
+                                        std::borrow::Cow::Owned(synthetic_value.into_bytes()),
+                                    ));
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Warning: Failed to parse MakerNote for {}: {}", make, e);
                             }
                         }
                     }
