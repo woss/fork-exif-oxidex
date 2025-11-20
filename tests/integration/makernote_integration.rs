@@ -70,20 +70,22 @@ fn test_jpeg_without_makernote() {
 
     // This is a minimal valid JPEG with no EXIF/MakerNote
     let minimal_jpeg = vec![
-        0xFF, 0xD8,  // SOI
-        0xFF, 0xE0,  // APP0
-        0x00, 0x10,  // Length
-        0x4A, 0x46, 0x49, 0x46, 0x00,  // "JFIF\0"
-        0x01, 0x01,  // Version 1.1
-        0x00,  // Units: none
-        0x00, 0x01, 0x00, 0x01,  // X/Y density: 1x1
-        0x00, 0x00,  // Thumbnail: 0x0
-        0xFF, 0xD9,  // EOI
+        0xFF, 0xD8, // SOI
+        0xFF, 0xE0, // APP0
+        0x00, 0x10, // Length
+        0x4A, 0x46, 0x49, 0x46, 0x00, // "JFIF\0"
+        0x01, 0x01, // Version 1.1
+        0x00, // Units: none
+        0x00, 0x01, 0x00, 0x01, // X/Y density: 1x1
+        0x00, 0x00, // Thumbnail: 0x0
+        0xFF, 0xD9, // EOI
     ];
 
     // Write to temp file
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(&minimal_jpeg).expect("Failed to write temp file");
+    temp_file
+        .write_all(&minimal_jpeg)
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     let _metadata = read_metadata(&temp_path).expect("Should parse JPEG without MakerNote");

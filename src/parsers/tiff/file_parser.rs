@@ -431,7 +431,12 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
                         let mut makernote_tags = HashMap::new();
                         let makernote_data = value.as_ref();
 
-                        match dispatch_makernote(&make, makernote_data, byte_order, &mut makernote_tags) {
+                        match dispatch_makernote(
+                            &make,
+                            makernote_data,
+                            byte_order,
+                            &mut makernote_tags,
+                        ) {
                             Ok(()) => {
                                 // Convert HashMap<String, String> to IfdEntries format
                                 // Tag ID 0x927C, Type 7 (UNDEFINED), count = data length
@@ -440,8 +445,8 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
                                     // We use a synthetic tag ID and store the key:value as a string
                                     let synthetic_value = format!("{}: {}", key, val);
                                     all_tags.push((
-                                        MAKERNOTE,  // Use MakerNote tag ID
-                                        7,  // Type UNDEFINED
+                                        MAKERNOTE, // Use MakerNote tag ID
+                                        7,         // Type UNDEFINED
                                         synthetic_value.len() as u32,
                                         std::borrow::Cow::Owned(synthetic_value.into_bytes()),
                                     ));
@@ -854,8 +859,8 @@ mod tests {
 
         // Create tags with Make tag
         let tags = vec![
-            (0x010F, 2, 6, Cow::Owned(b"Canon\0".to_vec())),  // Make tag
-            (0x0110, 2, 6, Cow::Owned(b"EOS 5D".to_vec())),   // Model tag
+            (0x010F, 2, 6, Cow::Owned(b"Canon\0".to_vec())), // Make tag
+            (0x0110, 2, 6, Cow::Owned(b"EOS 5D".to_vec())),  // Model tag
         ];
 
         let make = extract_make_from_tags(&tags);
@@ -867,7 +872,7 @@ mod tests {
         use std::borrow::Cow;
 
         let tags = vec![
-            (0x0110, 2, 6, Cow::Owned(b"EOS 5D".to_vec())),  // Model but no Make
+            (0x0110, 2, 6, Cow::Owned(b"EOS 5D".to_vec())), // Model but no Make
         ];
 
         let make = extract_make_from_tags(&tags);
