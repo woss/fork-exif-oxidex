@@ -26,7 +26,7 @@ use super::super::dji::{
 // Maps flight mode numeric codes to human-readable mode names.
 // Covers all common flight modes from Manual to Force Landing.
 const_decoder!(
-    FLIGHT_MODE,
+    pub FLIGHT_MODE,
     i16,
     [
         (0, "Manual"),
@@ -49,7 +49,7 @@ const_decoder!(
 // Maps white balance numeric codes to mode names.
 // Supports all standard white balance presets plus custom settings.
 const_decoder!(
-    WHITE_BALANCE,
+    pub WHITE_BALANCE,
     i16,
     [
         (0, "Auto"),
@@ -66,7 +66,7 @@ const_decoder!(
 // Maps color mode codes to color profile names.
 // Includes standard and professional color profiles like D-Log for video.
 const_decoder!(
-    COLOR_MODE,
+    pub COLOR_MODE,
     i16,
     [
         (0, "Normal"),
@@ -83,7 +83,7 @@ const_decoder!(
 // Maps image format codes to file type descriptions.
 // Supports JPEG, RAW, DNG, and combination formats.
 const_decoder!(
-    IMAGE_FORMAT,
+    pub IMAGE_FORMAT,
     i16,
     [
         (0, "JPEG"),
@@ -98,7 +98,7 @@ const_decoder!(
 // Maps signal strength codes (0-5) to quality descriptions.
 // Higher numbers indicate better GPS reception.
 const_decoder!(
-    GPS_SIGNAL,
+    pub GPS_SIGNAL,
     i16,
     [
         (0, "None"),
@@ -123,7 +123,7 @@ const_decoder!(
 // - 0x10: Top sensor
 // - 0x20: Bottom sensor
 bitfield_decoder!(
-    OBSTACLE_AVOIDANCE,
+    pub OBSTACLE_AVOIDANCE,
     [
         (0x01, "Front"),
         (0x02, "Back"),

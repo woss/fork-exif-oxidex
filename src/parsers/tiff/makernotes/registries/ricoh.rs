@@ -4,9 +4,36 @@
 //! Supports Ricoh digital cameras including GR series and Caplio models.
 
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
-// Re-export decoders from ricoh.rs (if they exist)
-// Note: Ricoh has simple decoders that may be defined inline
+// ============================================================================
+// Declarative Decoder Definitions
+// ============================================================================
+
+const_decoder!(
+    RICOH_SHOOTING_MODE,
+    u16,
+    [
+        (0, "Auto"),
+        (1, "Program"),
+        (2, "Aperture Priority"),
+        (3, "Manual"),
+    ]
+);
+
+const_decoder!(RICOH_FLASH_MODE, u16, [(0, "Auto"), (1, "On"), (2, "Off"),]);
+
+const_decoder!(
+    RICOH_WHITE_BALANCE,
+    u16,
+    [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Shade"),
+        (3, "Fluorescent"),
+        (4, "Tungsten"),
+    ]
+);
 
 /// Create and return the Ricoh tag registry
 ///
@@ -23,10 +50,10 @@ pub fn ricoh_registry() -> TagRegistry {
         .register_raw(0x0002, "Firmware")
 
         // Shooting Settings
-        .register_raw(0x0005, "ShootingMode")
-        .register_raw(0x000C, "FlashMode")
+        .register_simple_u16(0x0005, "ShootingMode", &RICOH_SHOOTING_MODE)
+        .register_simple_u16(0x000C, "FlashMode", &RICOH_FLASH_MODE)
         .register_raw(0x001D, "FocusMode")
-        .register_raw(0x001E, "WhiteBalance")
+        .register_simple_u16(0x001E, "WhiteBalance", &RICOH_WHITE_BALANCE)
         .register_raw(0x0022, "ISOSetting")
 
         // Image Parameters

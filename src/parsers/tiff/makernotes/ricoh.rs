@@ -30,73 +30,41 @@ use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 use super::registries::ricoh::ricoh_registry;
 
-// Ricoh MakerNote Tag IDs
-const RICOH_MODEL: u16 = 0x0001;
-const RICOH_FIRMWARE: u16 = 0x0002;
-const RICOH_SHOOTING_MODE: u16 = 0x0005;
-const RICOH_FLASH_MODE: u16 = 0x000C;
+// ============================================================================
+// Ricoh MakerNote Tag IDs (for parsing reference)
+// ============================================================================
+// Tag definitions are centralized in the registry (registries/ricoh.rs)
+// These constants are retained for parse_entry() to identify special handling
+
 const RICOH_FOCUS_MODE: u16 = 0x001D;
-const RICOH_WHITE_BALANCE: u16 = 0x001E;
 const RICOH_ISO_SETTING: u16 = 0x0022;
-const RICOH_COLOR_MODE: u16 = 0x0034;
 const RICOH_SHARPNESS: u16 = 0x0035;
 
-// ============================================================================
-// Declarative Decoder Definitions
-// ============================================================================
+// Static registry instance for efficient tag lookup and decoding
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(ricoh_registry);
 
-const_decoder!(
-    SHOOTING_MODE,
-    u16,
-    [
-        (0, "Auto"),
-        (1, "Program"),
-        (2, "Aperture Priority"),
-        (3, "Manual"),
-    ]
-);
-
-const_decoder!(FLASH_MODE, u16, [(0, "Auto"), (1, "On"), (2, "Off"),]);
-
-const_decoder!(
-    WHITE_BALANCE,
-    u16,
-    [
-        (0, "Auto"),
-        (1, "Daylight"),
-        (2, "Shade"),
-        (3, "Fluorescent"),
-        (4, "Tungsten"),
-    ]
-);
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
+/// Extracts a 16-bit unsigned value from IFD entry
+///
+/// # Arguments
+/// * `entry` - IFD entry containing the value
+/// * `byte_order` - Byte order for interpreting multi-byte values
+///
+/// # Returns
+/// The extracted u16 value, or None if the entry doesn't contain exactly one value
 fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<u16> {
     if entry.value_count != 1 {
         return None;
     }
+
     let value = match byte_order {
         ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as u16,
         ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as u16,
     };
+
     Some(value)
 }
 
-// ============================================================================
-// Tag Registry
-// ============================================================================
-// Use the centralized registry from registries/ricoh.rs
-
-static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(ricoh_registry);
-
-// ============================================================================
-// Parser Implementation
-// ============================================================================
-
-/// Parser for Ricoh MakerNotes
+/// Ricoh MakerNote parser implementation
 pub struct RicohParser;
 
 impl Default for RicohParser {
@@ -111,6 +79,13 @@ impl RicohParser {
         RicohParser
     }
 
+    /// Parse a single IFD entry and extract tag value
+    ///
+    /// # Arguments
+    /// * `entry` - IFD entry to parse
+    /// * `data` - Full MakerNote data buffer
+    /// * `byte_order` - Byte order for multi-byte values
+    /// * `tags` - HashMap to insert extracted tags into
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -118,26 +93,36 @@ impl RicohParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) {
-        if let Some(value) = extract_u16_value(entry, data, byte_order) {
-            let tag_name = match TAG_REGISTRY.get_tag_name(entry.tag_id) {
-                Some(name) => name,
-                None => return,
-            };
+        // Get tag name from registry
+        let tag_name = match TAG_REGISTRY.get_tag_name(entry.tag_id) {
+            Some(name) => name,
+            None => return, // Unknown tag, skip it
+        };
 
-            let formatted_value = match entry.tag_id {
-                RICOH_SHOOTING_MODE | RICOH_FLASH_MODE | RICOH_WHITE_BALANCE => {
-                    TAG_REGISTRY.decode_u16(entry.tag_id, value)
-                }
-                RICOH_FOCUS_MODE => {
-                    let mode = if value == 0 { "Auto" } else { "Manual" };
-                    mode.to_string()
-                }
-                RICOH_ISO_SETTING | RICOH_SHARPNESS => value.to_string(),
-                _ => return,
-            };
+        // Extract u16 value for all registered tags
+        let value = match extract_u16_value(entry, data, byte_order) {
+            Some(v) => v,
+            None => return,
+        };
 
-            tags.insert(format!("Ricoh:{}", tag_name), formatted_value);
-        }
+        // Format value based on tag type and registered decoders
+        let formatted_value = match entry.tag_id {
+            // Tags with registry-based decoders (shooting mode, flash mode, white balance)
+            0x0005 | 0x000C | 0x001E => TAG_REGISTRY.decode_u16(entry.tag_id, value),
+
+            // Focus mode: manual binary decode
+            RICOH_FOCUS_MODE => {
+                if value == 0 { "Auto".to_string() } else { "Manual".to_string() }
+            }
+
+            // Numeric tags: ISO, Sharpness
+            RICOH_ISO_SETTING | RICOH_SHARPNESS => value.to_string(),
+
+            // Unknown tag handling (shouldn't reach here due to registry check)
+            _ => return,
+        };
+
+        tags.insert(format!("Ricoh:{}", tag_name), formatted_value);
     }
 }
 
@@ -177,12 +162,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_shooting_mode_decoder() {
-        assert_eq!(SHOOTING_MODE.decode(0), "Auto");
-        assert_eq!(SHOOTING_MODE.decode(1), "Program");
-    }
-
-    #[test]
     fn test_ricoh_parser_trait() {
         let parser = RicohParser::new();
         assert_eq!(parser.manufacturer_name(), "Ricoh");
@@ -193,11 +172,11 @@ mod tests {
     fn test_parse_shooting_mode() {
         let parser = RicohParser::new();
         let mut data = Vec::new();
-        data.extend_from_slice(&[0x01, 0x00]);
-        data.extend_from_slice(&[0x05, 0x00]);
-        data.extend_from_slice(&[0x03, 0x00]);
-        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]);
-        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]);
+        data.extend_from_slice(&[0x01, 0x00]); // 1 entry
+        data.extend_from_slice(&[0x05, 0x00]); // Tag: ShootingMode (0x0005)
+        data.extend_from_slice(&[0x03, 0x00]); // Type: SHORT
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Count: 1
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Value: 1
 
         let mut tags = HashMap::new();
         let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
@@ -206,11 +185,28 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_focus_mode() {
+        let parser = RicohParser::new();
+        let mut data = Vec::new();
+        data.extend_from_slice(&[0x01, 0x00]); // 1 entry
+        data.extend_from_slice(&[0x1D, 0x00]); // Tag: FocusMode (0x001D)
+        data.extend_from_slice(&[0x03, 0x00]); // Type: SHORT
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Count: 1
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Value: 1 (Manual)
+
+        let mut tags = HashMap::new();
+        let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
+        assert!(result.is_ok());
+        assert_eq!(tags.get("Ricoh:FocusMode"), Some(&"Manual".to_string()));
+    }
+
+    #[test]
     fn test_tag_registry() {
         assert_eq!(
-            TAG_REGISTRY.get_tag_name(RICOH_SHOOTING_MODE),
+            TAG_REGISTRY.get_tag_name(0x0005),
             Some("ShootingMode")
         );
-        assert!(TAG_REGISTRY.has_tag(RICOH_FLASH_MODE));
+        assert!(TAG_REGISTRY.has_tag(0x000C));
+        assert_eq!(TAG_REGISTRY.get_tag_name(0x001E), Some("WhiteBalance"));
     }
 }

@@ -73,8 +73,100 @@ pub fn is_sigma_makernote(data: &[u8]) -> bool {
 // ============================================================================
 // DECODERS - Sigma Value Decoders
 // ============================================================================
-// Decoder definitions are now centralized in registries/sigma.rs
-// They are exported and used via the tag registry for consistency and reusability.
+// Sigma-specific value decoders for camera settings
+
+use crate::const_decoder;
+
+/// Decoder for Sigma resolution modes
+const_decoder!(pub DECODE_RESOLUTION_MODE, i32, [
+    (0, "Low"),
+    (1, "High"),
+]);
+
+/// Decoder for Sigma autofocus modes
+const_decoder!(pub DECODE_AF_MODE, i32, [
+    (0, "Single Shot"),
+    (1, "Continuous"),
+    (2, "Manual"),
+]);
+
+/// Decoder for Sigma white balance settings
+const_decoder!(pub DECODE_WHITE_BALANCE, i32, [
+    (0, "Auto"),
+    (1, "Daylight"),
+    (2, "Cloudy"),
+    (3, "Shade"),
+    (4, "Tungsten"),
+    (5, "Fluorescent"),
+    (6, "Flash"),
+    (7, "Custom"),
+]);
+
+/// Decoder for Sigma exposure modes
+const_decoder!(pub DECODE_EXPOSURE_MODE, i32, [
+    (0, "Auto"),
+    (1, "Program"),
+    (2, "Aperture Priority"),
+    (3, "Shutter Priority"),
+    (4, "Manual"),
+]);
+
+/// Decoder for Sigma metering modes
+const_decoder!(pub DECODE_METERING_MODE, i32, [
+    (0, "Spot"),
+    (1, "Center-weighted"),
+    (2, "Average"),
+    (3, "Multi-segment"),
+]);
+
+/// Decoder for Sigma drive modes
+const_decoder!(pub DECODE_DRIVE_MODE, i32, [
+    (0, "Single"),
+    (1, "Continuous"),
+    (2, "Burst"),
+]);
+
+/// Decoder for Sigma flash modes
+const_decoder!(pub DECODE_FLASH_MODE, i32, [
+    (0, "Off"),
+    (1, "Auto"),
+    (2, "On"),
+    (3, "Red-eye Reduction"),
+    (4, "Fill Flash"),
+]);
+
+/// Decoder for Sigma image quality settings
+const_decoder!(pub DECODE_QUALITY, i32, [
+    (0, "Low"),
+    (1, "Normal"),
+    (2, "High"),
+    (3, "Fine"),
+]);
+
+/// Decoder for Sigma color modes
+const_decoder!(pub DECODE_COLOR_MODE, i32, [
+    (0, "Standard"),
+    (1, "Vivid"),
+    (2, "Neutral"),
+    (3, "Portrait"),
+    (4, "Landscape"),
+]);
+
+/// Decoder for Sigma color space settings
+const_decoder!(pub DECODE_COLOR_SPACE, i32, [
+    (0, "sRGB"),
+    (1, "Adobe RGB"),
+    (2, "ProPhoto RGB"),
+]);
+
+/// Decoder for Sigma picture styles
+const_decoder!(pub DECODE_PICTURE_STYLE, i32, [
+    (0, "Standard"),
+    (1, "Landscape"),
+    (2, "Portrait"),
+    (3, "Fine Detail"),
+    (4, "Monochrome"),
+]);
 
 /// Sigma MakerNote Parser
 ///

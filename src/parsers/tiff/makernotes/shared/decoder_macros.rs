@@ -216,6 +216,16 @@ macro_rules! const_decoder {
 /// ```
 #[macro_export]
 macro_rules! bitfield_decoder {
+    // Public decoder variant
+    (pub $name:ident, [ $( ($mask:expr, $str:expr) ),* $(,)? ]) => {
+        pub const $name: $crate::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder =
+            $crate::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder::new(&[
+                $(
+                    ($mask, $str),
+                )*
+            ]);
+    };
+    // Private decoder variant (original behavior)
     ($name:ident, [ $( ($mask:expr, $str:expr) ),* $(,)? ]) => {
         const $name: $crate::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder =
             $crate::parsers::tiff::makernotes::shared::generic_decoders::BitfieldDecoder::new(&[

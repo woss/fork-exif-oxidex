@@ -19,39 +19,33 @@
 //! HP uses a simple proprietary tag structure.
 
 #![allow(dead_code)]
-#![allow(unused_imports)]
 
 use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
+use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-
-// HP MakerNote Tag IDs
-const HP_MODEL: u16 = 0x0001; // Camera model
-const HP_QUALITY: u16 = 0x0003; // Image quality
-const HP_COLOR_MODE: u16 = 0x0005; // Color mode setting
-const HP_FLASH_MODE: u16 = 0x0007; // Flash mode
-const HP_WHITE_BALANCE: u16 = 0x0009; // White balance
-const HP_SHARPNESS: u16 = 0x000B; // Sharpness setting
+use super::registries::hp::hp_registry;
 
 // Decodes HP image quality
-const_decoder! {
-    DECODE_QUALITY, u16, [
-        (1, "Normal"),
-        (2, "Fine"),
-        (3, "Superfine"),
-    ]
-}
+const_decoder!(pub DECODE_QUALITY, u16, [
+    (1, "Normal"),
+    (2, "Fine"),
+    (3, "Superfine"),
+]);
 
 // Decodes HP color mode
-const_decoder! {
-    DECODE_COLOR_MODE, u16, [
-        (0, "Color"),
-        (1, "Black & White"),
-        (2, "Sepia"),
-    ]
-}
+const_decoder!(pub DECODE_COLOR_MODE, u16, [
+    (0, "Color"),
+    (1, "Black & White"),
+    (2, "Sepia"),
+]);
+
+// Lazy-initialized tag registry using centralized registry function
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(hp_registry);
 
 // Extracts a u16 value from an IFD entry's value_offset field
 // This handles the case where the value is stored inline in the offset field
@@ -85,10 +79,7 @@ impl HpParser {
     }
 
     /// Parses a single HP MakerNote IFD entry and extracts its tag value
-    ///
-    /// This method handles the various HP-specific tag types and converts
-    /// their raw values into human-readable strings using the appropriate
-    /// decoder functions or inline logic
+    /// Uses centralized registry for tag metadata and decoding
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -96,33 +87,30 @@ impl HpParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) {
-        match entry.tag_id {
-            HP_QUALITY => {
-                // Extract and decode image quality setting using const decoder
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("HP:Quality".to_string(), DECODE_QUALITY.decode(value));
+        if let Some(value) = extract_u16_value(entry, data, byte_order) {
+            let tag_name = match TAG_REGISTRY.get_tag_name(entry.tag_id) {
+                Some(name) => name,
+                None => return,
+            };
+
+            // Try registry decoding first
+            let formatted_value = TAG_REGISTRY.decode_u16(entry.tag_id, value);
+
+            // Fallback for tags without decoder in registry
+            let formatted_value = if formatted_value == value.to_string() {
+                match entry.tag_id {
+                    0x0007 => {
+                        let mode = if value > 0 { "On" } else { "Off" };
+                        mode.to_string()
+                    }
+                    0x000B => value.to_string(),
+                    _ => formatted_value,
                 }
-            }
-            HP_COLOR_MODE => {
-                // Extract and decode color mode setting using const decoder
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("HP:ColorMode".to_string(), DECODE_COLOR_MODE.decode(value));
-                }
-            }
-            HP_FLASH_MODE => {
-                // Flash mode is a simple boolean: 0 = Off, >0 = On
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    tags.insert("HP:FlashMode".to_string(), mode.to_string());
-                }
-            }
-            HP_SHARPNESS => {
-                // Sharpness is stored as a numeric value
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("HP:Sharpness".to_string(), value.to_string());
-                }
-            }
-            _ => {}
+            } else {
+                formatted_value
+            };
+
+            tags.insert(format!("HP:{}", tag_name), formatted_value);
         }
     }
 }
@@ -136,110 +124,21 @@ impl MakerNoteParser for HpParser {
         "HP:"
     }
 
-    /// Parses HP MakerNote data and extracts all available tags
-    ///
-    /// HP MakerNotes use a standard IFD format starting immediately at offset 0.
-    /// This method reads the entry count, then iterates through all IFD entries,
-    /// parsing each one according to its tag ID.
-    ///
-    /// # Arguments
-    /// * `data` - The raw MakerNote data buffer
-    /// * `byte_order` - The byte order to use for multi-byte values
-    /// * `tags` - HashMap to populate with extracted tag name/value pairs
-    ///
-    /// # Returns
-    /// * `Ok(())` if parsing succeeded
-    /// * `Err(String)` if data is too short or entry count is invalid
     fn parse(
         &self,
         data: &[u8],
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        // Validate minimum data length (2 bytes for entry count)
-        if data.len() < 2 {
-            return Err("HP MakerNote data too short".to_string());
-        }
-
-        let ifd_offset = 0;
-        // Read the number of IFD entries from the first 2 bytes
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[ifd_offset], data[ifd_offset + 1]]),
+        let config = IfdParserConfig {
+            signature: None,
+            signature_offset: 0,
+            max_entries: 500,
         };
 
-        // Sanity check: entry count should be reasonable (HP cameras have few tags)
-        if entry_count == 0 || entry_count > 500 {
-            return Err(format!("Invalid entry count: {}", entry_count));
-        }
-
-        // Each IFD entry is 12 bytes: 2 (tag) + 2 (type) + 4 (count) + 4 (value/offset)
-        let entry_size = 12;
-        let mut offset = ifd_offset + 2;
-
-        // Iterate through all IFD entries
-        for _ in 0..entry_count {
-            // Ensure we have enough data for a complete entry
-            if offset + entry_size > data.len() {
-                break;
-            }
-
-            // Parse the tag ID (2 bytes)
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset], data[offset + 1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset], data[offset + 1]]),
-            };
-
-            // Parse the field type (2 bytes)
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset + 2], data[offset + 3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset + 2], data[offset + 3]]),
-            };
-
-            // Parse the value count (4 bytes)
-            let count = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-            };
-
-            // Parse the value/offset field (4 bytes)
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-            };
-
-            // Create IFD entry structure and parse it
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            self.parse_entry(&entry, data, byte_order, tags);
-            offset += entry_size;
-        }
-
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
+            self.parse_entry(entry, parse_data, byte_order, tags);
+        })?;
         Ok(())
     }
 }

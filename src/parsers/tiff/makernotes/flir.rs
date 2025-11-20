@@ -47,124 +47,110 @@ use super::registries::flir_registry;
 use crate::const_decoder;
 
 // FLIR MakerNote Tag IDs
-const FLIR_MODEL: u16 = 0x0001; // Camera model
-const FLIR_SERIAL: u16 = 0x0002; // Serial number
-const FLIR_FIRMWARE: u16 = 0x0003; // Firmware version
-const FLIR_TEMPERATURE_MIN: u16 = 0x0100; // Minimum temperature in scene (K)
-const FLIR_TEMPERATURE_MAX: u16 = 0x0101; // Maximum temperature in scene (K)
-const FLIR_TEMPERATURE_CENTER: u16 = 0x0102; // Center spot temperature (K)
-const FLIR_EMISSIVITY: u16 = 0x0103; // Emissivity (0-100, scale: 0.01)
-const FLIR_REFLECTED_TEMP: u16 = 0x0104; // Reflected apparent temp (K)
-const FLIR_ATMOSPHERIC_TEMP: u16 = 0x0105; // Atmospheric temperature (K)
-const FLIR_DISTANCE: u16 = 0x0106; // Distance to object (meters)
-const FLIR_HUMIDITY: u16 = 0x0107; // Relative humidity (%)
-const FLIR_PALETTE: u16 = 0x0108; // Color palette code
-const FLIR_PALETTE_METHOD: u16 = 0x0109; // Palette method (linear/histogram)
-const FLIR_PALETTE_STRETCH: u16 = 0x010A; // Palette stretch mode
-const FLIR_TEMPERATURE_RANGE_MIN: u16 = 0x010B; // Camera range min (K)
-const FLIR_TEMPERATURE_RANGE_MAX: u16 = 0x010C; // Camera range max (K)
-const FLIR_ATMOSPHERIC_TRANS: u16 = 0x010D; // Atmospheric transmission (0-100)
-const FLIR_EXTERNAL_OPTICS_TEMP: u16 = 0x010E; // External optics temp (K)
-const FLIR_EXTERNAL_OPTICS_TRANS: u16 = 0x010F; // External optics transmission
-const FLIR_IR_WINDOW_TEMP: u16 = 0x0110; // IR window temperature (K)
-const FLIR_IR_WINDOW_TRANS: u16 = 0x0111; // IR window transmission
-const FLIR_PLANCK_R1: u16 = 0x0112; // Planck R1 constant
-const FLIR_PLANCK_R2: u16 = 0x0113; // Planck R2 constant
-const FLIR_PLANCK_B: u16 = 0x0114; // Planck B constant
-const FLIR_PLANCK_F: u16 = 0x0115; // Planck F constant
-const FLIR_PLANCK_O: u16 = 0x0116; // Planck O constant (offset)
-const FLIR_CAMERA_TEMP_MIN: u16 = 0x0117; // Camera internal min temp (K)
-const FLIR_CAMERA_TEMP_MAX: u16 = 0x0118; // Camera internal max temp (K)
-const FLIR_IMAGE_TYPE: u16 = 0x0119; // Image type (thermal/visible)
-const FLIR_CALIBRATION_DATE: u16 = 0x011A; // Last calibration date
-const FLIR_FOCUS_DISTANCE: u16 = 0x011B; // Focus distance (meters)
-const FLIR_LENS_MODEL: u16 = 0x011C; // Lens model identifier
-const FLIR_PEAK_TEMP: u16 = 0x011D; // Peak temperature in frame (K)
-const FLIR_VALLEY_TEMP: u16 = 0x011E; // Valley (coldest) temp (K)
-const FLIR_MEASUREMENT_MODE: u16 = 0x011F; // Measurement mode
-const FLIR_TEMPERATURE_UNIT: u16 = 0x0120; // Display unit (C/F/K)
-const FLIR_ISOTHERM_MIN: u16 = 0x0121; // Isotherm lower limit (K)
-const FLIR_ISOTHERM_MAX: u16 = 0x0122; // Isotherm upper limit (K)
-const FLIR_ISOTHERM_ENABLED: u16 = 0x0123; // Isotherm mode enabled
-const FLIR_LEVEL_SPAN_AUTO: u16 = 0x0124; // Auto level/span mode
-const FLIR_GAIN_MODE: u16 = 0x0125; // Gain mode (auto/manual)
-const FLIR_FRAME_RATE: u16 = 0x0126; // Frame rate (Hz)
+pub const FLIR_MODEL: u16 = 0x0001; // Camera model
+pub const FLIR_SERIAL: u16 = 0x0002; // Serial number
+pub const FLIR_FIRMWARE: u16 = 0x0003; // Firmware version
+pub const FLIR_TEMPERATURE_MIN: u16 = 0x0100; // Minimum temperature in scene (K)
+pub const FLIR_TEMPERATURE_MAX: u16 = 0x0101; // Maximum temperature in scene (K)
+pub const FLIR_TEMPERATURE_CENTER: u16 = 0x0102; // Center spot temperature (K)
+pub const FLIR_EMISSIVITY: u16 = 0x0103; // Emissivity (0-100, scale: 0.01)
+pub const FLIR_REFLECTED_TEMP: u16 = 0x0104; // Reflected apparent temp (K)
+pub const FLIR_ATMOSPHERIC_TEMP: u16 = 0x0105; // Atmospheric temperature (K)
+pub const FLIR_DISTANCE: u16 = 0x0106; // Distance to object (meters)
+pub const FLIR_HUMIDITY: u16 = 0x0107; // Relative humidity (%)
+pub const FLIR_PALETTE: u16 = 0x0108; // Color palette code
+pub const FLIR_PALETTE_METHOD: u16 = 0x0109; // Palette method (linear/histogram)
+pub const FLIR_PALETTE_STRETCH: u16 = 0x010A; // Palette stretch mode
+pub const FLIR_TEMPERATURE_RANGE_MIN: u16 = 0x010B; // Camera range min (K)
+pub const FLIR_TEMPERATURE_RANGE_MAX: u16 = 0x010C; // Camera range max (K)
+pub const FLIR_ATMOSPHERIC_TRANS: u16 = 0x010D; // Atmospheric transmission (0-100)
+pub const FLIR_EXTERNAL_OPTICS_TEMP: u16 = 0x010E; // External optics temp (K)
+pub const FLIR_EXTERNAL_OPTICS_TRANS: u16 = 0x010F; // External optics transmission
+pub const FLIR_IR_WINDOW_TEMP: u16 = 0x0110; // IR window temperature (K)
+pub const FLIR_IR_WINDOW_TRANS: u16 = 0x0111; // IR window transmission
+pub const FLIR_PLANCK_R1: u16 = 0x0112; // Planck R1 constant
+pub const FLIR_PLANCK_R2: u16 = 0x0113; // Planck R2 constant
+pub const FLIR_PLANCK_B: u16 = 0x0114; // Planck B constant
+pub const FLIR_PLANCK_F: u16 = 0x0115; // Planck F constant
+pub const FLIR_PLANCK_O: u16 = 0x0116; // Planck O constant (offset)
+pub const FLIR_CAMERA_TEMP_MIN: u16 = 0x0117; // Camera internal min temp (K)
+pub const FLIR_CAMERA_TEMP_MAX: u16 = 0x0118; // Camera internal max temp (K)
+pub const FLIR_IMAGE_TYPE: u16 = 0x0119; // Image type (thermal/visible)
+pub const FLIR_CALIBRATION_DATE: u16 = 0x011A; // Last calibration date
+pub const FLIR_FOCUS_DISTANCE: u16 = 0x011B; // Focus distance (meters)
+pub const FLIR_LENS_MODEL: u16 = 0x011C; // Lens model identifier
+pub const FLIR_PEAK_TEMP: u16 = 0x011D; // Peak temperature in frame (K)
+pub const FLIR_VALLEY_TEMP: u16 = 0x011E; // Valley (coldest) temp (K)
+pub const FLIR_MEASUREMENT_MODE: u16 = 0x011F; // Measurement mode
+pub const FLIR_TEMPERATURE_UNIT: u16 = 0x0120; // Display unit (C/F/K)
+pub const FLIR_ISOTHERM_MIN: u16 = 0x0121; // Isotherm lower limit (K)
+pub const FLIR_ISOTHERM_MAX: u16 = 0x0122; // Isotherm upper limit (K)
+pub const FLIR_ISOTHERM_ENABLED: u16 = 0x0123; // Isotherm mode enabled
+pub const FLIR_LEVEL_SPAN_AUTO: u16 = 0x0124; // Auto level/span mode
+pub const FLIR_GAIN_MODE: u16 = 0x0125; // Gain mode (auto/manual)
+pub const FLIR_FRAME_RATE: u16 = 0x0126; // Frame rate (Hz)
 
 // FLIR signature
 const FLIR_SIGNATURE: &[u8] = b"FLIR";
 
 // Decodes FLIR color palette type
-const_decoder! {
-    DECODE_PALETTE, i16, [
-        (0, "Iron"),
-        (1, "Rainbow"),
-        (2, "White Hot"),
-        (3, "Black Hot"),
-        (4, "Arctic"),
-        (5, "Lava"),
-        (6, "Gray"),
-        (7, "Rainbow HC"),
-        (8, "Ironbow"),
-        (9, "Medical"),
-        (10, "Fusion"),
-    ]
-}
+const_decoder!(pub DECODE_PALETTE, i16, [
+    (0, "Iron"),
+    (1, "Rainbow"),
+    (2, "White Hot"),
+    (3, "Black Hot"),
+    (4, "Arctic"),
+    (5, "Lava"),
+    (6, "Gray"),
+    (7, "Rainbow HC"),
+    (8, "Ironbow"),
+    (9, "Medical"),
+    (10, "Fusion"),
+]);
 
 // Decodes palette method
-const_decoder! {
-    DECODE_PALETTE_METHOD, i16, [
-        (0, "Linear"),
-        (1, "Histogram Equalization"),
-        (2, "Adaptive"),
-    ]
-}
+const_decoder!(pub DECODE_PALETTE_METHOD, i16, [
+    (0, "Linear"),
+    (1, "Histogram Equalization"),
+    (2, "Adaptive"),
+]);
 
 // Decodes palette stretch mode
-const_decoder! {
-    DECODE_PALETTE_STRETCH, i16, [
-        (0, "Manual"),
-        (1, "Automatic"),
-        (2, "Lock Range"),
-    ]
-}
+const_decoder!(pub DECODE_PALETTE_STRETCH, i16, [
+    (0, "Manual"),
+    (1, "Automatic"),
+    (2, "Lock Range"),
+]);
 
 // Decodes image type
-const_decoder! {
-    DECODE_IMAGE_TYPE, i16, [
-        (0, "Thermal"),
-        (1, "Visual"),
-        (2, "Thermal + Visual (PIP)"),
-        (3, "Thermal + Visual (Blend)"),
-    ]
-}
+const_decoder!(pub DECODE_IMAGE_TYPE, i16, [
+    (0, "Thermal"),
+    (1, "Visual"),
+    (2, "Thermal + Visual (PIP)"),
+    (3, "Thermal + Visual (Blend)"),
+]);
 
 // Decodes temperature unit
-const_decoder! {
-    DECODE_TEMPERATURE_UNIT, i16, [
-        (0, "°C"),
-        (1, "°F"),
-        (2, "K"),
-    ]
-}
+const_decoder!(pub DECODE_TEMPERATURE_UNIT, i16, [
+    (0, "°C"),
+    (1, "°F"),
+    (2, "K"),
+]);
 
 // Decodes measurement mode
-const_decoder! {
-    DECODE_MEASUREMENT_MODE, i16, [
-        (0, "Spot Meter"),
-        (1, "Area"),
-        (2, "Line"),
-        (3, "Delta T"),
-    ]
-}
+const_decoder!(pub DECODE_MEASUREMENT_MODE, i16, [
+    (0, "Spot Meter"),
+    (1, "Area"),
+    (2, "Line"),
+    (3, "Delta T"),
+]);
 
 // Decodes gain mode
-const_decoder! {
-    DECODE_GAIN_MODE, i16, [
-        (0, "Automatic"),
-        (1, "Manual Low"),
-        (2, "Manual High"),
-    ]
-}
+const_decoder!(pub DECODE_GAIN_MODE, i16, [
+    (0, "Automatic"),
+    (1, "Manual Low"),
+    (2, "Manual High"),
+]);
 
 /// Converts Kelvin to Celsius
 ///
@@ -272,44 +258,8 @@ fn format_frame_rate(value: i16) -> String {
     format!("{} Hz", value)
 }
 
-/// Extracts an ASCII string from IFD entry
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the string
-/// * `data` - Raw MakerNote data
-///
-/// # Returns
-/// Extracted string or None if extraction fails
-fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
-    if entry.field_type != 2 {
-        return None;
-    }
-
-    let offset = entry.value_offset as usize;
-    let count = entry.value_count as usize;
-
-    if count <= 4 {
-        let bytes = entry.value_offset.to_le_bytes();
-        let s = String::from_utf8_lossy(&bytes[..count.min(4)])
-            .trim_end_matches('\0')
-            .to_string();
-        return if s.is_empty() { None } else { Some(s) };
-    }
-
-    if offset + count > data.len() {
-        return None;
-    }
-
-    let s = String::from_utf8_lossy(&data[offset..offset + count])
-        .trim_end_matches('\0')
-        .to_string();
-
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
-}
+// Note: extract_string is imported from super::shared::array_extractors above
+// and reused here. No local redefinition needed.
 
 /// FLIR Thermal Camera MakerNote parser
 /// Default implementation for parser

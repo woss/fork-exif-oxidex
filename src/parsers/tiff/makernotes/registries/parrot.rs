@@ -5,9 +5,22 @@
 //! GPS coordinates, gimbal angles, battery status, and flight modes.
 
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
-// Re-export flight mode decoder from parrot.rs
-use super::super::parrot::FLIGHT_MODE;
+// ============================================================================
+// Declarative Decoder Definitions
+// ============================================================================
+
+const_decoder!(
+    PARROT_FLIGHT_MODE,
+    i16,
+    [
+        (0, "Manual"),
+        (1, "GPS"),
+        (2, "Follow Me"),
+        (3, "Return Home"),
+    ]
+);
 
 /// Create Parrot tag registry with all tag definitions
 ///
@@ -43,7 +56,7 @@ pub fn parrot_registry() -> TagRegistry {
         .register_raw(0x0108, "BatteryLevel")
         .register_raw(0x0109, "WiFiSignal")
         // Flight Information (i16 tag with decoder)
-        .register_simple_i16(0x010A, "FlightMode", &FLIGHT_MODE)
+        .register_simple_i16(0x010A, "FlightMode", &PARROT_FLIGHT_MODE)
         // Home Distance (i16 tag, meters)
         .register_raw(0x010B, "HomeDistance")
 }

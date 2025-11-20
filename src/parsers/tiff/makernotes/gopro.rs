@@ -50,47 +50,47 @@ use super::registries::gopro_registry;
 use crate::const_decoder;
 
 // GoPro MakerNote Tag IDs
-const GOPRO_VERSION: u16 = 0x0001; // Firmware version
-const GOPRO_MODEL: u16 = 0x0002; // Camera model
-const GOPRO_SERIAL: u16 = 0x0003; // Serial number
-const GOPRO_RESOLUTION: u16 = 0x0100; // Video/Photo resolution
-const GOPRO_FRAME_RATE: u16 = 0x0101; // Frame rate (fps)
-const GOPRO_FOV: u16 = 0x0102; // Field of view
-const GOPRO_LOW_LIGHT: u16 = 0x0103; // Low light mode
-const GOPRO_PROTUNE: u16 = 0x0104; // Protune enabled
-const GOPRO_WHITE_BALANCE: u16 = 0x0105; // White balance setting
-const GOPRO_COLOR: u16 = 0x0106; // Color profile (flat/GoPro)
-const GOPRO_SHARPNESS: u16 = 0x0107; // Sharpness level
-const GOPRO_CONTRAST: u16 = 0x0108; // Contrast (Protune)
-const GOPRO_SATURATION: u16 = 0x0109; // Saturation (Protune)
-const GOPRO_ISO_MIN: u16 = 0x010A; // Minimum ISO (Protune)
-const GOPRO_ISO_MAX: u16 = 0x010B; // Maximum ISO (Protune)
-const GOPRO_EXPOSURE: u16 = 0x010C; // Exposure compensation
-const GOPRO_SHUTTER: u16 = 0x010D; // Shutter speed
-const GOPRO_METERING: u16 = 0x010E; // Metering mode
-const GOPRO_SPOT_METER: u16 = 0x010F; // Spot meter area
-const GOPRO_EIS: u16 = 0x0110; // Electronic Image Stabilization
-const GOPRO_HYPERSMOOTH: u16 = 0x0111; // HyperSmooth level
-const GOPRO_BOOST: u16 = 0x0112; // HyperSmooth Boost
-const GOPRO_STABILIZATION_MODE: u16 = 0x0113; // Stabilization mode
-const GOPRO_AUTO_BOOST: u16 = 0x0114; // Auto Boost mode
-const GOPRO_SUPER_PHOTO: u16 = 0x0115; // SuperPhoto mode
-const GOPRO_HDR: u16 = 0x0116; // HDR photo mode
-const GOPRO_DIGITAL_ZOOM: u16 = 0x0117; // Digital zoom level
-const GOPRO_RAW_AUDIO: u16 = 0x0118; // Raw audio enabled
-const GOPRO_WIND_NOISE: u16 = 0x0119; // Wind noise reduction
-const GOPRO_TIMEWARP_SPEED: u16 = 0x011A; // TimeWarp speed multiplier
-const GOPRO_VIDEO_ENCODING: u16 = 0x011B; // Video codec (H.264/H.265)
-const GOPRO_BIT_RATE: u16 = 0x011C; // Video bitrate
-const GOPRO_ORIENTATION: u16 = 0x011D; // Camera orientation
-const GOPRO_GPS_FIX: u16 = 0x011E; // GPS fix status
-const GOPRO_LENS_MODEL: u16 = 0x011F; // Lens model identifier
-const GOPRO_NIGHT_PHOTO: u16 = 0x0120; // Night photo mode
-const GOPRO_BURST_RATE: u16 = 0x0121; // Burst photo rate
-const GOPRO_LIVE_BURST: u16 = 0x0122; // Live burst mode
-const GOPRO_TIMELAPSE_INTERVAL: u16 = 0x0123; // Time lapse interval (ms)
-const GOPRO_NIGHT_LAPSE_INTERVAL: u16 = 0x0124; // Night lapse interval
-const GOPRO_LOOP_DURATION: u16 = 0x0125; // Loop recording duration
+pub const GOPRO_VERSION: u16 = 0x0001; // Firmware version
+pub const GOPRO_MODEL: u16 = 0x0002; // Camera model
+pub const GOPRO_SERIAL: u16 = 0x0003; // Serial number
+pub const GOPRO_RESOLUTION: u16 = 0x0100; // Video/Photo resolution
+pub const GOPRO_FRAME_RATE: u16 = 0x0101; // Frame rate (fps)
+pub const GOPRO_FOV: u16 = 0x0102; // Field of view
+pub const GOPRO_LOW_LIGHT: u16 = 0x0103; // Low light mode
+pub const GOPRO_PROTUNE: u16 = 0x0104; // Protune enabled
+pub const GOPRO_WHITE_BALANCE: u16 = 0x0105; // White balance setting
+pub const GOPRO_COLOR: u16 = 0x0106; // Color profile (flat/GoPro)
+pub const GOPRO_SHARPNESS: u16 = 0x0107; // Sharpness level
+pub const GOPRO_CONTRAST: u16 = 0x0108; // Contrast (Protune)
+pub const GOPRO_SATURATION: u16 = 0x0109; // Saturation (Protune)
+pub const GOPRO_ISO_MIN: u16 = 0x010A; // Minimum ISO (Protune)
+pub const GOPRO_ISO_MAX: u16 = 0x010B; // Maximum ISO (Protune)
+pub const GOPRO_EXPOSURE: u16 = 0x010C; // Exposure compensation
+pub const GOPRO_SHUTTER: u16 = 0x010D; // Shutter speed
+pub const GOPRO_METERING: u16 = 0x010E; // Metering mode
+pub const GOPRO_SPOT_METER: u16 = 0x010F; // Spot meter area
+pub const GOPRO_EIS: u16 = 0x0110; // Electronic Image Stabilization
+pub const GOPRO_HYPERSMOOTH: u16 = 0x0111; // HyperSmooth level
+pub const GOPRO_BOOST: u16 = 0x0112; // HyperSmooth Boost
+pub const GOPRO_STABILIZATION_MODE: u16 = 0x0113; // Stabilization mode
+pub const GOPRO_AUTO_BOOST: u16 = 0x0114; // Auto Boost mode
+pub const GOPRO_SUPER_PHOTO: u16 = 0x0115; // SuperPhoto mode
+pub const GOPRO_HDR: u16 = 0x0116; // HDR photo mode
+pub const GOPRO_DIGITAL_ZOOM: u16 = 0x0117; // Digital zoom level
+pub const GOPRO_RAW_AUDIO: u16 = 0x0118; // Raw audio enabled
+pub const GOPRO_WIND_NOISE: u16 = 0x0119; // Wind noise reduction
+pub const GOPRO_TIMEWARP_SPEED: u16 = 0x011A; // TimeWarp speed multiplier
+pub const GOPRO_VIDEO_ENCODING: u16 = 0x011B; // Video codec (H.264/H.265)
+pub const GOPRO_BIT_RATE: u16 = 0x011C; // Video bitrate
+pub const GOPRO_ORIENTATION: u16 = 0x011D; // Camera orientation
+pub const GOPRO_GPS_FIX: u16 = 0x011E; // GPS fix status
+pub const GOPRO_LENS_MODEL: u16 = 0x011F; // Lens model identifier
+pub const GOPRO_NIGHT_PHOTO: u16 = 0x0120; // Night photo mode
+pub const GOPRO_BURST_RATE: u16 = 0x0121; // Burst photo rate
+pub const GOPRO_LIVE_BURST: u16 = 0x0122; // Live burst mode
+pub const GOPRO_TIMELAPSE_INTERVAL: u16 = 0x0123; // Time lapse interval (ms)
+pub const GOPRO_NIGHT_LAPSE_INTERVAL: u16 = 0x0124; // Night lapse interval
+pub const GOPRO_LOOP_DURATION: u16 = 0x0125; // Loop recording duration
 
 // GoPro signature
 const GOPRO_SIGNATURE: &[u8] = b"GoPro";
@@ -102,7 +102,7 @@ const GOPRO_SIGNATURE: &[u8] = b"GoPro";
 // duplication from 181% to under 50% while maintaining all functionality.
 
 // Field of View decoder - GoPro's FOV options
-const_decoder!(
+const_decoder!(pub
     FOV,
     i16,
     [
@@ -117,7 +117,7 @@ const_decoder!(
 );
 
 // White Balance decoder - Temperature presets and Auto/Native modes
-const_decoder!(
+const_decoder!(pub
     WHITE_BALANCE,
     i16,
     [
@@ -134,7 +134,7 @@ const_decoder!(
 );
 
 // Color Profile decoder - GoPro's color modes
-const_decoder!(
+const_decoder!(pub
     COLOR_PROFILE,
     i16,
     [
@@ -146,10 +146,10 @@ const_decoder!(
 );
 
 // Sharpness Level decoder - Low/Medium/High
-const_decoder!(SHARPNESS, i16, [(0, "Low"), (1, "Medium"), (2, "High"),]);
+const_decoder!(pub SHARPNESS, i16, [(0, "Low"), (1, "Medium"), (2, "High"),]);
 
 // Contrast Level decoder - Protune contrast range
-const_decoder!(
+const_decoder!(pub
     CONTRAST,
     i16,
     [
@@ -162,7 +162,7 @@ const_decoder!(
 );
 
 // Saturation Level decoder - Same range as contrast
-const_decoder!(
+const_decoder!(pub
     SATURATION,
     i16,
     [
@@ -175,10 +175,10 @@ const_decoder!(
 );
 
 // Metering Mode decoder - Center/Spot/Matrix
-const_decoder!(METERING, i16, [(0, "Center"), (1, "Spot"), (2, "Matrix"),]);
+const_decoder!(pub METERING, i16, [(0, "Center"), (1, "Spot"), (2, "Matrix"),]);
 
 // HyperSmooth Level decoder - Off through Auto Boost
-const_decoder!(
+const_decoder!(pub
     HYPERSMOOTH,
     i16,
     [
@@ -191,7 +191,7 @@ const_decoder!(
 );
 
 // Video Resolution decoder - 4K, 5K, and specialty modes
-const_decoder!(
+const_decoder!(pub
     RESOLUTION,
     i16,
     [
@@ -210,7 +210,7 @@ const_decoder!(
 );
 
 // Video Encoding decoder - Codec options
-const_decoder!(
+const_decoder!(pub
     VIDEO_ENCODING,
     i16,
     [
@@ -222,10 +222,10 @@ const_decoder!(
 );
 
 // SuperPhoto Mode decoder - Off/Auto/HDR
-const_decoder!(SUPER_PHOTO, i16, [(0, "Off"), (1, "Auto"), (2, "HDR"),]);
+const_decoder!(pub SUPER_PHOTO, i16, [(0, "Off"), (1, "Auto"), (2, "HDR"),]);
 
 // Night Photo Mode decoder - Exposure time options
-const_decoder!(
+const_decoder!(pub
     NIGHT_PHOTO,
     i16,
     [
@@ -241,7 +241,7 @@ const_decoder!(
 );
 
 // Burst Rate decoder - Photos per second
-const_decoder!(
+const_decoder!(pub
     BURST_RATE,
     i16,
     [
@@ -258,7 +258,7 @@ const_decoder!(
 );
 
 // Camera Orientation decoder - Up/Down/Auto
-const_decoder!(ORIENTATION, i16, [(0, "Up"), (1, "Down"), (2, "Auto"),]);
+const_decoder!(pub ORIENTATION, i16, [(0, "Up"), (1, "Down"), (2, "Auto"),]);
 
 // Note: Tag registry has been moved to registries/gopro.rs for centralized management.
 // The registry is now created on-demand using gopro_registry() function.
@@ -473,6 +473,7 @@ impl MakerNoteParser for GoProParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::shared::generic_decoders::{ON_OFF, YES_NO};
 
     #[test]
     fn test_gopro_parser_creation() {

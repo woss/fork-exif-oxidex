@@ -139,6 +139,78 @@ fn extract_string(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Optio
     }
 }
 
+// ============================================================================
+// DECODERS - Minolta Value Decoders
+// ============================================================================
+// Minolta-specific value decoders for camera settings
+
+use crate::const_decoder;
+
+/// Decoder for Minolta image quality settings
+const_decoder!(pub DECODE_IMAGE_QUALITY, u16, [
+    (0, "Standard"),
+    (1, "Fine"),
+    (2, "Super Fine"),
+]);
+
+/// Decoder for Minolta flash modes
+const_decoder!(pub DECODE_FLASH_MODE, u16, [
+    (0, "Off"),
+    (1, "Auto"),
+    (2, "On"),
+    (3, "Red-eye Reduction"),
+    (4, "Fill Flash"),
+]);
+
+/// Decoder for Minolta white balance settings
+const_decoder!(pub DECODE_WHITE_BALANCE, u16, [
+    (0, "Auto"),
+    (1, "Daylight"),
+    (2, "Cloudy"),
+    (3, "Tungsten"),
+    (4, "Fluorescent"),
+    (5, "Flash"),
+    (6, "Custom"),
+]);
+
+/// Decoder for Minolta focus modes
+const_decoder!(pub DECODE_FOCUS_MODE, u16, [
+    (0, "Single Shot"),
+    (1, "Continuous"),
+    (2, "Manual"),
+    (3, "AF-S"),
+    (4, "AF-C"),
+]);
+
+/// Decoder for Minolta color modes
+const_decoder!(pub DECODE_COLOR_MODE, u16, [
+    (0, "Standard"),
+    (1, "Vivid"),
+    (2, "Neutral"),
+    (3, "B&W"),
+    (4, "Sepia"),
+]);
+
+/// Decoder for Minolta exposure modes
+const_decoder!(pub DECODE_EXPOSURE_MODE, u16, [
+    (0, "Auto"),
+    (1, "Program"),
+    (2, "Aperture Priority"),
+    (3, "Shutter Priority"),
+    (4, "Manual"),
+]);
+
+/// Decoder for Minolta scene modes
+const_decoder!(pub DECODE_SCENE_MODE, u16, [
+    (0, "Standard"),
+    (1, "Portrait"),
+    (2, "Landscape"),
+    (3, "Macro"),
+    (4, "Sports"),
+    (5, "Sunset"),
+    (6, "Night"),
+]);
+
 /// Minolta MakerNote parser implementation
 pub struct MinoltaParser;
 

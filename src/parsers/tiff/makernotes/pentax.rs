@@ -42,12 +42,20 @@ use super::shared::MakerNoteParser;
 // Import declarative decoder macros
 use crate::const_decoder;
 
-// ============================================================================
-// Pentax MakerNote Tag IDs
-// ============================================================================
-// Based on ExifTool Pentax.pm tag definitions
+// Import registry
+use super::registries::pentax::pentax_registry;
 
-// Basic Camera Information Tags
+// Pentax MakerNote header signatures
+// Pentax typically uses "AOC\0" (4 bytes) or no header
+const PENTAX_HEADER_AOC: &[u8] = b"AOC\0";
+const PENTAX_HEADER_PENTAX: &[u8] = b"PENTAX \0";
+
+// ============================================================================
+// Tag ID Constants
+// ============================================================================
+// These constants define the tag IDs for all Pentax MakerNote tags.
+// They are used for pattern matching in the parse function.
+
 const PENTAX_VERSION: u16 = 0x0000;
 const PENTAX_PENTAX_MODEL_TYPE: u16 = 0x0001;
 const PENTAX_PREVIEW_IMAGE_SIZE: u16 = 0x0002;
@@ -63,8 +71,6 @@ const PENTAX_FLASH_MODE: u16 = 0x000C;
 const PENTAX_FOCUS_MODE: u16 = 0x000D;
 const PENTAX_AF_POINT_SELECTED: u16 = 0x000E;
 const PENTAX_AF_POINT_IN_FOCUS: u16 = 0x000F;
-
-// Image Quality and Processing
 const PENTAX_ISO_SPEED: u16 = 0x0014;
 const PENTAX_METERING_MODE: u16 = 0x0017;
 const PENTAX_AUTO_BRACKETING: u16 = 0x0018;
@@ -82,41 +88,21 @@ const PENTAX_HOMETOWN_CITY: u16 = 0x0023;
 const PENTAX_DESTINATION_CITY: u16 = 0x0024;
 const PENTAX_HOMETOWN_DST: u16 = 0x0025;
 const PENTAX_DESTINATION_DST: u16 = 0x0026;
-
-// Image Processing and Effects
 const PENTAX_IMAGE_PROCESSING: u16 = 0x0032;
-const PENTAX_PICTURE_MODE_2: u16 = 0x0033;
+const PENTAX_PICTURE_MODE2: u16 = 0x0033;
 const PENTAX_DRIVE_MODE: u16 = 0x0034;
 const PENTAX_COLOR_SPACE: u16 = 0x0037;
 const PENTAX_IMAGE_AREA_OFFSET: u16 = 0x0038;
 const PENTAX_RAW_IMAGE_SIZE: u16 = 0x0039;
 const PENTAX_SHAKE_REDUCTION_INFO: u16 = 0x003C;
 const PENTAX_SHUTTER_COUNT: u16 = 0x003D;
-const PENTAX_FACE_INFO: u16 = 0x0047;
-const PENTAX_RAW_DEVELOPMENT_PARAMS: u16 = 0x004D;
-
-// Lens and Focus Information
+const PENTAX_BATTERY_LEVEL: u16 = 0x003B;
+const PENTAX_CAMERA_TEMPERATURE: u16 = 0x0047;
 const PENTAX_LENS_TYPE: u16 = 0x003F;
 const PENTAX_LENS_INFO: u16 = 0x007F;
 const PENTAX_AF_INFO: u16 = 0x0080;
 const PENTAX_LENS_MODEL: u16 = 0x009F;
-
-// Advanced Features
-const PENTAX_CAMERA_TEMPERATURE: u16 = 0x0047;
-const PENTAX_BATTERY_LEVEL: u16 = 0x003B;
 const PENTAX_PIXEL_SHIFT_RESOLUTION: u16 = 0x0086;
-const PENTAX_CAMERA_INFO: u16 = 0x0215;
-const PENTAX_BATTERY_INFO: u16 = 0x0216;
-
-// Custom Settings
-const PENTAX_CUSTOM_FUNCTIONS: u16 = 0x0050;
-const PENTAX_AE_INFO: u16 = 0x0218;
-const PENTAX_FLASH_INFO: u16 = 0x0219;
-
-// Pentax MakerNote header signatures
-// Pentax typically uses "AOC\0" (4 bytes) or no header
-const PENTAX_HEADER_AOC: &[u8] = b"AOC\0";
-const PENTAX_HEADER_PENTAX: &[u8] = b"PENTAX \0";
 
 // ============================================================================
 // Declarative Decoder Definitions
@@ -741,30 +727,30 @@ impl MakerNoteParser for PentaxParser {
 /// This function provides consistent tag naming for Pentax MakerNote tags
 fn pentax_tag_to_name(tag_id: u16) -> String {
     let tag_name = match tag_id {
-        PENTAX_VERSION => "Version",
-        PENTAX_PENTAX_MODEL_TYPE => "ModelType",
-        PENTAX_PENTAX_MODEL_ID => "ModelID",
-        PENTAX_DATE => "Date",
-        PENTAX_TIME => "Time",
-        PENTAX_QUALITY => "Quality",
-        PENTAX_PENTAX_IMAGE_SIZE => "ImageSize",
-        PENTAX_PICTURE_MODE => "PictureMode",
-        PENTAX_FLASH_MODE => "FlashMode",
-        PENTAX_FOCUS_MODE => "FocusMode",
-        PENTAX_AF_POINT_SELECTED => "AFPointSelected",
-        PENTAX_AF_POINT_IN_FOCUS => "AFPointInFocus",
-        PENTAX_ISO_SPEED => "ISO",
-        PENTAX_METERING_MODE => "MeteringMode",
-        PENTAX_WHITE_BALANCE => "WhiteBalance",
-        PENTAX_WHITE_BALANCE_MODE => "WhiteBalanceMode",
-        PENTAX_SATURATION => "Saturation",
-        PENTAX_CONTRAST => "Contrast",
-        PENTAX_SHARPNESS => "Sharpness",
-        PENTAX_DRIVE_MODE => "DriveMode",
-        PENTAX_COLOR_SPACE => "ColorSpace",
-        PENTAX_LENS_TYPE => "LensType",
-        PENTAX_LENS_MODEL => "LensModel",
-        PENTAX_SHUTTER_COUNT => "ShutterCount",
+        0x0000 => "Version",
+        0x0001 => "ModelType",
+        0x0005 => "ModelID",
+        0x0006 => "Date",
+        0x0007 => "Time",
+        0x0008 => "Quality",
+        0x0009 => "ImageSize",
+        0x000B => "PictureMode",
+        0x000C => "FlashMode",
+        0x000D => "FocusMode",
+        0x000E => "AFPointSelected",
+        0x000F => "AFPointInFocus",
+        0x0014 => "ISO",
+        0x0017 => "MeteringMode",
+        0x0019 => "WhiteBalance",
+        0x001A => "WhiteBalanceMode",
+        0x001F => "Saturation",
+        0x0020 => "Contrast",
+        0x0021 => "Sharpness",
+        0x0034 => "DriveMode",
+        0x0037 => "ColorSpace",
+        0x003F => "LensType",
+        0x009F => "LensModel",
+        0x003D => "ShutterCount",
         _ => return format!("Pentax:Unknown-{:#06X}", tag_id),
     };
 
@@ -986,9 +972,9 @@ mod tests {
 
     #[test]
     fn test_pentax_tag_to_name() {
-        assert_eq!(pentax_tag_to_name(PENTAX_VERSION), "Pentax:Version");
-        assert_eq!(pentax_tag_to_name(PENTAX_LENS_TYPE), "Pentax:LensType");
-        assert_eq!(pentax_tag_to_name(PENTAX_QUALITY), "Pentax:Quality");
+        assert_eq!(pentax_tag_to_name(0x0000), "Pentax:Version");
+        assert_eq!(pentax_tag_to_name(0x003F), "Pentax:LensType");
+        assert_eq!(pentax_tag_to_name(0x0008), "Pentax:Quality");
     }
 
     #[test]

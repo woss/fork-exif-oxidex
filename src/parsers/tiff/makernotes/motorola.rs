@@ -21,6 +21,7 @@
 
 #![allow(dead_code)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -28,26 +29,14 @@ use std::collections::HashMap;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-
-// Import macros for declarative decoder definitions
-use crate::const_decoder;
-
-// Motorola MakerNote Tag IDs
-const MOTOROLA_CAMERA_MODE: u16 = 0x0001;
-const MOTOROLA_HDR_MODE: u16 = 0x0002;
-const MOTOROLA_NIGHT_MODE: u16 = 0x0003;
-const MOTOROLA_BURST_MODE: u16 = 0x0004;
-const MOTOROLA_SCENE_MODE: u16 = 0x0005;
-const MOTOROLA_FLASH_MODE: u16 = 0x0006;
-const MOTOROLA_FOCUS_MODE: u16 = 0x0007;
-const MOTOROLA_PORTRAIT_MODE: u16 = 0x0008;
+use super::registries::motorola::motorola_registry;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
 // Camera Mode decoder - Different shooting modes
-const_decoder!(
+const_decoder!(pub
     CAMERA_MODE,
     u16,
     [
@@ -61,7 +50,7 @@ const_decoder!(
 );
 
 // Scene Mode decoder - Scene recognition modes
-const_decoder!(
+const_decoder!(pub
     SCENE_MODE,
     u16,
     [
@@ -101,18 +90,8 @@ fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> O
 // Tag Registry
 // ============================================================================
 
-// Lazy-initialized tag registry for Motorola-specific tags
-static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
-    TagRegistry::with_capacity(8)
-        .register_simple_u16(MOTOROLA_CAMERA_MODE, "CameraMode", &CAMERA_MODE)
-        .register_simple_u16(MOTOROLA_SCENE_MODE, "SceneMode", &SCENE_MODE)
-        .register_raw(MOTOROLA_HDR_MODE, "HDRMode")
-        .register_raw(MOTOROLA_NIGHT_MODE, "NightMode")
-        .register_raw(MOTOROLA_BURST_MODE, "BurstMode")
-        .register_raw(MOTOROLA_FLASH_MODE, "FlashMode")
-        .register_raw(MOTOROLA_FOCUS_MODE, "FocusMode")
-        .register_raw(MOTOROLA_PORTRAIT_MODE, "PortraitMode")
-});
+// Lazy-initialized tag registry using centralized registry function
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(motorola_registry);
 
 // ============================================================================
 // Parser Implementation
@@ -134,6 +113,7 @@ impl MotorolaParser {
     }
 
     /// Parses a single IFD entry and extracts the tag value
+    /// Delegates to registry for tag decoding when available
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -149,23 +129,24 @@ impl MotorolaParser {
                 None => return,
             };
 
-            let formatted_value = match tag_id {
-                MOTOROLA_CAMERA_MODE | MOTOROLA_SCENE_MODE => {
-                    TAG_REGISTRY.decode_u16(tag_id, value)
+            // Try registry decoding first, fall back to hardcoded logic
+            let formatted_value = TAG_REGISTRY.decode_u16(tag_id, value);
+
+            // Fallback for tags without decoder in registry
+            let formatted_value = if formatted_value == value.to_string() {
+                match tag_id {
+                    0x0002 | 0x0003 | 0x0004 | 0x0006 | 0x0008 => {
+                        let mode = if value > 0 { "On" } else { "Off" };
+                        mode.to_string()
+                    }
+                    0x0007 => {
+                        let mode = if value == 0 { "Auto" } else { "Manual" };
+                        mode.to_string()
+                    }
+                    _ => formatted_value,
                 }
-                MOTOROLA_HDR_MODE
-                | MOTOROLA_NIGHT_MODE
-                | MOTOROLA_BURST_MODE
-                | MOTOROLA_FLASH_MODE
-                | MOTOROLA_PORTRAIT_MODE => {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    mode.to_string()
-                }
-                MOTOROLA_FOCUS_MODE => {
-                    let mode = if value == 0 { "Auto" } else { "Manual" };
-                    mode.to_string()
-                }
-                _ => return,
+            } else {
+                formatted_value
             };
 
             tags.insert(format!("Motorola:{}", tag_name), formatted_value);
@@ -196,7 +177,8 @@ impl MakerNoteParser for MotorolaParser {
 
         parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
             self.parse_entry(entry, parse_data, byte_order, tags);
-        })
+        })?;
+        Ok(())
     }
 }
 
@@ -266,9 +248,9 @@ mod tests {
     #[test]
     fn test_tag_registry() {
         assert_eq!(
-            TAG_REGISTRY.get_tag_name(MOTOROLA_CAMERA_MODE),
+            TAG_REGISTRY.get_tag_name(0x0001),
             Some("CameraMode")
         );
-        assert!(TAG_REGISTRY.has_tag(MOTOROLA_HDR_MODE));
+        assert!(TAG_REGISTRY.has_tag(0x0002));
     }
 }

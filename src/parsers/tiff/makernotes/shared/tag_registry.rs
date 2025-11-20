@@ -381,6 +381,146 @@ impl TagRegistry {
         self
     }
 
+    /// Register a string tag (no decoder)
+    ///
+    /// String tags contain text values extracted directly from the MakerNote data.
+    /// They require special handling in the parser because the value_offset field
+    /// contains either inline data (≤4 bytes) or an offset to external data.
+    ///
+    /// # Arguments
+    /// * `id` - The tag ID
+    /// * `name` - Human-readable tag name
+    ///
+    /// # Returns
+    /// Self for method chaining
+    pub fn register_string_tag(mut self, id: u16, name: &'static str) -> Self {
+        self.tags.insert(
+            id,
+            TagDefinition {
+                id,
+                name,
+                decoder: None,
+            },
+        );
+        self
+    }
+
+    /// Register an enumerated tag with an i32 decoder
+    ///
+    /// Enumerated tags use const_decoder! macros to map numeric values to
+    /// human-readable strings (e.g., 1="Auto", 2="Manual").
+    ///
+    /// # Arguments
+    /// * `id` - The tag ID
+    /// * `name` - Human-readable tag name
+    /// * `decoder` - Optional reference to a static SimpleValueDecoder<i32>
+    ///
+    /// # Returns
+    /// Self for method chaining
+    pub fn register_enum_tag(
+        mut self,
+        id: u16,
+        name: &'static str,
+        decoder: Option<&'static SimpleValueDecoder<i32>>,
+    ) -> Self {
+        let tag_decoder = decoder.map(|d| TagDecoder::SimpleI32(d));
+        self.tags.insert(
+            id,
+            TagDefinition {
+                id,
+                name,
+                decoder: tag_decoder,
+            },
+        );
+        self
+    }
+
+    /// Register an enumerated tag with an i32 decoder (non-optional variant)
+    ///
+    /// This is a convenience method for tags that always have a decoder.
+    ///
+    /// # Arguments
+    /// * `id` - The tag ID
+    /// * `name` - Human-readable tag name
+    /// * `decoder` - Reference to a static SimpleValueDecoder<i32>
+    ///
+    /// # Returns
+    /// Self for method chaining
+    pub fn register_enum_tag_required(
+        mut self,
+        id: u16,
+        name: &'static str,
+        decoder: &'static SimpleValueDecoder<i32>,
+    ) -> Self {
+        self.tags.insert(
+            id,
+            TagDefinition {
+                id,
+                name,
+                decoder: Some(TagDecoder::SimpleI32(decoder)),
+            },
+        );
+        self
+    }
+
+    /// Register an integer/numeric tag (optionally with decoder)
+    ///
+    /// Integer tags contain numeric values that might be used directly or
+    /// decoded through an optional decoder function.
+    ///
+    /// # Arguments
+    /// * `id` - The tag ID
+    /// * `name` - Human-readable tag name
+    /// * `decoder` - Optional reference to a static SimpleValueDecoder<i32>
+    ///
+    /// # Returns
+    /// Self for method chaining
+    pub fn register_integer_tag(
+        mut self,
+        id: u16,
+        name: &'static str,
+        decoder: Option<&'static SimpleValueDecoder<i32>>,
+    ) -> Self {
+        let tag_decoder = decoder.map(|d| TagDecoder::SimpleI32(d));
+        self.tags.insert(
+            id,
+            TagDefinition {
+                id,
+                name,
+                decoder: tag_decoder,
+            },
+        );
+        self
+    }
+
+    /// Register an integer/numeric tag with an i32 decoder (non-optional variant)
+    ///
+    /// This is a convenience method for integer tags that always have a decoder.
+    ///
+    /// # Arguments
+    /// * `id` - The tag ID
+    /// * `name` - Human-readable tag name
+    /// * `decoder` - Reference to a static SimpleValueDecoder<i32>
+    ///
+    /// # Returns
+    /// Self for method chaining
+    pub fn register_integer_tag_required(
+        mut self,
+        id: u16,
+        name: &'static str,
+        decoder: &'static SimpleValueDecoder<i32>,
+    ) -> Self {
+        self.tags.insert(
+            id,
+            TagDefinition {
+                id,
+                name,
+                decoder: Some(TagDecoder::SimpleI32(decoder)),
+            },
+        );
+        self
+    }
+
     /// Register an array-based tag that uses an ArraySchema
     ///
     /// This method allows registration of tags that represent arrays of values,

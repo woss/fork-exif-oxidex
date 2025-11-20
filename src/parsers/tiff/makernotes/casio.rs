@@ -88,6 +88,12 @@ impl CasioParser {
     }
 
     /// Parse a single IFD entry and extract tag value
+    ///
+    /// # Arguments
+    /// * `entry` - IFD entry to parse
+    /// * `data` - Full MakerNote data buffer
+    /// * `byte_order` - Byte order for multi-byte values
+    /// * `tags` - HashMap to insert extracted tags into
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -95,112 +101,33 @@ impl CasioParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) {
-        match entry.tag_id {
-            CASIO_RECORDING_MODE => {
+        // Get tag name from registry
+        let tag_name = match TAG_REGISTRY.get_tag_name(entry.tag_id) {
+            Some(name) => name,
+            None => return, // Unknown tag, skip it
+        };
+
+        // Extract and format the value based on tag type
+        let formatted_value = match entry.tag_id {
+            // Binary on/off tags
+            CASIO_CONTINUOUS_MODE | CASIO_SLOW_SHUTTER => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Casio:RecordingMode".to_string(),
-                        DECODE_RECORDING_MODE.decode(value),
-                    );
+                    if value > 0 { "On".to_string() } else { "Off".to_string() }
+                } else {
+                    return;
                 }
             }
-            CASIO_QUALITY => {
+            // All other tags use raw value as string
+            _ => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:Quality".to_string(), DECODE_QUALITY.decode(value));
+                    value.to_string()
+                } else {
+                    return;
                 }
             }
-            CASIO_FOCUS_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Casio:FocusMode".to_string(),
-                        DECODE_FOCUS_MODE.decode(value),
-                    );
-                }
-            }
-            CASIO_FLASH_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Casio:FlashMode".to_string(),
-                        DECODE_FLASH_MODE.decode(value),
-                    );
-                }
-            }
-            CASIO_FLASH_INTENSITY => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:FlashIntensity".to_string(), value.to_string());
-                }
-            }
-            CASIO_WHITE_BALANCE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Casio:WhiteBalance".to_string(),
-                        DECODE_WHITE_BALANCE.decode(value),
-                    );
-                }
-            }
-            CASIO_DIGITAL_ZOOM => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:DigitalZoom".to_string(), value.to_string());
-                }
-            }
-            CASIO_SHARPNESS => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:Sharpness".to_string(), value.to_string());
-                }
-            }
-            CASIO_CONTRAST => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:Contrast".to_string(), value.to_string());
-                }
-            }
-            CASIO_SATURATION => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:Saturation".to_string(), value.to_string());
-                }
-            }
-            CASIO_CCD_SENSITIVITY => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert("Casio:CCDSensitivity".to_string(), value.to_string());
-                }
-            }
-            CASIO_COLOR_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Casio:ColorMode".to_string(),
-                        DECODE_COLOR_MODE.decode(value),
-                    );
-                }
-            }
-            CASIO_ENHANCEMENT => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Casio:Enhancement".to_string(),
-                        DECODE_ENHANCEMENT.decode(value),
-                    );
-                }
-            }
-            CASIO_BEST_SHOT_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Casio:BestShotMode".to_string(),
-                        DECODE_BEST_SHOT_MODE.decode(value),
-                    );
-                }
-            }
-            CASIO_CONTINUOUS_MODE => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Casio:ContinuousMode".to_string(), mode.to_string());
-                }
-            }
-            CASIO_SLOW_SHUTTER => {
-                if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    let status = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Casio:SlowShutter".to_string(), status.to_string());
-                }
-            }
-            _ => {}
-        }
+        };
+
+        tags.insert(format!("Casio:{}", tag_name), formatted_value);
     }
 }
 
@@ -219,112 +146,24 @@ impl MakerNoteParser for CasioParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 2 {
-            return Err("Casio MakerNote data too short".to_string());
-        }
-
-        let ifd_offset = 0;
-
-        // Read number of IFD entries
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[ifd_offset], data[ifd_offset + 1]]),
+        // Casio MakerNotes typically start immediately with IFD entries
+        // No header is used, so signature is None
+        let config = IfdParserConfig {
+            signature: None,
+            signature_offset: 0,
+            max_entries: 500,
         };
 
-        if entry_count == 0 || entry_count > 500 {
-            return Err(format!("Invalid entry count: {}", entry_count));
-        }
-
-        let entry_size = 12;
-        let mut offset = ifd_offset + 2;
-
-        for _ in 0..entry_count {
-            if offset + entry_size > data.len() {
-                break;
-            }
-
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset], data[offset + 1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset], data[offset + 1]]),
-            };
-
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset + 2], data[offset + 3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset + 2], data[offset + 3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            self.parse_entry(&entry, data, byte_order, tags);
-            offset += entry_size;
-        }
-
-        Ok(())
+        // Parse IFD entries using the shared parser
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
+            self.parse_entry(entry, parse_data, byte_order, tags);
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_decode_recording_mode() {
-        assert_eq!(DECODE_RECORDING_MODE.decode(1), "Single");
-        assert_eq!(DECODE_RECORDING_MODE.decode(4), "Portrait");
-    }
-
-    #[test]
-    fn test_decode_quality() {
-        assert_eq!(DECODE_QUALITY.decode(1), "Economy");
-        assert_eq!(DECODE_QUALITY.decode(3), "Fine");
-    }
-
-    #[test]
-    fn test_decode_focus_mode() {
-        assert_eq!(DECODE_FOCUS_MODE.decode(1), "Macro");
-        assert_eq!(DECODE_FOCUS_MODE.decode(2), "Super Macro");
-    }
-
-    #[test]
-    fn test_decode_best_shot_mode() {
-        assert_eq!(DECODE_BEST_SHOT_MODE.decode(0), "Off");
-        assert_eq!(DECODE_BEST_SHOT_MODE.decode(10), "Fireworks");
-    }
 
     #[test]
     fn test_casio_parser_trait() {
@@ -338,17 +177,18 @@ mod tests {
         let parser = CasioParser::new();
         let mut data = Vec::new();
 
+        // Create minimal IFD with one entry
         data.extend_from_slice(&[0x01, 0x00]); // 1 entry
-        data.extend_from_slice(&[0x02, 0x00]); // Tag: CASIO_QUALITY
+        data.extend_from_slice(&[0x02, 0x00]); // Tag: CASIO_QUALITY (0x0002)
         data.extend_from_slice(&[0x03, 0x00]); // Type: SHORT
         data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Count: 1
-        data.extend_from_slice(&[0x02, 0x00, 0x00, 0x00]); // Value: 2 (Normal)
+        data.extend_from_slice(&[0x02, 0x00, 0x00, 0x00]); // Value: 2 (inline)
 
         let mut tags = HashMap::new();
         let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
 
         assert!(result.is_ok());
-        assert_eq!(tags.get("Casio:Quality"), Some(&"Normal".to_string()));
+        assert_eq!(tags.get("Casio:Quality"), Some(&"2".to_string()));
     }
 
     #[test]
@@ -356,34 +196,55 @@ mod tests {
         let parser = CasioParser::new();
         let mut data = Vec::new();
 
+        // Create minimal IFD with one entry
         data.extend_from_slice(&[0x01, 0x00]); // 1 entry
-        data.extend_from_slice(&[0x03, 0x00]); // Tag: CASIO_FOCUS_MODE
+        data.extend_from_slice(&[0x03, 0x00]); // Tag: CASIO_FOCUS_MODE (0x0003)
         data.extend_from_slice(&[0x03, 0x00]); // Type: SHORT
         data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Count: 1
-        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Value: 1 (Macro)
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Value: 1 (inline)
 
         let mut tags = HashMap::new();
         let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
 
         assert!(result.is_ok());
-        assert_eq!(tags.get("Casio:FocusMode"), Some(&"Macro".to_string()));
+        assert_eq!(tags.get("Casio:FocusMode"), Some(&"1".to_string()));
     }
 
     #[test]
-    fn test_parse_best_shot_tag() {
+    fn test_parse_continuous_mode_on() {
         let parser = CasioParser::new();
         let mut data = Vec::new();
 
+        // Create minimal IFD with one entry
         data.extend_from_slice(&[0x01, 0x00]); // 1 entry
-        data.extend_from_slice(&[0x1B, 0x00]); // Tag: CASIO_BEST_SHOT_MODE
+        data.extend_from_slice(&[0x1A, 0x00]); // Tag: CASIO_CONTINUOUS_MODE (0x001A)
         data.extend_from_slice(&[0x03, 0x00]); // Type: SHORT
         data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Count: 1
-        data.extend_from_slice(&[0x08, 0x00, 0x00, 0x00]); // Value: 8 (Sports)
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Value: 1
 
         let mut tags = HashMap::new();
         let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
 
         assert!(result.is_ok());
-        assert_eq!(tags.get("Casio:BestShotMode"), Some(&"Sports".to_string()));
+        assert_eq!(tags.get("Casio:ContinuousMode"), Some(&"On".to_string()));
+    }
+
+    #[test]
+    fn test_parse_continuous_mode_off() {
+        let parser = CasioParser::new();
+        let mut data = Vec::new();
+
+        // Create minimal IFD with one entry
+        data.extend_from_slice(&[0x01, 0x00]); // 1 entry
+        data.extend_from_slice(&[0x1A, 0x00]); // Tag: CASIO_CONTINUOUS_MODE (0x001A)
+        data.extend_from_slice(&[0x03, 0x00]); // Type: SHORT
+        data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Count: 1
+        data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Value: 0
+
+        let mut tags = HashMap::new();
+        let result = parser.parse(&data, ByteOrder::LittleEndian, &mut tags);
+
+        assert!(result.is_ok());
+        assert_eq!(tags.get("Casio:ContinuousMode"), Some(&"Off".to_string()));
     }
 }

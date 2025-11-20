@@ -34,11 +34,14 @@ use super::shared::array_extractors::{extract_i16_array, extract_i32_value, extr
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+use super::registries::parrot::parrot_registry;
 
-// Import macros for declarative decoder definitions
-use crate::const_decoder;
+// ============================================================================
+// Parrot MakerNote Tag IDs (for parsing reference)
+// ============================================================================
+// Tag definitions are centralized in the registry (registries/parrot.rs)
+// These constants are retained for parse_entry() to identify special handling
 
-// Parrot MakerNote Tag IDs
 const PARROT_MODEL: u16 = 0x0001;
 const PARROT_SERIAL: u16 = 0x0002;
 const PARROT_VERSION: u16 = 0x0003;
@@ -58,95 +61,62 @@ const PARROT_DISTANCE: u16 = 0x010B;
 // Parrot signature
 const PARROT_SIGNATURE: &[u8] = b"Parrot";
 
-// ============================================================================
-// Declarative Decoder Definitions
-// ============================================================================
-
-// Flight Mode decoder - Different autonomous and manual flight modes
-const_decoder!(
-    pub FLIGHT_MODE,
-    i16,
-    [
-        (0, "Manual"),
-        (1, "GPS"),
-        (2, "Follow Me"),
-        (3, "Return Home"),
-    ]
-);
+// Static registry instance for efficient tag lookup and decoding
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(parrot_registry);
 
 // ============================================================================
-// Custom Formatters
+// Custom Value Formatters
 // ============================================================================
 
-// Formats GPS coordinates (stored as 1/10,000,000 degrees)
-// # Arguments
-// * `value` - GPS coordinate in 1/10,000,000 degree units
-// # Returns
-// Formatted coordinate with 7 decimal places
+/// Formats GPS coordinates (stored as 1/10,000,000 degrees)
+///
+/// # Arguments
+/// * `value` - GPS coordinate in 1/10,000,000 degree units
+///
+/// # Returns
+/// Formatted coordinate with 7 decimal places
 fn format_gps_coord(value: i32) -> String {
     format!("{:.7}", value as f64 / 10_000_000.0)
 }
 
-// Formats altitude (stored as centimeters)
-// # Arguments
-// * `value` - Altitude in centimeters
-// # Returns
-// Formatted altitude in meters with 2 decimal places
+/// Formats altitude (stored as centimeters)
+///
+/// # Arguments
+/// * `value` - Altitude in centimeters
+///
+/// # Returns
+/// Formatted altitude in meters with 2 decimal places
 fn format_altitude(value: i16) -> String {
     format!("{:.2} m", value as f64 / 100.0)
 }
 
-// Formats speed (stored as deciseconds per meter)
-// # Arguments
-// * `value` - Speed in 1/10 m/s units
-// # Returns
-// Formatted speed in m/s with 1 decimal place
+/// Formats speed (stored as tenths of m/s)
+///
+/// # Arguments
+/// * `value` - Speed in 1/10 m/s units
+///
+/// # Returns
+/// Formatted speed in m/s with 1 decimal place
 fn format_speed(value: i16) -> String {
     format!("{:.1} m/s", value as f64 / 10.0)
 }
 
-// Formats gimbal angle (stored as decidegrees)
-// # Arguments
-// * `value` - Angle in 1/10 degree units
-// # Returns
-// Formatted angle in degrees with 1 decimal place
+/// Formats gimbal angle (stored as decidegrees)
+///
+/// # Arguments
+/// * `value` - Angle in 1/10 degree units
+///
+/// # Returns
+/// Formatted angle in degrees with 1 decimal place
 fn format_gimbal_angle(value: i16) -> String {
     format!("{:.1}°", value as f64 / 10.0)
 }
 
 // ============================================================================
-// Tag Registry
-// ============================================================================
-
-// Lazy-initialized tag registry for Parrot-specific tags
-static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
-    TagRegistry::with_capacity(15)
-        // String tags
-        .register_raw(PARROT_MODEL, "Model")
-        .register_raw(PARROT_SERIAL, "SerialNumber")
-        .register_raw(PARROT_VERSION, "Version")
-        // GPS tags (handled separately due to i32 type)
-        .register_raw(PARROT_GPS_LAT, "GPSLatitude")
-        .register_raw(PARROT_GPS_LON, "GPSLongitude")
-        // Flight mode decoder
-        .register_simple_i16(PARROT_FLIGHT_MODE, "FlightMode", &FLIGHT_MODE)
-        // Custom formatted tags (handled separately)
-        .register_raw(PARROT_ALTITUDE, "Altitude")
-        .register_raw(PARROT_SPEED, "Speed")
-        .register_raw(PARROT_DIRECTION, "Direction")
-        .register_raw(PARROT_GIMBAL_PITCH, "GimbalPitch")
-        .register_raw(PARROT_GIMBAL_ROLL, "GimbalRoll")
-        .register_raw(PARROT_GIMBAL_YAW, "GimbalYaw")
-        .register_raw(PARROT_BATTERY, "BatteryLevel")
-        .register_raw(PARROT_WIFI_SIGNAL, "WiFiSignal")
-        .register_raw(PARROT_DISTANCE, "HomeDistance")
-});
-
-// ============================================================================
 // Parser Implementation
 // ============================================================================
 
-/// Parser for Parrot MakerNotes
+/// Parrot Drone MakerNote parser
 #[derive(Default)]
 pub struct ParrotParser;
 
@@ -157,6 +127,17 @@ impl ParrotParser {
     }
 
     /// Parses a single IFD entry and extracts the tag value
+    ///
+    /// # Arguments
+    /// * `entry` - IFD entry to parse
+    /// * `data` - Full MakerNote data buffer
+    /// * `byte_order` - Byte order for multi-byte values
+    /// * `tags` - HashMap to insert extracted tags into
+    ///
+    /// Handles three types of Parrot tags:
+    /// - String tags (model, serial, version)
+    /// - GPS coordinates (i32 values with unit conversion)
+    /// - i16 array tags (flight metrics with custom formatting)
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -166,50 +147,61 @@ impl ParrotParser {
     ) {
         let tag_id = entry.tag_id;
 
-        // Handle string tags
-        match tag_id {
-            PARROT_MODEL | PARROT_SERIAL | PARROT_VERSION => {
-                if let Some(s) = extract_string(entry, data, byte_order) {
-                    if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
-                        tags.insert(format!("Parrot:{}", name), s);
-                    }
-                }
-                return;
+        // Get tag name from registry first - skip unknown tags
+        let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
+            Some(name) => name,
+            None => return,
+        };
+
+        // Handle string tags (Model, SerialNumber, Version)
+        if matches!(tag_id, PARROT_MODEL | PARROT_SERIAL | PARROT_VERSION) {
+            if let Some(s) = extract_string(entry, data, byte_order) {
+                tags.insert(format!("Parrot:{}", tag_name), s);
             }
-            _ => {}
+            return;
         }
 
-        // Handle GPS coordinates (i32 type)
-        match tag_id {
-            PARROT_GPS_LAT | PARROT_GPS_LON => {
-                if let Some(val) = extract_i32_value(entry, data, byte_order) {
-                    if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
-                        tags.insert(format!("Parrot:{}", name), format_gps_coord(val));
-                    }
-                }
-                return;
+        // Handle GPS coordinates (i32 type with decimal formatting)
+        if matches!(tag_id, PARROT_GPS_LAT | PARROT_GPS_LON) {
+            if let Some(val) = extract_i32_value(entry, data, byte_order) {
+                tags.insert(format!("Parrot:{}", tag_name), format_gps_coord(val));
             }
-            _ => {}
+            return;
         }
 
-        // Handle i16 array tags
+        // Handle i16 array tags (flight metrics, gimbal angles, battery, etc.)
         if let Some(array) = extract_i16_array(entry, data, byte_order) {
             if let Some(&value) = array.first() {
-                let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
-                    Some(name) => name,
-                    None => return,
-                };
-
+                // Apply tag-specific formatting
                 let formatted_value = match tag_id {
+                    // Flight mode has a registry decoder
                     PARROT_FLIGHT_MODE => TAG_REGISTRY.decode_i16(tag_id, value),
+
+                    // Altitude: cm to meters
                     PARROT_ALTITUDE => format_altitude(value),
+
+                    // Speed: 0.1 m/s to m/s
                     PARROT_SPEED => format_speed(value),
+
+                    // Direction: degrees
                     PARROT_DIRECTION => format!("{}°", value),
+
+                    // Gimbal angles: 0.1 degrees to degrees
                     PARROT_GIMBAL_PITCH | PARROT_GIMBAL_ROLL => format_gimbal_angle(value),
+
+                    // Gimbal yaw: degrees
                     PARROT_GIMBAL_YAW => format!("{}°", value),
+
+                    // Battery: percentage
                     PARROT_BATTERY => format!("{}%", value),
+
+                    // WiFi: dBm signal strength
                     PARROT_WIFI_SIGNAL => format!("{} dBm", value),
+
+                    // Home distance: meters
                     PARROT_DISTANCE => format!("{} m", value),
+
+                    // Fallback for unhandled i16 tags
                     _ => return,
                 };
 
@@ -263,13 +255,6 @@ mod tests {
         let parser = ParrotParser::new();
         assert_eq!(parser.manufacturer_name(), "Parrot");
         assert_eq!(parser.tag_prefix(), "Parrot:");
-    }
-
-    #[test]
-    fn test_flight_mode_decoder() {
-        assert_eq!(FLIGHT_MODE.decode(0), "Manual");
-        assert_eq!(FLIGHT_MODE.decode(1), "GPS");
-        assert_eq!(FLIGHT_MODE.decode(3), "Return Home");
     }
 
     #[test]

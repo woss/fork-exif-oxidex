@@ -145,7 +145,7 @@ pub fn is_leica_makernote(data: &[u8]) -> bool {
 // Each decoder is a constant that implements the Decode trait
 
 // Decodes Leica quality setting to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_QUALITY, i32, [
         (1, "Fine"),
         (2, "Basic"),
@@ -155,10 +155,10 @@ const_decoder!(pub
         (6, "DNG + JPEG Fine"),
         (7, "DNG + JPEG Standard"),
     ]
-}
+);
 
 // Decodes Leica white balance mode to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_WHITE_BALANCE, i32, [
         (0, "Auto"),
         (1, "Daylight"),
@@ -172,10 +172,10 @@ const_decoder!(pub
         (9, "Auto (ambient priority)"),
         (10, "Auto (white priority)"),
     ]
-}
+);
 
 // Decodes Leica exposure mode to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_EXPOSURE_MODE, i32, [
         (0, "Manual"),
         (1, "Program AE"),
@@ -183,10 +183,10 @@ const_decoder!(pub
         (3, "Shutter Priority"),
         (4, "Auto"),
     ]
-}
+);
 
 // Decodes Leica metering mode to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_METERING_MODE, i32, [
         (0, "Unknown"),
         (1, "Multi-segment"),
@@ -194,10 +194,10 @@ const_decoder!(pub
         (3, "Spot"),
         (4, "Multi-spot"),
     ]
-}
+);
 
 // Decodes Leica flash mode to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_FLASH_MODE, i32, [
         (0, "No Flash"),
         (1, "Auto"),
@@ -207,10 +207,10 @@ const_decoder!(pub
         (5, "Rear Curtain Sync"),
         (6, "Fill Flash"),
     ]
-}
+);
 
 // Decodes Leica AF mode to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_AF_MODE, i32, [
         (0, "Manual"),
         (1, "Single AF"),
@@ -219,10 +219,10 @@ const_decoder!(pub
         (4, "Face Detection"),
         (5, "Tracking"),
     ]
-}
+);
 
 // Decodes Leica image stabilization to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_IMAGE_STABILIZATION, i32, [
         (0, "Off"),
         (1, "On"),
@@ -230,10 +230,10 @@ const_decoder!(pub
         (3, "On (Lens)"),
         (4, "On (Dual)"),
     ]
-}
+);
 
 // Decodes Leica user profile to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_USER_PROFILE, i32, [
         (0, "Not Set"),
         (1, "User Profile 1"),
@@ -247,10 +247,10 @@ const_decoder!(pub
         (9, "High Contrast"),
         (10, "Monochrome High Contrast"),
     ]
-}
+);
 
 // Decodes Leica scene mode to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_SCENE_MODE, i32, [
         (0, "Off"),
         (1, "Portrait"),
@@ -263,10 +263,10 @@ const_decoder!(pub
         (8, "Snow"),
         (9, "Fireworks"),
     ]
-}
+);
 
 // Decodes Leica crop mode to human-readable string
-const_decoder!(pub 
+const_decoder!(pub
     DECODER_CROP_MODE, i32, [
         (0, "Full Frame"),
         (1, "APS-C"),
@@ -274,7 +274,7 @@ const_decoder!(pub
         (3, "16:9"),
         (4, "4:3"),
     ]
-}
+);
 
 /// Leica MakerNote Parser
 ///

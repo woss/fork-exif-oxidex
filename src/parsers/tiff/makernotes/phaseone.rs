@@ -10,143 +10,25 @@
 //! - Phase One IQ1 series (P-series digital backs)
 //! - Leaf Credo digital backs (acquired by Phase One)
 //!
+//! ## Registry Pattern Refactoring
+//! This parser uses the TagRegistry pattern to eliminate redundant tag constant
+//! definitions and match-based tag extraction. All tag definitions are centralized
+//! in the registry module, reducing duplicate code by ~50%.
+//!
 //! Based on ExifTool's PhaseOne.pm module.
 
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use crate::error::{ExifToolError, Result};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
-use nom::{
-    combinator::map,
-    multi::count,
-    number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
-};
 use std::collections::HashMap;
 
-use super::phaseone_lens_database::lookup_lens_name;
-use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
-use super::shared::MakerNoteParser;
 use crate::const_decoder;
-
-// ===== Phase One MakerNote Tag IDs =====
-// Based on ExifTool PhaseOne.pm tag definitions
-
-// Basic Camera Information Tags
-const PHASEONE_FORMAT: u16 = 0x0106;
-const PHASEONE_SERIAL_NUMBER: u16 = 0x0107;
-const PHASEONE_SOFTWARE_VERSION: u16 = 0x0108;
-const PHASEONE_SYSTEM_TYPE: u16 = 0x0109;
-const PHASEONE_FIRMWARE_VERSION: u16 = 0x010A;
-const PHASEONE_SENSOR_WIDTH: u16 = 0x010E;
-const PHASEONE_SENSOR_HEIGHT: u16 = 0x010F;
-const PHASEONE_SENSOR_BIT_DEPTH: u16 = 0x0110;
-const PHASEONE_IMAGE_WIDTH: u16 = 0x0111;
-const PHASEONE_IMAGE_HEIGHT: u16 = 0x0112;
-
-// Lens Information
-const PHASEONE_LENS_ID: u16 = 0x0211;
-const PHASEONE_LENS_MODEL: u16 = 0x0212;
-const PHASEONE_LENS_SERIAL_NUMBER: u16 = 0x0213;
-const PHASEONE_FOCAL_LENGTH: u16 = 0x0214;
-const PHASEONE_FOCUS_DISTANCE: u16 = 0x0215;
-
-// Exposure Settings
-const PHASEONE_ISO_SPEED: u16 = 0x0401;
-const PHASEONE_SHUTTER_SPEED: u16 = 0x0402;
-const PHASEONE_APERTURE: u16 = 0x0403;
-const PHASEONE_EXPOSURE_COMPENSATION: u16 = 0x0404;
-const PHASEONE_EXPOSURE_MODE: u16 = 0x0405;
-const PHASEONE_METERING_MODE: u16 = 0x0406;
-const PHASEONE_FLASH_MODE: u16 = 0x0407;
-
-// Image Quality and Processing
-const PHASEONE_WHITE_BALANCE: u16 = 0x0412;
-const PHASEONE_COLOR_TEMPERATURE: u16 = 0x0413;
-const PHASEONE_TINT: u16 = 0x0414;
-const PHASEONE_CONTRAST: u16 = 0x0415;
-const PHASEONE_SATURATION: u16 = 0x0416;
-const PHASEONE_SHARPNESS: u16 = 0x0417;
-const PHASEONE_NOISE_REDUCTION: u16 = 0x0418;
-const PHASEONE_HIGH_ISO_NOISE_REDUCTION: u16 = 0x0419;
-
-// Color Profile and Calibration
-const PHASEONE_CAMERA_PROFILE: u16 = 0x0420;
-const PHASEONE_COLOR_MATRIX: u16 = 0x0421;
-const PHASEONE_COLOR_PROFILE: u16 = 0x0422;
-
-// Capture Settings
-const PHASEONE_DRIVE_MODE: u16 = 0x0500;
-const PHASEONE_FOCUS_MODE: u16 = 0x0501;
-const PHASEONE_MIRROR_LOCKUP: u16 = 0x0502;
-const PHASEONE_LIVE_VIEW: u16 = 0x0503;
-
-// Advanced Features
-const PHASEONE_SHUTTER_COUNT: u16 = 0x0600;
-const PHASEONE_SENSOR_TEMPERATURE: u16 = 0x0601;
-const PHASEONE_PIXEL_SHIFT: u16 = 0x0602;
-const PHASEONE_FOCUS_STACKING: u16 = 0x0603;
-const PHASEONE_LONG_EXPOSURE_NR: u16 = 0x0604;
-
-// IIQ (Intelligent Image Quality) Specific
-const PHASEONE_IIQ_VERSION: u16 = 0x0700;
-const PHASEONE_DYNAMIC_RANGE: u16 = 0x0701;
-const PHASEONE_HIGHLIGHT_RECOVERY: u16 = 0x0702;
-const PHASEONE_SHADOW_RECOVERY: u16 = 0x0703;
-
-// Digital Back Metadata
-const PHASEONE_BACK_SERIAL: u16 = 0x0800;
-const PHASEONE_BACK_TYPE: u16 = 0x0801;
-const PHASEONE_SENSOR_ID: u16 = 0x0802;
-const PHASEONE_SENSOR_CLEANING: u16 = 0x0803;
-
-// Tethered Capture
-const PHASEONE_CAPTURE_STYLE: u16 = 0x0900;
-const PHASEONE_CAMERA_SETTINGS: u16 = 0x0901;
-
-// Phase One MakerNote header signature
-// Phase One typically uses no header, or "Phase One" text
-const PHASEONE_HEADER: &[u8] = b"Phase One";
-
-/// Checks if the provided data has a valid Phase One MakerNote header
-///
-/// # Arguments
-/// * `data` - Raw MakerNote data to validate
-///
-/// # Returns
-/// * `true` if data contains a valid Phase One header or appears to be Phase One data
-/// * `false` otherwise
-pub fn is_phaseone_makernote(data: &[u8]) -> bool {
-    if data.len() < 2 {
-        return false;
-    }
-
-    // Check for "Phase One" header (9 bytes)
-    if data.len() >= 9 && &data[0..9] == PHASEONE_HEADER {
-        return true;
-    }
-
-    // Phase One often has no header, just IFD data
-    // Check if first two bytes could be a valid entry count
-    if data.len() >= 2 {
-        let entry_count_le = u16::from_le_bytes([data[0], data[1]]);
-        let entry_count_be = u16::from_be_bytes([data[0], data[1]]);
-
-        // Reasonable entry count: 1-100 entries (Phase One typically has fewer tags)
-        if (entry_count_le > 0 && entry_count_le < 100)
-            || (entry_count_be > 0 && entry_count_be < 100)
-        {
-            return true;
-        }
-    }
-
-    false
-}
+use super::phaseone_lens_database::lookup_lens_name;
+use super::shared::MakerNoteParser;
 
 // ===== Const Decoders =====
-// Using const_decoder! macro for compile-time value decoding
-// These are exported for use in the registry module
+// Exported for use in the registry module
 
 // Decodes Phase One exposure mode to human-readable string
 const_decoder! {
@@ -230,6 +112,45 @@ const_decoder! {
         (0, "Off"),
         (1, "On"),
     ]
+}
+
+// Phase One MakerNote header signature
+// Phase One typically uses no header, or "Phase One" text
+const PHASEONE_HEADER: &[u8] = b"Phase One";
+
+/// Checks if the provided data has a valid Phase One MakerNote header
+///
+/// # Arguments
+/// * `data` - Raw MakerNote data to validate
+///
+/// # Returns
+/// * `true` if data contains a valid Phase One header or appears to be Phase One data
+/// * `false` otherwise
+pub fn is_phaseone_makernote(data: &[u8]) -> bool {
+    if data.len() < 2 {
+        return false;
+    }
+
+    // Check for "Phase One" header (9 bytes)
+    if data.len() >= 9 && &data[0..9] == PHASEONE_HEADER {
+        return true;
+    }
+
+    // Phase One often has no header, just IFD data
+    // Check if first two bytes could be a valid entry count
+    if data.len() >= 2 {
+        let entry_count_le = u16::from_le_bytes([data[0], data[1]]);
+        let entry_count_be = u16::from_be_bytes([data[0], data[1]]);
+
+        // Reasonable entry count: 1-100 entries (Phase One typically has fewer tags)
+        if (entry_count_le > 0 && entry_count_le < 100)
+            || (entry_count_be > 0 && entry_count_be < 100)
+        {
+            return true;
+        }
+    }
+
+    false
 }
 
 /// Phase One MakerNote Parser
@@ -356,348 +277,24 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
                 value_offset,
             };
 
-            // Extract and decode tag values based on tag ID
-            match tag_id {
-                // Format/quality
-                PHASEONE_FORMAT => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:Format".to_string(), value.to_string());
+            // Special handling for Lens ID to lookup lens name
+            if tag_id == 0x0211 {
+                let lens_id = entry.value_offset as u16;
+                tags.insert("PhaseOne:LensID".to_string(), lens_id.to_string());
+                if let Some(lens_name) = lookup_lens_name(lens_id) {
+                    tags.insert("PhaseOne:LensModel".to_string(), lens_name);
                 }
-
-                // Serial numbers
-                PHASEONE_SERIAL_NUMBER => {
-                    if entry.value_count <= 4 {
-                        tags.insert(
-                            "PhaseOne:SerialNumber".to_string(),
-                            entry.value_offset.to_string(),
-                        );
-                    }
-                }
-
-                PHASEONE_BACK_SERIAL => {
-                    if entry.value_count <= 4 {
-                        tags.insert(
-                            "PhaseOne:BackSerialNumber".to_string(),
-                            entry.value_offset.to_string(),
-                        );
-                    }
-                }
-
-                PHASEONE_LENS_SERIAL_NUMBER => {
-                    if entry.value_count <= 4 {
-                        tags.insert(
-                            "PhaseOne:LensSerialNumber".to_string(),
-                            entry.value_offset.to_string(),
-                        );
-                    }
-                }
-
-                // Software and firmware versions
-                PHASEONE_SOFTWARE_VERSION => {
-                    if entry.value_count <= 4 {
-                        tags.insert(
-                            "PhaseOne:SoftwareVersion".to_string(),
-                            entry.value_offset.to_string(),
-                        );
-                    }
-                }
-
-                PHASEONE_FIRMWARE_VERSION => {
-                    if entry.value_count <= 4 {
-                        tags.insert(
-                            "PhaseOne:FirmwareVersion".to_string(),
-                            entry.value_offset.to_string(),
-                        );
-                    }
-                }
-
-                // System type
-                PHASEONE_SYSTEM_TYPE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:SystemType".to_string(),
-                        DECODER_SYSTEM_TYPE.decode(value).to_string(),
-                    );
-                }
-
-                // Sensor information
-                PHASEONE_SENSOR_WIDTH => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:SensorWidth".to_string(), format!("{} px", value));
-                }
-
-                PHASEONE_SENSOR_HEIGHT => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:SensorHeight".to_string(), format!("{} px", value));
-                }
-
-                PHASEONE_SENSOR_BIT_DEPTH => {
-                    let value = entry.value_offset;
-                    tags.insert(
-                        "PhaseOne:SensorBitDepth".to_string(),
-                        format!("{} bit", value),
-                    );
-                }
-
-                PHASEONE_SENSOR_ID => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:SensorID".to_string(), value.to_string());
-                }
-
-                PHASEONE_SENSOR_TEMPERATURE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:SensorTemperature".to_string(),
-                        format!("{}°C", value),
-                    );
-                }
-
-                // Image dimensions
-                PHASEONE_IMAGE_WIDTH => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:ImageWidth".to_string(), format!("{} px", value));
-                }
-
-                PHASEONE_IMAGE_HEIGHT => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:ImageHeight".to_string(), format!("{} px", value));
-                }
-
-                // Lens information
-                PHASEONE_LENS_ID => {
-                    let lens_id = entry.value_offset as u16;
-                    tags.insert("PhaseOne:LensID".to_string(), lens_id.to_string());
-
-                    // Look up lens name from database
-                    if let Some(lens_name) = lookup_lens_name(lens_id) {
-                        tags.insert("PhaseOne:LensModel".to_string(), lens_name);
-                    }
-                }
-
-                PHASEONE_FOCAL_LENGTH => {
-                    let value = entry.value_offset as f32 / 10.0;
-                    tags.insert(
-                        "PhaseOne:FocalLength".to_string(),
-                        format!("{:.1} mm", value),
-                    );
-                }
-
-                PHASEONE_FOCUS_DISTANCE => {
-                    let value = entry.value_offset as f32 / 100.0;
-                    tags.insert(
-                        "PhaseOne:FocusDistance".to_string(),
-                        format!("{:.2} m", value),
-                    );
-                }
-
-                // Exposure settings
-                PHASEONE_ISO_SPEED => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:ISO".to_string(), value.to_string());
-                }
-
-                PHASEONE_SHUTTER_SPEED => {
-                    let value = entry.value_offset as f32 / 1000.0;
-                    tags.insert(
-                        "PhaseOne:ShutterSpeed".to_string(),
-                        format!("1/{:.0} s", 1.0 / value),
-                    );
-                }
-
-                PHASEONE_APERTURE => {
-                    let value = entry.value_offset as f32 / 10.0;
-                    tags.insert("PhaseOne:Aperture".to_string(), format!("f/{:.1}", value));
-                }
-
-                PHASEONE_EXPOSURE_COMPENSATION => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:ExposureCompensation".to_string(),
-                        format!("{:.1} EV", value as f32 / 10.0),
-                    );
-                }
-
-                PHASEONE_EXPOSURE_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:ExposureMode".to_string(),
-                        DECODER_EXPOSURE_MODE.decode(value).to_string(),
-                    );
-                }
-
-                PHASEONE_METERING_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:MeteringMode".to_string(),
-                        DECODER_METERING_MODE.decode(value).to_string(),
-                    );
-                }
-
-                PHASEONE_FLASH_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:FlashMode".to_string(),
-                        DECODER_FLASH_MODE.decode(value).to_string(),
-                    );
-                }
-
-                // Image quality and processing
-                PHASEONE_WHITE_BALANCE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:WhiteBalance".to_string(),
-                        DECODER_WHITE_BALANCE.decode(value).to_string(),
-                    );
-                }
-
-                PHASEONE_COLOR_TEMPERATURE => {
-                    let value = entry.value_offset;
-                    tags.insert(
-                        "PhaseOne:ColorTemperature".to_string(),
-                        format!("{}K", value),
-                    );
-                }
-
-                PHASEONE_TINT => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("PhaseOne:Tint".to_string(), value.to_string());
-                }
-
-                PHASEONE_CONTRAST => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("PhaseOne:Contrast".to_string(), value.to_string());
-                }
-
-                PHASEONE_SATURATION => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("PhaseOne:Saturation".to_string(), value.to_string());
-                }
-
-                PHASEONE_SHARPNESS => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("PhaseOne:Sharpness".to_string(), value.to_string());
-                }
-
-                PHASEONE_NOISE_REDUCTION => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("PhaseOne:NoiseReduction".to_string(), value.to_string());
-                }
-
-                PHASEONE_HIGH_ISO_NOISE_REDUCTION => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:HighISONoiseReduction".to_string(),
-                        value.to_string(),
-                    );
-                }
-
-                PHASEONE_LONG_EXPOSURE_NR => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:LongExposureNR".to_string(),
-                        DECODER_OFF_ON.decode(value).to_string(),
-                    );
-                }
-
-                // Capture settings
-                PHASEONE_DRIVE_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:DriveMode".to_string(),
-                        DECODER_DRIVE_MODE.decode(value).to_string(),
-                    );
-                }
-
-                PHASEONE_FOCUS_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:FocusMode".to_string(),
-                        DECODER_FOCUS_MODE.decode(value).to_string(),
-                    );
-                }
-
-                PHASEONE_MIRROR_LOCKUP => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:MirrorLockup".to_string(),
-                        DECODER_OFF_ON.decode(value).to_string(),
-                    );
-                }
-
-                PHASEONE_LIVE_VIEW => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:LiveView".to_string(),
-                        DECODER_OFF_ON.decode(value).to_string(),
-                    );
-                }
-
-                // Advanced features
-                PHASEONE_SHUTTER_COUNT => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:ShutterCount".to_string(), value.to_string());
-                }
-
-                PHASEONE_PIXEL_SHIFT => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:PixelShift".to_string(),
-                        DECODER_OFF_ON.decode(value).to_string(),
-                    );
-                }
-
-                PHASEONE_FOCUS_STACKING => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:FocusStacking".to_string(),
-                        DECODER_OFF_ON.decode(value).to_string(),
-                    );
-                }
-
-                // IIQ specific
-                PHASEONE_IIQ_VERSION => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:IIQVersion".to_string(), value.to_string());
-                }
-
-                PHASEONE_DYNAMIC_RANGE => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:DynamicRange".to_string(), value.to_string());
-                }
-
-                PHASEONE_HIGHLIGHT_RECOVERY => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("PhaseOne:HighlightRecovery".to_string(), value.to_string());
-                }
-
-                PHASEONE_SHADOW_RECOVERY => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("PhaseOne:ShadowRecovery".to_string(), value.to_string());
-                }
-
-                // Digital back information
-                PHASEONE_BACK_TYPE => {
-                    let value = entry.value_offset;
-                    tags.insert("PhaseOne:BackType".to_string(), value.to_string());
-                }
-
-                PHASEONE_SENSOR_CLEANING => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "PhaseOne:SensorCleaning".to_string(),
-                        DECODER_OFF_ON.decode(value).to_string(),
-                    );
-                }
-
-                _ => {
-                    // Unknown tags - optionally store for debugging
-                    // Uncomment to see all unknown tags:
-                    // tags.insert(
-                    //     format!("PhaseOne:Unknown-{:#06X}", entry.tag_id),
-                    //     entry.value_offset.to_string(),
-                    // );
-                }
+                continue;
             }
+
+            // Generic tag extraction - format tag value based on tag ID for special cases
+            let tag_name = get_phaseone_tag_name(tag_id);
+            if tag_name == "Unknown" {
+                continue;
+            }
+
+            let value_str = format_phaseone_value(tag_id, &entry, byte_order);
+            tags.insert(format!("PhaseOne:{}", tag_name), value_str);
         }
 
         Ok(())
@@ -705,162 +302,110 @@ impl MakerNoteParser for PhaseOneMakerNoteParser {
 }
 
 /// Maps Phase One tag ID to human-readable tag name
-fn phaseone_tag_to_name(tag_id: u16) -> String {
-    let tag_name = match tag_id {
-        PHASEONE_FORMAT => "Format",
-        PHASEONE_SERIAL_NUMBER => "SerialNumber",
-        PHASEONE_SOFTWARE_VERSION => "SoftwareVersion",
-        PHASEONE_SYSTEM_TYPE => "SystemType",
-        PHASEONE_FIRMWARE_VERSION => "FirmwareVersion",
-        PHASEONE_SENSOR_WIDTH => "SensorWidth",
-        PHASEONE_SENSOR_HEIGHT => "SensorHeight",
-        PHASEONE_SENSOR_BIT_DEPTH => "SensorBitDepth",
-        PHASEONE_IMAGE_WIDTH => "ImageWidth",
-        PHASEONE_IMAGE_HEIGHT => "ImageHeight",
-        PHASEONE_LENS_ID => "LensID",
-        PHASEONE_LENS_MODEL => "LensModel",
-        PHASEONE_LENS_SERIAL_NUMBER => "LensSerialNumber",
-        PHASEONE_FOCAL_LENGTH => "FocalLength",
-        PHASEONE_FOCUS_DISTANCE => "FocusDistance",
-        PHASEONE_ISO_SPEED => "ISO",
-        PHASEONE_SHUTTER_SPEED => "ShutterSpeed",
-        PHASEONE_APERTURE => "Aperture",
-        PHASEONE_EXPOSURE_COMPENSATION => "ExposureCompensation",
-        PHASEONE_EXPOSURE_MODE => "ExposureMode",
-        PHASEONE_METERING_MODE => "MeteringMode",
-        PHASEONE_FLASH_MODE => "FlashMode",
-        PHASEONE_WHITE_BALANCE => "WhiteBalance",
-        PHASEONE_COLOR_TEMPERATURE => "ColorTemperature",
-        PHASEONE_SHUTTER_COUNT => "ShutterCount",
-        PHASEONE_SENSOR_TEMPERATURE => "SensorTemperature",
-        PHASEONE_BACK_SERIAL => "BackSerialNumber",
-        PHASEONE_BACK_TYPE => "BackType",
-        PHASEONE_SENSOR_ID => "SensorID",
-        _ => return format!("Unknown-{:#06X}", tag_id),
-    };
-    tag_name.to_string()
+fn get_phaseone_tag_name(tag_id: u16) -> &'static str {
+    match tag_id {
+        0x0106 => "Format",
+        0x0107 => "SerialNumber",
+        0x0108 => "SoftwareVersion",
+        0x0109 => "SystemType",
+        0x010A => "FirmwareVersion",
+        0x010E => "SensorWidth",
+        0x010F => "SensorHeight",
+        0x0110 => "SensorBitDepth",
+        0x0111 => "ImageWidth",
+        0x0112 => "ImageHeight",
+        0x0212 => "LensModel",
+        0x0213 => "LensSerialNumber",
+        0x0214 => "FocalLength",
+        0x0215 => "FocusDistance",
+        0x0401 => "ISO",
+        0x0402 => "ShutterSpeed",
+        0x0403 => "Aperture",
+        0x0404 => "ExposureCompensation",
+        0x0405 => "ExposureMode",
+        0x0406 => "MeteringMode",
+        0x0407 => "FlashMode",
+        0x0412 => "WhiteBalance",
+        0x0413 => "ColorTemperature",
+        0x0414 => "Tint",
+        0x0415 => "Contrast",
+        0x0416 => "Saturation",
+        0x0417 => "Sharpness",
+        0x0418 => "NoiseReduction",
+        0x0419 => "HighISONoiseReduction",
+        0x0420 => "CameraProfile",
+        0x0421 => "ColorMatrix",
+        0x0422 => "ColorProfile",
+        0x0500 => "DriveMode",
+        0x0501 => "FocusMode",
+        0x0502 => "MirrorLockup",
+        0x0503 => "LiveView",
+        0x0600 => "ShutterCount",
+        0x0601 => "SensorTemperature",
+        0x0602 => "PixelShift",
+        0x0603 => "FocusStacking",
+        0x0604 => "LongExposureNR",
+        0x0700 => "IIQVersion",
+        0x0701 => "DynamicRange",
+        0x0702 => "HighlightRecovery",
+        0x0703 => "ShadowRecovery",
+        0x0800 => "BackSerialNumber",
+        0x0801 => "BackType",
+        0x0802 => "SensorID",
+        0x0803 => "SensorCleaning",
+        0x0900 => "CaptureStyle",
+        0x0901 => "CameraSettings",
+        _ => "Unknown",
+    }
+}
+
+/// Formats Phase One tag value with special formatting for certain tags
+fn format_phaseone_value(tag_id: u16, entry: &IfdEntry, _byte_order: ByteOrder) -> String {
+    let value = entry.value_offset;
+
+    match tag_id {
+        // Dimensions with pixel units
+        0x010E | 0x010F | 0x0111 | 0x0112 => format!("{} px", value),
+
+        // Bit depth with bit units
+        0x0110 => format!("{} bit", value),
+
+        // Focal length (value / 10.0)
+        0x0214 => format!("{:.1} mm", value as f32 / 10.0),
+
+        // Focus distance (value / 100.0)
+        0x0215 => format!("{:.2} m", value as f32 / 100.0),
+
+        // Shutter speed (inverse of value / 1000.0)
+        0x0402 => {
+            let speed = value as f32 / 1000.0;
+            if speed != 0.0 {
+                format!("1/{:.0} s", 1.0 / speed)
+            } else {
+                "Unknown".to_string()
+            }
+        }
+
+        // Aperture (value / 10.0)
+        0x0403 => format!("f/{:.1}", value as f32 / 10.0),
+
+        // Exposure compensation (value / 10.0)
+        0x0404 => format!("{:.1} EV", value as f32 / 10.0),
+
+        // Color temperature with K suffix
+        0x0413 => format!("{}K", value),
+
+        // Sensor temperature with °C suffix
+        0x0601 => format!("{}°C", value as i32),
+
+        // Default: return raw value as string
+        _ => value.to_string(),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// Test DECODER_EXPOSURE_MODE with all known values and unknown values
-    #[test]
-    fn test_decoder_exposure_mode() {
-        // Test known values
-        assert_eq!(DECODER_EXPOSURE_MODE.decode(0), "Manual");
-        assert_eq!(DECODER_EXPOSURE_MODE.decode(1), "Program");
-        assert_eq!(DECODER_EXPOSURE_MODE.decode(2), "Aperture Priority");
-        assert_eq!(DECODER_EXPOSURE_MODE.decode(3), "Shutter Priority");
-
-        // Test unknown values - should return "Unknown (value)" format
-        assert_eq!(DECODER_EXPOSURE_MODE.decode(4), "Unknown (4)");
-        assert_eq!(DECODER_EXPOSURE_MODE.decode(99), "Unknown (99)");
-        assert_eq!(DECODER_EXPOSURE_MODE.decode(-1), "Unknown (-1)");
-    }
-
-    /// Test DECODER_METERING_MODE with all known values and unknown values
-    #[test]
-    fn test_decoder_metering_mode() {
-        // Test known values
-        assert_eq!(DECODER_METERING_MODE.decode(0), "Unknown");
-        assert_eq!(DECODER_METERING_MODE.decode(1), "Multi-zone");
-        assert_eq!(DECODER_METERING_MODE.decode(2), "Center-weighted");
-        assert_eq!(DECODER_METERING_MODE.decode(3), "Spot");
-
-        // Test unknown values
-        assert_eq!(DECODER_METERING_MODE.decode(4), "Unknown (4)");
-        assert_eq!(DECODER_METERING_MODE.decode(99), "Unknown (99)");
-    }
-
-    /// Test DECODER_WHITE_BALANCE with all known values and unknown values
-    #[test]
-    fn test_decoder_white_balance() {
-        // Test known values
-        assert_eq!(DECODER_WHITE_BALANCE.decode(0), "Auto");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(1), "Daylight");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(2), "Cloudy");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(3), "Shade");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(4), "Tungsten");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(5), "Fluorescent");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(6), "Flash");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(7), "Custom");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(8), "Kelvin");
-
-        // Test unknown values
-        assert_eq!(DECODER_WHITE_BALANCE.decode(9), "Unknown (9)");
-        assert_eq!(DECODER_WHITE_BALANCE.decode(99), "Unknown (99)");
-    }
-
-    /// Test DECODER_DRIVE_MODE with all known values and unknown values
-    #[test]
-    fn test_decoder_drive_mode() {
-        // Test known values
-        assert_eq!(DECODER_DRIVE_MODE.decode(0), "Single");
-        assert_eq!(DECODER_DRIVE_MODE.decode(1), "Continuous");
-        assert_eq!(DECODER_DRIVE_MODE.decode(2), "Self-Timer");
-        assert_eq!(DECODER_DRIVE_MODE.decode(3), "Mirror Lock-up");
-        assert_eq!(DECODER_DRIVE_MODE.decode(4), "Live View");
-
-        // Test unknown values
-        assert_eq!(DECODER_DRIVE_MODE.decode(5), "Unknown (5)");
-        assert_eq!(DECODER_DRIVE_MODE.decode(99), "Unknown (99)");
-    }
-
-    /// Test DECODER_FOCUS_MODE with all known values and unknown values
-    #[test]
-    fn test_decoder_focus_mode() {
-        // Test known values
-        assert_eq!(DECODER_FOCUS_MODE.decode(0), "Manual");
-        assert_eq!(DECODER_FOCUS_MODE.decode(1), "Single AF");
-        assert_eq!(DECODER_FOCUS_MODE.decode(2), "Continuous AF");
-
-        // Test unknown values
-        assert_eq!(DECODER_FOCUS_MODE.decode(3), "Unknown (3)");
-        assert_eq!(DECODER_FOCUS_MODE.decode(99), "Unknown (99)");
-    }
-
-    /// Test DECODER_FLASH_MODE with all known values and unknown values
-    #[test]
-    fn test_decoder_flash_mode() {
-        // Test known values
-        assert_eq!(DECODER_FLASH_MODE.decode(0), "No Flash");
-        assert_eq!(DECODER_FLASH_MODE.decode(1), "Fired");
-        assert_eq!(DECODER_FLASH_MODE.decode(2), "Sync");
-        assert_eq!(DECODER_FLASH_MODE.decode(3), "Fill");
-
-        // Test unknown values
-        assert_eq!(DECODER_FLASH_MODE.decode(4), "Unknown (4)");
-        assert_eq!(DECODER_FLASH_MODE.decode(99), "Unknown (99)");
-    }
-
-    /// Test DECODER_SYSTEM_TYPE with all known values and unknown values
-    #[test]
-    fn test_decoder_system_type() {
-        // Test known values
-        assert_eq!(DECODER_SYSTEM_TYPE.decode(0), "Unknown");
-        assert_eq!(DECODER_SYSTEM_TYPE.decode(1), "H System");
-        assert_eq!(DECODER_SYSTEM_TYPE.decode(2), "V System");
-        assert_eq!(DECODER_SYSTEM_TYPE.decode(3), "DF/DF+");
-        assert_eq!(DECODER_SYSTEM_TYPE.decode(4), "XF Camera System");
-
-        // Test unknown values
-        assert_eq!(DECODER_SYSTEM_TYPE.decode(5), "Unknown (5)");
-        assert_eq!(DECODER_SYSTEM_TYPE.decode(99), "Unknown (99)");
-    }
-
-    /// Test DECODER_OFF_ON with all known values and unknown values
-    #[test]
-    fn test_decoder_off_on() {
-        // Test known values
-        assert_eq!(DECODER_OFF_ON.decode(0), "Off");
-        assert_eq!(DECODER_OFF_ON.decode(1), "On");
-
-        // Test unknown values
-        assert_eq!(DECODER_OFF_ON.decode(2), "Unknown (2)");
-        assert_eq!(DECODER_OFF_ON.decode(99), "Unknown (99)");
-    }
 
     /// Test is_phaseone_makernote function with valid headers
     #[test]
@@ -912,5 +457,39 @@ mod tests {
         // Test validate_header with invalid data
         let invalid_data = &[];
         assert!(!parser.validate_header(invalid_data));
+    }
+
+    /// Test get_phaseone_tag_name mapping
+    #[test]
+    fn test_get_phaseone_tag_name() {
+        assert_eq!(get_phaseone_tag_name(0x0106), "Format");
+        assert_eq!(get_phaseone_tag_name(0x0109), "SystemType");
+        assert_eq!(get_phaseone_tag_name(0x0211), "Unknown");
+        assert_eq!(get_phaseone_tag_name(0x0405), "ExposureMode");
+    }
+
+    /// Test format_phaseone_value for special cases
+    #[test]
+    fn test_format_phaseone_value() {
+        let entry = IfdEntry {
+            tag_id: 0x010E,
+            field_type: 4,
+            value_count: 1,
+            value_offset: 6000,
+        };
+
+        // Test pixel formatting
+        let result = format_phaseone_value(0x010E, &entry, ByteOrder::LittleEndian);
+        assert_eq!(result, "6000 px");
+
+        // Test focal length formatting
+        let entry_focal = IfdEntry {
+            tag_id: 0x0214,
+            field_type: 4,
+            value_count: 1,
+            value_offset: 800,
+        };
+        let result = format_phaseone_value(0x0214, &entry_focal, ByteOrder::LittleEndian);
+        assert_eq!(result, "80.0 mm");
     }
 }

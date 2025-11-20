@@ -395,6 +395,12 @@ impl MakerNoteParser for DjiParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parsers::tiff::makernotes::registries::dji::{
+        FLIGHT_MODE, WHITE_BALANCE, COLOR_MODE, IMAGE_FORMAT, GPS_SIGNAL, OBSTACLE_AVOIDANCE,
+        format_gps_coordinate, format_altitude, format_speed, format_gimbal_angle, format_voltage,
+        format_flight_time, format_aperture, format_ev, format_shutter_speed, format_degrees,
+        format_meters, format_battery_level, format_iso, decode_obstacle_avoidance,
+    };
 
     #[test]
     fn test_dji_parser_creation() {

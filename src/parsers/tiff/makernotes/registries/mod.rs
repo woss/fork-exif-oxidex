@@ -44,6 +44,23 @@ pub mod leaf; // Leaf migration (Batch 5, Sub-Batch 5.2)
 pub mod red; // RED migration (Batch 5, Sub-Batch 5.2)
 pub mod parrot; // Parrot migration (Batch 5, Sub-Batch 5.2)
 
+// Sub-Batch 5.3: Consumer and Specialty Manufacturers
+pub mod motorola;
+pub mod hp;
+pub mod jvc;
+pub mod ge;
+pub mod sanyo;
+pub mod nintendo;
+pub mod infiray;
+
+// Sub-Batch 5.4: Software and Post-Processing Applications
+pub mod gimp;
+pub mod fotostation;
+pub mod photomechanic;
+pub mod scalado;
+pub mod indesign;
+pub mod reconyx;
+
 pub use canon::canon_registry;
 pub use sony::sony_registry; // Sony migration complete (Task 6)
 pub use apple::apple_registry;
@@ -79,3 +96,20 @@ pub use phaseone::phaseone_registry;
 pub use leaf::leaf_registry;
 pub use red::red_registry;
 pub use parrot::parrot_registry;
+
+// Batch 5 Sub-Batch 5.3 exports
+pub use motorola::motorola_registry;
+pub use hp::hp_registry;
+pub use jvc::jvc_registry;
+pub use ge::ge_registry;
+pub use sanyo::sanyo_registry;
+pub use nintendo::nintendo_registry;
+pub use infiray::infiray_registry;
+
+// Batch 5 Sub-Batch 5.4 exports
+pub use gimp::gimp_registry;
+pub use fotostation::fotostation_registry;
+pub use photomechanic::photomechanic_registry;
+pub use scalado::scalado_registry;
+pub use indesign::indesign_registry;
+pub use reconyx::reconyx_registry;

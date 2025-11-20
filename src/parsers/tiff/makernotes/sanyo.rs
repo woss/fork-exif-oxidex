@@ -20,6 +20,7 @@
 
 #![allow(dead_code)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -27,33 +28,21 @@ use std::collections::HashMap;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-
-use crate::const_decoder;
-
-// Sanyo MakerNote Tag IDs
-const SANYO_QUALITY: u16 = 0x0100;
-const SANYO_FOCUS_MODE: u16 = 0x0102;
-const SANYO_FLASH_MODE: u16 = 0x0103;
-const SANYO_SEQUENTIAL_MODE: u16 = 0x0104;
-const SANYO_WHITE_BALANCE: u16 = 0x0105;
-const SANYO_SHARPNESS: u16 = 0x0107;
-const SANYO_COLOR_MODE: u16 = 0x0108;
-const SANYO_SCENE_MODE: u16 = 0x010A;
-const SANYO_RECORD_MODE: u16 = 0x010B;
+use super::registries::sanyo::sanyo_registry;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
-const_decoder!(
+const_decoder!(pub
     QUALITY,
     u16,
     [(0, "Normal"), (1, "Fine"), (2, "Super Fine"),]
 );
 
-const_decoder!(FOCUS_MODE, u16, [(0, "Normal"), (1, "Macro"),]);
+const_decoder!(pub FOCUS_MODE, u16, [(0, "Normal"), (1, "Macro"),]);
 
-const_decoder!(
+const_decoder!(pub
     SEQUENTIAL_MODE,
     u16,
     [
@@ -64,7 +53,7 @@ const_decoder!(
     ]
 );
 
-const_decoder!(
+const_decoder!(pub
     SCENE_MODE,
     u16,
     [
@@ -78,7 +67,7 @@ const_decoder!(
     ]
 );
 
-const_decoder!(RECORD_MODE, u16, [(0, "Still Image"), (1, "Video"),]);
+const_decoder!(pub RECORD_MODE, u16, [(0, "Still Image"), (1, "Video"),]);
 
 // ============================================================================
 // Helper Functions
@@ -99,16 +88,8 @@ fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> O
 // Tag Registry
 // ============================================================================
 
-static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
-    TagRegistry::with_capacity(9)
-        .register_simple_u16(SANYO_QUALITY, "Quality", &QUALITY)
-        .register_simple_u16(SANYO_FOCUS_MODE, "FocusMode", &FOCUS_MODE)
-        .register_simple_u16(SANYO_SEQUENTIAL_MODE, "SequentialMode", &SEQUENTIAL_MODE)
-        .register_simple_u16(SANYO_SCENE_MODE, "SceneMode", &SCENE_MODE)
-        .register_simple_u16(SANYO_RECORD_MODE, "RecordMode", &RECORD_MODE)
-        .register_raw(SANYO_FLASH_MODE, "FlashMode")
-        .register_raw(SANYO_SHARPNESS, "Sharpness")
-});
+// Lazy-initialized tag registry using centralized registry function
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(sanyo_registry);
 
 // ============================================================================
 // Parser Implementation
@@ -142,18 +123,21 @@ impl SanyoParser {
                 None => return,
             };
 
-            let formatted_value = match entry.tag_id {
-                SANYO_QUALITY
-                | SANYO_FOCUS_MODE
-                | SANYO_SEQUENTIAL_MODE
-                | SANYO_SCENE_MODE
-                | SANYO_RECORD_MODE => TAG_REGISTRY.decode_u16(entry.tag_id, value),
-                SANYO_FLASH_MODE => {
-                    let mode = if value > 0 { "On" } else { "Off" };
-                    mode.to_string()
+            // Try registry decoding first
+            let formatted_value = TAG_REGISTRY.decode_u16(entry.tag_id, value);
+
+            // Fallback for tags without decoder in registry
+            let formatted_value = if formatted_value == value.to_string() {
+                match entry.tag_id {
+                    0x0103 => {
+                        let mode = if value > 0 { "On" } else { "Off" };
+                        mode.to_string()
+                    }
+                    0x0107 => value.to_string(),
+                    _ => formatted_value,
                 }
-                SANYO_SHARPNESS => value.to_string(),
-                _ => return,
+            } else {
+                formatted_value
             };
 
             tags.insert(format!("Sanyo:{}", tag_name), formatted_value);
@@ -184,7 +168,8 @@ impl MakerNoteParser for SanyoParser {
 
         parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
             self.parse_entry(entry, parse_data, byte_order, tags);
-        })
+        })?;
+        Ok(())
     }
 }
 
@@ -238,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_tag_registry() {
-        assert_eq!(TAG_REGISTRY.get_tag_name(SANYO_QUALITY), Some("Quality"));
-        assert!(TAG_REGISTRY.has_tag(SANYO_SCENE_MODE));
+        assert_eq!(TAG_REGISTRY.get_tag_name(0x0100), Some("Quality"));
+        assert!(TAG_REGISTRY.has_tag(0x010A));
     }
 }

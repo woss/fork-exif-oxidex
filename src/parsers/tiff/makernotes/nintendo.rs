@@ -23,8 +23,8 @@
 //! including 3D stereoscopic capture settings.
 
 #![allow(dead_code)]
-#![allow(unused_imports)]
 
+use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -34,21 +34,7 @@ use super::shared::generic_decoders::ON_OFF;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-
-// Import macros for declarative decoder definitions
-use crate::const_decoder;
-
-// Nintendo MakerNote Tag IDs
-const NINTENDO_MODEL: u16 = 0x0001;
-const NINTENDO_SYSTEM_VERSION: u16 = 0x0002;
-const NINTENDO_CAMERA_MODE: u16 = 0x0100; // 2D/3D mode
-const NINTENDO_CAMERA_SELECTION: u16 = 0x0101; // Inner/Outer camera
-const NINTENDO_PARALLAX: u16 = 0x0102; // Stereoscopic parallax
-const NINTENDO_3D_EFFECT: u16 = 0x0103; // 3D effect depth (0-100)
-const NINTENDO_FACE_DETECTION: u16 = 0x0104; // Face detection enabled
-const NINTENDO_MII_DETECTED: u16 = 0x0105; // Mii character detected
-const NINTENDO_FILTER_APPLIED: u16 = 0x0106; // Photo filter code
-const NINTENDO_GAME_TITLE: u16 = 0x0107; // Game title (if taken in-game)
+use super::registries::nintendo::nintendo_registry;
 
 // Nintendo signature
 const NINTENDO_SIGNATURE: &[u8] = b"Nintendo";
@@ -60,10 +46,10 @@ const NINTENDO_SIGNATURE: &[u8] = b"Nintendo";
 // reducing code duplication while maintaining all functionality.
 
 // Camera Mode decoder - 2D vs 3D photography mode
-const_decoder!(CAMERA_MODE, i16, [(0, "2D"), (1, "3D"),]);
+const_decoder!(pub CAMERA_MODE, i16, [(0, "2D"), (1, "3D"),]);
 
 // Camera Selection decoder - Inner camera (facing user) vs outer stereoscopic cameras
-const_decoder!(
+const_decoder!(pub
     CAMERA_SELECTION,
     i16,
     [
@@ -74,7 +60,7 @@ const_decoder!(
 );
 
 // Photo Filter decoder - Built-in photo effects
-const_decoder!(
+const_decoder!(pub
     FILTER,
     i16,
     [
@@ -129,32 +115,8 @@ fn format_yes_no(value: i16) -> String {
 // ============================================================================
 // Tag Registry
 // ============================================================================
-// Centralized tag definitions with their decoders. This eliminates the need
-// for large match statements and makes tag handling declarative and maintainable.
-
-// Lazy-initialized tag registry for Nintendo-specific tags
-// Maps tag IDs to their names and decoders. The registry is initialized
-// once on first access and provides O(1) lookups for tag metadata.
-static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
-    TagRegistry::with_capacity(11)
-        // String tags (no decoder needed, handled separately)
-        .register_raw(NINTENDO_MODEL, "Model")
-        .register_raw(NINTENDO_SYSTEM_VERSION, "SystemVersion")
-        .register_raw(NINTENDO_GAME_TITLE, "GameTitle")
-        // Decoded tags using const decoders
-        .register_simple_i16(NINTENDO_CAMERA_MODE, "CameraMode", &CAMERA_MODE)
-        .register_simple_i16(
-            NINTENDO_CAMERA_SELECTION,
-            "CameraSelection",
-            &CAMERA_SELECTION,
-        )
-        .register_simple_i16(NINTENDO_FILTER_APPLIED, "Filter", &FILTER)
-        // Custom formatted tags (handled separately in parse_entry)
-        .register_raw(NINTENDO_PARALLAX, "Parallax")
-        .register_raw(NINTENDO_3D_EFFECT, "3DEffect")
-        .register_raw(NINTENDO_FACE_DETECTION, "FaceDetection")
-        .register_raw(NINTENDO_MII_DETECTED, "MiiDetected")
-});
+// Lazy-initialized tag registry using centralized registry function
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(nintendo_registry);
 
 // ============================================================================
 // Parser Implementation
@@ -188,7 +150,7 @@ impl NintendoParser {
 
         // Handle string tags (Model, SystemVersion, GameTitle)
         match tag_id {
-            NINTENDO_MODEL | NINTENDO_SYSTEM_VERSION | NINTENDO_GAME_TITLE => {
+            0x0001 | 0x0002 | 0x0107 => {
                 if let Some(s) = extract_string(entry, data, byte_order) {
                     if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
                         tags.insert(format!("Nintendo:{}", name), s);
@@ -207,17 +169,20 @@ impl NintendoParser {
                     None => return,
                 };
 
-                // Use registry decoders for simple enum tags
-                let formatted_value = match tag_id {
-                    NINTENDO_CAMERA_MODE | NINTENDO_CAMERA_SELECTION | NINTENDO_FILTER_APPLIED => {
-                        TAG_REGISTRY.decode_i16(tag_id, value)
+                // Try registry decoders first for decoded tags
+                let formatted_value = TAG_REGISTRY.decode_i16(tag_id, value);
+
+                // Fallback to custom formatters for tags without registry decoders
+                let formatted_value = if formatted_value == value.to_string() {
+                    match tag_id {
+                        0x0102 => format_parallax(value),
+                        0x0103 => format_3d_effect(value),
+                        0x0104 => ON_OFF.decode(value),
+                        0x0105 => format_yes_no(value),
+                        _ => return,
                     }
-                    // Custom formatters for special tags
-                    NINTENDO_PARALLAX => format_parallax(value),
-                    NINTENDO_3D_EFFECT => format_3d_effect(value),
-                    NINTENDO_FACE_DETECTION => ON_OFF.decode(value),
-                    NINTENDO_MII_DETECTED => format_yes_no(value),
-                    _ => return,
+                } else {
+                    formatted_value
                 };
 
                 tags.insert(format!("Nintendo:{}", tag_name), formatted_value);
@@ -277,7 +242,8 @@ impl MakerNoteParser for NintendoParser {
         // Use shared IFD parser to iterate through entries
         parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
             self.parse_entry(entry, parse_data, byte_order, tags);
-        })
+        })?;
+        Ok(())
     }
 }
 
@@ -342,12 +308,12 @@ mod tests {
 
     #[test]
     fn test_tag_registry() {
-        assert_eq!(TAG_REGISTRY.get_tag_name(NINTENDO_MODEL), Some("Model"));
+        assert_eq!(TAG_REGISTRY.get_tag_name(0x0001), Some("Model"));
         assert_eq!(
-            TAG_REGISTRY.get_tag_name(NINTENDO_CAMERA_MODE),
+            TAG_REGISTRY.get_tag_name(0x0100),
             Some("CameraMode")
         );
-        assert!(TAG_REGISTRY.has_tag(NINTENDO_PARALLAX));
+        assert!(TAG_REGISTRY.has_tag(0x0102));
     }
 
     #[test]
