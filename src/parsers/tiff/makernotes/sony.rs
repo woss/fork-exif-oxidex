@@ -35,10 +35,11 @@ use nom::{
 };
 use std::collections::HashMap;
 
+use super::registries::sony::sony_registry;
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::generic_decoders::ON_OFF;
 use super::shared::MakerNoteParser;
-use super::sony_lens_database::lookup_lens_name;
+use super::sony_lens_database::{get_lens_database, lookup_lens_name};
 
 // Import declarative decoder macros
 use crate::const_decoder;
@@ -168,7 +169,8 @@ const SHOT_INFO_FLASH_EXPOSURE_COMP: usize = 9;
 // The const_decoder! macro creates a const SimpleValueDecoder<i16> with the given mappings.
 
 // Drive mode decoder - maps numeric values to shooting drive modes
-const_decoder!(
+// Note: Made public for use by registry module
+const_decoder!(pub 
     DRIVE_MODE,
     i16,
     [
@@ -188,7 +190,7 @@ const_decoder!(
 );
 
 // White balance mode decoder - maps values to white balance presets
-const_decoder!(
+const_decoder!(pub 
     WHITE_BALANCE,
     i16,
     [
@@ -208,7 +210,7 @@ const_decoder!(
 );
 
 // Focus mode decoder - maps values to autofocus modes
-const_decoder!(
+const_decoder!(pub 
     FOCUS_MODE,
     i16,
     [
@@ -222,7 +224,7 @@ const_decoder!(
 );
 
 // AF area mode decoder - maps values to AF area selection modes
-const_decoder!(
+const_decoder!(pub 
     AF_AREA_MODE,
     i16,
     [
@@ -239,7 +241,7 @@ const_decoder!(
 );
 
 // Metering mode decoder - maps values to exposure metering modes
-const_decoder!(
+const_decoder!(pub 
     METERING_MODE,
     i16,
     [
@@ -252,7 +254,7 @@ const_decoder!(
 );
 
 // Exposure mode decoder - maps values to shooting modes
-const_decoder!(
+const_decoder!(pub 
     EXPOSURE_MODE,
     i16,
     [
@@ -273,7 +275,7 @@ const_decoder!(
 );
 
 // Quality setting decoder - maps values to image quality modes
-const_decoder!(
+const_decoder!(pub 
     QUALITY,
     i16,
     [
@@ -290,7 +292,7 @@ const_decoder!(
 );
 
 // Flash mode decoder - maps values to flash modes
-const_decoder!(
+const_decoder!(pub 
     FLASH_MODE,
     i16,
     [
@@ -304,7 +306,7 @@ const_decoder!(
 );
 
 // Release mode decoder - maps values to shutter release modes
-const_decoder!(
+const_decoder!(pub 
     RELEASE_MODE,
     i16,
     [
@@ -318,7 +320,7 @@ const_decoder!(
 );
 
 // Color mode decoder - maps values to creative styles/color modes
-const_decoder!(
+const_decoder!(pub 
     COLOR_MODE,
     i16,
     [
@@ -340,7 +342,7 @@ const_decoder!(
 );
 
 // Dynamic Range Optimizer decoder - maps values to DRO and HDR settings
-const_decoder!(
+const_decoder!(pub 
     DRO,
     i16,
     [
@@ -362,7 +364,7 @@ const_decoder!(
 );
 
 // Noise reduction decoder - maps values to noise reduction levels
-const_decoder!(
+const_decoder!(pub 
     NOISE_REDUCTION,
     i16,
     [
@@ -375,14 +377,14 @@ const_decoder!(
 );
 
 // Image stabilization decoder - maps values to image stabilization modes
-const_decoder!(
+const_decoder!(pub 
     IMAGE_STABILIZATION,
     i16,
     [(0, "Off"), (1, "On"), (2, "On (Shooting)"),]
 );
 
 // HDR decoder - maps values to HDR settings
-const_decoder!(
+const_decoder!(pub 
     HDR,
     i16,
     [
@@ -577,179 +579,17 @@ fn parse_ifd_entries(
     }
 }
 
-/// Processes CameraSettings array (tag 0x0114) and extracts individual settings.
-///
-/// The CameraSettings array contains multiple camera parameters at specific indices.
-///
-/// # Parameters
-/// - `array`: The i16 array from the CameraSettings tag
-/// - `tags`: HashMap to populate with extracted settings
-fn process_camera_settings(array: &[i16], tags: &mut HashMap<String, String>) {
-    // Extract drive mode
-    if let Some(&drive_mode) = array.get(CAMERA_SETTINGS_DRIVE_MODE) {
-        tags.insert("Sony:DriveMode".to_string(), DRIVE_MODE.decode(drive_mode));
-    }
-
-    // Extract white balance mode
-    if let Some(&wb_mode) = array.get(CAMERA_SETTINGS_WHITE_BALANCE_MODE) {
-        tags.insert(
-            "Sony:WhiteBalanceMode".to_string(),
-            WHITE_BALANCE.decode(wb_mode),
-        );
-    }
-
-    // Extract focus mode
-    if let Some(&focus_mode) = array.get(CAMERA_SETTINGS_FOCUS_MODE) {
-        tags.insert("Sony:FocusMode".to_string(), FOCUS_MODE.decode(focus_mode));
-    }
-
-    // Extract AF area mode
-    if let Some(&af_area) = array.get(CAMERA_SETTINGS_AF_AREA_MODE) {
-        tags.insert("Sony:AFAreaMode".to_string(), AF_AREA_MODE.decode(af_area));
-    }
-
-    // Extract metering mode
-    if let Some(&metering) = array.get(CAMERA_SETTINGS_METERING_MODE) {
-        tags.insert(
-            "Sony:MeteringMode".to_string(),
-            METERING_MODE.decode(metering),
-        );
-    }
-
-    // Extract ISO setting
-    if let Some(&iso) = array.get(CAMERA_SETTINGS_ISO_SETTING) {
-        if iso > 0 {
-            tags.insert("Sony:ISO".to_string(), iso.to_string());
-        }
-    }
-
-    // Extract Dynamic Range Optimizer
-    if let Some(&dro) = array.get(CAMERA_SETTINGS_DYNAMIC_RANGE_OPTIMIZER) {
-        tags.insert("Sony:DynamicRangeOptimizer".to_string(), DRO.decode(dro));
-    }
-
-    // Extract image stabilization
-    if let Some(&is) = array.get(CAMERA_SETTINGS_IMAGE_STABILIZATION) {
-        tags.insert(
-            "Sony:ImageStabilization".to_string(),
-            IMAGE_STABILIZATION.decode(is),
-        );
-    }
-
-    // Extract color mode
-    if let Some(&color) = array.get(CAMERA_SETTINGS_COLOR_MODE) {
-        tags.insert("Sony:ColorMode".to_string(), COLOR_MODE.decode(color));
-    }
-
-    // Extract long exposure noise reduction
-    if let Some(&long_nr) = array.get(CAMERA_SETTINGS_LONG_EXPOSURE_NR) {
-        tags.insert(
-            "Sony:LongExposureNoiseReduction".to_string(),
-            NOISE_REDUCTION.decode(long_nr),
-        );
-    }
-
-    // Extract high ISO noise reduction
-    if let Some(&high_iso_nr) = array.get(CAMERA_SETTINGS_HIGH_ISO_NR) {
-        tags.insert(
-            "Sony:HighISONoiseReduction".to_string(),
-            NOISE_REDUCTION.decode(high_iso_nr),
-        );
-    }
-
-    // Extract Auto HDR
-    if let Some(&hdr) = array.get(CAMERA_SETTINGS_AUTO_HDR) {
-        tags.insert("Sony:AutoHDR".to_string(), HDR.decode(hdr));
-    }
-}
-
-/// Processes AFInfo array (tags 0x9400, 0x9402) for autofocus information.
-///
-/// # Parameters
-/// - `array`: The i16 array from the AFInfo tag
-/// - `tags`: HashMap to populate with extracted data
-fn process_af_info(array: &[i16], tags: &mut HashMap<String, String>) {
-    // AF point selected
-    if let Some(&af_point) = array.get(AF_INFO_AF_POINT_SELECTED) {
-        if af_point >= 0 {
-            tags.insert("Sony:AFPointSelected".to_string(), af_point.to_string());
-        }
-    }
-
-    // AF points in focus
-    if let Some(&af_points) = array.get(AF_INFO_AF_POINTS_IN_FOCUS) {
-        if af_points > 0 {
-            tags.insert("Sony:AFPointsInFocus".to_string(), af_points.to_string());
-        }
-    }
-
-    // Face detection
-    if let Some(&face_detect) = array.get(AF_INFO_FACE_DETECTION) {
-        if face_detect > 0 {
-            tags.insert(
-                "Sony:FaceDetection".to_string(),
-                if face_detect == 1 { "Yes" } else { "No" }.to_string(),
-            );
-        }
-    }
-
-    // Number of faces detected
-    if let Some(&num_faces) = array.get(AF_INFO_NUM_FACES_DETECTED) {
-        if num_faces > 0 {
-            tags.insert("Sony:NumFacesDetected".to_string(), num_faces.to_string());
-        }
-    }
-}
-
-/// Processes ShotInfo array (tag 0x3000) and extracts shot parameters.
-///
-/// # Parameters
-/// - `array`: The i16 array from the ShotInfo tag
-/// - `tags`: HashMap to populate with extracted settings
-fn process_shot_info(array: &[i16], tags: &mut HashMap<String, String>) {
-    // White balance
-    if let Some(&wb) = array.get(SHOT_INFO_WHITE_BALANCE) {
-        tags.insert(
-            "Sony:ShotInfoWhiteBalance".to_string(),
-            WHITE_BALANCE.decode(wb),
-        );
-    }
-
-    // Color temperature
-    if let Some(&temp) = array.get(SHOT_INFO_COLOR_TEMPERATURE) {
-        if temp > 0 {
-            tags.insert("Sony:ColorTemperature".to_string(), format!("{} K", temp));
-        }
-    }
-
-    // Saturation
-    if let Some(&sat) = array.get(SHOT_INFO_SATURATION) {
-        tags.insert("Sony:Saturation".to_string(), sat.to_string());
-    }
-
-    // Contrast
-    if let Some(&contrast) = array.get(SHOT_INFO_CONTRAST) {
-        tags.insert("Sony:Contrast".to_string(), contrast.to_string());
-    }
-
-    // Sharpness
-    if let Some(&sharp) = array.get(SHOT_INFO_SHARPNESS) {
-        tags.insert("Sony:Sharpness".to_string(), sharp.to_string());
-    }
-
-    // Brightness
-    if let Some(&bright) = array.get(SHOT_INFO_BRIGHTNESS) {
-        tags.insert("Sony:Brightness".to_string(), bright.to_string());
-    }
-
-    // Flash mode
-    if let Some(&flash) = array.get(SHOT_INFO_FLASH_MODE) {
-        tags.insert(
-            "Sony:ShotInfoFlashMode".to_string(),
-            FLASH_MODE.decode(flash),
-        );
-    }
-}
+// ============================================================================
+// ARRAY PROCESSING HELPERS
+// ============================================================================
+// These functions have been replaced by the registry-based array processing
+// system in registries/sony.rs. The registry automatically handles array
+// extraction and decoding using the declarative ArraySchema definitions.
+//
+// The three original functions (process_camera_settings, process_af_info,
+// process_shot_info) contained ~185 lines of repetitive array extraction code
+// that are now handled by a single registry.decode_array_i16() call.
+// ============================================================================
 
 // ============================================================================
 // Public API
@@ -873,6 +713,10 @@ fn parse_sony_makernote_impl(
 
     let mut tags = HashMap::new();
 
+    // Create registry for array-based tag processing
+    // This replaces ~185 lines of repetitive array extraction code
+    let registry = sony_registry();
+
     // Extract values from entries
     for entry in entries {
         match entry.tag_id {
@@ -906,24 +750,12 @@ fn parse_sony_makernote_impl(
                 }
             }
 
-            // CameraSettings array - contains major camera settings
-            SONY_CAMERA_SETTINGS => {
+            // Array-based tags - processed via registry schemas
+            // The registry automatically applies ArraySchema definitions to extract
+            // and decode array values, replacing the previous process_* functions
+            SONY_CAMERA_SETTINGS | SONY_AF_INFO | SONY_AF_INFO2 | SONY_SHOT_INFO => {
                 if let Some(array) = extract_i16_array(&entry, data, byte_order) {
-                    process_camera_settings(&array, &mut tags);
-                }
-            }
-
-            // AFInfo array - autofocus information
-            SONY_AF_INFO | SONY_AF_INFO2 => {
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
-                    process_af_info(&array, &mut tags);
-                }
-            }
-
-            // ShotInfo array - shot-specific information
-            SONY_SHOT_INFO => {
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
-                    process_shot_info(&array, &mut tags);
+                    registry.decode_array_i16(entry.tag_id, &array, "Sony", &mut tags);
                 }
             }
 
