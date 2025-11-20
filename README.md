@@ -57,6 +57,7 @@ This design ensures:
 - ✅ **EXIF** - Complete support for IFD0, IFD1, ExifIFD, GPS, and Interoperability IFD
 - ✅ **XMP** - 10+ namespaces supported (Dublin Core, IPTC Core, Photoshop, etc.)
 - ✅ **IPTC** - Complete support for IPTC IIM Application Record (journalism/stock photography)
+- ✅ **MakerNotes** - Manufacturer-specific metadata from 40+ camera brands including Canon, Nikon, Sony, Olympus, Panasonic, Pentax, Fujifilm, Leica, and more. See [MakerNote documentation](docs/features/makernote-support.md) for full list. ⭐ **NEW**
 - ✅ **Canon MakerNotes** - Phase 2: Array tags + basic metadata (CameraSettings, ShotInfo, FocalLength) ⭐ **UPDATED**
 - ✅ **Camera Raw Formats** - 40+ raw formats from major manufacturers:
   - **Canon**: CR2, CR3, CRW
