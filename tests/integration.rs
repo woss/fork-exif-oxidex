@@ -93,3 +93,6 @@ mod format_detection;
 
 #[path = "integration/pe_tests.rs"]
 mod pe_tests;
+
+#[path = "integration/makernote_integration.rs"]
+mod makernote_integration;
