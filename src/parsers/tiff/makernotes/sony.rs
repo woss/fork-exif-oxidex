@@ -170,7 +170,7 @@ const SHOT_INFO_FLASH_EXPOSURE_COMP: usize = 9;
 
 // Drive mode decoder - maps numeric values to shooting drive modes
 // Note: Made public for use by registry module
-const_decoder!(pub 
+const_decoder!(pub
     DRIVE_MODE,
     i16,
     [
@@ -190,7 +190,7 @@ const_decoder!(pub
 );
 
 // White balance mode decoder - maps values to white balance presets
-const_decoder!(pub 
+const_decoder!(pub
     WHITE_BALANCE,
     i16,
     [
@@ -210,7 +210,7 @@ const_decoder!(pub
 );
 
 // Focus mode decoder - maps values to autofocus modes
-const_decoder!(pub 
+const_decoder!(pub
     FOCUS_MODE,
     i16,
     [
@@ -224,7 +224,7 @@ const_decoder!(pub
 );
 
 // AF area mode decoder - maps values to AF area selection modes
-const_decoder!(pub 
+const_decoder!(pub
     AF_AREA_MODE,
     i16,
     [
@@ -241,7 +241,7 @@ const_decoder!(pub
 );
 
 // Metering mode decoder - maps values to exposure metering modes
-const_decoder!(pub 
+const_decoder!(pub
     METERING_MODE,
     i16,
     [
@@ -254,7 +254,7 @@ const_decoder!(pub
 );
 
 // Exposure mode decoder - maps values to shooting modes
-const_decoder!(pub 
+const_decoder!(pub
     EXPOSURE_MODE,
     i16,
     [
@@ -275,7 +275,7 @@ const_decoder!(pub
 );
 
 // Quality setting decoder - maps values to image quality modes
-const_decoder!(pub 
+const_decoder!(pub
     QUALITY,
     i16,
     [
@@ -292,7 +292,7 @@ const_decoder!(pub
 );
 
 // Flash mode decoder - maps values to flash modes
-const_decoder!(pub 
+const_decoder!(pub
     FLASH_MODE,
     i16,
     [
@@ -306,7 +306,7 @@ const_decoder!(pub
 );
 
 // Release mode decoder - maps values to shutter release modes
-const_decoder!(pub 
+const_decoder!(pub
     RELEASE_MODE,
     i16,
     [
@@ -320,7 +320,7 @@ const_decoder!(pub
 );
 
 // Color mode decoder - maps values to creative styles/color modes
-const_decoder!(pub 
+const_decoder!(pub
     COLOR_MODE,
     i16,
     [
@@ -342,7 +342,7 @@ const_decoder!(pub
 );
 
 // Dynamic Range Optimizer decoder - maps values to DRO and HDR settings
-const_decoder!(pub 
+const_decoder!(pub
     DRO,
     i16,
     [
@@ -364,7 +364,7 @@ const_decoder!(pub
 );
 
 // Noise reduction decoder - maps values to noise reduction levels
-const_decoder!(pub 
+const_decoder!(pub
     NOISE_REDUCTION,
     i16,
     [
@@ -377,14 +377,14 @@ const_decoder!(pub
 );
 
 // Image stabilization decoder - maps values to image stabilization modes
-const_decoder!(pub 
+const_decoder!(pub
     IMAGE_STABILIZATION,
     i16,
     [(0, "Off"), (1, "On"), (2, "On (Shooting)"),]
 );
 
 // HDR decoder - maps values to HDR settings
-const_decoder!(pub 
+const_decoder!(pub
     HDR,
     i16,
     [
@@ -722,7 +722,7 @@ fn parse_sony_makernote_impl(
         match entry.tag_id {
             // Simple string tags
             SONY_LENS_MODEL => {
-                if let Some(value) = extract_string_value(&entry, data) {
+                if let Some(value) = extract_string_value(&entry, ifd_data) {
                     tags.insert("Sony:LensModel".to_string(), value);
                 }
             }
@@ -754,7 +754,7 @@ fn parse_sony_makernote_impl(
             // The registry automatically applies ArraySchema definitions to extract
             // and decode array values, replacing the previous process_* functions
             SONY_CAMERA_SETTINGS | SONY_AF_INFO | SONY_AF_INFO2 | SONY_SHOT_INFO => {
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
+                if let Some(array) = extract_i16_array(&entry, ifd_data, byte_order) {
                     registry.decode_array_i16(entry.tag_id, &array, "Sony", &mut tags);
                 }
             }
