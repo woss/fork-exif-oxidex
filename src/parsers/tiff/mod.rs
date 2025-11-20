@@ -6,6 +6,7 @@
 
 pub mod file_parser;
 pub mod ifd_parser;
+pub mod makernote_dispatcher;
 pub mod makernote_parser;
 pub mod makernotes;
 pub mod tag_parser;
