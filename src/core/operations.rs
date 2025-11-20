@@ -10,7 +10,9 @@ use crate::core::jpeg_helpers::{
     process_exif_segments, process_icc_segments, process_iptc_segments, process_jfif_segments,
     process_xmp_segments,
 };
-use crate::core::tag_conversion::{raw_bytes_to_tag_value, read_u16, read_u32};
+#[cfg(test)]
+use crate::core::tag_conversion::raw_bytes_to_tag_value;
+use crate::core::tag_conversion::{read_u16, read_u32};
 use crate::core::tiff_helpers::parse_ifd_chain;
 use crate::core::validation::validate_tag_value_with_name;
 use crate::error::{ExifToolError, Result};
@@ -18,6 +20,7 @@ use crate::io::MMapReader;
 use crate::parsers::format_detector::detect_format;
 use crate::parsers::jpeg::segment_parser::parse_segments;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
+#[cfg(test)]
 use crate::parsers::tiff::tiff_subreader::TiffSubReader;
 use crate::tag_db::tag_registry::get_tag_descriptor;
 use crate::writers::atomic_writer::write_atomic;
@@ -518,7 +521,6 @@ pub(crate) fn parse_casio_cam_metadata(reader: &dyn FileReader) -> Result<Metada
 
     Ok(metadata)
 }
-
 
 // ============================================================================
 // SECTION 7: TESTS
