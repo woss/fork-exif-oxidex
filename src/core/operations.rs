@@ -5,73 +5,16 @@
 //! following the hexagonal architecture pattern.
 
 use super::{FileFormat, FileReader, MetadataMap, TagValue};
+use crate::core::format_dispatch::dispatch_format_parser;
 use crate::core::tag_conversion::{
     parse_string_to_tag_value, raw_bytes_to_tag_value, read_u16, read_u32,
 };
 use crate::core::validation::validate_tag_value_with_name;
 use crate::error::{ExifToolError, Result};
 use crate::io::MMapReader;
-use crate::parsers::archive::gz::parse_gz_metadata;
-use crate::parsers::archive::iso::parse_iso_metadata;
-use crate::parsers::archive::rar::parse_rar_metadata;
-use crate::parsers::archive::sevenz::parse_7z_metadata;
-use crate::parsers::archive::tar::parse_tar_metadata;
-use crate::parsers::archive::zip::parse_zip_metadata;
-use crate::parsers::audio::aac::parse_aac_metadata;
-use crate::parsers::audio::ape::parse_ape_metadata;
-use crate::parsers::audio::flac::parse_flac_metadata;
-use crate::parsers::audio::mp3::parse_mp3_metadata;
-use crate::parsers::audio::ogg::parse_ogg_metadata;
-use crate::parsers::audio::opus::parse_opus_metadata;
-use crate::parsers::audio::wav::parse_wav_metadata;
 use crate::parsers::format_detector::detect_format;
 use crate::parsers::jpeg::segment_parser::{parse_segments, Segment};
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
-use crate::parsers::pdf::parse_pdf_metadata;
-use crate::parsers::pe::parse_pe_metadata;
-use crate::parsers::png::parse_png_metadata;
-use crate::parsers::quicktime::parse_quicktime_metadata;
-use crate::parsers::video::avi::parse_avi_metadata;
-use crate::parsers::video::flv::parse_flv_metadata;
-use crate::parsers::video::mkv::parse_mkv_metadata;
-use crate::parsers::video::mts::parse_mts_metadata;
-use crate::parsers::video::webm::parse_webm_metadata;
-// Font parsers
-use crate::parsers::document::epub::parse_epub_metadata;
-use crate::parsers::document::ooxml::parse_docx_metadata;
-use crate::parsers::document::ooxml::parse_pptx_metadata;
-use crate::parsers::document::ooxml::parse_xlsx_metadata;
-use crate::parsers::font::otf::parse_otf_metadata;
-use crate::parsers::font::ttf::parse_ttf_metadata;
-use crate::parsers::font::woff::parse_woff_metadata;
-use crate::parsers::font::woff2::parse_woff2_metadata;
-// Advanced image parsers
-use crate::parsers::image::avif::parse_avif_metadata;
-use crate::parsers::image::bpg::parse_bpg_metadata;
-use crate::parsers::image::exr::parse_exr_metadata;
-use crate::parsers::image::flif::parse_flif_metadata;
-use crate::parsers::image::ico::parse_ico_metadata;
-use crate::parsers::image::jxl::parse_jxl_metadata;
-use crate::parsers::image::psd::parse_psd_metadata;
-use crate::parsers::image::svg::parse_svg_metadata;
-// Specialized parsers
-use crate::parsers::specialized::dwg::parse_dwg_metadata;
-use crate::parsers::specialized::dxf::parse_dxf_metadata;
-use crate::parsers::specialized::elf::parse_elf_metadata;
-use crate::parsers::specialized::fits::parse_fits_metadata;
-use crate::parsers::specialized::gltf::parse_gltf_metadata;
-use crate::parsers::specialized::hdf5::parse_hdf5_metadata;
-use crate::parsers::specialized::lnk::parse_lnk_metadata;
-use crate::parsers::specialized::macho::parse_macho_metadata;
-use crate::parsers::specialized::obj::parse_obj_metadata;
-use crate::parsers::specialized::stl::parse_stl_metadata;
-// Text parsers
-use crate::parsers::text::vcf::parse_vcf_metadata;
-// Image parsers
-use crate::parsers::image::bmp::parse_bmp_metadata;
-use crate::parsers::image::gif::parse_gif_metadata;
-use crate::parsers::image::heif::parse_heif_metadata;
-use crate::parsers::image::webp::parse_webp_metadata;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -426,122 +369,6 @@ pub fn copy_metadata(src: &Path, dest: &Path, tags: Option<&[String]>) -> Result
 }
 
 // ============================================================================
-// SECTION 2: FORMAT PARSER DISPATCH
-// ============================================================================
-
-/// Dispatches to the appropriate format parser based on file format.
-///
-/// This function encapsulates the large match statement for format-specific parsing,
-/// applying a consistent error conversion pattern across all parsers.
-///
-/// # Arguments
-///
-/// * `reader` - File reader providing access to the file data
-/// * `format` - Detected file format
-///
-/// # Returns
-///
-/// * `Ok(MetadataMap)` - Successfully parsed metadata
-/// * `Err(ExifToolError)` - Parse error or unsupported format
-fn dispatch_format_parser(reader: &dyn FileReader, format: FileFormat) -> Result<MetadataMap> {
-    match format {
-        FileFormat::JPEG => parse_jpeg_metadata(reader),
-        FileFormat::TIFF => parse_tiff_metadata(reader),
-        FileFormat::PNG => parse_png_metadata(reader),
-        FileFormat::PDF => parse_pdf_metadata(reader),
-        FileFormat::PE => parse_pe_metadata(reader),
-        FileFormat::QuickTime => {
-            convert_string_error(parse_quicktime_metadata(reader), "QuickTime")
-        }
-        FileFormat::CasioCAM => parse_casio_cam_metadata(reader),
-        FileFormat::CameraRaw(raw_format) => {
-            // Parse camera raw format using raw metadata parser
-            // Read entire file for raw parsing (raw formats need full file access)
-            let size = reader.size() as usize;
-            let data = reader.read(0, size)?;
-            crate::parsers::raw::parse_raw_metadata(data, raw_format)
-        }
-        FileFormat::MKV => convert_string_error(parse_mkv_metadata(reader), "MKV"),
-        FileFormat::WEBM => convert_string_error(parse_webm_metadata(reader), "WebM"),
-        FileFormat::FLV => convert_string_error(parse_flv_metadata(reader), "FLV"),
-        FileFormat::AVI => convert_string_error(parse_avi_metadata(reader), "AVI"),
-        FileFormat::MTS => convert_string_error(parse_mts_metadata(reader), "MTS"),
-        FileFormat::MP3 => convert_string_error(parse_mp3_metadata(reader), "MP3"),
-        FileFormat::FLAC => convert_string_error(parse_flac_metadata(reader), "FLAC"),
-        FileFormat::AAC => convert_string_error(parse_aac_metadata(reader), "AAC"),
-        FileFormat::WAV => convert_string_error(parse_wav_metadata(reader), "WAV"),
-        FileFormat::OGG => convert_string_error(parse_ogg_metadata(reader), "OGG"),
-        FileFormat::OPUS => convert_string_error(parse_opus_metadata(reader), "Opus"),
-        FileFormat::APE => convert_string_error(parse_ape_metadata(reader), "APE"),
-        FileFormat::ZIP => convert_string_error(parse_zip_metadata(reader), "ZIP"),
-        FileFormat::DOCX => convert_string_error(parse_docx_metadata(reader), "DOCX"),
-        FileFormat::XLSX => convert_string_error(parse_xlsx_metadata(reader), "XLSX"),
-        FileFormat::PPTX => convert_string_error(parse_pptx_metadata(reader), "PPTX"),
-        FileFormat::Pages => convert_string_error(parse_docx_metadata(reader), "Pages"),
-        FileFormat::Numbers => convert_string_error(parse_xlsx_metadata(reader), "Numbers"),
-        FileFormat::Keynote => convert_string_error(parse_pptx_metadata(reader), "Keynote"),
-        FileFormat::EPUB => convert_string_error(parse_epub_metadata(reader), "EPUB"),
-        FileFormat::RAR => convert_string_error(parse_rar_metadata(reader), "RAR"),
-        FileFormat::SevenZ => convert_string_error(parse_7z_metadata(reader), "7z"),
-        FileFormat::ISO => convert_string_error(parse_iso_metadata(reader), "ISO"),
-        FileFormat::TAR => convert_string_error(parse_tar_metadata(reader), "TAR"),
-        FileFormat::GZ => convert_string_error(parse_gz_metadata(reader), "GZ"),
-        // Font formats
-        FileFormat::TTF => convert_string_error(parse_ttf_metadata(reader), "TTF"),
-        FileFormat::OTF => convert_string_error(parse_otf_metadata(reader), "OTF"),
-        FileFormat::WOFF => convert_string_error(parse_woff_metadata(reader), "WOFF"),
-        FileFormat::WOFF2 => convert_string_error(parse_woff2_metadata(reader), "WOFF2"),
-        // Advanced image formats
-        FileFormat::AVIF => convert_string_error(parse_avif_metadata(reader), "AVIF"),
-        FileFormat::HEIF => convert_string_error(parse_heif_metadata(reader), "HEIF"),
-        FileFormat::JXL => convert_string_error(parse_jxl_metadata(reader), "JXL"),
-        FileFormat::BPG => convert_string_error(parse_bpg_metadata(reader), "BPG"),
-        FileFormat::EXR => convert_string_error(parse_exr_metadata(reader), "EXR"),
-        FileFormat::FLIF => convert_string_error(parse_flif_metadata(reader), "FLIF"),
-        FileFormat::SVG => convert_string_error(parse_svg_metadata(reader), "SVG"),
-        FileFormat::ICO => convert_string_error(parse_ico_metadata(reader), "ICO"),
-        FileFormat::PSD => convert_string_error(parse_psd_metadata(reader), "PSD"),
-        // Specialized formats
-        FileFormat::ELF => convert_string_error(parse_elf_metadata(reader), "ELF"),
-        FileFormat::MachO => convert_string_error(parse_macho_metadata(reader), "Mach-O"),
-        FileFormat::DWG => convert_string_error(parse_dwg_metadata(reader), "DWG"),
-        FileFormat::DXF => convert_string_error(parse_dxf_metadata(reader), "DXF"),
-        FileFormat::STL => convert_string_error(parse_stl_metadata(reader), "STL"),
-        FileFormat::OBJ => convert_string_error(parse_obj_metadata(reader), "OBJ"),
-        FileFormat::GLTF => convert_string_error(parse_gltf_metadata(reader), "glTF"),
-        FileFormat::FITS => convert_string_error(parse_fits_metadata(reader), "FITS"),
-        FileFormat::HDF5 => convert_string_error(parse_hdf5_metadata(reader), "HDF5"),
-        FileFormat::VCF => convert_string_error(parse_vcf_metadata(reader), "VCF"),
-        FileFormat::LNK => convert_string_error(parse_lnk_metadata(reader), "LNK"),
-        FileFormat::GIF => convert_string_error(parse_gif_metadata(reader), "GIF"),
-        FileFormat::BMP => convert_string_error(parse_bmp_metadata(reader), "BMP"),
-        FileFormat::WebP => convert_string_error(parse_webp_metadata(reader), "WebP"),
-        _ => Err(ExifToolError::unsupported_format(format!(
-            "Format {:?} not yet supported in this iteration",
-            format
-        ))),
-    }
-}
-
-/// Converts a Result<T, String> to Result<T, ExifToolError> with a formatted parse error.
-///
-/// This helper function provides a consistent error conversion pattern for parsers
-/// that return String errors.
-///
-/// # Arguments
-///
-/// * `result` - The result to convert
-/// * `format_name` - The name of the format for error messages (e.g., "PNG", "QuickTime")
-///
-/// # Returns
-///
-/// * `Ok(T)` - The successful value
-/// * `Err(ExifToolError)` - A parse error with the format name included
-fn convert_string_error<T>(result: std::result::Result<T, String>, format_name: &str) -> Result<T> {
-    result.map_err(|e| ExifToolError::parse_error(format!("{} parse error: {}", format_name, e)))
-}
-
-// ============================================================================
 // SECTION 3: JPEG METADATA PARSING
 // ============================================================================
 
@@ -558,7 +385,7 @@ fn convert_string_error<T>(result: std::result::Result<T, String>, format_name: 
 ///
 /// * `Ok(MetadataMap)` - Successfully parsed metadata from all segments
 /// * `Err(ExifToolError)` - Parse error or invalid JPEG structure
-fn parse_jpeg_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
+pub(crate) fn parse_jpeg_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Parse JPEG segment structure
     let segments = parse_segments(reader)?;
 
@@ -876,7 +703,7 @@ fn process_icc_segments(segments: &[Segment], metadata: &mut MetadataMap) {
 ///
 /// * `Ok(MetadataMap)` - Successfully parsed metadata from all IFDs
 /// * `Err(ExifToolError)` - Parse error or invalid TIFF structure
-fn parse_tiff_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
+pub(crate) fn parse_tiff_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Read TIFF header (first 8 bytes)
     let header = reader.read(0, 8)?;
 
@@ -1206,7 +1033,7 @@ fn parse_makernote_if_canon(
 ///
 /// * `Ok(MetadataMap)` - Successfully parsed metadata from embedded JPEG
 /// * `Err(ExifToolError)` - Parse error or invalid file structure
-fn parse_casio_cam_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
+pub(crate) fn parse_casio_cam_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Casio CAM format: 70-byte proprietary header + JPEG data
     const HEADER_SIZE: u64 = 70;
 

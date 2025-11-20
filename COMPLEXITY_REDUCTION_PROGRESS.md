@@ -73,14 +73,15 @@ Reduce cyclomatic complexity of `src/core/operations.rs` from 204 to under 50.
 
 ## Metrics Tracking
 
-| Metric | Before | Current | Target | Progress |
-|--------|--------|---------|--------|----------|
-| Complexity | 204 | ~164* | <50 | 20% |
+| Metric | Before | After Phase 1 | Target | Progress |
+|--------|--------|---------------|--------|----------|
+| Complexity | 204 | **114** ✅ | <50 | 44% (need 56% more) |
 | Lines | 2054 | 1412 | ~400 | 31% |
-| Grade | C (67) | C* | A (>90) | TBD |
-| Modules | 1 | 2 | 5 | 40% |
+| Grade | C (67) | **C (69)** | A (>90) | 2% |
+| Modules | 1 | 2 | 3-5 | 50% |
 
-*Estimated based on extraction, will be measured after push
+**Phase 1 Complete**: Reduced complexity by 90 points (204→114)
+**Remaining**: Need to reduce 64 more points (114→50) for Grade A
 
 ## Notes
 - Tag conversion module compiles successfully
