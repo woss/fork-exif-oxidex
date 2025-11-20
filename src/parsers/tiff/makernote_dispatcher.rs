@@ -117,10 +117,17 @@ mod tests {
         let data = b"Canon data here";
         let mut tags = HashMap::new();
 
-        dispatch_makernote("Canon", data, ByteOrder::LittleEndian, &mut tags).unwrap();
+        let result = dispatch_makernote("Canon", data, ByteOrder::LittleEndian, &mut tags);
 
-        // Should have extracted Canon tags
-        assert!(!tags.is_empty(), "Should extract Canon MakerNote tags");
+        // Should succeed even with invalid header (dispatcher validates and skips)
+        assert!(
+            result.is_ok(),
+            "Should handle invalid Canon data gracefully"
+        );
+        assert!(
+            tags.is_empty(),
+            "Should not extract tags from invalid Canon data"
+        );
     }
 
     #[test]
