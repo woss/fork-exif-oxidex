@@ -5,12 +5,12 @@ Reduce cyclomatic complexity of `src/core/operations.rs` from 204 to under 50 (G
 
 ## Progress Tracking
 
-| Metric | Before | Phase 1 | Phase 2 | Phase 3 | Target | Progress |
-|--------|--------|---------|---------|---------|--------|----------|
-| Complexity | 204 | 114 | 110 | **TBD** | <50 | TBD |
-| Lines | 2054 | 1412 | 1239 | **954** | ~400 | 54% |
-| Grade | C (67) | C (69) | B (71) | **TBD** | A (>90) | TBD |
-| Modules | 1 | 2 | 3 | **4** | 3-5 | 80% |
+| Metric | Before | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Target | Progress |
+|--------|--------|---------|---------|---------|---------|--------|----------|
+| Complexity | 204 | 114 | 110 | TBD | **TBD** | <50 | TBD |
+| Lines | 2054 | 1412 | 1239 | 954 | **639** | ~400 | **69%** |
+| Grade | C (67) | C (69) | B (71) | TBD | **TBD** | A (>90) | TBD |
+| Modules | 1 | 2 | 3 | 4 | **6** | 3-5 | **100%** |
 
 ## Phase 1: Tag Conversion Extraction (Completed)
 - **Date**: Previous session
@@ -57,43 +57,106 @@ Reduce cyclomatic complexity of `src/core/operations.rs` from 204 to under 50 (G
 - **Test Status**: ✅ All 1167 tests passing (4 new tests appeared)
 - **Commit**: 4522f3f3
 
+## Phase 4: JPEG Helpers Extraction (Completed)
+- **Date**: 2025-11-20
+- **Extracted Modules**:
+  - `src/core/jpeg_helpers.rs` (298 lines)
+  - `src/parsers/tiff/tiff_subreader.rs` (100 lines)
+- **Lines Removed**: 315 lines (954 → 639)
+- **Complexity Reduction**: TBD (awaiting Codacy analysis)
+- **Functions Extracted to jpeg_helpers**:
+  - `process_jfif_segments()` - JFIF APP0 segment processing (public)
+  - `process_exif_segments()` - EXIF APP1 segment processing (public)
+  - `process_ifd0_tags()` - IFD0 tag extraction (private)
+  - `process_xmp_segments()` - XMP metadata extraction (public)
+  - `process_iptc_segments()` - IPTC metadata extraction (public)
+  - `process_icc_segments()` - ICC profile extraction (public)
+- **Shared Module Created**:
+  - `TiffSubReader` struct - FileReader wrapper for embedded TIFF data
+  - Used by both operations.rs and jpeg_helpers.rs
+  - Includes comprehensive unit tests
+- **Additional Changes**:
+  - Removed JPEG helper function definitions (285 lines)
+  - Removed TiffSubReader definition from operations.rs (30 lines)
+  - Added imports from jpeg_helpers module
+  - Cleaned up unused imports
+- **Phase Reduction**: 33% (954 → 639 lines)
+- **Total Reduction**: 69% (2054 → 639 lines)
+- **Test Status**: ✅ All 1169 tests passing (2 new tests in TiffSubReader)
+- **Commit**: 6dd62548
+
 ## Overall Progress Summary
 
 ### Lines Removed by Phase
 - Phase 1: 642 lines removed
 - Phase 2: 173 lines removed
 - Phase 3: 283 lines removed
-- **Total**: 1,098 lines removed (53% reduction)
+- Phase 4: 315 lines removed
+- **Total**: 1,413 lines removed (69% reduction)
 
 ### Current State
 - **Original**: 2054 lines, complexity 204, grade C (67)
-- **Current**: 954 lines, complexity TBD, grade TBD
+- **Current**: 639 lines, complexity TBD, grade TBD
 - **Target**: ~400 lines, complexity <50, grade A (>90)
+- **Progress**: 69% of lines removed, on track to exceed target!
 
 ### Modules Created
 1. `src/core/tag_conversion.rs` - 443 lines (tag value conversion logic)
 2. `src/core/format_dispatch.rs` - 172 lines (format parser dispatch)
 3. `src/core/tiff_helpers.rs` - 267 lines (TIFF parsing helpers)
-4. `src/core/operations.rs` - 954 lines (main operations)
+4. `src/core/jpeg_helpers.rs` - 298 lines (JPEG metadata processing)
+5. `src/parsers/tiff/tiff_subreader.rs` - 100 lines (shared TIFF sub-reader)
+6. `src/core/operations.rs` - 639 lines (main operations)
+
+## Analysis
+
+### Architectural Improvements
+- **Single Responsibility**: Each module now has a focused, clear purpose
+- **Reduced Coupling**: Helper functions moved to dedicated modules
+- **Better Testability**: TiffSubReader now has its own comprehensive test suite
+- **Improved Maintainability**: 69% reduction in main file size makes code easier to understand
+- **Zero Functionality Changes**: All refactoring was structural only, no behavior changes
+
+### Remaining Content in operations.rs (639 lines)
+After 4 phases of extraction, operations.rs contains:
+- **Public API functions** (4 functions):
+  - `read_metadata()` - Main entry point for reading metadata
+  - `write_metadata()` - Write metadata back to file
+  - `modify_tag()` - Modify a specific tag value
+  - `copy_metadata()` - Copy metadata between files
+- **Format-specific parsers** (3 functions):
+  - `parse_jpeg_metadata()` - JPEG parser coordination
+  - `parse_tiff_metadata()` - TIFF parser coordination
+  - `parse_casio_cam_metadata()` - Casio CAM format parser
+- **Test utilities** (~90 lines):
+  - TestReader implementation
+  - Test cases for TiffSubReader integration
+
+### Complexity Expectations
+With 69% line reduction and extraction of:
+- Tag conversion logic (90 complexity points in Phase 1)
+- Format dispatch (match statement with 40+ arms in Phase 2)
+- TIFF helpers (nested loops and conditionals in Phase 3)
+- JPEG helpers (6 processing functions with conditionals in Phase 4)
+
+We expect significant complexity reduction, likely achieving the <50 target.
 
 ## Next Steps
 
-### If Complexity Still >50 (Phase 4):
-Consider extracting JPEG helper functions from operations.rs:
-- JPEG section is ~318 lines with complex segment processing logic
-- Functions that could be extracted:
-  - `process_exif_segments()` - Main EXIF segment processing
-  - `find_exif_segments()` - EXIF segment location
-  - JPEG marker handling logic
-  - Segment-specific parsers
+### Awaiting Codacy Analysis
+- Push commits to trigger Codacy scan (attempted, SSH auth failed)
+- Once metrics available, verify complexity <50
+- If target achieved: Complete! 🎉
+- If still >50: Consider further extraction of helper functions
 
-### If Complexity <50:
-- Refactoring complete! ✅
-- Update final documentation
-- Celebrate the achievement
+### If Target Achieved
+- ✅ Refactoring complete!
+- Update this document with final metrics
+- Celebrate achieving Grade A complexity!
 
 ## Notes
 - Each phase maintains 100% test passing rate
 - All extractions follow single responsibility principle
 - Public/private visibility carefully managed for API boundaries
 - No functionality changes, only structural improvements
+- Module count increased from 1 to 6 focused modules
