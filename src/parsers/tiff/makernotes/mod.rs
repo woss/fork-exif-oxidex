@@ -17,6 +17,7 @@ pub mod pentax;
 pub mod pentax_lens_database;
 pub mod phaseone;
 pub mod phaseone_lens_database;
+pub mod registries;
 pub mod shared;
 pub mod sigma;
 pub mod sigma_lens_database;
