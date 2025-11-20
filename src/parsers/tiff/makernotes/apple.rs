@@ -50,8 +50,9 @@ const APPLE_SCENE_DETECTION: u16 = 0x003C; // Scene detection result
 const APPLE_SIGNATURE: &[u8] = b"Apple iOS";
 
 // Decodes Apple HDR image type
+// Public to allow re-use in registry module
 const_decoder! {
-    DECODE_HDR_TYPE, i16, [
+    pub DECODE_HDR_TYPE, i16, [
         (0, "Off"),
         (1, "HDR"),
         (3, "Auto HDR"),
@@ -64,8 +65,9 @@ const_decoder! {
 }
 
 // Decodes Portrait Mode effect type
+// Public to allow re-use in registry module
 const_decoder! {
-    DECODE_PORTRAIT_MODE, i16, [
+    pub DECODE_PORTRAIT_MODE, i16, [
         (0, "Off"),
         (1, "Natural Light"),
         (2, "Studio Light"),
@@ -77,8 +79,9 @@ const_decoder! {
 }
 
 // Decodes scene detection type
+// Public to allow re-use in registry module
 const_decoder! {
-    DECODE_SCENE_TYPE, i16, [
+    pub DECODE_SCENE_TYPE, i16, [
         (0, "None"),
         (1, "Sunset/Sunrise"),
         (2, "Blue Sky"),
@@ -94,8 +97,9 @@ const_decoder! {
 }
 
 // Decodes semantic style (Photographic Style)
+// Public to allow re-use in registry module
 const_decoder! {
-    DECODE_SEMANTIC_STYLE, i16, [
+    pub DECODE_SEMANTIC_STYLE, i16, [
         (0, "Standard"),
         (1, "Rich Contrast"),
         (2, "Vibrant"),
@@ -105,8 +109,9 @@ const_decoder! {
 }
 
 // Decodes lens model for multi-camera iPhones
+// Public to allow re-use in registry module
 const_decoder! {
-    DECODE_LENS_MODEL, i16, [
+    pub DECODE_LENS_MODEL, i16, [
         (0, "Wide (Main Camera)"),
         (1, "Telephoto"),
         (2, "Ultra Wide"),
@@ -225,7 +230,10 @@ impl AppleParser {
         AppleParser
     }
 
-    /// Parse a single IFD entry and extract tag value
+    /// Parse a single IFD entry and extract tag value using registry-based approach
+    ///
+    /// This method uses the Apple tag registry for cleaner, more maintainable tag handling.
+    /// Special cases (like LivePhoto detection and custom formatting) are handled separately.
     ///
     /// # Arguments
     /// * `entry` - IFD entry to parse
@@ -239,100 +247,65 @@ impl AppleParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) {
+        use super::registries::apple::{
+            apple_registry, decode_facing_camera, decode_night_mode, format_runtime_flags,
+        };
+
+        let registry = apple_registry();
         let tag_id = entry.tag_id;
 
+        // Handle tags based on type
         match tag_id {
-            APPLE_HDR_IMAGE_TYPE => {
+            // i16 tags - use registry for decoding
+            APPLE_HDR_IMAGE_TYPE
+            | APPLE_PORTRAIT_DATA
+            | APPLE_SEMANTIC_STYLE
+            | APPLE_SCENE_DETECTION
+            | APPLE_LENS_MODEL
+            | APPLE_SMART_HDR_VERSION
+            | APPLE_FOCUS_DISTANCE_RANGE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Apple:HDRImageType".to_string(),
-                        DECODE_HDR_TYPE.decode(value),
-                    );
+                    if let Some(tag_name) = registry.get_tag_name(tag_id) {
+                        let decoded = registry.decode_i16(tag_id, value);
+                        tags.insert(format!("Apple:{}", tag_name), decoded);
+                    }
                 }
             }
-            APPLE_BURST_UUID => {
-                if let Some(uuid) = extract_string(entry, data, byte_order) {
-                    tags.insert("Apple:BurstUUID".to_string(), uuid);
-                }
-            }
-            APPLE_CONTENT_IDENTIFIER => {
-                if let Some(id) = extract_string(entry, data, byte_order) {
-                    tags.insert("Apple:ContentIdentifier".to_string(), id);
-                }
-            }
-            APPLE_IMAGE_UNIQUE_ID => {
-                if let Some(id) = extract_string(entry, data, byte_order) {
-                    tags.insert("Apple:ImageUniqueID".to_string(), id);
-                }
-            }
-            APPLE_LIVE_PHOTO_ID => {
-                if let Some(id) = extract_string(entry, data, byte_order) {
-                    tags.insert("Apple:LivePhotoVideoID".to_string(), id);
-                    tags.insert("Apple:LivePhoto".to_string(), "Yes".to_string());
-                }
-            }
-            APPLE_RUN_TIME => {
-                if let Some(value) = extract_u32_value(entry, data, byte_order) {
-                    tags.insert("Apple:RunTimeFlags".to_string(), format!("0x{:08X}", value));
-                }
-            }
-            APPLE_PORTRAIT_DATA => {
-                if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Apple:PortraitMode".to_string(),
-                        DECODE_PORTRAIT_MODE.decode(value),
-                    );
-                }
-            }
-            APPLE_FOCUS_DISTANCE_RANGE => {
-                if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Apple:FocusDistanceRange".to_string(), value.to_string());
-                }
-            }
-            APPLE_SEMANTIC_STYLE => {
-                if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Apple:SemanticStyle".to_string(),
-                        DECODE_SEMANTIC_STYLE.decode(value),
-                    );
-                }
-            }
+            // i16 tags with custom logic
             APPLE_FRONT_FACING_CAMERA => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    let camera = if value == 1 { "Front" } else { "Back" };
-                    tags.insert("Apple:FacingCamera".to_string(), camera.to_string());
-                }
-            }
-            APPLE_LENS_MODEL => {
-                if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Apple:LensModel".to_string(),
-                        DECODE_LENS_MODEL.decode(value),
-                    );
-                }
-            }
-            APPLE_SMART_HDR_VERSION => {
-                if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Apple:SmartHDRVersion".to_string(), value.to_string());
+                    tags.insert("Apple:FacingCamera".to_string(), decode_facing_camera(value));
                 }
             }
             APPLE_NIGHT_MODE => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    let status = if value > 0 { "On" } else { "Off" };
-                    tags.insert("Apple:NightMode".to_string(), status.to_string());
+                    tags.insert("Apple:NightMode".to_string(), decode_night_mode(value));
                 }
             }
-            APPLE_SCENE_DETECTION => {
-                if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert(
-                        "Apple:SceneDetection".to_string(),
-                        DECODE_SCENE_TYPE.decode(value),
-                    );
+            // u32 tags with custom formatting
+            APPLE_RUN_TIME => {
+                if let Some(value) = extract_u32_value(entry, data, byte_order) {
+                    tags.insert("Apple:RunTimeFlags".to_string(), format_runtime_flags(value));
                 }
             }
-            _ => {
-                // Unknown tag - skip or log for debugging
+            // String tags
+            APPLE_BURST_UUID | APPLE_CONTENT_IDENTIFIER | APPLE_IMAGE_UNIQUE_ID => {
+                if let Some(string_value) = extract_string(entry, data, byte_order) {
+                    if let Some(tag_name) = registry.get_tag_name(tag_id) {
+                        tags.insert(format!("Apple:{}", tag_name), string_value);
+                    }
+                }
             }
+            // Special case: LivePhoto detection
+            APPLE_LIVE_PHOTO_ID => {
+                if let Some(id) = extract_string(entry, data, byte_order) {
+                    tags.insert("Apple:LivePhotoVideoID".to_string(), id);
+                    // Additional flag to indicate this is a Live Photo
+                    tags.insert("Apple:LivePhoto".to_string(), "Yes".to_string());
+                }
+            }
+            // Other tags not in registry - skip silently
+            _ => {}
         }
     }
 }

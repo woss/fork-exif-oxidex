@@ -102,11 +102,13 @@ const AF_INFO_POINTS_SELECTED: usize = 9;
 // Using const_decoder! macro for declarative, zero-overhead value decoding
 
 // Canon macro mode decoder
-const_decoder!(MACRO_MODE, i16, [(1, "Macro"), (2, "Normal"),]);
+// Public to allow re-use in registry module
+const_decoder!(pub MACRO_MODE, i16, [(1, "Macro"), (2, "Normal"),]);
 
 // Canon quality setting decoder
+// Public to allow re-use in registry module
 const_decoder!(
-    QUALITY,
+    pub QUALITY,
     i16,
     [
         (-1, "n/a"),
@@ -124,8 +126,9 @@ const_decoder!(
 );
 
 // Canon flash mode decoder
+// Public to allow re-use in registry module
 const_decoder!(
-    FLASH_MODE,
+    pub FLASH_MODE,
     i16,
     [
         (0, "Off"),
@@ -140,8 +143,9 @@ const_decoder!(
 );
 
 // Canon drive mode decoder
+// Public to allow re-use in registry module
 const_decoder!(
-    DRIVE_MODE,
+    pub DRIVE_MODE,
     i16,
     [
         (0, "Single"),
@@ -154,8 +158,9 @@ const_decoder!(
 );
 
 // Canon focus mode decoder
+// Public to allow re-use in registry module
 const_decoder!(
-    FOCUS_MODE,
+    pub FOCUS_MODE,
     i16,
     [
         (0, "One-shot AF"),
@@ -170,8 +175,9 @@ const_decoder!(
 );
 
 // Canon metering mode decoder
+// Public to allow re-use in registry module
 const_decoder!(
-    METERING_MODE,
+    pub METERING_MODE,
     i16,
     [
         (3, "Evaluative"),
@@ -181,8 +187,9 @@ const_decoder!(
 );
 
 // Canon exposure mode decoder
+// Public to allow re-use in registry module
 const_decoder!(
-    EXPOSURE_MODE,
+    pub EXPOSURE_MODE,
     i16,
     [
         (0, "Easy"),
