@@ -24,123 +24,39 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
+use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+use super::registries::casio::casio_registry;
 
-// Casio MakerNote Tag IDs
-const CASIO_RECORDING_MODE: u16 = 0x0001; // Recording mode
-const CASIO_QUALITY: u16 = 0x0002; // Image quality
-const CASIO_FOCUS_MODE: u16 = 0x0003; // Focus mode
-const CASIO_FLASH_MODE: u16 = 0x0004; // Flash mode
-const CASIO_FLASH_INTENSITY: u16 = 0x0005; // Flash intensity
-const CASIO_WHITE_BALANCE: u16 = 0x0007; // White balance
-const CASIO_DIGITAL_ZOOM: u16 = 0x000A; // Digital zoom
-const CASIO_SHARPNESS: u16 = 0x000B; // Sharpness
-const CASIO_CONTRAST: u16 = 0x000C; // Contrast
-const CASIO_SATURATION: u16 = 0x000D; // Saturation
-const CASIO_CCD_SENSITIVITY: u16 = 0x0014; // CCD ISO sensitivity
-const CASIO_COLOR_MODE: u16 = 0x0015; // Color mode
-const CASIO_ENHANCEMENT: u16 = 0x0016; // Image enhancement
-const CASIO_COLOR_FILTER: u16 = 0x0017; // Color filter effect
-const CASIO_CONTINUOUS_MODE: u16 = 0x001A; // Continuous shooting mode
-const CASIO_BEST_SHOT_MODE: u16 = 0x001B; // Best Shot scene mode
-const CASIO_SLOW_SHUTTER: u16 = 0x0020; // Slow shutter setting
+// ===== Casio MakerNote Tag IDs =====
+// Tag definitions are now centralized in the registry.
+// See registries/casio.rs for the complete tag registry.
 
-// Decodes Casio recording mode
-const_decoder! {
-    DECODE_RECORDING_MODE, u16, [
-        (1, "Single"),
-        (2, "Panorama"),
-        (3, "Night Scene"),
-        (4, "Portrait"),
-        (5, "Landscape"),
-        (6, "Sports"),
-    ]
-}
+// Tag ID constants for special tag handling
+const CASIO_RECORDING_MODE: u16 = 0x0001;
+const CASIO_QUALITY: u16 = 0x0002;
+const CASIO_FOCUS_MODE: u16 = 0x0003;
+const CASIO_FLASH_MODE: u16 = 0x0004;
+const CASIO_FLASH_INTENSITY: u16 = 0x0005;
+const CASIO_WHITE_BALANCE: u16 = 0x0007;
+const CASIO_DIGITAL_ZOOM: u16 = 0x000A;
+const CASIO_SHARPNESS: u16 = 0x000B;
+const CASIO_CONTRAST: u16 = 0x000C;
+const CASIO_SATURATION: u16 = 0x000D;
+const CASIO_CCD_SENSITIVITY: u16 = 0x0014;
+const CASIO_COLOR_MODE: u16 = 0x0015;
+const CASIO_ENHANCEMENT: u16 = 0x0016;
+const CASIO_CONTINUOUS_MODE: u16 = 0x001A;
+const CASIO_BEST_SHOT_MODE: u16 = 0x001B;
+const CASIO_SLOW_SHUTTER: u16 = 0x0020;
 
-// Decodes Casio image quality
-const_decoder! {
-    DECODE_QUALITY, u16, [
-        (1, "Economy"),
-        (2, "Normal"),
-        (3, "Fine"),
-    ]
-}
-
-// Decodes Casio focus mode
-const_decoder! {
-    DECODE_FOCUS_MODE, u16, [
-        (0, "Normal"),
-        (1, "Macro"),
-        (2, "Super Macro"),
-        (3, "Infinity"),
-        (4, "Manual"),
-    ]
-}
-
-// Decodes Casio flash mode
-const_decoder! {
-    DECODE_FLASH_MODE, u16, [
-        (1, "Auto"),
-        (2, "On"),
-        (3, "Off"),
-        (4, "Red-eye Reduction"),
-        (5, "Slow Sync"),
-    ]
-}
-
-// Decodes Casio white balance
-const_decoder! {
-    DECODE_WHITE_BALANCE, u16, [
-        (0, "Auto"),
-        (1, "Daylight"),
-        (2, "Shade"),
-        (3, "Tungsten"),
-        (4, "Fluorescent"),
-        (5, "Manual"),
-    ]
-}
-
-// Decodes Casio color mode
-const_decoder! {
-    DECODE_COLOR_MODE, u16, [
-        (0, "Off"),
-        (1, "On"),
-    ]
-}
-
-// Decodes Casio enhancement mode
-const_decoder! {
-    DECODE_ENHANCEMENT, u16, [
-        (0, "Off"),
-        (1, "Red"),
-        (2, "Green"),
-        (3, "Blue"),
-        (4, "Flesh Tones"),
-    ]
-}
-
-// Decodes Casio Best Shot mode
-const_decoder! {
-    DECODE_BEST_SHOT_MODE, u16, [
-        (0, "Off"),
-        (1, "Portrait"),
-        (2, "Scenery"),
-        (3, "Night Scene"),
-        (4, "Night Scene Portrait"),
-        (5, "Sunset"),
-        (6, "High Sensitivity"),
-        (7, "Children"),
-        (8, "Sports"),
-        (9, "Candlelight"),
-        (10, "Fireworks"),
-        (11, "Food"),
-        (12, "Text"),
-    ]
-}
+// Static registry instance for efficient tag lookup and decoding
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(casio_registry);
 
 /// Extracts a 16-bit unsigned value from IFD entry
 fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<u16> {

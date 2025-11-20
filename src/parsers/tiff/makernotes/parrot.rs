@@ -64,7 +64,7 @@ const PARROT_SIGNATURE: &[u8] = b"Parrot";
 
 // Flight Mode decoder - Different autonomous and manual flight modes
 const_decoder!(
-    FLIGHT_MODE,
+    pub FLIGHT_MODE,
     i16,
     [
         (0, "Manual"),

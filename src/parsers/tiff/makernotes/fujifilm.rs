@@ -105,8 +105,7 @@ const FUJIFILM_HEADER: &[u8] = b"FUJIFILM";
 // Each decoder is a constant that implements the Decode trait
 
 // Decodes Fujifilm quality setting to human-readable string
-const_decoder! {
-    DECODE_QUALITY, i32, [
+const_decoder!(pub     DECODE_QUALITY, i32, [
         (1, "F (Fine)"),
         (2, "N (Normal)"),
         (3, "Fine"),
@@ -117,8 +116,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm white balance setting to human-readable string
-const_decoder! {
-    DECODE_WHITE_BALANCE, i32, [
+const_decoder!(pub     DECODE_WHITE_BALANCE, i32, [
         (0x0000, "Auto"),
         (0x0001, "Auto (White Priority)"),
         (0x0002, "Auto (Ambience Priority)"),
@@ -142,8 +140,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm focus mode to human-readable string
-const_decoder! {
-    DECODE_FOCUS_MODE, i32, [
+const_decoder!(pub     DECODE_FOCUS_MODE, i32, [
         (0, "Auto"),
         (1, "Manual"),
         (2, "AF-S (Single)"),
@@ -153,8 +150,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm flash mode to human-readable string
-const_decoder! {
-    DECODE_FLASH_MODE, i32, [
+const_decoder!(pub     DECODE_FLASH_MODE, i32, [
         (0, "Auto"),
         (1, "On"),
         (2, "Off"),
@@ -164,8 +160,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm film simulation mode to human-readable string
-const_decoder! {
-    DECODE_FILM_MODE, i32, [
+const_decoder!(pub     DECODE_FILM_MODE, i32, [
         (0x0000, "F0/Standard (Provia)"),
         (0x0100, "F1/Studio Portrait"),
         (0x0110, "F1a/Studio Portrait Enhanced Saturation"),
@@ -186,8 +181,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm dynamic range setting to human-readable string
-const_decoder! {
-    DECODE_DYNAMIC_RANGE, i32, [
+const_decoder!(pub     DECODE_DYNAMIC_RANGE, i32, [
         (1, "Standard (100%)"),
         (2, "Wide 1 (230%)"),
         (3, "Wide 2 (400%)"),
@@ -196,8 +190,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm shutter type to human-readable string
-const_decoder! {
-    DECODE_SHUTTER_TYPE, i32, [
+const_decoder!(pub     DECODE_SHUTTER_TYPE, i32, [
         (0, "Mechanical"),
         (1, "Electronic"),
         (2, "Electronic (Silent)"),
@@ -206,8 +199,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm burst mode to human-readable string
-const_decoder! {
-    DECODE_BURST_MODE, i32, [
+const_decoder!(pub     DECODE_BURST_MODE, i32, [
         (0, "Off"),
         (1, "On (Low Speed)"),
         (2, "On (High Speed)"),
@@ -215,8 +207,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm picture mode to human-readable string
-const_decoder! {
-    DECODE_PICTURE_MODE, i32, [
+const_decoder!(pub     DECODE_PICTURE_MODE, i32, [
         (0x0000, "Auto"),
         (0x0001, "Portrait"),
         (0x0002, "Landscape"),
@@ -242,8 +233,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm drive mode to human-readable string
-const_decoder! {
-    DECODE_DRIVE_MODE, i32, [
+const_decoder!(pub     DECODE_DRIVE_MODE, i32, [
         (0, "Single Frame"),
         (1, "Continuous Low"),
         (2, "Continuous High"),
@@ -255,8 +245,7 @@ const_decoder! {
 }
 
 // Decodes Fujifilm EXR mode to human-readable string
-const_decoder! {
-    DECODE_EXR_MODE, i32, [
+const_decoder!(pub     DECODE_EXR_MODE, i32, [
         (256, "HR (High Resolution)"),
         (512, "SN (Signal-to-Noise Priority)"),
         (768, "DR (Dynamic Range Priority)"),
@@ -264,8 +253,7 @@ const_decoder! {
 }
 
 // Decodes boolean/off-on value to human-readable string
-const_decoder! {
-    DECODE_OFF_ON, i32, [
+const_decoder!(pub     DECODE_OFF_ON, i32, [
         (0, "Off"),
         (1, "On"),
     ]

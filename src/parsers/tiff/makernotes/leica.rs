@@ -145,7 +145,7 @@ pub fn is_leica_makernote(data: &[u8]) -> bool {
 // Each decoder is a constant that implements the Decode trait
 
 // Decodes Leica quality setting to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_QUALITY, i32, [
         (1, "Fine"),
         (2, "Basic"),
@@ -158,7 +158,7 @@ const_decoder! {
 }
 
 // Decodes Leica white balance mode to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_WHITE_BALANCE, i32, [
         (0, "Auto"),
         (1, "Daylight"),
@@ -175,7 +175,7 @@ const_decoder! {
 }
 
 // Decodes Leica exposure mode to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_EXPOSURE_MODE, i32, [
         (0, "Manual"),
         (1, "Program AE"),
@@ -186,7 +186,7 @@ const_decoder! {
 }
 
 // Decodes Leica metering mode to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_METERING_MODE, i32, [
         (0, "Unknown"),
         (1, "Multi-segment"),
@@ -197,7 +197,7 @@ const_decoder! {
 }
 
 // Decodes Leica flash mode to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_FLASH_MODE, i32, [
         (0, "No Flash"),
         (1, "Auto"),
@@ -210,7 +210,7 @@ const_decoder! {
 }
 
 // Decodes Leica AF mode to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_AF_MODE, i32, [
         (0, "Manual"),
         (1, "Single AF"),
@@ -222,7 +222,7 @@ const_decoder! {
 }
 
 // Decodes Leica image stabilization to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_IMAGE_STABILIZATION, i32, [
         (0, "Off"),
         (1, "On"),
@@ -233,7 +233,7 @@ const_decoder! {
 }
 
 // Decodes Leica user profile to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_USER_PROFILE, i32, [
         (0, "Not Set"),
         (1, "User Profile 1"),
@@ -250,7 +250,7 @@ const_decoder! {
 }
 
 // Decodes Leica scene mode to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_SCENE_MODE, i32, [
         (0, "Off"),
         (1, "Portrait"),
@@ -266,7 +266,7 @@ const_decoder! {
 }
 
 // Decodes Leica crop mode to human-readable string
-const_decoder! {
+const_decoder!(pub 
     DECODER_CROP_MODE, i32, [
         (0, "Full Frame"),
         (1, "APS-C"),

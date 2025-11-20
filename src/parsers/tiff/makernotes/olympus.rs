@@ -9,10 +9,13 @@
 //!
 //! ## Architecture
 //! This parser uses the shared MakerNote framework to eliminate code duplication:
+//! - **Registry system** for centralized tag definitions and array schemas
 //! - **const_decoder!** macros for declarative value decoders
 //! - **Generic decoders** (ON_OFF) for common patterns
-//! - **Modular array processors** for Camera Settings and Equipment arrays
 //! - **Shared extractors** for common array extraction logic
+//!
+//! The parser uses `olympus_registry()` from the registries module to process
+//! standard tags and array-based tag structures, reducing duplication.
 
 #![allow(dead_code)]
 #![allow(unused_imports)]
@@ -28,8 +31,9 @@ use nom::{
 };
 use std::collections::HashMap;
 
-use super::olympus_lens_database::lookup_lens_name;
-use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
+use super::olympus_lens_database::{get_lens_database, lookup_lens_name};
+use super::registries::olympus::olympus_registry;
+use super::shared::array_extractors::{extract_i16_array, extract_i32_array, extract_u16_array};
 use super::shared::generic_decoders::ON_OFF;
 use super::shared::MakerNoteParser;
 
@@ -67,78 +71,9 @@ const OLYMPUS_LENS_MODEL: u16 = 0x0206;
 const OLYMPUS_HEADER: &[u8] = b"OLYMPUS\0II";
 const OLYMPUS_HEADER_BE: &[u8] = b"OLYMPUS\0MM";
 
-// Camera Settings array indices (tag 0x0003)
-const CS_PREVIEW_IMAGE_VALID: usize = 0;
-const CS_PREVIEW_IMAGE_START: usize = 1;
-const CS_PREVIEW_IMAGE_LENGTH: usize = 2;
-const CS_EXPOSURE_MODE: usize = 3;
-const CS_AE_LOCK: usize = 4;
-const CS_METERING_MODE: usize = 5;
-const CS_MACRO_MODE: usize = 6;
-const CS_FOCUS_MODE: usize = 7;
-const CS_FOCUS_PROCESS: usize = 8;
-const CS_AF_SEARCH: usize = 9;
-const CS_AF_AREAS: usize = 10;
-const CS_AF_POINT_SELECTED: usize = 11;
-const CS_EXPOSURE_COMPENSATION: usize = 12;
-const CS_CENTER_WEIGHTED_AREA: usize = 13;
-const CS_AE_BRACKET_STEP: usize = 14;
-const CS_AE_BRACKET_XVAL: usize = 15;
-const CS_FLASH_MODE: usize = 16;
-const CS_FLASH_EXPOSURE_COMP: usize = 17;
-const CS_FLASH_REMOTE_CONTROL: usize = 18;
-const CS_FLASH_CONTROL_MODE: usize = 19;
-const CS_FLASH_INTENSITY: usize = 20;
-const CS_WHITE_BALANCE: usize = 21;
-const CS_WHITE_BALANCE_TEMPERATURE: usize = 22;
-const CS_WHITE_BALANCE_BRACKET: usize = 23;
-const CS_CUSTOM_SATURATION: usize = 24;
-const CS_MODIFIED_SATURATION: usize = 25;
-const CS_CONTRAST_SETTING: usize = 26;
-const CS_SHARPNESS_SETTING: usize = 27;
-const CS_COLOR_SPACE: usize = 28;
-const CS_SCENE_MODE: usize = 29;
-const CS_NOISE_REDUCTION: usize = 30;
-const CS_DISTORTION_CORRECTION: usize = 31;
-const CS_SHADING_COMPENSATION: usize = 32;
-const CS_COMPRESSION_FACTOR: usize = 33;
-const CS_GRADATION: usize = 34;
-const CS_PICTURE_MODE: usize = 35;
-const CS_PICTURE_MODE_SATURATION: usize = 36;
-const CS_PICTURE_MODE_CONTRAST: usize = 37;
-const CS_PICTURE_MODE_SHARPNESS: usize = 38;
-const CS_PICTURE_MODE_BW_FILTER: usize = 39;
-const CS_PICTURE_MODE_TONE: usize = 40;
-const CS_NOISE_FILTER: usize = 41;
-const CS_ART_FILTER: usize = 42;
-const CS_MAGIC_FILTER: usize = 43;
-const CS_PICTURE_MODE_EFFECT: usize = 44;
-const CS_TONE_CURVE: usize = 45;
-const CS_TONE_LEVEL: usize = 46;
-const CS_SHARPNESS_FACTOR: usize = 47;
-const CS_WB_FRB_BRACKET: usize = 48;
-
-// Equipment array indices (tag 0x0201)
-const EQ_VERSION: usize = 0;
-const EQ_SERIAL_NUMBER: usize = 1;
-const EQ_INTERNAL_SERIAL_NUMBER: usize = 2;
-const EQ_FOCAL_PLANE_DIAGONAL: usize = 3;
-const EQ_BODY_FIRMWARE_VERSION: usize = 4;
-const EQ_LENS_TYPE: usize = 5;
-const EQ_LENS_SERIAL_NUMBER: usize = 6;
-const EQ_LENS_MODEL: usize = 7;
-const EQ_LENS_FIRMWARE_VERSION: usize = 8;
-const EQ_MAX_APERTURE_AT_MIN_FOCAL: usize = 9;
-const EQ_MAX_APERTURE_AT_MAX_FOCAL: usize = 10;
-const EQ_MIN_FOCAL_LENGTH: usize = 11;
-const EQ_MAX_FOCAL_LENGTH: usize = 12;
-const EQ_MAX_APERTURE: usize = 13;
-const EQ_LENS_PROPERTIES: usize = 14;
-const EQ_EXTENDER: usize = 15;
-const EQ_FLASH_TYPE: usize = 16;
-const EQ_FLASH_MODEL: usize = 17;
-const EQ_FLASH_FIRMWARE_VERSION: usize = 18;
-const EQ_FLASH_SERIAL_NUMBER: usize = 19;
+// Note: Array index constants were previously used here for Camera Settings (0x0003)
+// and Equipment (0x0201) arrays, but are now handled by the registry system.
+// See registries/olympus.rs for the centralized array schema definitions.
 
 // ============================================================================
 // Decoder Definitions using const_decoder! macro
@@ -147,7 +82,7 @@ const EQ_FLASH_SERIAL_NUMBER: usize = 19;
 
 // Olympus quality mode decoder
 const_decoder!(
-    QUALITY_DECODER,
+    pub QUALITY_DECODER,
     i32,
     [
         (1, "SQ (Standard Quality)"),
@@ -161,7 +96,7 @@ const_decoder!(
 
 // Olympus exposure mode decoder
 const_decoder!(
-    EXPOSURE_MODE_DECODER,
+    pub EXPOSURE_MODE_DECODER,
     i32,
     [
         (1, "Manual"),
@@ -174,7 +109,7 @@ const_decoder!(
 
 // Olympus metering mode decoder
 const_decoder!(
-    METERING_MODE_DECODER,
+    pub METERING_MODE_DECODER,
     i32,
     [
         (2, "Center Weighted"),
@@ -188,7 +123,7 @@ const_decoder!(
 
 // Olympus focus mode decoder
 const_decoder!(
-    FOCUS_MODE_DECODER,
+    pub FOCUS_MODE_DECODER,
     i32,
     [
         (0, "Single AF"),
@@ -203,7 +138,7 @@ const_decoder!(
 
 // Olympus white balance decoder
 const_decoder!(
-    WHITE_BALANCE_DECODER,
+    pub WHITE_BALANCE_DECODER,
     i32,
     [
         (0, "Auto"),
@@ -234,7 +169,7 @@ const_decoder!(
 
 // Olympus flash mode decoder
 const_decoder!(
-    FLASH_MODE_DECODER,
+    pub FLASH_MODE_DECODER,
     i32,
     [
         (0, "Off"),
@@ -249,7 +184,7 @@ const_decoder!(
 
 // Olympus scene mode decoder
 const_decoder!(
-    SCENE_MODE_DECODER,
+    pub SCENE_MODE_DECODER,
     i32,
     [
         (0, "Standard"),
@@ -295,7 +230,7 @@ const_decoder!(
 
 // Olympus picture mode decoder
 const_decoder!(
-    PICTURE_MODE_DECODER,
+    pub PICTURE_MODE_DECODER,
     i32,
     [
         (1, "Vivid"),
@@ -319,7 +254,7 @@ const_decoder!(
 
 // Olympus art filter decoder
 const_decoder!(
-    ART_FILTER_DECODER,
+    pub ART_FILTER_DECODER,
     i32,
     [
         (0, "Off"),
@@ -363,7 +298,7 @@ const_decoder!(
 
 // Olympus noise reduction decoder
 const_decoder!(
-    NOISE_REDUCTION_DECODER,
+    pub NOISE_REDUCTION_DECODER,
     i32,
     [
         (0, "Off"),
@@ -377,14 +312,14 @@ const_decoder!(
 
 // Olympus color space decoder
 const_decoder!(
-    COLOR_SPACE_DECODER,
+    pub COLOR_SPACE_DECODER,
     i32,
     [(0, "sRGB"), (1, "Adobe RGB"), (2, "Pro Photo RGB"),]
 );
 
 // Olympus macro mode decoder
 const_decoder!(
-    MACRO_MODE_DECODER,
+    pub MACRO_MODE_DECODER,
     i32,
     [(0, "Off"), (1, "On"), (2, "Super Macro"),]
 );
@@ -472,340 +407,57 @@ impl MakerNoteParser for OlympusParser {
             Err(_) => return Ok(()), // Return empty on parse failure
         };
 
+        // Get the Olympus registry for tag definitions and array schemas
+        let registry = olympus_registry();
+
         // Extract tags from entries
         for entry in entries {
             match entry.tag_id {
-                // Simple numeric tags
-                OLYMPUS_JPEG_QUALITY => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("Olympus:Quality".to_string(), QUALITY_DECODER.decode(value));
-                }
-
-                OLYMPUS_MACRO_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Olympus:MacroMode".to_string(),
-                        MACRO_MODE_DECODER.decode(value),
-                    );
-                }
-
-                OLYMPUS_DIGITAL_ZOOM => {
-                    let value = entry.value_offset as i32;
-                    if value != 0 {
-                        tags.insert("Olympus:DigitalZoom".to_string(), value.to_string());
-                    }
-                }
-
-                // Simple string tags
-                OLYMPUS_SOFTWARE_RELEASE | OLYMPUS_CAMERA_ID | OLYMPUS_BODY_FIRMWARE_VERSION => {
-                    if let Some(value) = extract_string_value(&entry, data, 8) {
-                        let tag_name = olympus_tag_to_name(entry.tag_id);
-                        tags.insert(tag_name, value);
-                    }
-                }
-
-                // Camera Settings array (0x0003)
+                // Camera Settings array (0x0003) - i32 array with 49 indices
                 OLYMPUS_CAMERA_SETTINGS => {
-                    if let Some(array) = extract_i32_array(&entry, data, 8, byte_order) {
-                        parse_camera_settings(&array, tags);
+                    if let Some(array) = extract_i32_array_with_offset(&entry, data, byte_order) {
+                        registry.decode_array_i32(OLYMPUS_CAMERA_SETTINGS, &array, "Olympus", tags);
                     }
                 }
 
-                // Equipment array (0x0201)
+                // Equipment array (0x0201) - byte array with complex internal structure
                 OLYMPUS_EQUIPMENT => {
                     if let Some(array) = extract_u8_array(&entry, data, 8) {
-                        parse_equipment(&array, tags, byte_order);
+                        // Equipment array has complex byte-level parsing that requires special handling
+                        // beyond what the registry array schema provides. Use the specialized helper.
+                        use super::registries::olympus::process_equipment_with_lens;
+                        process_equipment_with_lens(&array, "Olympus", get_lens_database(), byte_order, tags);
                     }
                 }
 
+                // All other registered tags - handled through the registry
                 _ => {
-                    // Skip unknown tags or tags we don't parse yet
+                    if registry.has_tag(entry.tag_id) {
+                        // String-type tags (ASCII)
+                        if entry.field_type == 2 {
+                            // ASCII field type
+                            if let Some(value) = extract_string_value(&entry, data, 8) {
+                                if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
+                                    tags.insert(
+                                        format!("Olympus:{}", tag_name),
+                                        value,
+                                    );
+                                }
+                            }
+                        } else {
+                            // Numeric tags that don't require special handling
+                            let value = entry.value_offset as i32;
+                            if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
+                                let decoded = registry.decode_i32(entry.tag_id, value);
+                                tags.insert(format!("Olympus:{}", tag_name), decoded);
+                            }
+                        }
+                    }
                 }
             }
         }
 
         Ok(())
-    }
-}
-
-// ============================================================================
-// Modular Array Processors
-// ============================================================================
-// These functions process complex array structures from Olympus MakerNotes
-
-/// Parses Camera Settings array (tag 0x0003)
-///
-/// This array contains camera shooting parameters like exposure mode, metering mode,
-/// focus settings, white balance, and image processing settings.
-///
-/// # Arguments
-/// * `array` - The i32 array containing camera settings
-/// * `tags` - HashMap to populate with parsed tag values
-fn parse_camera_settings(array: &[i32], tags: &mut HashMap<String, String>) {
-    // Exposure mode
-    if let Some(&value) = array.get(CS_EXPOSURE_MODE) {
-        tags.insert(
-            "Olympus:ExposureMode".to_string(),
-            EXPOSURE_MODE_DECODER.decode(value),
-        );
-    }
-
-    // Metering mode
-    if let Some(&value) = array.get(CS_METERING_MODE) {
-        tags.insert(
-            "Olympus:MeteringMode".to_string(),
-            METERING_MODE_DECODER.decode(value),
-        );
-    }
-
-    // Focus mode
-    if let Some(&value) = array.get(CS_FOCUS_MODE) {
-        tags.insert(
-            "Olympus:FocusMode".to_string(),
-            FOCUS_MODE_DECODER.decode(value),
-        );
-    }
-
-    // White balance
-    if let Some(&value) = array.get(CS_WHITE_BALANCE) {
-        tags.insert(
-            "Olympus:WhiteBalance".to_string(),
-            WHITE_BALANCE_DECODER.decode(value),
-        );
-    }
-
-    // White balance temperature
-    if let Some(&value) = array.get(CS_WHITE_BALANCE_TEMPERATURE) {
-        if value > 0 {
-            tags.insert(
-                "Olympus:WhiteBalanceTemperature".to_string(),
-                value.to_string(),
-            );
-        }
-    }
-
-    // Flash mode
-    if let Some(&value) = array.get(CS_FLASH_MODE) {
-        tags.insert(
-            "Olympus:FlashMode".to_string(),
-            FLASH_MODE_DECODER.decode(value),
-        );
-    }
-
-    // Flash exposure compensation
-    if let Some(&value) = array.get(CS_FLASH_EXPOSURE_COMP) {
-        if value != 0 {
-            // Value is in 1/3 EV steps
-            let ev = value as f32 / 3.0;
-            tags.insert(
-                "Olympus:FlashExposureComp".to_string(),
-                format!("{:.2}", ev),
-            );
-        }
-    }
-
-    // Contrast setting
-    if let Some(&value) = array.get(CS_CONTRAST_SETTING) {
-        if value != 0 {
-            tags.insert("Olympus:Contrast".to_string(), value.to_string());
-        }
-    }
-
-    // Sharpness setting
-    if let Some(&value) = array.get(CS_SHARPNESS_SETTING) {
-        if value != 0 {
-            tags.insert("Olympus:Sharpness".to_string(), value.to_string());
-        }
-    }
-
-    // Saturation
-    if let Some(&value) = array.get(CS_CUSTOM_SATURATION) {
-        if value != 0 {
-            tags.insert("Olympus:Saturation".to_string(), value.to_string());
-        }
-    }
-
-    // Color space
-    if let Some(&value) = array.get(CS_COLOR_SPACE) {
-        tags.insert(
-            "Olympus:ColorSpace".to_string(),
-            COLOR_SPACE_DECODER.decode(value),
-        );
-    }
-
-    // Scene mode
-    if let Some(&value) = array.get(CS_SCENE_MODE) {
-        tags.insert(
-            "Olympus:SceneMode".to_string(),
-            SCENE_MODE_DECODER.decode(value),
-        );
-    }
-
-    // Noise reduction
-    if let Some(&value) = array.get(CS_NOISE_REDUCTION) {
-        tags.insert(
-            "Olympus:NoiseReduction".to_string(),
-            NOISE_REDUCTION_DECODER.decode(value),
-        );
-    }
-
-    // Picture mode
-    if let Some(&value) = array.get(CS_PICTURE_MODE) {
-        tags.insert(
-            "Olympus:PictureMode".to_string(),
-            PICTURE_MODE_DECODER.decode(value),
-        );
-    }
-
-    // Art filter
-    if let Some(&value) = array.get(CS_ART_FILTER) {
-        if value != 0 {
-            tags.insert(
-                "Olympus:ArtFilter".to_string(),
-                ART_FILTER_DECODER.decode(value),
-            );
-        }
-    }
-
-    // Distortion correction - using shared ON_OFF decoder
-    if let Some(&value) = array.get(CS_DISTORTION_CORRECTION) {
-        tags.insert(
-            "Olympus:DistortionCorrection".to_string(),
-            ON_OFF.decode(value as i16),
-        );
-    }
-
-    // Shading compensation - using shared ON_OFF decoder
-    if let Some(&value) = array.get(CS_SHADING_COMPENSATION) {
-        tags.insert(
-            "Olympus:ShadingCompensation".to_string(),
-            ON_OFF.decode(value as i16),
-        );
-    }
-}
-
-/// Parses Equipment array (tag 0x0201)
-///
-/// This array contains equipment information including body serial number,
-/// firmware version, lens type, lens serial number, focal length range,
-/// and aperture information.
-///
-/// # Arguments
-/// * `array` - The u8 array containing equipment data
-/// * `tags` - HashMap to populate with parsed tag values
-/// * `byte_order` - Byte order for multi-byte value parsing
-fn parse_equipment(array: &[u8], tags: &mut HashMap<String, String>, byte_order: ByteOrder) {
-    // Serial number (8 bytes starting at offset 2)
-    if array.len() >= 10 {
-        let serial_bytes = &array[2..10];
-        if let Ok(serial) = std::str::from_utf8(serial_bytes) {
-            let serial_str = serial.trim_end_matches('\0').trim();
-            if !serial_str.is_empty() {
-                tags.insert("Olympus:SerialNumber".to_string(), serial_str.to_string());
-            }
-        }
-    }
-
-    // Body firmware version (5 bytes starting at offset 10)
-    if array.len() >= 15 {
-        let fw_bytes = &array[10..15];
-        if let Ok(fw) = std::str::from_utf8(fw_bytes) {
-            let fw_str = fw.trim_end_matches('\0').trim();
-            if !fw_str.is_empty() {
-                tags.insert(
-                    "Olympus:BodyFirmwareVersion".to_string(),
-                    fw_str.to_string(),
-                );
-            }
-        }
-    }
-
-    // Lens type (2 bytes at offset 16)
-    if array.len() >= 18 {
-        let lens_id = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[16], array[17]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[16], array[17]]),
-        };
-
-        if lens_id != 0 {
-            if let Some(lens_name) = lookup_lens_name(lens_id) {
-                tags.insert("Olympus:LensType".to_string(), lens_name);
-            } else {
-                tags.insert("Olympus:LensID".to_string(), lens_id.to_string());
-            }
-        }
-    }
-
-    // Lens serial number (at offset 18, varies by length)
-    if array.len() >= 26 {
-        let lens_serial_bytes = &array[18..26];
-        if let Ok(lens_serial) = std::str::from_utf8(lens_serial_bytes) {
-            let lens_serial_str = lens_serial.trim_end_matches('\0').trim();
-            if !lens_serial_str.is_empty() {
-                tags.insert(
-                    "Olympus:LensSerialNumber".to_string(),
-                    lens_serial_str.to_string(),
-                );
-            }
-        }
-    }
-
-    // Min focal length (2 bytes at offset 56)
-    if array.len() >= 58 {
-        let min_focal = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[56], array[57]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[56], array[57]]),
-        };
-        if min_focal > 0 {
-            tags.insert(
-                "Olympus:MinFocalLength".to_string(),
-                format!("{} mm", min_focal),
-            );
-        }
-    }
-
-    // Max focal length (2 bytes at offset 58)
-    if array.len() >= 60 {
-        let max_focal = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[58], array[59]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[58], array[59]]),
-        };
-        if max_focal > 0 {
-            tags.insert(
-                "Olympus:MaxFocalLength".to_string(),
-                format!("{} mm", max_focal),
-            );
-        }
-    }
-
-    // Max aperture at min focal (2 bytes at offset 52)
-    if array.len() >= 54 {
-        let max_ap_min = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[52], array[53]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[52], array[53]]),
-        };
-        if max_ap_min > 0 {
-            let f_stop = (max_ap_min as f32) / 10.0;
-            tags.insert(
-                "Olympus:MaxApertureAtMinFocal".to_string(),
-                format!("f/{:.1}", f_stop),
-            );
-        }
-    }
-
-    // Max aperture at max focal (2 bytes at offset 54)
-    if array.len() >= 56 {
-        let max_ap_max = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[54], array[55]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[54], array[55]]),
-        };
-        if max_ap_max > 0 {
-            let f_stop = (max_ap_max as f32) / 10.0;
-            tags.insert(
-                "Olympus:MaxApertureAtMaxFocal".to_string(),
-                format!("f/{:.1}", f_stop),
-            );
-        }
     }
 }
 
@@ -953,54 +605,39 @@ fn extract_string_value(entry: &IfdEntry, full_data: &[u8], base_offset: usize) 
     }
 }
 
-/// Extracts i32 array from IFD entry
+/// Extract i32 array with base offset support
 ///
-/// Reads a sequence of 32-bit signed integers from the MakerNote data.
-/// Used for Camera Settings array and similar structures.
+/// Wrapper around the shared extract_i32_array that handles base offset.
+/// Olympus MakerNotes have a base offset of 8 bytes ("OLYMPUS\0").
 ///
 /// # Arguments
 /// * `entry` - The IFD entry containing array metadata
-/// * `full_data` - Complete MakerNote data buffer
-/// * `base_offset` - Base offset for calculating absolute positions
+/// * `data` - Complete MakerNote data buffer
 /// * `byte_order` - Byte order for parsing integers
 ///
 /// # Returns
 /// Some(Vec<i32>) if extraction succeeds, None otherwise
-fn extract_i32_array(
+fn extract_i32_array_with_offset(
     entry: &IfdEntry,
-    full_data: &[u8],
-    base_offset: usize,
+    data: &[u8],
     byte_order: ByteOrder,
 ) -> Option<Vec<i32>> {
-    let count = entry.value_count as usize;
-    let offset = (entry.value_offset as usize) + base_offset;
-
-    // Each i32 is 4 bytes
-    if offset + (count * 4) > full_data.len() {
+    // For Olympus, the value_offset is relative to offset 8 (after "OLYMPUS\0")
+    // Create a new entry with absolute offset for the shared extractor
+    let absolute_offset = (entry.value_offset as usize) + 8;
+    if absolute_offset > data.len() {
         return None;
     }
 
-    let mut result = Vec::with_capacity(count);
-    for i in 0..count {
-        let pos = offset + (i * 4);
-        let value = match byte_order {
-            ByteOrder::LittleEndian => i32::from_le_bytes([
-                full_data[pos],
-                full_data[pos + 1],
-                full_data[pos + 2],
-                full_data[pos + 3],
-            ]),
-            ByteOrder::BigEndian => i32::from_be_bytes([
-                full_data[pos],
-                full_data[pos + 1],
-                full_data[pos + 2],
-                full_data[pos + 3],
-            ]),
-        };
-        result.push(value);
-    }
+    // Use the shared extractor with the adjusted offset
+    let adjusted_entry = IfdEntry {
+        tag_id: entry.tag_id,
+        field_type: entry.field_type,
+        value_count: entry.value_count,
+        value_offset: absolute_offset as u32,
+    };
 
-    Some(result)
+    extract_i32_array(&adjusted_entry, data, byte_order)
 }
 
 /// Extracts u8 array from IFD entry

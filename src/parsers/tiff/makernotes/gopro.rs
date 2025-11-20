@@ -37,14 +37,14 @@
 #![allow(unused_imports)]
 
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use super::shared::array_extractors::{extract_i16_array, extract_string};
-use super::shared::generic_decoders::{ON_OFF, YES_NO};
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
-use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+
+// Import registry module
+use super::registries::gopro_registry;
 
 // Import macros for declarative decoder definitions
 use crate::const_decoder;
@@ -260,78 +260,8 @@ const_decoder!(
 // Camera Orientation decoder - Up/Down/Auto
 const_decoder!(ORIENTATION, i16, [(0, "Up"), (1, "Down"), (2, "Auto"),]);
 
-// ============================================================================
-// Tag Registry
-// ============================================================================
-// Central registry of all GoPro tags with their decoders
-// This eliminates the need for repetitive match arms in the parse method,
-// reducing code duplication from 136% to near 0%.
-//
-// The registry pattern provides:
-// - O(1) tag name lookup
-// - Automatic value decoding based on tag type
-// - Single source of truth for tag definitions
-// - Easy addition of new tags without modifying the parse logic
-
-/// Static registry of all GoPro MakerNote tags
-///
-/// This registry maps tag IDs to their human-readable names and decoders.
-/// Tags are organized by type:
-/// - Simple i16 decoders: Tags with enum-like value mappings (FOV, White Balance, etc.)
-/// - Custom i16 decoders: Tags requiring mathematical transformations (Frame Rate, Exposure, etc.)
-/// - Raw value tags: Tags that should be displayed as-is (ISO Min/Max, Loop Duration)
-static GOPRO_TAGS: Lazy<TagRegistry> = Lazy::new(|| {
-    TagRegistry::with_capacity(40)
-        // Simple i16 decoders - enum-like value mappings
-        .register_simple_i16(GOPRO_RESOLUTION, "Resolution", &RESOLUTION)
-        .register_simple_i16(GOPRO_FOV, "FieldOfView", &FOV)
-        .register_simple_i16(GOPRO_WHITE_BALANCE, "WhiteBalance", &WHITE_BALANCE)
-        .register_simple_i16(GOPRO_COLOR, "ColorProfile", &COLOR_PROFILE)
-        .register_simple_i16(GOPRO_SHARPNESS, "Sharpness", &SHARPNESS)
-        .register_simple_i16(GOPRO_CONTRAST, "Contrast", &CONTRAST)
-        .register_simple_i16(GOPRO_SATURATION, "Saturation", &SATURATION)
-        .register_simple_i16(GOPRO_METERING, "MeteringMode", &METERING)
-        .register_simple_i16(GOPRO_HYPERSMOOTH, "HyperSmooth", &HYPERSMOOTH)
-        .register_simple_i16(GOPRO_VIDEO_ENCODING, "VideoEncoding", &VIDEO_ENCODING)
-        .register_simple_i16(GOPRO_SUPER_PHOTO, "SuperPhoto", &SUPER_PHOTO)
-        .register_simple_i16(GOPRO_NIGHT_PHOTO, "NightPhoto", &NIGHT_PHOTO)
-        .register_simple_i16(GOPRO_BURST_RATE, "BurstRate", &BURST_RATE)
-        .register_simple_i16(GOPRO_ORIENTATION, "Orientation", &ORIENTATION)
-        // ON/OFF boolean tags - use helper function for boolean conversion
-        .register_i16(GOPRO_LOW_LIGHT, "LowLight", decode_on_off)
-        .register_i16(GOPRO_PROTUNE, "Protune", decode_on_off)
-        .register_i16(GOPRO_SPOT_METER, "SpotMeter", decode_on_off)
-        .register_i16(GOPRO_EIS, "EIS", decode_on_off)
-        .register_i16(GOPRO_BOOST, "Boost", decode_on_off)
-        .register_i16(GOPRO_AUTO_BOOST, "AutoBoost", decode_on_off)
-        .register_i16(GOPRO_HDR, "HDR", decode_on_off)
-        .register_i16(GOPRO_RAW_AUDIO, "RawAudio", decode_on_off)
-        .register_i16(GOPRO_WIND_NOISE, "WindNoiseReduction", decode_on_off)
-        .register_i16(GOPRO_LIVE_BURST, "LiveBurst", decode_on_off)
-        // YES/NO boolean tag
-        .register_i16(GOPRO_GPS_FIX, "GPSFix", decode_yes_no)
-        // Custom i16 decoders - require mathematical transformations
-        .register_i16(GOPRO_FRAME_RATE, "FrameRate", format_frame_rate)
-        .register_i16(GOPRO_EXPOSURE, "ExposureCompensation", format_exposure)
-        .register_i16(GOPRO_SHUTTER, "ShutterSpeed", format_shutter)
-        .register_i16(GOPRO_DIGITAL_ZOOM, "DigitalZoom", format_digital_zoom)
-        .register_i16(GOPRO_TIMEWARP_SPEED, "TimeWarpSpeed", format_timewarp_speed)
-        .register_i16(GOPRO_BIT_RATE, "BitRate", format_bitrate)
-        .register_i16(
-            GOPRO_TIMELAPSE_INTERVAL,
-            "TimelapseInterval",
-            format_interval,
-        )
-        .register_i16(
-            GOPRO_NIGHT_LAPSE_INTERVAL,
-            "NightLapseInterval",
-            format_interval,
-        )
-        .register_i16(GOPRO_LOOP_DURATION, "LoopDuration", format_loop_duration)
-        // Raw value tags - no decoding needed, displayed as-is
-        .register_raw(GOPRO_ISO_MIN, "ISOMin")
-        .register_raw(GOPRO_ISO_MAX, "ISOMax")
-});
+// Note: Tag registry has been moved to registries/gopro.rs for centralized management.
+// The registry is now created on-demand using gopro_registry() function.
 
 // ============================================================================
 // Custom Value Formatters
@@ -458,27 +388,6 @@ fn format_loop_duration(value: i16) -> String {
     format!("{} min", value)
 }
 
-/// Decodes boolean value to ON/OFF
-///
-/// # Arguments
-/// * `value` - Non-zero for ON, zero for OFF
-///
-/// # Returns
-/// "On" or "Off" string
-fn decode_on_off(value: i16) -> String {
-    ON_OFF.decode(if value != 0 { 1 } else { 0 })
-}
-
-/// Decodes boolean value to YES/NO
-///
-/// # Arguments
-/// * `value` - Non-zero for YES, zero for NO
-///
-/// # Returns
-/// "Yes" or "No" string
-fn decode_yes_no(value: i16) -> String {
-    YES_NO.decode(if value != 0 { 1 } else { 0 })
-}
 
 /// GoPro MakerNote parser implementing the MakerNoteParser trait
 #[derive(Default)]
@@ -521,7 +430,10 @@ impl MakerNoteParser for GoProParser {
             max_entries: 200,
         };
 
-        // Use shared IFD parser to eliminate 88 lines of boilerplate
+        // Create registry on-demand
+        let registry = gopro_registry();
+
+        // Use shared IFD parser to eliminate boilerplate
         // The callback processes each parsed IFD entry with tag-specific logic
         parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
             // Extract value based on tag type
@@ -542,13 +454,11 @@ impl MakerNoteParser for GoProParser {
                 }
             } else {
                 // Try to extract as i16 array - most GoPro tags use this type
-                // The registry automatically handles all tag decoding, eliminating
-                // the need for a large match statement (136% duplication reduction)
                 if let Some(array) = extract_i16_array(entry, parse_data, byte_order) {
                     if let Some(&val) = array.first() {
                         // Registry lookup: get tag name and decode value in one step
-                        if let Some(tag_name) = GOPRO_TAGS.get_tag_name(entry.tag_id) {
-                            let formatted_value = GOPRO_TAGS.decode_i16(entry.tag_id, val);
+                        if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
+                            let formatted_value = registry.decode_i16(entry.tag_id, val);
                             tags.insert(format!("GoPro:{}", tag_name), formatted_value);
                         }
                     }

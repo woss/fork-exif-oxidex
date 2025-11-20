@@ -7,6 +7,10 @@
 //! - Legacy SA-mount lenses
 //! - DG DN mirrorless lenses (Sony E, Leica L-mount)
 
+use super::shared::LensDatabase;
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
 /// Looks up a lens name from a Sigma lens ID
 ///
 /// # Arguments
@@ -19,8 +23,13 @@ pub fn lookup_lens_name(lens_id: u16) -> Option<String> {
     SIGMA_LENS_DATABASE.get(&lens_id).map(|s| s.to_string())
 }
 
-use std::collections::HashMap;
-use std::sync::LazyLock;
+/// Get reference to Sigma lens database implementing LensDatabase trait
+///
+/// Returns a static reference to the lens database that can be used
+/// with the unified LensDatabase trait interface.
+pub fn get_lens_database() -> &'static impl LensDatabase {
+    &SIGMA_LENS_DB
+}
 
 static SIGMA_LENS_DATABASE: LazyLock<HashMap<u16, &'static str>> = LazyLock::new(|| {
     let mut db = HashMap::new();
@@ -119,3 +128,14 @@ static SIGMA_LENS_DATABASE: LazyLock<HashMap<u16, &'static str>> = LazyLock::new
 
     db
 });
+
+/// Wrapper struct that implements LensDatabase trait for Sigma lenses
+struct SigmaLensDb;
+
+static SIGMA_LENS_DB: SigmaLensDb = SigmaLensDb;
+
+impl LensDatabase for SigmaLensDb {
+    fn lookup(&self, lens_id: u16) -> Option<&'static str> {
+        SIGMA_LENS_DATABASE.get(&lens_id).copied()
+    }
+}

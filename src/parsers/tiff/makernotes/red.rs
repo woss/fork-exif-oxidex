@@ -77,7 +77,7 @@ const RED_SIGNATURE: &[u8] = b"RED";
 
 // Decodes REDCODE compression ratio
 const_decoder! {
-    DECODE_REDCODE, i16, [
+    pub DECODE_REDCODE, i16, [
         (2, "2:1"),
         (3, "3:1"),
         (4, "4:1"),
@@ -95,7 +95,7 @@ const_decoder! {
 
 // Decodes sensor resolution mode
 const_decoder! {
-    DECODE_RESOLUTION, i16, [
+    pub DECODE_RESOLUTION, i16, [
         (0, "Full"),
         (1, "6K"),
         (2, "5K"),
@@ -109,7 +109,7 @@ const_decoder! {
 
 // Decodes gamma curve
 const_decoder! {
-    DECODE_GAMMA, i16, [
+    pub DECODE_GAMMA, i16, [
         (0, "REDLog3G10"),
         (1, "REDLogFilm"),
         (2, "Rec709"),
@@ -122,7 +122,7 @@ const_decoder! {
 
 // Decodes color space
 const_decoder! {
-    DECODE_COLOR_SPACE, i16, [
+    pub DECODE_COLOR_SPACE, i16, [
         (0, "REDWideGamutRGB"),
         (1, "Rec709"),
         (2, "DCI-P3"),
@@ -136,7 +136,7 @@ const_decoder! {
 
 // Decodes lens mount type
 const_decoder! {
-    DECODE_LENS_TYPE, i16, [
+    pub DECODE_LENS_TYPE, i16, [
         (0, "Canon EF"),
         (1, "PL Mount"),
         (2, "Nikon F"),
@@ -148,7 +148,7 @@ const_decoder! {
 
 // Decodes sensor crop mode
 const_decoder! {
-    DECODE_CROP_MODE, i16, [
+    pub DECODE_CROP_MODE, i16, [
         (0, "Full Frame"),
         (1, "2:1"),
         (2, "2.4:1"),

@@ -146,10 +146,11 @@ pub fn is_phaseone_makernote(data: &[u8]) -> bool {
 
 // ===== Const Decoders =====
 // Using const_decoder! macro for compile-time value decoding
+// These are exported for use in the registry module
 
 // Decodes Phase One exposure mode to human-readable string
 const_decoder! {
-    DECODER_EXPOSURE_MODE, i32, [
+    pub DECODER_EXPOSURE_MODE, i32, [
         (0, "Manual"),
         (1, "Program"),
         (2, "Aperture Priority"),
@@ -159,7 +160,7 @@ const_decoder! {
 
 // Decodes Phase One metering mode to human-readable string
 const_decoder! {
-    DECODER_METERING_MODE, i32, [
+    pub DECODER_METERING_MODE, i32, [
         (0, "Unknown"),
         (1, "Multi-zone"),
         (2, "Center-weighted"),
@@ -169,7 +170,7 @@ const_decoder! {
 
 // Decodes Phase One white balance to human-readable string
 const_decoder! {
-    DECODER_WHITE_BALANCE, i32, [
+    pub DECODER_WHITE_BALANCE, i32, [
         (0, "Auto"),
         (1, "Daylight"),
         (2, "Cloudy"),
@@ -184,7 +185,7 @@ const_decoder! {
 
 // Decodes Phase One drive mode to human-readable string
 const_decoder! {
-    DECODER_DRIVE_MODE, i32, [
+    pub DECODER_DRIVE_MODE, i32, [
         (0, "Single"),
         (1, "Continuous"),
         (2, "Self-Timer"),
@@ -195,7 +196,7 @@ const_decoder! {
 
 // Decodes Phase One focus mode to human-readable string
 const_decoder! {
-    DECODER_FOCUS_MODE, i32, [
+    pub DECODER_FOCUS_MODE, i32, [
         (0, "Manual"),
         (1, "Single AF"),
         (2, "Continuous AF"),
@@ -204,7 +205,7 @@ const_decoder! {
 
 // Decodes Phase One flash mode to human-readable string
 const_decoder! {
-    DECODER_FLASH_MODE, i32, [
+    pub DECODER_FLASH_MODE, i32, [
         (0, "No Flash"),
         (1, "Fired"),
         (2, "Sync"),
@@ -214,7 +215,7 @@ const_decoder! {
 
 // Decodes Phase One system type to human-readable string
 const_decoder! {
-    DECODER_SYSTEM_TYPE, i32, [
+    pub DECODER_SYSTEM_TYPE, i32, [
         (0, "Unknown"),
         (1, "H System"),
         (2, "V System"),
@@ -225,7 +226,7 @@ const_decoder! {
 
 // Decodes Phase One On/Off settings to human-readable string
 const_decoder! {
-    DECODER_OFF_ON, i32, [
+    pub DECODER_OFF_ON, i32, [
         (0, "Off"),
         (1, "On"),
     ]

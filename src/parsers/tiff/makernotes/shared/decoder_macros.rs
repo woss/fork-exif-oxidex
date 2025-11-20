@@ -171,6 +171,16 @@ macro_rules! simple_decoder_custom {
 /// ```
 #[macro_export]
 macro_rules! const_decoder {
+    // Public decoder variant
+    (pub $name:ident, $type:ty, [ $( ($val:expr, $str:expr) ),* $(,)? ]) => {
+        pub const $name: $crate::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder<$type> =
+            $crate::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder::new(&[
+                $(
+                    ($val, $str),
+                )*
+            ]);
+    };
+    // Private decoder variant (original behavior)
     ($name:ident, $type:ty, [ $( ($val:expr, $str:expr) ),* $(,)? ]) => {
         const $name: $crate::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder<$type> =
             $crate::parsers::tiff::makernotes::shared::generic_decoders::SimpleValueDecoder::new(&[

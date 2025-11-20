@@ -28,8 +28,7 @@ use std::collections::HashMap;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-
-use crate::const_decoder;
+use super::registries::ricoh::ricoh_registry;
 
 // Ricoh MakerNote Tag IDs
 const RICOH_MODEL: u16 = 0x0001;
@@ -89,16 +88,9 @@ fn extract_u16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> O
 // ============================================================================
 // Tag Registry
 // ============================================================================
+// Use the centralized registry from registries/ricoh.rs
 
-static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(|| {
-    TagRegistry::with_capacity(6)
-        .register_simple_u16(RICOH_SHOOTING_MODE, "ShootingMode", &SHOOTING_MODE)
-        .register_simple_u16(RICOH_FLASH_MODE, "FlashMode", &FLASH_MODE)
-        .register_simple_u16(RICOH_WHITE_BALANCE, "WhiteBalance", &WHITE_BALANCE)
-        .register_raw(RICOH_FOCUS_MODE, "FocusMode")
-        .register_raw(RICOH_ISO_SETTING, "ISO")
-        .register_raw(RICOH_SHARPNESS, "Sharpness")
-});
+static TAG_REGISTRY: Lazy<TagRegistry> = Lazy::new(ricoh_registry);
 
 // ============================================================================
 // Parser Implementation

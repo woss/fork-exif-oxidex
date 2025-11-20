@@ -37,8 +37,13 @@
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::shared::array_extractors::extract_i16_array;
+use super::shared::array_extractors::{extract_i16_array, extract_string};
+use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::MakerNoteParser;
+
+// Import registry module
+use super::registries::flir_registry;
+
 use crate::const_decoder;
 
 // FLIR MakerNote Tag IDs
@@ -340,211 +345,47 @@ impl MakerNoteParser for FlirParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 8 {
-            return Err("FLIR MakerNote data too short".to_string());
-        }
-
-        // Skip FLIR signature if present
-        let start_offset = if data.starts_with(FLIR_SIGNATURE) {
-            4
-        } else {
-            0
+        // Configure IFD parser for FLIR MakerNote format
+        let config = IfdParserConfig {
+            signature: Some(FLIR_SIGNATURE),
+            signature_offset: 4,
+            max_entries: 200,
         };
-        let parse_data = &data[start_offset..];
 
-        if parse_data.len() < 2 {
-            return Ok(());
-        }
+        // Create registry on-demand
+        let registry = flir_registry();
 
-        // Read number of entries
-        let num_entries = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([parse_data[0], parse_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([parse_data[0], parse_data[1]]),
-        } as usize;
-
-        if num_entries == 0 || num_entries > 200 {
-            return Ok(());
-        }
-
-        let mut offset = 2;
-        let entry_size = 12;
-
-        for _ in 0..num_entries {
-            if offset + entry_size > parse_data.len() {
-                break;
-            }
-
-            let entry_data = &parse_data[offset..offset + entry_size];
-
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[0], entry_data[1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[0], entry_data[1]]),
-            };
-
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[2], entry_data[3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[2], entry_data[3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
+        // Use shared IFD parser to eliminate boilerplate
+        parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
+            // Handle string tags
+            if matches!(
+                entry.tag_id,
+                FLIR_MODEL | FLIR_SERIAL | FLIR_FIRMWARE | FLIR_LENS_MODEL | FLIR_CALIBRATION_DATE
+            ) {
+                if let Some(s) = extract_string(entry, parse_data, byte_order) {
+                    let tag_name = match entry.tag_id {
+                        FLIR_MODEL => "Model",
+                        FLIR_SERIAL => "SerialNumber",
+                        FLIR_FIRMWARE => "FirmwareVersion",
+                        FLIR_LENS_MODEL => "LensModel",
+                        FLIR_CALIBRATION_DATE => "CalibrationDate",
+                        _ => return,
+                    };
+                    tags.insert(format!("FLIR:{}", tag_name), s);
                 }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            match tag {
-                FLIR_MODEL
-                | FLIR_SERIAL
-                | FLIR_FIRMWARE
-                | FLIR_LENS_MODEL
-                | FLIR_CALIBRATION_DATE => {
-                    if let Some(s) = extract_string(&entry, parse_data) {
-                        let tag_name = match tag {
-                            FLIR_MODEL => "Model",
-                            FLIR_SERIAL => "SerialNumber",
-                            FLIR_FIRMWARE => "FirmwareVersion",
-                            FLIR_LENS_MODEL => "LensModel",
-                            FLIR_CALIBRATION_DATE => "CalibrationDate",
-                            _ => continue,
-                        };
-                        tags.insert(format!("FLIR:{}", tag_name), s);
-                    }
-                }
-
-                _ => {
-                    if let Some(array) = extract_i16_array(&entry, parse_data, byte_order) {
-                        if let Some(&val) = array.first() {
-                            let (tag_name, formatted_value) = match tag {
-                                FLIR_TEMPERATURE_MIN => {
-                                    ("TemperatureMin", format_temperature_kelvin(val))
-                                }
-                                FLIR_TEMPERATURE_MAX => {
-                                    ("TemperatureMax", format_temperature_kelvin(val))
-                                }
-                                FLIR_TEMPERATURE_CENTER => {
-                                    ("TemperatureCenter", format_temperature_kelvin(val))
-                                }
-                                FLIR_EMISSIVITY => ("Emissivity", format_emissivity(val)),
-                                FLIR_REFLECTED_TEMP => {
-                                    ("ReflectedTemperature", format_temperature_kelvin(val))
-                                }
-                                FLIR_ATMOSPHERIC_TEMP => {
-                                    ("AtmosphericTemperature", format_temperature_kelvin(val))
-                                }
-                                FLIR_DISTANCE => ("Distance", format_distance(val)),
-                                FLIR_HUMIDITY => ("RelativeHumidity", format_humidity(val)),
-                                FLIR_PALETTE => ("Palette", DECODE_PALETTE.decode(val)),
-                                FLIR_PALETTE_METHOD => {
-                                    ("PaletteMethod", DECODE_PALETTE_METHOD.decode(val))
-                                }
-                                FLIR_PALETTE_STRETCH => {
-                                    ("PaletteStretch", DECODE_PALETTE_STRETCH.decode(val))
-                                }
-                                FLIR_TEMPERATURE_RANGE_MIN => {
-                                    ("RangeMin", format_temperature_kelvin(val))
-                                }
-                                FLIR_TEMPERATURE_RANGE_MAX => {
-                                    ("RangeMax", format_temperature_kelvin(val))
-                                }
-                                FLIR_ATMOSPHERIC_TRANS => {
-                                    ("AtmosphericTransmission", format_transmission(val))
-                                }
-                                FLIR_EXTERNAL_OPTICS_TEMP => {
-                                    ("ExternalOpticsTemperature", format_temperature_kelvin(val))
-                                }
-                                FLIR_EXTERNAL_OPTICS_TRANS => {
-                                    ("ExternalOpticsTransmission", format_transmission(val))
-                                }
-                                FLIR_IR_WINDOW_TEMP => {
-                                    ("IRWindowTemperature", format_temperature_kelvin(val))
-                                }
-                                FLIR_IR_WINDOW_TRANS => {
-                                    ("IRWindowTransmission", format_transmission(val))
-                                }
-                                FLIR_PLANCK_R1 => ("PlanckR1", format_planck_constant(val)),
-                                FLIR_PLANCK_R2 => ("PlanckR2", format_planck_constant(val)),
-                                FLIR_PLANCK_B => ("PlanckB", format_planck_constant(val)),
-                                FLIR_PLANCK_F => ("PlanckF", format_planck_constant(val)),
-                                FLIR_PLANCK_O => ("PlanckO", format_planck_constant(val)),
-                                FLIR_CAMERA_TEMP_MIN => {
-                                    ("CameraInternalTempMin", format_temperature_kelvin(val))
-                                }
-                                FLIR_CAMERA_TEMP_MAX => {
-                                    ("CameraInternalTempMax", format_temperature_kelvin(val))
-                                }
-                                FLIR_IMAGE_TYPE => ("ImageType", DECODE_IMAGE_TYPE.decode(val)),
-                                FLIR_FOCUS_DISTANCE => ("FocusDistance", format_distance(val)),
-                                FLIR_PEAK_TEMP => {
-                                    ("PeakTemperature", format_temperature_kelvin(val))
-                                }
-                                FLIR_VALLEY_TEMP => {
-                                    ("ValleyTemperature", format_temperature_kelvin(val))
-                                }
-                                FLIR_MEASUREMENT_MODE => {
-                                    ("MeasurementMode", DECODE_MEASUREMENT_MODE.decode(val))
-                                }
-                                FLIR_TEMPERATURE_UNIT => {
-                                    ("TemperatureUnit", DECODE_TEMPERATURE_UNIT.decode(val))
-                                }
-                                FLIR_ISOTHERM_MIN => {
-                                    ("IsothermMin", format_temperature_kelvin(val))
-                                }
-                                FLIR_ISOTHERM_MAX => {
-                                    ("IsothermMax", format_temperature_kelvin(val))
-                                }
-                                FLIR_ISOTHERM_ENABLED => (
-                                    "IsothermEnabled",
-                                    if val != 0 {
-                                        "Yes".to_string()
-                                    } else {
-                                        "No".to_string()
-                                    },
-                                ),
-                                FLIR_LEVEL_SPAN_AUTO => (
-                                    "LevelSpanAuto",
-                                    if val != 0 {
-                                        "Yes".to_string()
-                                    } else {
-                                        "No".to_string()
-                                    },
-                                ),
-                                FLIR_GAIN_MODE => ("GainMode", DECODE_GAIN_MODE.decode(val)),
-                                FLIR_FRAME_RATE => ("FrameRate", format_frame_rate(val)),
-                                _ => continue,
-                            };
+            } else {
+                // Try to extract as i16 array
+                if let Some(array) = extract_i16_array(entry, parse_data, byte_order) {
+                    if let Some(&val) = array.first() {
+                        // Registry lookup: get tag name and decode value
+                        if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
+                            let formatted_value = registry.decode_i16(entry.tag_id, val);
                             tags.insert(format!("FLIR:{}", tag_name), formatted_value);
                         }
                     }
                 }
             }
-
-            offset += entry_size;
-        }
+        })?;
 
         Ok(())
     }

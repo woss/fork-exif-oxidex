@@ -607,6 +607,66 @@ impl TagRegistry {
         }
     }
 
+    /// Decode and insert an i32 array tag using its schema
+    ///
+    /// This method processes an array of i32 values according to the ArraySchema
+    /// registered for the given tag ID. Each array index defined in the schema
+    /// will be extracted and inserted into the tags map with appropriate decoding.
+    ///
+    /// # Arguments
+    /// * `tag_id` - The tag ID to look up in the registry
+    /// * `array` - The i32 array to process
+    /// * `prefix` - Prefix for tag names (e.g., "Olympus", "Panasonic")
+    /// * `tags` - HashMap to insert the decoded values into
+    ///
+    /// # Behavior
+    /// - If the tag is not registered, no action is taken
+    /// - If the tag is registered but not with an ArraySchema, no action is taken
+    /// - Only indices present in the array are processed (missing indices are skipped)
+    pub fn decode_array_i32(
+        &self,
+        tag_id: u16,
+        array: &[i32],
+        prefix: &str,
+        tags: &mut HashMap<String, String>,
+    ) {
+        if let Some(def) = self.tags.get(&tag_id) {
+            if let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
+                schema.process_i32_array(array, prefix, tags);
+            }
+        }
+    }
+
+    /// Decode and insert a u32 array tag using its schema
+    ///
+    /// This method processes an array of u32 values according to the ArraySchema
+    /// registered for the given tag ID. Each array index defined in the schema
+    /// will be extracted and inserted into the tags map with appropriate decoding.
+    ///
+    /// # Arguments
+    /// * `tag_id` - The tag ID to look up in the registry
+    /// * `array` - The u32 array to process
+    /// * `prefix` - Prefix for tag names (e.g., "Olympus", "Panasonic")
+    /// * `tags` - HashMap to insert the decoded values into
+    ///
+    /// # Behavior
+    /// - If the tag is not registered, no action is taken
+    /// - If the tag is registered but not with an ArraySchema, no action is taken
+    /// - Only indices present in the array are processed (missing indices are skipped)
+    pub fn decode_array_u32(
+        &self,
+        tag_id: u16,
+        array: &[u32],
+        prefix: &str,
+        tags: &mut HashMap<String, String>,
+    ) {
+        if let Some(def) = self.tags.get(&tag_id) {
+            if let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
+                schema.process_u32_array(array, prefix, tags);
+            }
+        }
+    }
+
     /// Returns the number of registered tags
     pub fn len(&self) -> usize {
         self.tags.len()

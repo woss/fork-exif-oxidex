@@ -57,6 +57,38 @@ impl ArrayIndexDef {
         }
     }
 
+    /// Create a new index definition with i32 decoder
+    pub const fn with_i32_decoder(
+        index: usize,
+        name: &'static str,
+        decoder: &'static SimpleValueDecoder<i32>,
+    ) -> Self {
+        Self {
+            index,
+            name,
+            decoder_i16: None,
+            decoder_u16: None,
+            decoder_i32: Some(decoder),
+            decoder_u32: None,
+        }
+    }
+
+    /// Create a new index definition with u32 decoder
+    pub const fn with_u32_decoder(
+        index: usize,
+        name: &'static str,
+        decoder: &'static SimpleValueDecoder<u32>,
+    ) -> Self {
+        Self {
+            index,
+            name,
+            decoder_i16: None,
+            decoder_u16: None,
+            decoder_i32: None,
+            decoder_u32: Some(decoder),
+        }
+    }
+
     /// Create a new index definition without decoder (raw value)
     pub const fn raw(index: usize, name: &'static str) -> Self {
         Self {

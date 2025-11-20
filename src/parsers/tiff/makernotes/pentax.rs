@@ -124,8 +124,7 @@ const PENTAX_HEADER_PENTAX: &[u8] = b"PENTAX \0";
 // Using const_decoder! macro to eliminate decoder function duplication
 
 // Quality setting decoder - maps numeric values to quality modes
-const_decoder!(
-    QUALITY,
+const_decoder!(pub QUALITY,
     i32,
     [
         (0, "Good"),
@@ -142,8 +141,7 @@ const_decoder!(
 );
 
 // Picture mode decoder - maps values to shooting scene modes
-const_decoder!(
-    PICTURE_MODE,
+const_decoder!(pub PICTURE_MODE,
     i32,
     [
         (0, "Program"),
@@ -173,8 +171,7 @@ const_decoder!(
 );
 
 // Flash mode decoder - maps values to flash modes
-const_decoder!(
-    FLASH_MODE,
+const_decoder!(pub FLASH_MODE,
     i32,
     [
         (0, "Auto"),
@@ -190,8 +187,7 @@ const_decoder!(
 );
 
 // Focus mode decoder - maps values to autofocus modes
-const_decoder!(
-    FOCUS_MODE,
+const_decoder!(pub FOCUS_MODE,
     i32,
     [
         (0, "Normal (AF)"),
@@ -204,8 +200,7 @@ const_decoder!(
 );
 
 // Metering mode decoder - maps values to exposure metering modes
-const_decoder!(
-    METERING_MODE,
+const_decoder!(pub METERING_MODE,
     i32,
     [
         (0, "Multi-segment"),
@@ -217,8 +212,7 @@ const_decoder!(
 );
 
 // White balance decoder - maps values to white balance presets
-const_decoder!(
-    WHITE_BALANCE,
+const_decoder!(pub WHITE_BALANCE,
     i32,
     [
         (0, "Auto"),
@@ -239,8 +233,7 @@ const_decoder!(
 );
 
 // White balance mode decoder - maps values to WB modes
-const_decoder!(
-    WHITE_BALANCE_MODE,
+const_decoder!(pub WHITE_BALANCE_MODE,
     i32,
     [
         (1, "Auto (Daylight)"),
@@ -255,8 +248,7 @@ const_decoder!(
 );
 
 // Drive mode decoder - maps values to drive/shooting modes
-const_decoder!(
-    DRIVE_MODE,
+const_decoder!(pub DRIVE_MODE,
     i32,
     [
         (0, "Single-frame"),
@@ -276,11 +268,10 @@ const_decoder!(
 );
 
 // Color space decoder - maps values to color space settings
-const_decoder!(COLOR_SPACE, i32, [(0, "sRGB"), (1, "Adobe RGB"),]);
+const_decoder!(pub COLOR_SPACE, i32, [(0, "sRGB"), (1, "Adobe RGB"),]);
 
 // Saturation decoder - maps values to saturation settings
-const_decoder!(
-    SATURATION,
+const_decoder!(pub SATURATION,
     i32,
     [
         (0, "Low"),
@@ -295,8 +286,7 @@ const_decoder!(
 );
 
 // Contrast decoder - maps values to contrast settings
-const_decoder!(
-    CONTRAST,
+const_decoder!(pub CONTRAST,
     i32,
     [
         (0, "Low"),
@@ -310,8 +300,7 @@ const_decoder!(
 );
 
 // Sharpness decoder - maps values to sharpness settings
-const_decoder!(
-    SHARPNESS,
+const_decoder!(pub SHARPNESS,
     i32,
     [
         (0, "Soft"),
@@ -325,8 +314,7 @@ const_decoder!(
 );
 
 // Shake reduction decoder - maps values to SR/stabilization modes
-const_decoder!(
-    SHAKE_REDUCTION,
+const_decoder!(pub SHAKE_REDUCTION,
     i32,
     [
         (0, "Off"),
@@ -340,8 +328,7 @@ const_decoder!(
 );
 
 // Image size decoder - maps values to resolution presets
-const_decoder!(
-    IMAGE_SIZE,
+const_decoder!(pub IMAGE_SIZE,
     i32,
     [
         (0, "640x480"),
@@ -365,18 +352,16 @@ const_decoder!(
 );
 
 // Auto bracketing decoder - maps values to bracketing modes
-const_decoder!(AUTO_BRACKETING, i32, [(0, "Off"), (1, "On"),]);
+const_decoder!(pub AUTO_BRACKETING, i32, [(0, "Off"), (1, "On"),]);
 
 // World time location decoder - maps values to time zone selection
-const_decoder!(
-    WORLD_TIME_LOCATION,
+const_decoder!(pub WORLD_TIME_LOCATION,
     i32,
     [(0, "Hometown"), (1, "Destination"),]
 );
 
 // Pixel shift resolution decoder - maps values to PSR modes
-const_decoder!(
-    PIXEL_SHIFT_RESOLUTION,
+const_decoder!(pub PIXEL_SHIFT_RESOLUTION,
     i32,
     [(0, "Off"), (1, "On"), (2, "On (Motion Correction)"),]
 );

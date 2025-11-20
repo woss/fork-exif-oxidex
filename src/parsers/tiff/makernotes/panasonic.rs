@@ -139,8 +139,7 @@ const PANASONIC_HEADER: &[u8] = b"Panasonic\0\0\0";
 // Using const_decoder! macro to eliminate decoder function duplication
 
 // Quality mode decoder - maps values to image quality settings
-const_decoder!(
-    QUALITY,
+const_decoder!(pub QUALITY,
     i32,
     [
         (1, "Economy"),
@@ -156,8 +155,7 @@ const_decoder!(
 );
 
 // White balance decoder - maps values to white balance presets
-const_decoder!(
-    WHITE_BALANCE,
+const_decoder!(pub WHITE_BALANCE,
     i32,
     [
         (1, "Auto"),
@@ -178,8 +176,7 @@ const_decoder!(
 );
 
 // Focus mode decoder - maps values to autofocus modes
-const_decoder!(
-    FOCUS_MODE,
+const_decoder!(pub FOCUS_MODE,
     i32,
     [
         (1, "Auto"),
@@ -192,8 +189,7 @@ const_decoder!(
 );
 
 // AF area mode decoder - maps values to AF area selection modes
-const_decoder!(
-    AF_AREA_MODE,
+const_decoder!(pub AF_AREA_MODE,
     i32,
     [
         (0, "Face Detection"),
@@ -210,8 +206,7 @@ const_decoder!(
 );
 
 // Image stabilization decoder - maps values to IS modes
-const_decoder!(
-    IMAGE_STABILIZATION,
+const_decoder!(pub IMAGE_STABILIZATION,
     i32,
     [
         (2, "Mode 1"),
@@ -225,8 +220,7 @@ const_decoder!(
 );
 
 // Shooting mode decoder - maps values to shooting scene modes
-const_decoder!(
-    SHOOTING_MODE,
+const_decoder!(pub SHOOTING_MODE,
     i32,
     [
         (1, "Normal"),
@@ -251,8 +245,7 @@ const_decoder!(
 );
 
 // Contrast mode decoder - maps values to contrast settings
-const_decoder!(
-    CONTRAST_MODE,
+const_decoder!(pub CONTRAST_MODE,
     i32,
     [
         (0, "Normal"),
@@ -269,8 +262,7 @@ const_decoder!(
 );
 
 // Film mode (Photo Style) decoder - maps values to picture styles
-const_decoder!(
-    FILM_MODE,
+const_decoder!(pub FILM_MODE,
     i32,
     [
         (1, "Standard"),
@@ -302,8 +294,7 @@ const_decoder!(
 );
 
 // Noise reduction decoder - maps values to NR settings
-const_decoder!(
-    NOISE_REDUCTION,
+const_decoder!(pub NOISE_REDUCTION,
     i32,
     [
         (0, "Standard"),
@@ -315,8 +306,7 @@ const_decoder!(
 );
 
 // Intelligent auto mode decoder - maps values to iA modes
-const_decoder!(
-    INTELLIGENT_AUTO,
+const_decoder!(pub INTELLIGENT_AUTO,
     i32,
     [
         (0, "Off"),
@@ -331,8 +321,7 @@ const_decoder!(
 );
 
 // HDR mode decoder - maps values to HDR settings
-const_decoder!(
-    HDR,
+const_decoder!(pub HDR,
     i32,
     [
         (0, "Off"),
@@ -344,8 +333,7 @@ const_decoder!(
 );
 
 // Photo style decoder - maps values to photo style presets
-const_decoder!(
-    PHOTO_STYLE,
+const_decoder!(pub PHOTO_STYLE,
     i32,
     [
         (0, "Standard"),
@@ -364,32 +352,28 @@ const_decoder!(
 );
 
 // Macro mode decoder - maps values to macro mode settings
-const_decoder!(MACRO_MODE, i32, [(1, "On"), (2, "Off"),]);
+const_decoder!(pub MACRO_MODE, i32, [(1, "On"), (2, "Off"),]);
 
 // Rotation decoder - maps values to image rotation
-const_decoder!(
-    ROTATION,
+const_decoder!(pub ROTATION,
     i32,
     [(1, "0°"), (3, "180°"), (6, "90° CW"), (8, "270° CW"),]
 );
 
 // Internal ND filter decoder - maps values to ND filter settings
-const_decoder!(
-    INTERNAL_ND_FILTER,
+const_decoder!(pub INTERNAL_ND_FILTER,
     i32,
     [(0, "Off"), (1, "On"), (2, "Auto"),]
 );
 
 // Intelligent exposure decoder - maps values to iExposure modes
-const_decoder!(
-    INTELLIGENT_EXPOSURE,
+const_decoder!(pub INTELLIGENT_EXPOSURE,
     i32,
     [(0, "Off"), (1, "Low"), (2, "Standard"), (3, "High"),]
 );
 
 // Intelligent resolution decoder - maps values to iResolution modes
-const_decoder!(
-    INTELLIGENT_RESOLUTION,
+const_decoder!(pub INTELLIGENT_RESOLUTION,
     i32,
     [
         (0, "Off"),
@@ -401,18 +385,16 @@ const_decoder!(
 );
 
 // Intelligent D-range decoder - maps values to iDynamic modes
-const_decoder!(
-    INTELLIGENT_D_RANGE,
+const_decoder!(pub INTELLIGENT_D_RANGE,
     i32,
     [(0, "Off"), (1, "Low"), (2, "Standard"), (3, "High"),]
 );
 
 // Long exposure noise reduction decoder
-const_decoder!(LONG_EXPOSURE_NR, i32, [(1, "On"), (2, "Off"),]);
+const_decoder!(pub LONG_EXPOSURE_NR, i32, [(1, "On"), (2, "Off"),]);
 
 // Burst mode decoder - maps values to burst shooting modes
-const_decoder!(
-    BURST_MODE,
+const_decoder!(pub BURST_MODE,
     i32,
     [
         (0, "Off"),
@@ -423,7 +405,7 @@ const_decoder!(
 );
 
 // Face detection decoder - maps values to face detection on/off
-const_decoder!(FACE_DETECTION, i32, [(0, "Off"), (1, "On"),]);
+const_decoder!(pub FACE_DETECTION, i32, [(0, "Off"), (1, "On"),]);
 
 /// Represents a Panasonic MakerNote parser
 pub struct PanasonicParser;
