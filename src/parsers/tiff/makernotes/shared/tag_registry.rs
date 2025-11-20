@@ -423,7 +423,7 @@ impl TagRegistry {
         name: &'static str,
         decoder: Option<&'static SimpleValueDecoder<i32>>,
     ) -> Self {
-        let tag_decoder = decoder.map(|d| TagDecoder::SimpleI32(d));
+        let tag_decoder = decoder.map(TagDecoder::SimpleI32);
         self.tags.insert(
             id,
             TagDefinition {
@@ -481,7 +481,7 @@ impl TagRegistry {
         name: &'static str,
         decoder: Option<&'static SimpleValueDecoder<i32>>,
     ) -> Self {
-        let tag_decoder = decoder.map(|d| TagDecoder::SimpleI32(d));
+        let tag_decoder = decoder.map(TagDecoder::SimpleI32);
         self.tags.insert(
             id,
             TagDefinition {
@@ -546,11 +546,7 @@ impl TagRegistry {
     /// let registry = TagRegistry::new()
     ///     .register_array_schema(0x0001, &CAMERA_SETTINGS);
     /// ```
-    pub fn register_array_schema(
-        mut self,
-        tag_id: u16,
-        schema: &'static ArraySchema,
-    ) -> Self {
+    pub fn register_array_schema(mut self, tag_id: u16, schema: &'static ArraySchema) -> Self {
         self.tags.insert(
             tag_id,
             TagDefinition {

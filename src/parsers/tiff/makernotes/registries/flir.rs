@@ -4,28 +4,24 @@
 //! Supports thermal imaging cameras from E-Series, T-Series, P-Series, and other FLIR models.
 
 use super::super::shared::tag_registry::TagRegistry;
-use crate::const_decoder;
 
 // Re-export tag constants from flir.rs
 use super::super::flir::{
-    FLIR_TEMPERATURE_MIN, FLIR_TEMPERATURE_MAX, FLIR_TEMPERATURE_CENTER,
-    FLIR_EMISSIVITY, FLIR_REFLECTED_TEMP, FLIR_ATMOSPHERIC_TEMP,
-    FLIR_DISTANCE, FLIR_HUMIDITY, FLIR_PALETTE, FLIR_PALETTE_METHOD,
-    FLIR_PALETTE_STRETCH, FLIR_TEMPERATURE_RANGE_MIN, FLIR_TEMPERATURE_RANGE_MAX,
-    FLIR_ATMOSPHERIC_TRANS, FLIR_EXTERNAL_OPTICS_TEMP, FLIR_EXTERNAL_OPTICS_TRANS,
-    FLIR_IR_WINDOW_TEMP, FLIR_IR_WINDOW_TRANS, FLIR_PLANCK_R1, FLIR_PLANCK_R2,
-    FLIR_PLANCK_B, FLIR_PLANCK_F, FLIR_PLANCK_O, FLIR_CAMERA_TEMP_MIN,
-    FLIR_CAMERA_TEMP_MAX, FLIR_IMAGE_TYPE, FLIR_FOCUS_DISTANCE, FLIR_PEAK_TEMP,
-    FLIR_VALLEY_TEMP, FLIR_MEASUREMENT_MODE, FLIR_TEMPERATURE_UNIT,
-    FLIR_ISOTHERM_MIN, FLIR_ISOTHERM_MAX, FLIR_ISOTHERM_ENABLED,
-    FLIR_LEVEL_SPAN_AUTO, FLIR_GAIN_MODE, FLIR_FRAME_RATE,
+    FLIR_ATMOSPHERIC_TEMP, FLIR_ATMOSPHERIC_TRANS, FLIR_CAMERA_TEMP_MAX, FLIR_CAMERA_TEMP_MIN,
+    FLIR_DISTANCE, FLIR_EMISSIVITY, FLIR_EXTERNAL_OPTICS_TEMP, FLIR_EXTERNAL_OPTICS_TRANS,
+    FLIR_FOCUS_DISTANCE, FLIR_FRAME_RATE, FLIR_GAIN_MODE, FLIR_HUMIDITY, FLIR_IMAGE_TYPE,
+    FLIR_IR_WINDOW_TEMP, FLIR_IR_WINDOW_TRANS, FLIR_ISOTHERM_ENABLED, FLIR_ISOTHERM_MAX,
+    FLIR_ISOTHERM_MIN, FLIR_LEVEL_SPAN_AUTO, FLIR_MEASUREMENT_MODE, FLIR_PALETTE,
+    FLIR_PALETTE_METHOD, FLIR_PALETTE_STRETCH, FLIR_PEAK_TEMP, FLIR_PLANCK_B, FLIR_PLANCK_F,
+    FLIR_PLANCK_O, FLIR_PLANCK_R1, FLIR_PLANCK_R2, FLIR_REFLECTED_TEMP, FLIR_TEMPERATURE_CENTER,
+    FLIR_TEMPERATURE_MAX, FLIR_TEMPERATURE_MIN, FLIR_TEMPERATURE_RANGE_MAX,
+    FLIR_TEMPERATURE_RANGE_MIN, FLIR_TEMPERATURE_UNIT, FLIR_VALLEY_TEMP,
 };
 
 // Re-export decoders from flir.rs
 use super::super::flir::{
-    DECODE_PALETTE, DECODE_PALETTE_METHOD, DECODE_PALETTE_STRETCH,
-    DECODE_IMAGE_TYPE, DECODE_TEMPERATURE_UNIT, DECODE_MEASUREMENT_MODE,
-    DECODE_GAIN_MODE,
+    DECODE_GAIN_MODE, DECODE_IMAGE_TYPE, DECODE_MEASUREMENT_MODE, DECODE_PALETTE,
+    DECODE_PALETTE_METHOD, DECODE_PALETTE_STRETCH, DECODE_TEMPERATURE_UNIT,
 };
 
 // ============================================================================
@@ -113,13 +109,41 @@ pub fn flir_registry() -> TagRegistry {
         // Temperature measurements - all converted from Kelvin to Celsius
         .register_i16(FLIR_TEMPERATURE_MIN, "TemperatureMin", kelvin_to_celsius)
         .register_i16(FLIR_TEMPERATURE_MAX, "TemperatureMax", kelvin_to_celsius)
-        .register_i16(FLIR_TEMPERATURE_CENTER, "TemperatureCenter", kelvin_to_celsius)
-        .register_i16(FLIR_REFLECTED_TEMP, "ReflectedTemperature", kelvin_to_celsius)
-        .register_i16(FLIR_ATMOSPHERIC_TEMP, "AtmosphericTemperature", kelvin_to_celsius)
-        .register_i16(FLIR_EXTERNAL_OPTICS_TEMP, "ExternalOpticsTemperature", kelvin_to_celsius)
-        .register_i16(FLIR_IR_WINDOW_TEMP, "IRWindowTemperature", kelvin_to_celsius)
-        .register_i16(FLIR_CAMERA_TEMP_MIN, "CameraInternalTempMin", kelvin_to_celsius)
-        .register_i16(FLIR_CAMERA_TEMP_MAX, "CameraInternalTempMax", kelvin_to_celsius)
+        .register_i16(
+            FLIR_TEMPERATURE_CENTER,
+            "TemperatureCenter",
+            kelvin_to_celsius,
+        )
+        .register_i16(
+            FLIR_REFLECTED_TEMP,
+            "ReflectedTemperature",
+            kelvin_to_celsius,
+        )
+        .register_i16(
+            FLIR_ATMOSPHERIC_TEMP,
+            "AtmosphericTemperature",
+            kelvin_to_celsius,
+        )
+        .register_i16(
+            FLIR_EXTERNAL_OPTICS_TEMP,
+            "ExternalOpticsTemperature",
+            kelvin_to_celsius,
+        )
+        .register_i16(
+            FLIR_IR_WINDOW_TEMP,
+            "IRWindowTemperature",
+            kelvin_to_celsius,
+        )
+        .register_i16(
+            FLIR_CAMERA_TEMP_MIN,
+            "CameraInternalTempMin",
+            kelvin_to_celsius,
+        )
+        .register_i16(
+            FLIR_CAMERA_TEMP_MAX,
+            "CameraInternalTempMax",
+            kelvin_to_celsius,
+        )
         .register_i16(FLIR_PEAK_TEMP, "PeakTemperature", kelvin_to_celsius)
         .register_i16(FLIR_VALLEY_TEMP, "ValleyTemperature", kelvin_to_celsius)
         .register_i16(FLIR_ISOTHERM_MIN, "IsothermMin", kelvin_to_celsius)
@@ -132,9 +156,21 @@ pub fn flir_registry() -> TagRegistry {
         .register_i16(FLIR_FOCUS_DISTANCE, "FocusDistance", format_distance)
         // Environmental parameters
         .register_i16(FLIR_HUMIDITY, "RelativeHumidity", format_humidity)
-        .register_i16(FLIR_ATMOSPHERIC_TRANS, "AtmosphericTransmission", format_transmission)
-        .register_i16(FLIR_EXTERNAL_OPTICS_TRANS, "ExternalOpticsTransmission", format_transmission)
-        .register_i16(FLIR_IR_WINDOW_TRANS, "IRWindowTransmission", format_transmission)
+        .register_i16(
+            FLIR_ATMOSPHERIC_TRANS,
+            "AtmosphericTransmission",
+            format_transmission,
+        )
+        .register_i16(
+            FLIR_EXTERNAL_OPTICS_TRANS,
+            "ExternalOpticsTransmission",
+            format_transmission,
+        )
+        .register_i16(
+            FLIR_IR_WINDOW_TRANS,
+            "IRWindowTransmission",
+            format_transmission,
+        )
         // Radiometric calibration constants
         .register_i16(FLIR_PLANCK_R1, "PlanckR1", format_planck_constant)
         .register_i16(FLIR_PLANCK_R2, "PlanckR2", format_planck_constant)
@@ -144,10 +180,22 @@ pub fn flir_registry() -> TagRegistry {
         // Display and processing modes
         .register_simple_i16(FLIR_PALETTE, "Palette", &DECODE_PALETTE)
         .register_simple_i16(FLIR_PALETTE_METHOD, "PaletteMethod", &DECODE_PALETTE_METHOD)
-        .register_simple_i16(FLIR_PALETTE_STRETCH, "PaletteStretch", &DECODE_PALETTE_STRETCH)
+        .register_simple_i16(
+            FLIR_PALETTE_STRETCH,
+            "PaletteStretch",
+            &DECODE_PALETTE_STRETCH,
+        )
         .register_simple_i16(FLIR_IMAGE_TYPE, "ImageType", &DECODE_IMAGE_TYPE)
-        .register_simple_i16(FLIR_MEASUREMENT_MODE, "MeasurementMode", &DECODE_MEASUREMENT_MODE)
-        .register_simple_i16(FLIR_TEMPERATURE_UNIT, "TemperatureUnit", &DECODE_TEMPERATURE_UNIT)
+        .register_simple_i16(
+            FLIR_MEASUREMENT_MODE,
+            "MeasurementMode",
+            &DECODE_MEASUREMENT_MODE,
+        )
+        .register_simple_i16(
+            FLIR_TEMPERATURE_UNIT,
+            "TemperatureUnit",
+            &DECODE_TEMPERATURE_UNIT,
+        )
         .register_simple_i16(FLIR_GAIN_MODE, "GainMode", &DECODE_GAIN_MODE)
         // Boolean flags
         .register_i16(FLIR_ISOTHERM_ENABLED, "IsothermEnabled", decode_yes_no)
@@ -175,7 +223,10 @@ mod tests {
     fn test_registry_tag_names() {
         let registry = flir_registry();
 
-        assert_eq!(registry.get_tag_name(FLIR_TEMPERATURE_MIN), Some("TemperatureMin"));
+        assert_eq!(
+            registry.get_tag_name(FLIR_TEMPERATURE_MIN),
+            Some("TemperatureMin")
+        );
         assert_eq!(registry.get_tag_name(FLIR_EMISSIVITY), Some("Emissivity"));
         assert_eq!(registry.get_tag_name(FLIR_PALETTE), Some("Palette"));
     }

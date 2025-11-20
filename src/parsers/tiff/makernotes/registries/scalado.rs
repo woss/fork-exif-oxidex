@@ -3,14 +3,14 @@
 //! This module provides TagRegistry definitions for Scalado MakerNotes.
 //! Scalado specializes in mobile photo editing metadata.
 
-use crate::const_decoder;
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Decodes Scalado filter type
+// Decodes Scalado filter type
 const_decoder!(
     DECODE_FILTER_TYPE,
     i16,
@@ -26,16 +26,11 @@ const_decoder!(
     ]
 );
 
-/// Decodes Scalado auto-enhance level
+// Decodes Scalado auto-enhance level
 const_decoder!(
     DECODE_AUTO_ENHANCE,
     i16,
-    [
-        (0, "Off"),
-        (1, "Low"),
-        (2, "Medium"),
-        (3, "High"),
-    ]
+    [(0, "Off"), (1, "Low"), (2, "Medium"), (3, "High"),]
 );
 
 // ============================================================================

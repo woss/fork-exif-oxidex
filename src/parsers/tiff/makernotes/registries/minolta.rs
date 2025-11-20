@@ -7,19 +7,32 @@ use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from minolta.rs
 use super::super::minolta::{
-    DECODE_IMAGE_QUALITY, DECODE_FLASH_MODE, DECODE_WHITE_BALANCE,
-    DECODE_FOCUS_MODE, DECODE_COLOR_MODE, DECODE_EXPOSURE_MODE,
-    DECODE_SCENE_MODE,
+    DECODE_COLOR_MODE, DECODE_EXPOSURE_MODE, DECODE_FLASH_MODE, DECODE_FOCUS_MODE,
+    DECODE_IMAGE_QUALITY, DECODE_SCENE_MODE, DECODE_WHITE_BALANCE,
 };
 
 // Wrapper functions to convert SimpleValueDecoder to function pointers
-fn decode_image_quality(value: u16) -> String { DECODE_IMAGE_QUALITY.decode(value) }
-fn decode_flash_mode(value: u16) -> String { DECODE_FLASH_MODE.decode(value) }
-fn decode_white_balance(value: u16) -> String { DECODE_WHITE_BALANCE.decode(value) }
-fn decode_focus_mode(value: u16) -> String { DECODE_FOCUS_MODE.decode(value) }
-fn decode_color_mode(value: u16) -> String { DECODE_COLOR_MODE.decode(value) }
-fn decode_exposure_mode(value: u16) -> String { DECODE_EXPOSURE_MODE.decode(value) }
-fn decode_scene_mode(value: u16) -> String { DECODE_SCENE_MODE.decode(value) }
+fn decode_image_quality(value: u16) -> String {
+    DECODE_IMAGE_QUALITY.decode(value)
+}
+fn decode_flash_mode(value: u16) -> String {
+    DECODE_FLASH_MODE.decode(value)
+}
+fn decode_white_balance(value: u16) -> String {
+    DECODE_WHITE_BALANCE.decode(value)
+}
+fn decode_focus_mode(value: u16) -> String {
+    DECODE_FOCUS_MODE.decode(value)
+}
+fn decode_color_mode(value: u16) -> String {
+    DECODE_COLOR_MODE.decode(value)
+}
+fn decode_exposure_mode(value: u16) -> String {
+    DECODE_EXPOSURE_MODE.decode(value)
+}
+fn decode_scene_mode(value: u16) -> String {
+    DECODE_SCENE_MODE.decode(value)
+}
 
 /// Create and return the Minolta tag registry
 ///
@@ -35,44 +48,35 @@ pub fn minolta_registry() -> TagRegistry {
         // Camera Settings
         .register_raw(0x0001, "CameraSettingsOld")
         .register_raw(0x0003, "CameraSettings")
-
         // Image Parameters
         .register_raw(0x0040, "ImageSize")
         .register_u16(0x0041, "ImageQuality", decode_image_quality)
-
         // Flash Settings
         .register_u16(0x0042, "FlashMode", decode_flash_mode)
         .register_raw(0x0043, "FlashExposureComp")
-
         // Lens and Optical
         .register_raw(0x0044, "Teleconverter")
-        .register_raw(0x0054, "LensID")  // Used for lens database lookup
+        .register_raw(0x0054, "LensID") // Used for lens database lookup
         .register_raw(0x0055, "MinFocalLength")
         .register_raw(0x0056, "MaxFocalLength")
-
         // White Balance and Color
         .register_u16(0x0045, "WhiteBalance", decode_white_balance)
         .register_u16(0x0050, "ColorMode", decode_color_mode)
         .register_raw(0x0046, "Brightness")
         .register_raw(0x004E, "Saturation")
-
         // Focus Settings
         .register_u16(0x0047, "FocusMode", decode_focus_mode)
         .register_raw(0x0048, "FocusDistance")
         .register_raw(0x0059, "AFPoints")
-
         // Zoom and Macro
         .register_raw(0x004A, "ZoomPosition")
         .register_raw(0x004B, "MacroMode")
-
         // Image Enhancement
         .register_raw(0x004C, "Sharpness")
         .register_raw(0x004D, "Contrast")
-
         // Shooting Modes
         .register_u16(0x0052, "SceneMode", decode_scene_mode)
         .register_u16(0x0053, "ExposureMode", decode_exposure_mode)
-
         // Camera Information
         .register_raw(0x0058, "FirmwareVersion")
 }

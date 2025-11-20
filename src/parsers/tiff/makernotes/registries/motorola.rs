@@ -6,13 +6,15 @@
 use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from motorola.rs
-use super::super::motorola::{
-    CAMERA_MODE, SCENE_MODE,
-};
+use super::super::motorola::{CAMERA_MODE, SCENE_MODE};
 
 // Wrapper functions to convert SimpleValueDecoder to function pointers
-fn decode_camera_mode(value: u16) -> String { CAMERA_MODE.decode(value) }
-fn decode_scene_mode(value: u16) -> String { SCENE_MODE.decode(value) }
+fn decode_camera_mode(value: u16) -> String {
+    CAMERA_MODE.decode(value)
+}
+fn decode_scene_mode(value: u16) -> String {
+    SCENE_MODE.decode(value)
+}
 
 /// Create and return the Motorola tag registry
 ///
@@ -26,21 +28,16 @@ pub fn motorola_registry() -> TagRegistry {
     TagRegistry::new()
         // Camera Modes
         .register_u16(0x0001, "CameraMode", decode_camera_mode)
-
         // Computational Photography
         .register_raw(0x0002, "HDRMode")
         .register_raw(0x0003, "NightMode")
-
         // Burst and Continuous Shooting
         .register_raw(0x0004, "BurstMode")
-
         // Scene Detection
         .register_u16(0x0005, "SceneMode", decode_scene_mode)
-
         // Flash and Focus
         .register_raw(0x0006, "FlashMode")
         .register_raw(0x0007, "FocusMode")
-
         // Portrait Mode
         .register_raw(0x0008, "PortraitMode")
 }

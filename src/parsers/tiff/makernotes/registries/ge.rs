@@ -6,13 +6,15 @@
 use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from ge.rs
-use super::super::ge::{
-    DECODE_QUALITY, DECODE_SCENE_MODE,
-};
+use super::super::ge::{DECODE_QUALITY, DECODE_SCENE_MODE};
 
 // Wrapper functions to convert SimpleValueDecoder to function pointers
-fn decode_quality(value: u16) -> String { DECODE_QUALITY.decode(value) }
-fn decode_scene_mode(value: u16) -> String { DECODE_SCENE_MODE.decode(value) }
+fn decode_quality(value: u16) -> String {
+    DECODE_QUALITY.decode(value)
+}
+fn decode_scene_mode(value: u16) -> String {
+    DECODE_SCENE_MODE.decode(value)
+}
 
 /// Create and return the GE tag registry
 ///
@@ -25,16 +27,12 @@ pub fn ge_registry() -> TagRegistry {
     TagRegistry::new()
         // Image Quality
         .register_u16(0x0001, "Quality", decode_quality)
-
         // Focus Settings
         .register_raw(0x0002, "FocusMode")
-
         // Flash and Exposure
         .register_raw(0x0003, "FlashMode")
-
         // Scene Mode
         .register_u16(0x0004, "SceneMode", decode_scene_mode)
-
         // White Balance
         .register_raw(0x0005, "WhiteBalance")
 }

@@ -3,29 +3,25 @@
 //! Registry of all GoPro MakerNote tags with their metadata and decoders.
 //! Supports HERO series action cameras from HERO4 through HERO12 Black.
 
-use super::super::shared::tag_registry::TagRegistry;
 use super::super::shared::generic_decoders::{ON_OFF, YES_NO};
-use crate::const_decoder;
+use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export tag constants from gopro.rs
 use super::super::gopro::{
-    GOPRO_RESOLUTION, GOPRO_FOV, GOPRO_WHITE_BALANCE, GOPRO_COLOR,
-    GOPRO_SHARPNESS, GOPRO_CONTRAST, GOPRO_SATURATION, GOPRO_METERING,
-    GOPRO_HYPERSMOOTH, GOPRO_VIDEO_ENCODING, GOPRO_SUPER_PHOTO,
-    GOPRO_NIGHT_PHOTO, GOPRO_BURST_RATE, GOPRO_ORIENTATION,
-    GOPRO_LOW_LIGHT, GOPRO_PROTUNE, GOPRO_SPOT_METER, GOPRO_EIS,
-    GOPRO_BOOST, GOPRO_AUTO_BOOST, GOPRO_HDR, GOPRO_RAW_AUDIO,
-    GOPRO_WIND_NOISE, GOPRO_LIVE_BURST, GOPRO_GPS_FIX, GOPRO_FRAME_RATE,
-    GOPRO_EXPOSURE, GOPRO_SHUTTER, GOPRO_DIGITAL_ZOOM, GOPRO_TIMEWARP_SPEED,
-    GOPRO_BIT_RATE, GOPRO_TIMELAPSE_INTERVAL, GOPRO_NIGHT_LAPSE_INTERVAL,
-    GOPRO_LOOP_DURATION, GOPRO_ISO_MIN, GOPRO_ISO_MAX,
+    GOPRO_AUTO_BOOST, GOPRO_BIT_RATE, GOPRO_BOOST, GOPRO_BURST_RATE, GOPRO_COLOR, GOPRO_CONTRAST,
+    GOPRO_DIGITAL_ZOOM, GOPRO_EIS, GOPRO_EXPOSURE, GOPRO_FOV, GOPRO_FRAME_RATE, GOPRO_GPS_FIX,
+    GOPRO_HDR, GOPRO_HYPERSMOOTH, GOPRO_ISO_MAX, GOPRO_ISO_MIN, GOPRO_LIVE_BURST,
+    GOPRO_LOOP_DURATION, GOPRO_LOW_LIGHT, GOPRO_METERING, GOPRO_NIGHT_LAPSE_INTERVAL,
+    GOPRO_NIGHT_PHOTO, GOPRO_ORIENTATION, GOPRO_PROTUNE, GOPRO_RAW_AUDIO, GOPRO_RESOLUTION,
+    GOPRO_SATURATION, GOPRO_SHARPNESS, GOPRO_SHUTTER, GOPRO_SPOT_METER, GOPRO_SUPER_PHOTO,
+    GOPRO_TIMELAPSE_INTERVAL, GOPRO_TIMEWARP_SPEED, GOPRO_VIDEO_ENCODING, GOPRO_WHITE_BALANCE,
+    GOPRO_WIND_NOISE,
 };
 
 // Re-export decoders from gopro.rs
 use super::super::gopro::{
-    FOV, WHITE_BALANCE, COLOR_PROFILE, SHARPNESS, CONTRAST, SATURATION,
-    METERING, HYPERSMOOTH, RESOLUTION, VIDEO_ENCODING, SUPER_PHOTO,
-    NIGHT_PHOTO, BURST_RATE, ORIENTATION,
+    BURST_RATE, COLOR_PROFILE, CONTRAST, FOV, HYPERSMOOTH, METERING, NIGHT_PHOTO, ORIENTATION,
+    RESOLUTION, SATURATION, SHARPNESS, SUPER_PHOTO, VIDEO_ENCODING, WHITE_BALANCE,
 };
 
 // ============================================================================
@@ -165,8 +161,16 @@ pub fn gopro_registry() -> TagRegistry {
         .register_i16(GOPRO_DIGITAL_ZOOM, "DigitalZoom", format_digital_zoom)
         .register_i16(GOPRO_TIMEWARP_SPEED, "TimeWarpSpeed", format_timewarp_speed)
         .register_i16(GOPRO_BIT_RATE, "BitRate", format_bitrate)
-        .register_i16(GOPRO_TIMELAPSE_INTERVAL, "TimelapseInterval", format_interval)
-        .register_i16(GOPRO_NIGHT_LAPSE_INTERVAL, "NightLapseInterval", format_interval)
+        .register_i16(
+            GOPRO_TIMELAPSE_INTERVAL,
+            "TimelapseInterval",
+            format_interval,
+        )
+        .register_i16(
+            GOPRO_NIGHT_LAPSE_INTERVAL,
+            "NightLapseInterval",
+            format_interval,
+        )
         .register_i16(GOPRO_LOOP_DURATION, "LoopDuration", format_loop_duration)
         // Raw value tags - no decoding needed, displayed as-is
         .register_raw(GOPRO_ISO_MIN, "ISOMin")
@@ -194,7 +198,10 @@ mod tests {
 
         assert_eq!(registry.get_tag_name(GOPRO_RESOLUTION), Some("Resolution"));
         assert_eq!(registry.get_tag_name(GOPRO_FOV), Some("FieldOfView"));
-        assert_eq!(registry.get_tag_name(GOPRO_HYPERSMOOTH), Some("HyperSmooth"));
+        assert_eq!(
+            registry.get_tag_name(GOPRO_HYPERSMOOTH),
+            Some("HyperSmooth")
+        );
     }
 
     #[test]

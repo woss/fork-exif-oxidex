@@ -3,26 +3,21 @@
 //! This module provides TagRegistry definitions for InDesign MakerNotes.
 //! InDesign stores document placement and layout metadata for embedded images.
 
-use crate::const_decoder;
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Decodes color space
+// Decodes color space
 const_decoder!(
     DECODE_COLOR_SPACE,
     i16,
-    [
-        (0, "RGB"),
-        (1, "CMYK"),
-        (2, "Lab"),
-        (3, "Grayscale"),
-    ]
+    [(0, "RGB"), (1, "CMYK"), (2, "Lab"), (3, "Grayscale"),]
 );
 
-/// Decodes text wrap type
+// Decodes text wrap type
 const_decoder!(
     DECODE_TEXT_WRAP,
     i16,
@@ -35,7 +30,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes frame fitting option
+// Decodes frame fitting option
 const_decoder!(
     DECODE_FRAME_FITTING,
     i16,
@@ -48,15 +43,11 @@ const_decoder!(
     ]
 );
 
-/// Decodes print setting
+// Decodes print setting
 const_decoder!(
     DECODE_PRINT_SETTING,
     i16,
-    [
-        (0, "Default"),
-        (1, "Print"),
-        (2, "Non-Print"),
-    ]
+    [(0, "Default"), (1, "Print"), (2, "Non-Print"),]
 );
 
 // ============================================================================

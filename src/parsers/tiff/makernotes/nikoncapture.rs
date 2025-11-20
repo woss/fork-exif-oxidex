@@ -172,8 +172,8 @@ impl NikonCaptureParser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::registries::nikoncapture::*;
+    use super::*;
 
     #[test]
     fn test_nikon_capture_parser_creation() {

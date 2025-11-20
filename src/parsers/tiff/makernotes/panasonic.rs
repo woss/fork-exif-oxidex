@@ -505,7 +505,6 @@ pub fn is_panasonic_makernote(data: &[u8]) -> bool {
     parser.validate_header(data)
 }
 
-
 /// Parses IFD entries in the specified byte order
 fn parse_ifd_entries(
     input: &[u8],

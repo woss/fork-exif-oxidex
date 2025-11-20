@@ -707,7 +707,7 @@ impl MakerNoteParser for PentaxParser {
                     tags.insert("Pentax:DestinationCity".to_string(), value.to_string());
                 }
 
-                PENTAX_PICTURE_MODE_2 => {
+                PENTAX_PICTURE_MODE2 => {
                     let value = entry.value_offset as i32;
                     tags.insert("Pentax:PictureMode2".to_string(), value.to_string());
                 }

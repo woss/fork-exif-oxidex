@@ -6,16 +6,24 @@
 use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from sanyo.rs
-use super::super::sanyo::{
-    QUALITY, FOCUS_MODE, SEQUENTIAL_MODE, SCENE_MODE, RECORD_MODE,
-};
+use super::super::sanyo::{FOCUS_MODE, QUALITY, RECORD_MODE, SCENE_MODE, SEQUENTIAL_MODE};
 
 // Wrapper functions to convert SimpleValueDecoder to function pointers
-fn decode_quality(value: u16) -> String { QUALITY.decode(value) }
-fn decode_focus_mode(value: u16) -> String { FOCUS_MODE.decode(value) }
-fn decode_sequential_mode(value: u16) -> String { SEQUENTIAL_MODE.decode(value) }
-fn decode_scene_mode(value: u16) -> String { SCENE_MODE.decode(value) }
-fn decode_record_mode(value: u16) -> String { RECORD_MODE.decode(value) }
+fn decode_quality(value: u16) -> String {
+    QUALITY.decode(value)
+}
+fn decode_focus_mode(value: u16) -> String {
+    FOCUS_MODE.decode(value)
+}
+fn decode_sequential_mode(value: u16) -> String {
+    SEQUENTIAL_MODE.decode(value)
+}
+fn decode_scene_mode(value: u16) -> String {
+    SCENE_MODE.decode(value)
+}
+fn decode_record_mode(value: u16) -> String {
+    RECORD_MODE.decode(value)
+}
 
 /// Create and return the Sanyo tag registry
 ///
@@ -30,19 +38,15 @@ pub fn sanyo_registry() -> TagRegistry {
         // Image Quality and Mode
         .register_u16(0x0100, "Quality", decode_quality)
         .register_u16(0x010B, "RecordMode", decode_record_mode)
-
         // Focus and Flash
         .register_u16(0x0102, "FocusMode", decode_focus_mode)
         .register_raw(0x0103, "FlashMode")
-
         // Shooting Modes
         .register_u16(0x0104, "SequentialMode", decode_sequential_mode)
         .register_u16(0x010A, "SceneMode", decode_scene_mode)
-
         // Color and White Balance
         .register_raw(0x0105, "WhiteBalance")
         .register_raw(0x0108, "ColorMode")
-
         // Image Enhancement
         .register_raw(0x0107, "Sharpness")
 }

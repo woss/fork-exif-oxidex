@@ -10,8 +10,8 @@ use super::super::shared::tag_registry::TagRegistry;
 // These decoders are defined using const_decoder! macros in the main parser
 use super::super::leica::{
     DECODER_AF_MODE, DECODER_CROP_MODE, DECODER_EXPOSURE_MODE, DECODER_FLASH_MODE,
-    DECODER_IMAGE_STABILIZATION, DECODER_METERING_MODE, DECODER_QUALITY,
-    DECODER_SCENE_MODE, DECODER_USER_PROFILE, DECODER_WHITE_BALANCE,
+    DECODER_IMAGE_STABILIZATION, DECODER_METERING_MODE, DECODER_QUALITY, DECODER_SCENE_MODE,
+    DECODER_USER_PROFILE, DECODER_WHITE_BALANCE,
 };
 
 // ============================================================================
@@ -40,7 +40,6 @@ pub fn leica_registry() -> TagRegistry {
         .register_string_tag(0x0027, "InternalSerialNumber")
         .register_string_tag(0x0031, "LensSerialNumber")
         .register_string_tag(0x0043, "UserComment")
-
         // Enumerated tags with decoders
         .register_enum_tag_required(0x0003, "Quality", &DECODER_QUALITY)
         .register_enum_tag_required(0x0004, "UserProfile", &DECODER_USER_PROFILE)
@@ -61,7 +60,6 @@ pub fn leica_registry() -> TagRegistry {
         .register_enum_tag(0x0062, "PerspectiveControl", None)
         .register_enum_tag(0x0070, "MacroMode", None)
         .register_enum_tag_required(0x0071, "SceneMode", &DECODER_SCENE_MODE)
-
         // Simple integer/numeric tags
         .register_integer_tag(0x0008, "ExternalSensorBrightnessValue", None)
         .register_integer_tag(0x0009, "MeasuredLV", None)

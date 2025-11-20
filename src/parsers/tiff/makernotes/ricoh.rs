@@ -25,10 +25,10 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::ricoh::ricoh_registry;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::ricoh::ricoh_registry;
 
 // ============================================================================
 // Ricoh MakerNote Tag IDs (for parsing reference)
@@ -112,7 +112,11 @@ impl RicohParser {
 
             // Focus mode: manual binary decode
             RICOH_FOCUS_MODE => {
-                if value == 0 { "Auto".to_string() } else { "Manual".to_string() }
+                if value == 0 {
+                    "Auto".to_string()
+                } else {
+                    "Manual".to_string()
+                }
             }
 
             // Numeric tags: ISO, Sharpness
@@ -202,10 +206,7 @@ mod tests {
 
     #[test]
     fn test_tag_registry() {
-        assert_eq!(
-            TAG_REGISTRY.get_tag_name(0x0005),
-            Some("ShootingMode")
-        );
+        assert_eq!(TAG_REGISTRY.get_tag_name(0x0005), Some("ShootingMode"));
         assert!(TAG_REGISTRY.has_tag(0x000C));
         assert_eq!(TAG_REGISTRY.get_tag_name(0x001E), Some("WhiteBalance"));
     }

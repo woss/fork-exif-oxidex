@@ -58,7 +58,11 @@ pub fn apple_registry() -> TagRegistry {
         // Computational photography tags with decoders
         .register_simple_i16(APPLE_HDR_IMAGE_TYPE, "HDRImageType", &DECODE_HDR_TYPE)
         .register_simple_i16(APPLE_PORTRAIT_DATA, "PortraitMode", &DECODE_PORTRAIT_MODE)
-        .register_simple_i16(APPLE_SEMANTIC_STYLE, "SemanticStyle", &DECODE_SEMANTIC_STYLE)
+        .register_simple_i16(
+            APPLE_SEMANTIC_STYLE,
+            "SemanticStyle",
+            &DECODE_SEMANTIC_STYLE,
+        )
         .register_simple_i16(APPLE_SCENE_DETECTION, "SceneDetection", &DECODE_SCENE_TYPE)
         .register_simple_i16(APPLE_LENS_MODEL, "LensModel", &DECODE_LENS_MODEL)
         // Raw integer/string tags
@@ -139,20 +143,14 @@ mod tests {
         let registry = apple_registry();
         assert_eq!(registry.decode_i16(APPLE_HDR_IMAGE_TYPE, 0), "Off");
         assert_eq!(registry.decode_i16(APPLE_HDR_IMAGE_TYPE, 4), "Smart HDR");
-        assert_eq!(
-            registry.decode_i16(APPLE_HDR_IMAGE_TYPE, 8),
-            "Smart HDR 5"
-        );
+        assert_eq!(registry.decode_i16(APPLE_HDR_IMAGE_TYPE, 8), "Smart HDR 5");
     }
 
     #[test]
     fn test_portrait_mode_decoding() {
         let registry = apple_registry();
         assert_eq!(registry.decode_i16(APPLE_PORTRAIT_DATA, 0), "Off");
-        assert_eq!(
-            registry.decode_i16(APPLE_PORTRAIT_DATA, 1),
-            "Natural Light"
-        );
+        assert_eq!(registry.decode_i16(APPLE_PORTRAIT_DATA, 1), "Natural Light");
         assert_eq!(registry.decode_i16(APPLE_PORTRAIT_DATA, 4), "Stage Light");
     }
 

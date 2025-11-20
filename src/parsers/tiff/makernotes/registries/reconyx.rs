@@ -4,14 +4,14 @@
 //! Reconyx specializes in motion-triggered wildlife and trail cameras
 //! with comprehensive environmental and sensor metadata.
 
-use crate::const_decoder;
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Decodes Reconyx trigger mode
+// Decodes Reconyx trigger mode
 const_decoder!(
     TRIGGER_MODE,
     i16,
@@ -22,7 +22,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes moon phase
+// Decodes moon phase
 const_decoder!(
     MOON_PHASE,
     i16,

@@ -22,21 +22,37 @@ use once_cell::sync::Lazy;
 // Tag ID Constants
 // ============================================================================
 
+/// AI Scene Optimizer enabled
 pub const SAMSUNG_SCENE_OPTIMIZER: u16 = 0x0001;
+/// Detected scene type
 pub const SAMSUNG_SCENE_TYPE: u16 = 0x0002;
+/// Single Take mode enabled
 pub const SAMSUNG_SINGLE_TAKE: u16 = 0x0005;
+/// Single Take frame number
 pub const SAMSUNG_SINGLE_TAKE_FRAME: u16 = 0x0006;
+/// Expert RAW mode enabled
 pub const SAMSUNG_EXPERT_RAW: u16 = 0x0008;
+/// Multi-frame noise reduction enabled
 pub const SAMSUNG_MULTI_FRAME_NR: u16 = 0x000A;
+/// Director's View multi-camera mode
 pub const SAMSUNG_DIRECTORS_VIEW: u16 = 0x000C;
+/// Pro mode manual controls enabled
 pub const SAMSUNG_PRO_MODE: u16 = 0x000E;
+/// Object tracking autofocus enabled
 pub const SAMSUNG_OBJECT_TRACKING: u16 = 0x0010;
+/// Night mode processing enabled
 pub const SAMSUNG_NIGHT_MODE: u16 = 0x0012;
+/// Night Hyperlapse mode enabled
 pub const SAMSUNG_NIGHT_HYPERLAPSE: u16 = 0x0014;
+/// Super Steady video stabilization
 pub const SAMSUNG_SUPER_STEADY: u16 = 0x0016;
+/// Food photography mode enabled
 pub const SAMSUNG_FOOD_MODE: u16 = 0x0018;
+/// Portrait Live Focus effect
 pub const SAMSUNG_PORTRAIT_EFFECT: u16 = 0x001A;
+/// Active camera lens identifier
 pub const SAMSUNG_LENS_TYPE: u16 = 0x001C;
+/// Digital zoom magnification level
 pub const SAMSUNG_ZOOM_LEVEL: u16 = 0x001E;
 
 // ============================================================================

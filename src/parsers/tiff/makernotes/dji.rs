@@ -43,8 +43,7 @@ use super::shared::array_extractors::extract_i16_array;
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 
-// TODO: DJI registry will be created in Batch 3
-// use super::registries::dji::dji_registry;
+use super::registries::dji::dji_registry;
 
 // ============================================================================
 // Tag ID Constants
@@ -58,34 +57,62 @@ const DJI_MODEL: u16 = 0x0003; // Drone model (e.g., "FC6310")
 const DJI_FIRMWARE_VERSION: u16 = 0x0004; // Firmware version string
 const DJI_SERIAL_NUMBER: u16 = 0x000A; // Drone serial number
 const DJI_FLIGHT_DATA: u16 = 0x0100; // Flight telemetry array
-pub const DJI_GPS_LATITUDE: u16 = 0x0101; // GPS latitude (signed int, scale: 1e-7)
-pub const DJI_GPS_LONGITUDE: u16 = 0x0102; // GPS longitude (signed int, scale: 1e-7)
-pub const DJI_GPS_ALTITUDE: u16 = 0x0103; // Absolute altitude MSL (meters)
-pub const DJI_RELATIVE_ALTITUDE: u16 = 0x0104; // Relative altitude from takeoff (meters)
-pub const DJI_GIMBAL_PITCH: u16 = 0x0105; // Gimbal pitch angle (degrees, -90 to +30)
-pub const DJI_GIMBAL_ROLL: u16 = 0x0106; // Gimbal roll angle (degrees)
-pub const DJI_GIMBAL_YAW: u16 = 0x0107; // Gimbal yaw angle (degrees, 0-360)
-pub const DJI_FLIGHT_SPEED: u16 = 0x0108; // Ground speed (m/s)
-pub const DJI_FLIGHT_DIRECTION: u16 = 0x0109; // Flight direction (degrees, 0-360)
-pub const DJI_AIRCRAFT_YAW: u16 = 0x010A; // Aircraft yaw/heading (degrees)
-pub const DJI_AIRCRAFT_PITCH: u16 = 0x010B; // Aircraft pitch (degrees)
-pub const DJI_AIRCRAFT_ROLL: u16 = 0x010C; // Aircraft roll (degrees)
-pub const DJI_HOME_DISTANCE: u16 = 0x010D; // Distance from home point (meters)
-pub const DJI_BATTERY_LEVEL: u16 = 0x010E; // Battery percentage (0-100)
-pub const DJI_BATTERY_VOLTAGE: u16 = 0x010F; // Battery voltage (millivolts)
-pub const DJI_FLIGHT_TIME: u16 = 0x0110; // Flight time (seconds)
-pub const DJI_FLIGHT_MODE: u16 = 0x0111; // Flight mode code
-pub const DJI_GPS_SIGNAL: u16 = 0x0112; // GPS signal strength (0-5)
-pub const DJI_SATELLITE_COUNT: u16 = 0x0113; // Number of GPS satellites
-pub const DJI_OBSTACLE_AVOID: u16 = 0x0114; // Obstacle avoidance status
-pub const DJI_CAMERA_ISO: u16 = 0x0115; // Camera ISO value
-pub const DJI_CAMERA_SHUTTER: u16 = 0x0116; // Shutter speed (1/n)
-pub const DJI_CAMERA_APERTURE: u16 = 0x0117; // Aperture f-number (f/n)
-pub const DJI_CAMERA_EV: u16 = 0x0118; // Exposure compensation (EV)
-pub const DJI_CAMERA_WB: u16 = 0x0119; // White balance mode
-pub const DJI_IMAGE_FORMAT: u16 = 0x011A; // Image format (JPEG/RAW/DNG)
-pub const DJI_COLOR_MODE: u16 = 0x011B; // Color mode (Normal/D-Cinelike/D-Log)
-pub const DJI_HASSELBLAD: u16 = 0x011C; // Hasselblad camera flag
+/// GPS latitude (signed int, scale: 1e-7)
+pub const DJI_GPS_LATITUDE: u16 = 0x0101;
+/// GPS longitude (signed int, scale: 1e-7)
+pub const DJI_GPS_LONGITUDE: u16 = 0x0102;
+/// Absolute altitude MSL (meters)
+pub const DJI_GPS_ALTITUDE: u16 = 0x0103;
+/// Relative altitude from takeoff (meters)
+pub const DJI_RELATIVE_ALTITUDE: u16 = 0x0104;
+/// Gimbal pitch angle (degrees, -90 to +30)
+pub const DJI_GIMBAL_PITCH: u16 = 0x0105;
+/// Gimbal roll angle (degrees)
+pub const DJI_GIMBAL_ROLL: u16 = 0x0106;
+/// Gimbal yaw angle (degrees, 0-360)
+pub const DJI_GIMBAL_YAW: u16 = 0x0107;
+/// Ground speed (m/s)
+pub const DJI_FLIGHT_SPEED: u16 = 0x0108;
+/// Flight direction (degrees, 0-360)
+pub const DJI_FLIGHT_DIRECTION: u16 = 0x0109;
+/// Aircraft yaw/heading (degrees)
+pub const DJI_AIRCRAFT_YAW: u16 = 0x010A;
+/// Aircraft pitch (degrees)
+pub const DJI_AIRCRAFT_PITCH: u16 = 0x010B;
+/// Aircraft roll (degrees)
+pub const DJI_AIRCRAFT_ROLL: u16 = 0x010C;
+/// Distance from home point (meters)
+pub const DJI_HOME_DISTANCE: u16 = 0x010D;
+/// Battery percentage (0-100)
+pub const DJI_BATTERY_LEVEL: u16 = 0x010E;
+/// Battery voltage (millivolts)
+pub const DJI_BATTERY_VOLTAGE: u16 = 0x010F;
+/// Flight time (seconds)
+pub const DJI_FLIGHT_TIME: u16 = 0x0110;
+/// Flight mode code
+pub const DJI_FLIGHT_MODE: u16 = 0x0111;
+/// GPS signal strength (0-5)
+pub const DJI_GPS_SIGNAL: u16 = 0x0112;
+/// Number of GPS satellites
+pub const DJI_SATELLITE_COUNT: u16 = 0x0113;
+/// Obstacle avoidance status
+pub const DJI_OBSTACLE_AVOID: u16 = 0x0114;
+/// Camera ISO value
+pub const DJI_CAMERA_ISO: u16 = 0x0115;
+/// Shutter speed (1/n)
+pub const DJI_CAMERA_SHUTTER: u16 = 0x0116;
+/// Aperture f-number (f/n)
+pub const DJI_CAMERA_APERTURE: u16 = 0x0117;
+/// Exposure compensation (EV)
+pub const DJI_CAMERA_EV: u16 = 0x0118;
+/// White balance mode
+pub const DJI_CAMERA_WB: u16 = 0x0119;
+/// Image format (JPEG/RAW/DNG)
+pub const DJI_IMAGE_FORMAT: u16 = 0x011A;
+/// Color mode (Normal/D-Cinelike/D-Log)
+pub const DJI_COLOR_MODE: u16 = 0x011B;
+/// Hasselblad camera flag
+pub const DJI_HASSELBLAD: u16 = 0x011C;
 const DJI_DEWARP_DATA: u16 = 0x011D; // Lens distortion correction data
 const DJI_HYPERLAPSE_MODE: u16 = 0x011E; // Hyperlapse/Timelapse mode
 
@@ -101,9 +128,7 @@ const DJI_SIGNATURE: &[u8] = b"DJI";
 ///
 /// This Lazy-initialized registry is created from the dji_registry() function
 /// in the registries module, which maps tag IDs to their names and decoders.
-// TODO: DJI registry will be created in Batch 3
-// static DJI_TAGS: Lazy<TagRegistry> = Lazy::new(|| dji_registry());
-static DJI_TAGS: Lazy<TagRegistry> = Lazy::new(|| TagRegistry::new());
+static DJI_TAGS: Lazy<TagRegistry> = Lazy::new(dji_registry);
 
 // ============================================================================
 // Value Extraction Helpers
@@ -396,10 +421,10 @@ impl MakerNoteParser for DjiParser {
 mod tests {
     use super::*;
     use crate::parsers::tiff::makernotes::registries::dji::{
-        FLIGHT_MODE, WHITE_BALANCE, COLOR_MODE, IMAGE_FORMAT, GPS_SIGNAL, OBSTACLE_AVOIDANCE,
-        format_gps_coordinate, format_altitude, format_speed, format_gimbal_angle, format_voltage,
-        format_flight_time, format_aperture, format_ev, format_shutter_speed, format_degrees,
-        format_meters, format_battery_level, format_iso, decode_obstacle_avoidance,
+        decode_obstacle_avoidance, format_altitude, format_aperture, format_battery_level,
+        format_degrees, format_ev, format_flight_time, format_gimbal_angle, format_gps_coordinate,
+        format_iso, format_meters, format_shutter_speed, format_speed, format_voltage, COLOR_MODE,
+        FLIGHT_MODE, GPS_SIGNAL, IMAGE_FORMAT, OBSTACLE_AVOIDANCE, WHITE_BALANCE,
     };
 
     #[test]

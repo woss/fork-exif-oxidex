@@ -163,7 +163,7 @@ pub fn extract_i32_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
 
 /// Extract single i16 value from IFD entry
 ///
-/// For SHORT type with count=1, value is stored inline in value_offset field.
+/// For SHORT/SSHORT type with count=1, value is stored inline in value_offset field.
 /// Used by: Most single-value enum tags
 ///
 /// # Parameters
@@ -172,13 +172,22 @@ pub fn extract_i32_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
 /// - `byte_order`: Byte order for parsing
 ///
 /// # Returns
-/// Single i16 value, or None if count != 1
+/// Single i16 value, or None if count != 1 or field_type is not a 16-bit type
+///
+/// # Type Safety
+/// This function validates the field type to ensure it's a 16-bit type (SHORT=3, SSHORT=8)
+/// to prevent accidentally extracting 32-bit values as i16, which would cause decoding issues.
 pub fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<i16> {
+    // Validate field type is SHORT (3) or SSHORT (8)
+    if entry.field_type != 3 && entry.field_type != 8 {
+        return None;
+    }
+
     if entry.value_count != 1 {
         return None;
     }
 
-    // For SHORT type (count=1), value is inline in value_offset field
+    // For SHORT/SSHORT type (count=1), value is inline in value_offset field
     let value = match byte_order {
         ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as i16,
         ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as i16,
@@ -189,7 +198,7 @@ pub fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) 
 
 /// Extract single u32 value from IFD entry
 ///
-/// For LONG type with count=1, value is stored directly in value_offset.
+/// For LONG/SLONG type with count=1, value is stored directly in value_offset.
 /// Used by: Timestamps, file sizes, offsets
 ///
 /// # Parameters
@@ -198,8 +207,18 @@ pub fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) 
 /// - `_byte_order`: Byte order (unused, u32 already parsed)
 ///
 /// # Returns
-/// Single u32 value, or None if count != 1
+/// Single u32 value, or None if count != 1 or field_type is a 16-bit type
+///
+/// # Type Safety
+/// This function validates that the field type is NOT a 16-bit type (SHORT=3, SSHORT=8)
+/// to prevent accidentally extracting SHORT values as u32, which would cause decoding issues.
+/// It accepts LONG (4), SLONG (9), and other 32-bit types used by manufacturers.
 pub fn extract_u32_value(entry: &IfdEntry, _data: &[u8], _byte_order: ByteOrder) -> Option<u32> {
+    // Reject 16-bit types (SHORT=3, SSHORT=8) to prevent misinterpretation
+    if entry.field_type == 3 || entry.field_type == 8 {
+        return None;
+    }
+
     if entry.value_count != 1 {
         return None;
     }

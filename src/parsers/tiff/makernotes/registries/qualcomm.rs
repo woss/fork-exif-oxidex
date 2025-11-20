@@ -22,21 +22,37 @@ use std::sync::LazyLock;
 // Tag ID Constants
 // ============================================================================
 
+/// ClearSight dual camera mode enabled
 pub const QUALCOMM_CLEAR_SIGHT: u16 = 0x0001;
+/// ClearSight mode type
 pub const QUALCOMM_CLEAR_SIGHT_MODE: u16 = 0x0002;
+/// ChromaFlash mode enabled
 pub const QUALCOMM_CHROMA_FLASH: u16 = 0x0004;
+/// Number of frames used for ChromaFlash
 pub const QUALCOMM_CHROMA_FLASH_FRAMES: u16 = 0x0005;
+/// OptiZoom hybrid zoom enabled
 pub const QUALCOMM_OPTIZOOM: u16 = 0x0007;
+/// Digital zoom level
 pub const QUALCOMM_ZOOM_LEVEL: u16 = 0x0008;
+/// HDR processing mode
 pub const QUALCOMM_HDR_MODE: u16 = 0x000A;
+/// Multi-frame noise reduction enabled
 pub const QUALCOMM_MULTI_FRAME_NR: u16 = 0x000C;
+/// Scene detection mode
 pub const QUALCOMM_SCENE_DETECTION: u16 = 0x000E;
+/// Bokeh depth effect mode
 pub const QUALCOMM_BOKEH_MODE: u16 = 0x0010;
+/// Bokeh blur intensity level
 pub const QUALCOMM_BOKEH_LEVEL: u16 = 0x0011;
+/// Low light enhancement mode
 pub const QUALCOMM_LOW_LIGHT_MODE: u16 = 0x0013;
+/// Night mode processing enabled
 pub const QUALCOMM_NIGHT_MODE: u16 = 0x0015;
+/// Phase detection autofocus enabled
 pub const QUALCOMM_PHASE_DETECT_AF: u16 = 0x0017;
+/// Image signal processor version
 pub const QUALCOMM_ISP_VERSION: u16 = 0x0019;
+/// Number of frames merged for final image
 pub const QUALCOMM_FRAME_MERGE_COUNT: u16 = 0x001B;
 
 // ============================================================================
@@ -135,7 +151,11 @@ pub static QUALCOMM_TAGS: LazyLock<TagRegistry> = LazyLock::new(|| {
     TagRegistry::with_capacity(15)
         // Clear Sight dual-camera fusion tags
         .register_simple_i16(QUALCOMM_CLEAR_SIGHT, "ClearSight", &CLEAR_SIGHT)
-        .register_simple_i16(QUALCOMM_CLEAR_SIGHT_MODE, "ClearSightMode", &CLEAR_SIGHT_MODE)
+        .register_simple_i16(
+            QUALCOMM_CLEAR_SIGHT_MODE,
+            "ClearSightMode",
+            &CLEAR_SIGHT_MODE,
+        )
         // Chroma Flash multi-frame blending tags
         .register_simple_i16(QUALCOMM_CHROMA_FLASH, "ChromaFlash", &CHROMA_FLASH)
         .register_raw(QUALCOMM_CHROMA_FLASH_FRAMES, "ChromaFlashFrames")

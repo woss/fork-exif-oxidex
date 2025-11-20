@@ -85,7 +85,10 @@ impl CombinedLensDb {
         static_db: Option<&'static StaticLensDb>,
         range_db: Option<&'static RangeLensDb>,
     ) -> Self {
-        Self { static_db, range_db }
+        Self {
+            static_db,
+            range_db,
+        }
     }
 }
 

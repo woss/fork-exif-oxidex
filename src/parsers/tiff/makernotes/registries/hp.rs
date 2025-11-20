@@ -6,13 +6,15 @@
 use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from hp.rs
-use super::super::hp::{
-    DECODE_QUALITY, DECODE_COLOR_MODE,
-};
+use super::super::hp::{DECODE_COLOR_MODE, DECODE_QUALITY};
 
 // Wrapper functions to convert SimpleValueDecoder to function pointers
-fn decode_quality(value: u16) -> String { DECODE_QUALITY.decode(value) }
-fn decode_color_mode(value: u16) -> String { DECODE_COLOR_MODE.decode(value) }
+fn decode_quality(value: u16) -> String {
+    DECODE_QUALITY.decode(value)
+}
+fn decode_color_mode(value: u16) -> String {
+    DECODE_COLOR_MODE.decode(value)
+}
 
 /// Create and return the HP tag registry
 ///
@@ -26,16 +28,12 @@ pub fn hp_registry() -> TagRegistry {
         // Image Quality and Color
         .register_u16(0x0003, "Quality", decode_quality)
         .register_u16(0x0005, "ColorMode", decode_color_mode)
-
         // Flash and Exposure
         .register_raw(0x0007, "FlashMode")
-
         // Image Enhancement
         .register_raw(0x000B, "Sharpness")
-
         // White Balance
         .register_raw(0x0009, "WhiteBalance")
-
         // Model Information
         .register_raw(0x0001, "Model")
 }

@@ -9,9 +9,9 @@ use super::super::shared::tag_registry::TagRegistry;
 // Re-export decoders from fujifilm.rs
 // These decoders are defined using const_decoder! macros in the main parser
 use super::super::fujifilm::{
-    DECODE_BURST_MODE, DECODE_DRIVE_MODE, DECODE_DYNAMIC_RANGE, DECODE_EXR_MODE,
-    DECODE_FILM_MODE, DECODE_FLASH_MODE, DECODE_FOCUS_MODE, DECODE_OFF_ON,
-    DECODE_PICTURE_MODE, DECODE_QUALITY, DECODE_SHUTTER_TYPE, DECODE_WHITE_BALANCE,
+    DECODE_BURST_MODE, DECODE_DRIVE_MODE, DECODE_DYNAMIC_RANGE, DECODE_EXR_MODE, DECODE_FILM_MODE,
+    DECODE_FLASH_MODE, DECODE_FOCUS_MODE, DECODE_OFF_ON, DECODE_PICTURE_MODE, DECODE_QUALITY,
+    DECODE_SHUTTER_TYPE, DECODE_WHITE_BALANCE,
 };
 
 // ============================================================================
@@ -34,7 +34,6 @@ pub fn fujifilm_registry() -> TagRegistry {
         .register_string_tag(0x0000, "Version")
         .register_string_tag(0x0010, "SerialNumber")
         .register_string_tag(0x1050, "LensModelName")
-
         // Enumerated tags with decoders
         .register_enum_tag_required(0x1000, "Quality", &DECODE_QUALITY)
         .register_enum_tag(0x1001, "Sharpness", None)
@@ -60,7 +59,6 @@ pub fn fujifilm_registry() -> TagRegistry {
         .register_enum_tag_required(0x1403, "DynamicRangeSetting", &DECODE_DYNAMIC_RANGE)
         .register_enum_tag_required(0x1404, "DevelopmentDynamicRange", &DECODE_DYNAMIC_RANGE)
         .register_enum_tag(0x140B, "AutoDynamicRange", None)
-
         // Simple integer/numeric tags
         .register_integer_tag(0x1005, "ColorTemperature", None)
         .register_integer_tag(0x1006, "ContrastDetectionAF", None)

@@ -4,14 +4,14 @@
 //! Photo Mechanic is a professional photo browser and workflow tool with
 //! comprehensive IPTC-compatible metadata support.
 
-use crate::const_decoder;
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Decodes color class
+// Decodes color class
 const_decoder!(
     DECODE_COLOR_CLASS,
     i16,
@@ -28,7 +28,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes urgency level
+// Decodes urgency level
 const_decoder!(
     DECODE_URGENCY,
     i16,
@@ -44,7 +44,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes edit status
+// Decodes edit status
 const_decoder!(
     DECODE_EDIT_STATUS,
     i16,

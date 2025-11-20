@@ -4,11 +4,7 @@ mod tests {
     use crate::const_decoder;
     use std::collections::HashMap;
 
-    const_decoder!(TEST_MODE, i16, [
-        (1, "Mode1"),
-        (2, "Mode2"),
-        (3, "Mode3"),
-    ]);
+    const_decoder!(TEST_MODE, i16, [(1, "Mode1"), (2, "Mode2"), (3, "Mode3"),]);
 
     #[test]
     fn test_array_schema_with_decoder() {
@@ -25,8 +21,14 @@ mod tests {
 
         SCHEMA.process_i16_array(&array, "Test", &mut tags);
 
-        assert_eq!(tags.get("Test:TestSettings:Mode"), Some(&"Mode2".to_string()));
-        assert_eq!(tags.get("Test:TestSettings:RawValue"), Some(&"42".to_string()));
+        assert_eq!(
+            tags.get("Test:TestSettings:Mode"),
+            Some(&"Mode2".to_string())
+        );
+        assert_eq!(
+            tags.get("Test:TestSettings:RawValue"),
+            Some(&"42".to_string())
+        );
     }
 
     #[test]
@@ -44,7 +46,10 @@ mod tests {
 
         SCHEMA.process_i16_array(&array, "Test", &mut tags);
 
-        assert_eq!(tags.get("Test:TestSettings:First"), Some(&"100".to_string()));
+        assert_eq!(
+            tags.get("Test:TestSettings:First"),
+            Some(&"100".to_string())
+        );
         assert_eq!(tags.get("Test:TestSettings:OutOfBounds"), None);
     }
 
@@ -60,6 +65,9 @@ mod tests {
 
         SCHEMA.process_u16_array(&array, "Test", &mut tags);
 
-        assert_eq!(tags.get("Test:U16Settings:Value"), Some(&"65535".to_string()));
+        assert_eq!(
+            tags.get("Test:U16Settings:Value"),
+            Some(&"65535".to_string())
+        );
     }
 }

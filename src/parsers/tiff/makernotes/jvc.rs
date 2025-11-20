@@ -24,10 +24,10 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::jvc::jvc_registry;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::jvc::jvc_registry;
 
 // Decodes JVC image quality
 const_decoder!(pub DECODE_QUALITY, u16, [

@@ -30,11 +30,11 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::parrot::parrot_registry;
 use super::shared::array_extractors::{extract_i16_array, extract_i32_value, extract_string};
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::parrot::parrot_registry;
 
 // ============================================================================
 // Parrot MakerNote Tag IDs (for parsing reference)

@@ -17,11 +17,11 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::sigma::sigma_registry;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
 use super::sigma_lens_database::lookup_lens_name;
-use super::registries::sigma::sigma_registry;
 
 // ===== Sigma MakerNote Tag IDs =====
 // Tag definitions are now centralized in the registry.
@@ -77,32 +77,36 @@ pub fn is_sigma_makernote(data: &[u8]) -> bool {
 
 use crate::const_decoder;
 
-/// Decoder for Sigma resolution modes
+// Decoder for Sigma resolution modes
 const_decoder!(pub DECODE_RESOLUTION_MODE, i32, [
     (0, "Low"),
-    (1, "High"),
+    (1, "Medium"),
+    (2, "High"),
+    (3, "Ultra High"),
 ]);
 
-/// Decoder for Sigma autofocus modes
+// Decoder for Sigma autofocus modes
 const_decoder!(pub DECODE_AF_MODE, i32, [
-    (0, "Single Shot"),
-    (1, "Continuous"),
-    (2, "Manual"),
+    (0, "Manual"),
+    (1, "AF-S (Single)"),
+    (2, "AF-C (Continuous)"),
+    (3, "AF-A (Auto)"),
 ]);
 
-/// Decoder for Sigma white balance settings
+// Decoder for Sigma white balance settings
 const_decoder!(pub DECODE_WHITE_BALANCE, i32, [
     (0, "Auto"),
     (1, "Daylight"),
-    (2, "Cloudy"),
-    (3, "Shade"),
+    (2, "Shade"),
+    (3, "Cloudy"),
     (4, "Tungsten"),
     (5, "Fluorescent"),
     (6, "Flash"),
     (7, "Custom"),
+    (8, "Color Temperature"),
 ]);
 
-/// Decoder for Sigma exposure modes
+// Decoder for Sigma exposure modes
 const_decoder!(pub DECODE_EXPOSURE_MODE, i32, [
     (0, "Auto"),
     (1, "Program"),
@@ -111,61 +115,73 @@ const_decoder!(pub DECODE_EXPOSURE_MODE, i32, [
     (4, "Manual"),
 ]);
 
-/// Decoder for Sigma metering modes
+// Decoder for Sigma metering modes
 const_decoder!(pub DECODE_METERING_MODE, i32, [
-    (0, "Spot"),
-    (1, "Center-weighted"),
-    (2, "Average"),
-    (3, "Multi-segment"),
+    (0, "Unknown"),
+    (1, "Multi-segment"),
+    (2, "Center-weighted Average"),
+    (3, "Spot"),
+    (4, "Average"),
 ]);
 
-/// Decoder for Sigma drive modes
+// Decoder for Sigma drive modes
 const_decoder!(pub DECODE_DRIVE_MODE, i32, [
     (0, "Single"),
     (1, "Continuous"),
-    (2, "Burst"),
+    (2, "Self-Timer"),
+    (3, "Self-Timer (Multiple)"),
+    (4, "Bracket"),
+    (5, "Mirror Lock-up"),
 ]);
 
-/// Decoder for Sigma flash modes
+// Decoder for Sigma flash modes
 const_decoder!(pub DECODE_FLASH_MODE, i32, [
     (0, "Off"),
     (1, "Auto"),
     (2, "On"),
     (3, "Red-eye Reduction"),
     (4, "Fill Flash"),
+    (5, "Slow Sync"),
+    (6, "Rear Curtain"),
+    (7, "Wireless"),
 ]);
 
-/// Decoder for Sigma image quality settings
+// Decoder for Sigma image quality settings
 const_decoder!(pub DECODE_QUALITY, i32, [
     (0, "Low"),
-    (1, "Normal"),
+    (1, "Medium"),
     (2, "High"),
-    (3, "Fine"),
+    (3, "RAW"),
+    (4, "RAW + JPEG"),
 ]);
 
-/// Decoder for Sigma color modes
+// Decoder for Sigma color modes
 const_decoder!(pub DECODE_COLOR_MODE, i32, [
     (0, "Standard"),
     (1, "Vivid"),
     (2, "Neutral"),
     (3, "Portrait"),
     (4, "Landscape"),
+    (5, "Monochrome"),
+    (6, "Sepia"),
+    (7, "FOV Classic Blue"),
+    (8, "FOV Classic Yellow"),
 ]);
 
-/// Decoder for Sigma color space settings
+// Decoder for Sigma color space settings
 const_decoder!(pub DECODE_COLOR_SPACE, i32, [
     (0, "sRGB"),
     (1, "Adobe RGB"),
-    (2, "ProPhoto RGB"),
 ]);
 
-/// Decoder for Sigma picture styles
+// Decoder for Sigma picture styles
 const_decoder!(pub DECODE_PICTURE_STYLE, i32, [
     (0, "Standard"),
-    (1, "Landscape"),
-    (2, "Portrait"),
-    (3, "Fine Detail"),
-    (4, "Monochrome"),
+    (1, "Vivid"),
+    (2, "Neutral"),
+    (3, "Portrait"),
+    (4, "Landscape"),
+    (5, "Monochrome"),
 ]);
 
 /// Sigma MakerNote Parser
@@ -183,8 +199,8 @@ impl SigmaMakerNoteParser {
     /// * `tags` - HashMap to insert extracted tags into
     fn parse_entry(
         entry: &IfdEntry,
-        data: &[u8],
-        byte_order: ByteOrder,
+        _data: &[u8],
+        _byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) {
         // Get tag name from registry
@@ -252,7 +268,9 @@ impl MakerNoteParser for SigmaMakerNoteParser {
 
         // Determine IFD offset based on header presence
         // Sigma uses "SIGMA\0\0\0" (8 bytes) or "FOVEON\0\0" (8 bytes) headers
-        let signature = if data.len() >= 8 && (&data[0..8] == SIGMA_HEADER || &data[0..8] == SIGMA_HEADER_FOVEON) {
+        let signature = if data.len() >= 8
+            && (&data[0..8] == SIGMA_HEADER || &data[0..8] == SIGMA_HEADER_FOVEON)
+        {
             Some(&data[0..8])
         } else {
             None
@@ -260,7 +278,7 @@ impl MakerNoteParser for SigmaMakerNoteParser {
 
         let config = IfdParserConfig {
             signature,
-            signature_offset: 0,
+            signature_offset: 8, // Skip 8-byte signature (SIGMA\0\0\0 or FOVEON\0\0)
             max_entries: 200,
         };
 

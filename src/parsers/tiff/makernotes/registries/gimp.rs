@@ -4,14 +4,14 @@
 //! GIMP is a free and open-source raster graphics editor that stores
 //! comprehensive editing metadata in TIFF MakerNotes.
 
-use crate::const_decoder;
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Decodes layer modes bitmask - combines multiple modes
+// Decodes layer modes bitmask - combines multiple modes
 const_decoder!(
     DECODE_LAYER_MODES,
     i16,
@@ -30,7 +30,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes selection type
+// Decodes selection type
 const_decoder!(
     DECODE_SELECTION_TYPE,
     i16,

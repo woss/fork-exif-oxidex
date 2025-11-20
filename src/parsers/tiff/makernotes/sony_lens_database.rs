@@ -50,7 +50,6 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (28, "Minolta AF 50mm f/2.8 Macro"),
     (29, "Minolta AF 17-35mm f/3.5 G"),
     (30, "Minolta AF 35-80mm f/4-5.6"),
-
     // Sony A-mount Prime Lenses
     (128, "Sony SAL 50mm f/1.4"),
     (129, "Sony SAL 85mm f/1.4 ZA"),
@@ -66,7 +65,6 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (139, "Sony SAL 35mm f/1.8 SAM"),
     (140, "Sony SAL 50mm f/2.8 Macro"),
     (141, "Sony SAL 30mm f/2.8 Macro SAM"),
-
     // Sony A-mount Zoom Lenses
     (142, "Sony SAL 16-35mm f/2.8 ZA SSM"),
     (143, "Sony SAL 16-50mm f/2.8 SSM"),
@@ -90,13 +88,11 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (161, "Sony SAL 70-400mm f/4-5.6 G SSM"),
     (162, "Sony SAL 70-400mm f/4-5.6 G SSM II"),
     (163, "Sony SAL 75-300mm f/4.5-5.6"),
-
     // Sony A-mount Telephoto Lenses
     (164, "Sony SAL 300mm f/2.8 G SSM"),
     (165, "Sony SAL 300mm f/2.8 G SSM II"),
     (166, "Sony SAL 500mm f/4 G SSM"),
     (167, "Sony SAL 600mm f/4 G SSM"),
-
     // ===== E-mount Lenses (Sony α7, α9, α6000 series mirrorless) =====
 
     // Sony E-mount Prime Lenses (FE - Full Frame)
@@ -120,16 +116,13 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (273, "Sony FE 85mm f/1.8"),
     (274, "Sony FE 100mm f/2.8 STF GM OSS"),
     (275, "Sony FE 135mm f/1.8 GM"),
-
     // Sony E-mount Macro Lenses (FE)
     (276, "Sony FE 50mm f/2.8 Macro"),
     (277, "Sony FE 90mm f/2.8 Macro G OSS"),
-
     // Sony E-mount Wide/Fisheye Lenses (FE)
     (278, "Sony FE 12-24mm f/2.8 GM"),
     (279, "Sony FE 12-24mm f/4 G"),
     (280, "Sony FE 14mm f/1.8 GM"),
-
     // Sony E-mount Standard Zoom Lenses (FE)
     (281, "Sony FE 24-70mm f/2.8 GM"),
     (282, "Sony FE 24-70mm f/2.8 GM II"),
@@ -137,7 +130,6 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (284, "Sony FE 24-240mm f/3.5-6.3 OSS"),
     (285, "Sony FE 28-60mm f/4-5.6"),
     (286, "Sony FE 28-70mm f/3.5-5.6 OSS"),
-
     // Sony E-mount Telephoto Zoom Lenses (FE)
     (287, "Sony FE 70-200mm f/2.8 GM OSS"),
     (288, "Sony FE 70-200mm f/2.8 GM OSS II"),
@@ -145,12 +137,10 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (290, "Sony FE 70-300mm f/4.5-5.6 G OSS"),
     (291, "Sony FE 100-400mm f/4.5-5.6 GM OSS"),
     (292, "Sony FE 200-600mm f/5.6-6.3 G OSS"),
-
     // Sony E-mount Telephoto Prime Lenses (FE)
     (293, "Sony FE 300mm f/2.8 GM OSS"),
     (294, "Sony FE 400mm f/2.8 GM OSS"),
     (295, "Sony FE 600mm f/4 GM OSS"),
-
     // Sony E-mount APS-C Lenses (E)
     (320, "Sony E 10-18mm f/4 OSS"),
     (321, "Sony E 16mm f/2.8"),
@@ -170,7 +160,6 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (335, "Sony E 50mm f/1.8 OSS"),
     (336, "Sony E 55-210mm f/4.5-6.3 OSS"),
     (337, "Sony E 70-350mm f/4.5-6.3 G OSS"),
-
     // Sony G Master Lenses (Premium Line)
     (384, "Sony FE 24-70mm f/2.8 GM"),
     (385, "Sony FE 70-200mm f/2.8 GM OSS"),
@@ -191,7 +180,6 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (400, "Sony FE 35mm f/1.4 GM"),
     (401, "Sony FE 50mm f/1.4 GM"),
     (402, "Sony FE 85mm f/1.4 GM II"),
-
     // Carl Zeiss Lenses for Sony E-mount
     (448, "Zeiss Batis 18mm f/2.8"),
     (449, "Zeiss Batis 25mm f/2"),
@@ -206,7 +194,6 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (458, "Zeiss Touit 12mm f/2.8"),
     (459, "Zeiss Touit 32mm f/1.8"),
     (460, "Zeiss Touit 50mm f/2.8 Macro"),
-
     // Sony-Zeiss Collaboration Lenses
     (464, "Sony FE 16-35mm f/4 ZA OSS"),
     (465, "Sony FE 24-70mm f/4 ZA OSS"),
@@ -216,7 +203,6 @@ static SONY_LENSES: [(u16, &str); 181] = [
     (469, "Sony FE 50mm f/1.4 ZA"),
     (470, "Sony E 16-70mm f/4 ZA OSS"),
     (471, "Sony E 24mm f/1.8 ZA"),
-
     // Third-party lenses (Sigma, Tamron for Sony E-mount)
     (512, "Sigma 16mm f/1.4 DC DN Contemporary"),
     (513, "Sigma 30mm f/1.4 DC DN Contemporary"),

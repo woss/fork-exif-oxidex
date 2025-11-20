@@ -8,11 +8,10 @@ use crate::const_decoder;
 
 // Re-export tag constants from lytro.rs
 use super::super::lytro::{
-    LYTRO_MICROLENS_PITCH, LYTRO_MICROLENS_ROTATION, LYTRO_DEPTH_MIN,
-    LYTRO_DEPTH_MAX, LYTRO_FOCUS_DEPTH, LYTRO_REFOCUS_RANGE,
-    LYTRO_SENSOR_RESOLUTION, LYTRO_IMAGE_ORIENTATION, LYTRO_EXPOSURE_DURATION,
-    LYTRO_ISO_SPEED, LYTRO_ZOOM_FACTOR, LYTRO_DEPTH_MAP_ENABLED,
-    LYTRO_PERSPECTIVE_SHIFT, LYTRO_TEMPERATURE, LYTRO_RAW_DATA_SIZE,
+    LYTRO_DEPTH_MAP_ENABLED, LYTRO_DEPTH_MAX, LYTRO_DEPTH_MIN, LYTRO_EXPOSURE_DURATION,
+    LYTRO_FOCUS_DEPTH, LYTRO_IMAGE_ORIENTATION, LYTRO_ISO_SPEED, LYTRO_MICROLENS_PITCH,
+    LYTRO_MICROLENS_ROTATION, LYTRO_PERSPECTIVE_SHIFT, LYTRO_RAW_DATA_SIZE, LYTRO_REFOCUS_RANGE,
+    LYTRO_SENSOR_RESOLUTION, LYTRO_TEMPERATURE, LYTRO_ZOOM_FACTOR,
 };
 
 // ============================================================================
@@ -124,23 +123,43 @@ fn format_iso(value: i16) -> String {
 pub fn lytro_registry() -> TagRegistry {
     TagRegistry::with_capacity(16)
         // Microlens array specifications
-        .register_i16(LYTRO_MICROLENS_PITCH, "MicrolensPitch", format_microlens_pitch)
-        .register_i16(LYTRO_MICROLENS_ROTATION, "MicrolensRotation", format_rotation)
+        .register_i16(
+            LYTRO_MICROLENS_PITCH,
+            "MicrolensPitch",
+            format_microlens_pitch,
+        )
+        .register_i16(
+            LYTRO_MICROLENS_ROTATION,
+            "MicrolensRotation",
+            format_rotation,
+        )
         // Depth mapping parameters
         .register_i16(LYTRO_DEPTH_MIN, "DepthMin", format_depth)
         .register_i16(LYTRO_DEPTH_MAX, "DepthMax", format_depth)
         .register_i16(LYTRO_FOCUS_DEPTH, "FocusDepth", format_depth)
         .register_i16(LYTRO_REFOCUS_RANGE, "RefocusRange", format_depth)
         // Sensor and image properties
-        .register_simple_i16(LYTRO_SENSOR_RESOLUTION, "SensorResolution", &SENSOR_RESOLUTION)
-        .register_simple_i16(LYTRO_IMAGE_ORIENTATION, "ImageOrientation", &IMAGE_ORIENTATION)
+        .register_simple_i16(
+            LYTRO_SENSOR_RESOLUTION,
+            "SensorResolution",
+            &SENSOR_RESOLUTION,
+        )
+        .register_simple_i16(
+            LYTRO_IMAGE_ORIENTATION,
+            "ImageOrientation",
+            &IMAGE_ORIENTATION,
+        )
         // Acquisition settings
         .register_i16(LYTRO_EXPOSURE_DURATION, "ExposureDuration", format_exposure)
         .register_i16(LYTRO_ISO_SPEED, "ISO", format_iso)
         .register_i16(LYTRO_ZOOM_FACTOR, "ZoomFactor", format_zoom)
         // Processing and capability flags
         .register_i16(LYTRO_DEPTH_MAP_ENABLED, "DepthMapEnabled", decode_yes_no)
-        .register_i16(LYTRO_PERSPECTIVE_SHIFT, "PerspectiveShiftCapable", decode_yes_no)
+        .register_i16(
+            LYTRO_PERSPECTIVE_SHIFT,
+            "PerspectiveShiftCapable",
+            decode_yes_no,
+        )
         // Sensor monitoring
         .register_i16(LYTRO_TEMPERATURE, "SensorTemperature", format_temperature)
         // Data size information
@@ -166,7 +185,10 @@ mod tests {
         let registry = lytro_registry();
 
         assert_eq!(registry.get_tag_name(LYTRO_DEPTH_MIN), Some("DepthMin"));
-        assert_eq!(registry.get_tag_name(LYTRO_SENSOR_RESOLUTION), Some("SensorResolution"));
+        assert_eq!(
+            registry.get_tag_name(LYTRO_SENSOR_RESOLUTION),
+            Some("SensorResolution")
+        );
         assert_eq!(registry.get_tag_name(LYTRO_ZOOM_FACTOR), Some("ZoomFactor"));
     }
 

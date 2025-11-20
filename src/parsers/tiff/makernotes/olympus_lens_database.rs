@@ -245,7 +245,10 @@ mod tests {
     fn test_lens_database_trait() {
         // Test that the LensDatabase trait works correctly
         let db = get_lens_database();
-        assert_eq!(db.lookup(9), Some("Olympus Zuiko Digital ED 12-60mm f/2.8-4.0 SWD"));
+        assert_eq!(
+            db.lookup(9),
+            Some("Olympus Zuiko Digital ED 12-60mm f/2.8-4.0 SWD")
+        );
         assert_eq!(db.lookup(9999), None);
     }
 }

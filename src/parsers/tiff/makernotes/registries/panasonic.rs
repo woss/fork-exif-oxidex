@@ -4,18 +4,15 @@
 //! Panasonic uses a straightforward tag structure with mostly simple value types
 //! (strings, integers, and enumerated values) and no complex array-based tags.
 
-use super::super::shared::{
-    generic_decoders::*, tag_registry::TagRegistry,
-};
+use super::super::shared::{generic_decoders::*, tag_registry::TagRegistry};
 
 // Re-export decoders from panasonic.rs
 // These decoders are defined using const_decoder! macros in the main parser
 use super::super::panasonic::{
-    AF_AREA_MODE, BURST_MODE, CONTRAST_MODE, FACE_DETECTION, FILM_MODE, FOCUS_MODE,
-    HDR, IMAGE_STABILIZATION, INTELLIGENT_AUTO, INTELLIGENT_D_RANGE,
-    INTELLIGENT_EXPOSURE, INTELLIGENT_RESOLUTION, INTERNAL_ND_FILTER, LONG_EXPOSURE_NR,
-    MACRO_MODE, NOISE_REDUCTION, PHOTO_STYLE, QUALITY, ROTATION, SHOOTING_MODE,
-    WHITE_BALANCE,
+    AF_AREA_MODE, BURST_MODE, CONTRAST_MODE, FACE_DETECTION, FILM_MODE, FOCUS_MODE, HDR,
+    IMAGE_STABILIZATION, INTELLIGENT_AUTO, INTELLIGENT_D_RANGE, INTELLIGENT_EXPOSURE,
+    INTELLIGENT_RESOLUTION, INTERNAL_ND_FILTER, LONG_EXPOSURE_NR, MACRO_MODE, NOISE_REDUCTION,
+    PHOTO_STYLE, QUALITY, ROTATION, SHOOTING_MODE, WHITE_BALANCE,
 };
 
 // ============================================================================
@@ -40,7 +37,6 @@ pub fn panasonic_registry() -> TagRegistry {
         .register_string_tag(0x0004, "FirmwareVersion")
         .register_string_tag(0x0025, "InternalSerialNumber")
         .register_string_tag(0x0052, "LensSerialNumber")
-
         // Enumerated tags with decoders
         .register_enum_tag_required(0x0003, "QualityMode", &QUALITY)
         .register_enum_tag_required(0x0007, "WhiteBalance", &WHITE_BALANCE)
@@ -67,7 +63,6 @@ pub fn panasonic_registry() -> TagRegistry {
         .register_enum_tag_required(0x0079, "HDR", &HDR)
         .register_enum_tag_required(0x0080, "IntelligentAuto", &INTELLIGENT_AUTO)
         .register_enum_tag_required(0x8007, "FlashFired", &ON_OFF_I32)
-
         // Simple integer/numeric tags
         .register_integer_tag(0x0024, "FlashBias", None)
         .register_integer_tag(0x0029, "TimeSincePowerOn", None)

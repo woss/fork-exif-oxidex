@@ -2,8 +2,8 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::const_decoder;
     use super::super::super::{array_schemas::*, lens_database::*, tag_registry::*};
+    use crate::const_decoder;
     use std::collections::HashMap;
 
     // Sample decoders
@@ -21,10 +21,7 @@ mod tests {
     };
 
     // Sample lens database
-    static TEST_LENSES: [(u16, &str); 2] = [
-        (1, "Test 50mm f/1.8"),
-        (2, "Test 85mm f/1.4"),
-    ];
+    static TEST_LENSES: [(u16, &str); 2] = [(1, "Test 50mm f/1.8"), (2, "Test 85mm f/1.4")];
 
     static LENS_DB: StaticLensDb = StaticLensDb::new(&TEST_LENSES);
 

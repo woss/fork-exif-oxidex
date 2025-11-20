@@ -201,8 +201,8 @@ impl CaptureOneParser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::registries::captureone::*;
+    use super::*;
 
     #[test]
     fn test_captureone_parser_creation() {

@@ -21,29 +21,23 @@ pub fn kodak_registry() -> TagRegistry {
         .register_raw(0x0001, "Model")
         .register_raw(0x0025, "Firmware")
         .register_raw(0x0029, "TimeZone")
-
         // Image Quality
         .register_raw(0x0009, "Quality")
         .register_raw(0x000A, "BurstMode")
-
         // Shooting Modes
         .register_raw(0x000C, "ShutterMode")
         .register_raw(0x000D, "FocusMode")
         .register_raw(0x0020, "SceneMode")
-
         // Flash Settings
         .register_raw(0x0010, "FlashMode")
         .register_raw(0x0011, "FlashFired")
-
         // White Balance and Color
         .register_raw(0x000E, "WhiteBalance")
         .register_raw(0x001A, "ColorMode")
-
         // Image Parameters
         .register_raw(0x001C, "Sharpness")
         .register_raw(0x001D, "Saturation")
         .register_raw(0x001E, "Contrast")
-
         // Exposure Settings
         .register_raw(0x0014, "ISOSetting")
         .register_raw(0x0022, "ExposureBias")

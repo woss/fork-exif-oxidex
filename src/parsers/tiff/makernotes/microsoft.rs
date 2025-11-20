@@ -169,11 +169,10 @@ impl MakerNoteParser for MicrosoftParser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::registries::microsoft::{
-        CREATIVE_EFFECT, DYNAMIC_FLASH, LENS_TYPE, PUREVIEW_MODE, RICH_CAPTURE,
-        RICH_CAPTURE_MODE,
+        CREATIVE_EFFECT, DYNAMIC_FLASH, LENS_TYPE, PUREVIEW_MODE, RICH_CAPTURE, RICH_CAPTURE_MODE,
     };
+    use super::*;
 
     #[test]
     fn test_decode_rich_capture() {

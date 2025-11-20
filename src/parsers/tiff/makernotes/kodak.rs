@@ -30,10 +30,10 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::kodak::kodak_registry;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::kodak::kodak_registry;
 
 // Kodak MakerNote Tag IDs
 const KODAK_MODEL: u16 = 0x0001; // Camera model
@@ -339,7 +339,11 @@ impl KodakParser {
             // Binary tags
             KODAK_FLASH_FIRED => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {
-                    if value > 0 { "Yes".to_string() } else { "No".to_string() }
+                    if value > 0 {
+                        "Yes".to_string()
+                    } else {
+                        "No".to_string()
+                    }
                 } else {
                     return;
                 }

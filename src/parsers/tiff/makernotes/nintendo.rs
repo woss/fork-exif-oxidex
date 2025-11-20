@@ -29,12 +29,12 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::nintendo::nintendo_registry;
 use super::shared::array_extractors::{extract_i16_array, extract_string};
 use super::shared::generic_decoders::ON_OFF;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::nintendo::nintendo_registry;
 
 // Nintendo signature
 const NINTENDO_SIGNATURE: &[u8] = b"Nintendo";
@@ -309,10 +309,7 @@ mod tests {
     #[test]
     fn test_tag_registry() {
         assert_eq!(TAG_REGISTRY.get_tag_name(0x0001), Some("Model"));
-        assert_eq!(
-            TAG_REGISTRY.get_tag_name(0x0100),
-            Some("CameraMode")
-        );
+        assert_eq!(TAG_REGISTRY.get_tag_name(0x0100), Some("CameraMode"));
         assert!(TAG_REGISTRY.has_tag(0x0102));
     }
 

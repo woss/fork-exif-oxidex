@@ -4,14 +4,14 @@
 //! FotoStation is a professional digital asset management (DAM) system
 //! with comprehensive workflow and categorization metadata.
 
-use crate::const_decoder;
 use super::super::shared::tag_registry::TagRegistry;
+use crate::const_decoder;
 
 // ============================================================================
 // Declarative Decoder Definitions
 // ============================================================================
 
-/// Decodes workflow status
+// Decodes workflow status
 const_decoder!(
     DECODE_WORKFLOW_STATUS,
     i16,
@@ -27,7 +27,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes approval status
+// Decodes approval status
 const_decoder!(
     DECODE_APPROVAL_STATUS,
     i16,
@@ -40,7 +40,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes publication status
+// Decodes publication status
 const_decoder!(
     DECODE_PUBLICATION_STATUS,
     i16,
@@ -52,7 +52,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes rights status
+// Decodes rights status
 const_decoder!(
     DECODE_RIGHTS_STATUS,
     i16,
@@ -66,7 +66,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes usage rights level
+// Decodes usage rights level
 const_decoder!(
     DECODE_USAGE_RIGHTS,
     i16,
@@ -80,7 +80,7 @@ const_decoder!(
     ]
 );
 
-/// Decodes release status
+// Decodes release status
 const_decoder!(
     DECODE_RELEASE_STATUS,
     i16,

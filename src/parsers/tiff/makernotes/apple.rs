@@ -274,7 +274,10 @@ impl AppleParser {
             // i16 tags with custom logic
             APPLE_FRONT_FACING_CAMERA => {
                 if let Some(value) = extract_i16_value(entry, data, byte_order) {
-                    tags.insert("Apple:FacingCamera".to_string(), decode_facing_camera(value));
+                    tags.insert(
+                        "Apple:FacingCamera".to_string(),
+                        decode_facing_camera(value),
+                    );
                 }
             }
             APPLE_NIGHT_MODE => {
@@ -285,7 +288,10 @@ impl AppleParser {
             // u32 tags with custom formatting
             APPLE_RUN_TIME => {
                 if let Some(value) = extract_u32_value(entry, data, byte_order) {
-                    tags.insert("Apple:RunTimeFlags".to_string(), format_runtime_flags(value));
+                    tags.insert(
+                        "Apple:RunTimeFlags".to_string(),
+                        format_runtime_flags(value),
+                    );
                 }
             }
             // String tags

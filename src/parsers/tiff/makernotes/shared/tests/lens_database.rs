@@ -8,10 +8,8 @@ mod tests {
         (3, "Test Lens 24-70mm f/2.8"),
     ];
 
-    const TEST_RANGES: [(u16, u16, &str); 2] = [
-        (100, 105, "Range Lens A"),
-        (200, 210, "Range Lens B"),
-    ];
+    const TEST_RANGES: [(u16, u16, &str); 2] =
+        [(100, 105, "Range Lens A"), (200, 210, "Range Lens B")];
 
     #[test]
     fn test_static_lens_db_lookup() {

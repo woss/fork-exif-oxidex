@@ -2,22 +2,15 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::const_decoder;
     use super::super::super::array_schemas::*;
     use super::super::super::tag_registry::*;
+    use crate::const_decoder;
     use std::collections::HashMap;
 
     // Define test decoders using the const_decoder macro
-    const_decoder!(QUALITY, i16, [
-        (1, "Low"),
-        (2, "Normal"),
-        (3, "High"),
-    ]);
+    const_decoder!(QUALITY, i16, [(1, "Low"), (2, "Normal"), (3, "High"),]);
 
-    const_decoder!(MACRO_MODE, i16, [
-        (1, "Macro"),
-        (2, "Normal"),
-    ]);
+    const_decoder!(MACRO_MODE, i16, [(1, "Macro"), (2, "Normal"),]);
 
     #[test]
     fn test_registry_with_array_schema() {
@@ -120,10 +113,7 @@ mod tests {
     #[test]
     fn test_registry_array_schema_u16() {
         // Test u16 array processing
-        const_decoder!(U16_MODE, u16, [
-            (1, "Mode1"),
-            (2, "Mode2"),
-        ]);
+        const_decoder!(U16_MODE, u16, [(1, "Mode1"), (2, "Mode2"),]);
 
         static U16_SETTINGS: ArraySchema = ArraySchema {
             name: "U16Settings",

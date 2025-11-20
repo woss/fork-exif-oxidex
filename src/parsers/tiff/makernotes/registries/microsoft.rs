@@ -22,20 +22,35 @@ use once_cell::sync::Lazy;
 // Tag ID Constants
 // ============================================================================
 
+/// Rich Capture mode tag (Off/On/Auto)
 pub const MICROSOFT_RICH_CAPTURE: u16 = 0x0001;
+/// Rich Capture variant type (HDR, Flash, etc.)
 pub const MICROSOFT_RICH_CAPTURE_MODE: u16 = 0x0002;
+/// Living Image availability
 pub const MICROSOFT_LIVING_IMAGE: u16 = 0x0004;
+/// Dynamic Flash blending mode
 pub const MICROSOFT_DYNAMIC_FLASH: u16 = 0x0006;
+/// Refocus availability status
 pub const MICROSOFT_REFOCUS: u16 = 0x0008;
+/// Refocus depth map resolution
 pub const MICROSOFT_REFOCUS_DEPTH: u16 = 0x0009;
+/// PureView oversampling mode
 pub const MICROSOFT_PUREVIEW_MODE: u16 = 0x000B;
+/// PureView full resolution
 pub const MICROSOFT_PUREVIEW_RESOLUTION: u16 = 0x000C;
+/// Creative Studio effect type
 pub const MICROSOFT_CREATIVE_EFFECT: u16 = 0x000E;
+/// 4K video recording enabled
 pub const MICROSOFT_VIDEO_4K: u16 = 0x0010;
+/// Rich audio recording mode
 pub const MICROSOFT_AUDIO_RICHRECORD: u16 = 0x0012;
+/// Optical image stabilization status
 pub const MICROSOFT_STABILIZATION: u16 = 0x0014;
+/// Auto HDR mode enabled
 pub const MICROSOFT_AUTO_HDR: u16 = 0x0016;
+/// Panorama mode enabled
 pub const MICROSOFT_PANORAMA_MODE: u16 = 0x0018;
+/// Lens attachment type
 pub const MICROSOFT_LENS_TYPE: u16 = 0x001A;
 
 // ============================================================================
@@ -142,7 +157,11 @@ pub static MICROSOFT_TAGS: Lazy<TagRegistry> = Lazy::new(|| {
         .register_simple_i16(MICROSOFT_DYNAMIC_FLASH, "DynamicFlash", &DYNAMIC_FLASH)
         // Refocus tags
         .register_i16(MICROSOFT_REFOCUS, "Refocus", decode_refocus)
-        .register_u32(MICROSOFT_REFOCUS_DEPTH, "RefocusDepthResolution", decode_resolution)
+        .register_u32(
+            MICROSOFT_REFOCUS_DEPTH,
+            "RefocusDepthResolution",
+            decode_resolution,
+        )
         // PureView tags
         .register_simple_i16(MICROSOFT_PUREVIEW_MODE, "PureViewMode", &PUREVIEW_MODE)
         .register_u32(
@@ -151,7 +170,11 @@ pub static MICROSOFT_TAGS: Lazy<TagRegistry> = Lazy::new(|| {
             decode_resolution,
         )
         // Creative effect
-        .register_simple_i16(MICROSOFT_CREATIVE_EFFECT, "CreativeEffect", &CREATIVE_EFFECT)
+        .register_simple_i16(
+            MICROSOFT_CREATIVE_EFFECT,
+            "CreativeEffect",
+            &CREATIVE_EFFECT,
+        )
         // Binary on/off tags
         .register_i16(MICROSOFT_VIDEO_4K, "Video4K", decode_binary_onoff)
         .register_i16(

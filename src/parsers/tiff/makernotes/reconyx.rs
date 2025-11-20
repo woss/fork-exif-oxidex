@@ -81,13 +81,15 @@ impl MakerNoteParser for ReconxyParser {
         parse_ifd_entries(data, byte_order, &config, |entry, parse_data| {
             if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
                 // String tags
-                if matches!(entry.tag_id, 0x0001 | 0x0002 | 0x0003) {
+                if matches!(entry.tag_id, 0x0001..=0x0003) {
                     if let Some(s) = extract_string(entry, parse_data, byte_order) {
                         tags.insert(format!("Reconyx:{}", tag_name), s);
                     }
                 } else {
                     // Numeric tags
-                    if let Some(array) = super::shared::array_extractors::extract_i16_array(entry, parse_data, byte_order) {
+                    if let Some(array) = super::shared::array_extractors::extract_i16_array(
+                        entry, parse_data, byte_order,
+                    ) {
                         if let Some(&val) = array.first() {
                             let formatted_value = registry.decode_i16(entry.tag_id, val);
                             tags.insert(format!("Reconyx:{}", tag_name), formatted_value);

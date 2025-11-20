@@ -143,11 +143,11 @@ impl MakerNoteParser for SamsungParser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::registries::samsung::{
         decode_zoom_level, LENS_TYPE, PORTRAIT_EFFECT, SCENE_OPTIMIZER, SCENE_TYPE, SINGLE_TAKE,
     };
     use super::super::shared::generic_decoders::ON_OFF;
+    use super::*;
 
     #[test]
     fn test_decode_scene_optimizer() {

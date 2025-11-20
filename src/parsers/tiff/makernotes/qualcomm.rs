@@ -163,12 +163,12 @@ impl MakerNoteParser for QualcommParser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::registries::qualcomm::{
         decode_zoom_level, CHROMA_FLASH, CLEAR_SIGHT, CLEAR_SIGHT_MODE, HDR_MODE, OPTIZOOM,
         SCENE_TYPE,
     };
     use super::super::shared::generic_decoders::ON_OFF;
+    use super::*;
 
     #[test]
     fn test_clear_sight_decoder() {
@@ -180,10 +180,7 @@ mod tests {
     #[test]
     fn test_clear_sight_mode_decoder() {
         assert_eq!(CLEAR_SIGHT_MODE.decode(0), "None");
-        assert_eq!(
-            CLEAR_SIGHT_MODE.decode(1),
-            "Monochrome + RGB Fusion"
-        );
+        assert_eq!(CLEAR_SIGHT_MODE.decode(1), "Monochrome + RGB Fusion");
         assert_eq!(CLEAR_SIGHT_MODE.decode(3), "Multi-Camera Fusion");
     }
 

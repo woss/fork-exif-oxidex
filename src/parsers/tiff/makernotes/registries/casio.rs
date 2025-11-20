@@ -23,26 +23,21 @@ pub fn casio_registry() -> TagRegistry {
         .register_raw(0x001A, "ContinuousMode")
         .register_raw(0x001B, "BestShotMode")
         .register_raw(0x0020, "SlowShutter")
-
         // Focus and Flash
         .register_raw(0x0003, "FocusMode")
         .register_raw(0x0004, "FlashMode")
         .register_raw(0x0005, "FlashIntensity")
-
         // White Balance and Color
         .register_raw(0x0007, "WhiteBalance")
         .register_raw(0x0015, "ColorMode")
         .register_raw(0x0017, "ColorFilter")
-
         // Zoom and Image Enhancement
         .register_raw(0x000A, "DigitalZoom")
         .register_raw(0x0016, "Enhancement")
-
         // Image Quality Parameters
         .register_raw(0x000B, "Sharpness")
         .register_raw(0x000C, "Contrast")
         .register_raw(0x000D, "Saturation")
-
         // Camera Settings
         .register_raw(0x0014, "CCDSensitivity")
 }

@@ -6,13 +6,15 @@
 use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from jvc.rs
-use super::super::jvc::{
-    DECODE_QUALITY, DECODE_FOCUS_MODE,
-};
+use super::super::jvc::{DECODE_FOCUS_MODE, DECODE_QUALITY};
 
 // Wrapper functions to convert SimpleValueDecoder to function pointers
-fn decode_quality(value: u16) -> String { DECODE_QUALITY.decode(value) }
-fn decode_focus_mode(value: u16) -> String { DECODE_FOCUS_MODE.decode(value) }
+fn decode_quality(value: u16) -> String {
+    DECODE_QUALITY.decode(value)
+}
+fn decode_focus_mode(value: u16) -> String {
+    DECODE_FOCUS_MODE.decode(value)
+}
 
 /// Create and return the JVC tag registry
 ///
@@ -26,16 +28,12 @@ pub fn jvc_registry() -> TagRegistry {
     TagRegistry::new()
         // Image Quality and Modes
         .register_u16(0x0001, "Quality", decode_quality)
-
         // Focus Settings
         .register_u16(0x0002, "FocusMode", decode_focus_mode)
-
         // Flash and Exposure
         .register_raw(0x0003, "FlashMode")
-
         // White Balance
         .register_raw(0x0004, "WhiteBalance")
-
         // Image Enhancement
         .register_raw(0x0005, "Sharpness")
         .register_raw(0x0006, "ColorMode")

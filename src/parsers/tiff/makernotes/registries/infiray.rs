@@ -19,32 +19,26 @@ pub fn infiray_registry() -> TagRegistry {
         .register_raw(0x0001, "Model")
         .register_raw(0x0002, "SerialNumber")
         .register_raw(0x0003, "FirmwareVersion")
-
         // Temperature Measurements
         .register_raw(0x0100, "TemperatureMin")
         .register_raw(0x0101, "TemperatureMax")
         .register_raw(0x0102, "TemperatureCenter")
-
         // Thermal Settings
         .register_raw(0x0103, "Emissivity")
         .register_raw(0x0104, "Distance")
         .register_raw(0x0105, "Palette")
-
         // Measurement Range
         .register_raw(0x0106, "RangeMin")
         .register_raw(0x0107, "RangeMax")
-
         // Atmospheric Parameters
         .register_raw(0x0108, "AtmosphericTemp")
         .register_raw(0x0109, "Humidity")
-
         // Image Enhancement
         .register_raw(0x010A, "Enhancement")
         .register_raw(0x010B, "DigitalZoom")
         .register_raw(0x010C, "Contrast")
         .register_raw(0x010D, "Brightness")
         .register_raw(0x010E, "Sharpness")
-
         // Display Modes
         .register_raw(0x010F, "SpotMeter")
         .register_raw(0x0110, "Isotherm")

@@ -48,14 +48,12 @@ pub fn ricoh_registry() -> TagRegistry {
         // Camera Information
         .register_raw(0x0001, "Model")
         .register_raw(0x0002, "Firmware")
-
         // Shooting Settings
         .register_simple_u16(0x0005, "ShootingMode", &RICOH_SHOOTING_MODE)
         .register_simple_u16(0x000C, "FlashMode", &RICOH_FLASH_MODE)
         .register_raw(0x001D, "FocusMode")
         .register_simple_u16(0x001E, "WhiteBalance", &RICOH_WHITE_BALANCE)
         .register_raw(0x0022, "ISOSetting")
-
         // Image Parameters
         .register_raw(0x0034, "ColorMode")
         .register_raw(0x0035, "Sharpness")

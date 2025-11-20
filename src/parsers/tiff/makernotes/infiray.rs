@@ -31,11 +31,11 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::infiray::infiray_registry;
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::infiray::infiray_registry;
 
 const INFIRAY_SIGNATURE: &[u8] = b"InfiRay";
 
@@ -162,16 +162,13 @@ impl InfiRayParser {
         let tag_id = entry.tag_id;
 
         // Handle string tags (Model, Serial, Firmware)
-        match tag_id {
-            0x0001 | 0x0002 | 0x0003 => {
-                if let Some(s) = extract_string(entry, data) {
-                    if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
-                        tags.insert(format!("InfiRay:{}", name), s);
-                    }
+        if let 0x0001..=0x0003 = tag_id {
+            if let Some(s) = extract_string(entry, data) {
+                if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
+                    tags.insert(format!("InfiRay:{}", name), s);
                 }
-                return;
             }
-            _ => {}
+            return;
         }
 
         // Handle i16 array tags
@@ -183,7 +180,7 @@ impl InfiRayParser {
                 };
 
                 let formatted_value = match tag_id {
-                    0x0100 | 0x0101 | 0x0102 => format_temperature(val),
+                    0x0100..=0x0102 => format_temperature(val),
                     0x0103 => format_emissivity(val),
                     0x0104 => format_distance(val),
                     0x0105 => decode_palette(val),
@@ -192,8 +189,14 @@ impl InfiRayParser {
                     0x0109 => format!("{}%", val),
                     0x010A => decode_enhancement(val),
                     0x010B => format_zoom(val),
-                    0x010C | 0x010D | 0x010E => val.to_string(),
-                    0x010F | 0x0110 => if val != 0 { "On".to_string() } else { "Off".to_string() },
+                    0x010C..=0x010E => val.to_string(),
+                    0x010F | 0x0110 => {
+                        if val != 0 {
+                            "On".to_string()
+                        } else {
+                            "Off".to_string()
+                        }
+                    }
                     0x0111 => decode_unit(val),
                     _ => return,
                 };

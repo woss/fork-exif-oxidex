@@ -344,6 +344,901 @@
 #define IMAGE_DEBUG_TYPE_REPRO 16
 
 /*
+ Rich Capture mode tag (Off/On/Auto)
+ */
+#define MICROSOFT_RICH_CAPTURE 1
+
+/*
+ Rich Capture variant type (HDR, Flash, etc.)
+ */
+#define MICROSOFT_RICH_CAPTURE_MODE 2
+
+/*
+ Living Image availability
+ */
+#define MICROSOFT_LIVING_IMAGE 4
+
+/*
+ Dynamic Flash blending mode
+ */
+#define MICROSOFT_DYNAMIC_FLASH 6
+
+/*
+ Refocus availability status
+ */
+#define MICROSOFT_REFOCUS 8
+
+/*
+ Refocus depth map resolution
+ */
+#define MICROSOFT_REFOCUS_DEPTH 9
+
+/*
+ PureView oversampling mode
+ */
+#define MICROSOFT_PUREVIEW_MODE 11
+
+/*
+ PureView full resolution
+ */
+#define MICROSOFT_PUREVIEW_RESOLUTION 12
+
+/*
+ Creative Studio effect type
+ */
+#define MICROSOFT_CREATIVE_EFFECT 14
+
+/*
+ 4K video recording enabled
+ */
+#define MICROSOFT_VIDEO_4K 16
+
+/*
+ Rich audio recording mode
+ */
+#define MICROSOFT_AUDIO_RICHRECORD 18
+
+/*
+ Optical image stabilization status
+ */
+#define MICROSOFT_STABILIZATION 20
+
+/*
+ Auto HDR mode enabled
+ */
+#define MICROSOFT_AUTO_HDR 22
+
+/*
+ Panorama mode enabled
+ */
+#define MICROSOFT_PANORAMA_MODE 24
+
+/*
+ Lens attachment type
+ */
+#define MICROSOFT_LENS_TYPE 26
+
+/*
+ ClearSight dual camera mode enabled
+ */
+#define QUALCOMM_CLEAR_SIGHT 1
+
+/*
+ ClearSight mode type
+ */
+#define QUALCOMM_CLEAR_SIGHT_MODE 2
+
+/*
+ ChromaFlash mode enabled
+ */
+#define QUALCOMM_CHROMA_FLASH 4
+
+/*
+ Number of frames used for ChromaFlash
+ */
+#define QUALCOMM_CHROMA_FLASH_FRAMES 5
+
+/*
+ OptiZoom hybrid zoom enabled
+ */
+#define QUALCOMM_OPTIZOOM 7
+
+/*
+ Digital zoom level
+ */
+#define QUALCOMM_ZOOM_LEVEL 8
+
+/*
+ HDR processing mode
+ */
+#define QUALCOMM_HDR_MODE 10
+
+/*
+ Multi-frame noise reduction enabled
+ */
+#define QUALCOMM_MULTI_FRAME_NR 12
+
+/*
+ Scene detection mode
+ */
+#define QUALCOMM_SCENE_DETECTION 14
+
+/*
+ Bokeh depth effect mode
+ */
+#define QUALCOMM_BOKEH_MODE 16
+
+/*
+ Bokeh blur intensity level
+ */
+#define QUALCOMM_BOKEH_LEVEL 17
+
+/*
+ Low light enhancement mode
+ */
+#define QUALCOMM_LOW_LIGHT_MODE 19
+
+/*
+ Night mode processing enabled
+ */
+#define QUALCOMM_NIGHT_MODE 21
+
+/*
+ Phase detection autofocus enabled
+ */
+#define QUALCOMM_PHASE_DETECT_AF 23
+
+/*
+ Image signal processor version
+ */
+#define QUALCOMM_ISP_VERSION 25
+
+/*
+ Number of frames merged for final image
+ */
+#define QUALCOMM_FRAME_MERGE_COUNT 27
+
+/*
+ AI Scene Optimizer enabled
+ */
+#define SAMSUNG_SCENE_OPTIMIZER 1
+
+/*
+ Detected scene type
+ */
+#define SAMSUNG_SCENE_TYPE 2
+
+/*
+ Single Take mode enabled
+ */
+#define SAMSUNG_SINGLE_TAKE 5
+
+/*
+ Single Take frame number
+ */
+#define SAMSUNG_SINGLE_TAKE_FRAME 6
+
+/*
+ Expert RAW mode enabled
+ */
+#define SAMSUNG_EXPERT_RAW 8
+
+/*
+ Multi-frame noise reduction enabled
+ */
+#define SAMSUNG_MULTI_FRAME_NR 10
+
+/*
+ Director's View multi-camera mode
+ */
+#define SAMSUNG_DIRECTORS_VIEW 12
+
+/*
+ Pro mode manual controls enabled
+ */
+#define SAMSUNG_PRO_MODE 14
+
+/*
+ Object tracking autofocus enabled
+ */
+#define SAMSUNG_OBJECT_TRACKING 16
+
+/*
+ Night mode processing enabled
+ */
+#define SAMSUNG_NIGHT_MODE 18
+
+/*
+ Night Hyperlapse mode enabled
+ */
+#define SAMSUNG_NIGHT_HYPERLAPSE 20
+
+/*
+ Super Steady video stabilization
+ */
+#define SAMSUNG_SUPER_STEADY 22
+
+/*
+ Food photography mode enabled
+ */
+#define SAMSUNG_FOOD_MODE 24
+
+/*
+ Portrait Live Focus effect
+ */
+#define SAMSUNG_PORTRAIT_EFFECT 26
+
+/*
+ Active camera lens identifier
+ */
+#define SAMSUNG_LENS_TYPE 28
+
+/*
+ Digital zoom magnification level
+ */
+#define SAMSUNG_ZOOM_LEVEL 30
+
+/*
+ GPS latitude (signed int, scale: 1e-7)
+ */
+#define DJI_GPS_LATITUDE 257
+
+/*
+ GPS longitude (signed int, scale: 1e-7)
+ */
+#define DJI_GPS_LONGITUDE 258
+
+/*
+ Absolute altitude MSL (meters)
+ */
+#define DJI_GPS_ALTITUDE 259
+
+/*
+ Relative altitude from takeoff (meters)
+ */
+#define DJI_RELATIVE_ALTITUDE 260
+
+/*
+ Gimbal pitch angle (degrees, -90 to +30)
+ */
+#define DJI_GIMBAL_PITCH 261
+
+/*
+ Gimbal roll angle (degrees)
+ */
+#define DJI_GIMBAL_ROLL 262
+
+/*
+ Gimbal yaw angle (degrees, 0-360)
+ */
+#define DJI_GIMBAL_YAW 263
+
+/*
+ Ground speed (m/s)
+ */
+#define DJI_FLIGHT_SPEED 264
+
+/*
+ Flight direction (degrees, 0-360)
+ */
+#define DJI_FLIGHT_DIRECTION 265
+
+/*
+ Aircraft yaw/heading (degrees)
+ */
+#define DJI_AIRCRAFT_YAW 266
+
+/*
+ Aircraft pitch (degrees)
+ */
+#define DJI_AIRCRAFT_PITCH 267
+
+/*
+ Aircraft roll (degrees)
+ */
+#define DJI_AIRCRAFT_ROLL 268
+
+/*
+ Distance from home point (meters)
+ */
+#define DJI_HOME_DISTANCE 269
+
+/*
+ Battery percentage (0-100)
+ */
+#define DJI_BATTERY_LEVEL 270
+
+/*
+ Battery voltage (millivolts)
+ */
+#define DJI_BATTERY_VOLTAGE 271
+
+/*
+ Flight time (seconds)
+ */
+#define DJI_FLIGHT_TIME 272
+
+/*
+ Flight mode code
+ */
+#define DJI_FLIGHT_MODE 273
+
+/*
+ GPS signal strength (0-5)
+ */
+#define DJI_GPS_SIGNAL 274
+
+/*
+ Number of GPS satellites
+ */
+#define DJI_SATELLITE_COUNT 275
+
+/*
+ Obstacle avoidance status
+ */
+#define DJI_OBSTACLE_AVOID 276
+
+/*
+ Camera ISO value
+ */
+#define DJI_CAMERA_ISO 277
+
+/*
+ Shutter speed (1/n)
+ */
+#define DJI_CAMERA_SHUTTER 278
+
+/*
+ Aperture f-number (f/n)
+ */
+#define DJI_CAMERA_APERTURE 279
+
+/*
+ Exposure compensation (EV)
+ */
+#define DJI_CAMERA_EV 280
+
+/*
+ White balance mode
+ */
+#define DJI_CAMERA_WB 281
+
+/*
+ Image format (JPEG/RAW/DNG)
+ */
+#define DJI_IMAGE_FORMAT 282
+
+/*
+ Color mode (Normal/D-Cinelike/D-Log)
+ */
+#define DJI_COLOR_MODE 283
+
+/*
+ Hasselblad camera flag
+ */
+#define DJI_HASSELBLAD 284
+
+/*
+ Camera model
+ */
+#define FLIR_MODEL 1
+
+/*
+ Serial number
+ */
+#define FLIR_SERIAL 2
+
+/*
+ Firmware version
+ */
+#define FLIR_FIRMWARE 3
+
+/*
+ Minimum temperature in scene (K)
+ */
+#define FLIR_TEMPERATURE_MIN 256
+
+/*
+ Maximum temperature in scene (K)
+ */
+#define FLIR_TEMPERATURE_MAX 257
+
+/*
+ Center spot temperature (K)
+ */
+#define FLIR_TEMPERATURE_CENTER 258
+
+/*
+ Emissivity (0-100, scale: 0.01)
+ */
+#define FLIR_EMISSIVITY 259
+
+/*
+ Reflected apparent temp (K)
+ */
+#define FLIR_REFLECTED_TEMP 260
+
+/*
+ Atmospheric temperature (K)
+ */
+#define FLIR_ATMOSPHERIC_TEMP 261
+
+/*
+ Distance to object (meters)
+ */
+#define FLIR_DISTANCE 262
+
+/*
+ Relative humidity (%)
+ */
+#define FLIR_HUMIDITY 263
+
+/*
+ Color palette code
+ */
+#define FLIR_PALETTE 264
+
+/*
+ Palette method (linear/histogram)
+ */
+#define FLIR_PALETTE_METHOD 265
+
+/*
+ Palette stretch mode
+ */
+#define FLIR_PALETTE_STRETCH 266
+
+/*
+ Camera range min (K)
+ */
+#define FLIR_TEMPERATURE_RANGE_MIN 267
+
+/*
+ Camera range max (K)
+ */
+#define FLIR_TEMPERATURE_RANGE_MAX 268
+
+/*
+ Atmospheric transmission (0-100)
+ */
+#define FLIR_ATMOSPHERIC_TRANS 269
+
+/*
+ External optics temp (K)
+ */
+#define FLIR_EXTERNAL_OPTICS_TEMP 270
+
+/*
+ External optics transmission
+ */
+#define FLIR_EXTERNAL_OPTICS_TRANS 271
+
+/*
+ IR window temperature (K)
+ */
+#define FLIR_IR_WINDOW_TEMP 272
+
+/*
+ IR window transmission
+ */
+#define FLIR_IR_WINDOW_TRANS 273
+
+/*
+ Planck R1 constant
+ */
+#define FLIR_PLANCK_R1 274
+
+/*
+ Planck R2 constant
+ */
+#define FLIR_PLANCK_R2 275
+
+/*
+ Planck B constant
+ */
+#define FLIR_PLANCK_B 276
+
+/*
+ Planck F constant
+ */
+#define FLIR_PLANCK_F 277
+
+/*
+ Planck O constant (offset)
+ */
+#define FLIR_PLANCK_O 278
+
+/*
+ Camera internal min temp (K)
+ */
+#define FLIR_CAMERA_TEMP_MIN 279
+
+/*
+ Camera internal max temp (K)
+ */
+#define FLIR_CAMERA_TEMP_MAX 280
+
+/*
+ Image type (thermal/visible)
+ */
+#define FLIR_IMAGE_TYPE 281
+
+/*
+ Last calibration date
+ */
+#define FLIR_CALIBRATION_DATE 282
+
+/*
+ Focus distance (meters)
+ */
+#define FLIR_FOCUS_DISTANCE 283
+
+/*
+ Lens model identifier
+ */
+#define FLIR_LENS_MODEL 284
+
+/*
+ Peak temperature in frame (K)
+ */
+#define FLIR_PEAK_TEMP 285
+
+/*
+ Valley (coldest) temp (K)
+ */
+#define FLIR_VALLEY_TEMP 286
+
+/*
+ Measurement mode
+ */
+#define FLIR_MEASUREMENT_MODE 287
+
+/*
+ Display unit (C/F/K)
+ */
+#define FLIR_TEMPERATURE_UNIT 288
+
+/*
+ Isotherm lower limit (K)
+ */
+#define FLIR_ISOTHERM_MIN 289
+
+/*
+ Isotherm upper limit (K)
+ */
+#define FLIR_ISOTHERM_MAX 290
+
+/*
+ Isotherm mode enabled
+ */
+#define FLIR_ISOTHERM_ENABLED 291
+
+/*
+ Auto level/span mode
+ */
+#define FLIR_LEVEL_SPAN_AUTO 292
+
+/*
+ Gain mode (auto/manual)
+ */
+#define FLIR_GAIN_MODE 293
+
+/*
+ Frame rate (Hz)
+ */
+#define FLIR_FRAME_RATE 294
+
+/*
+ Firmware version
+ */
+#define GOPRO_VERSION 1
+
+/*
+ Camera model
+ */
+#define GOPRO_MODEL 2
+
+/*
+ Serial number
+ */
+#define GOPRO_SERIAL 3
+
+/*
+ Video/Photo resolution
+ */
+#define GOPRO_RESOLUTION 256
+
+/*
+ Frame rate (fps)
+ */
+#define GOPRO_FRAME_RATE 257
+
+/*
+ Field of view
+ */
+#define GOPRO_FOV 258
+
+/*
+ Low light mode
+ */
+#define GOPRO_LOW_LIGHT 259
+
+/*
+ Protune enabled
+ */
+#define GOPRO_PROTUNE 260
+
+/*
+ White balance setting
+ */
+#define GOPRO_WHITE_BALANCE 261
+
+/*
+ Color profile (flat/GoPro)
+ */
+#define GOPRO_COLOR 262
+
+/*
+ Sharpness level
+ */
+#define GOPRO_SHARPNESS 263
+
+/*
+ Contrast (Protune)
+ */
+#define GOPRO_CONTRAST 264
+
+/*
+ Saturation (Protune)
+ */
+#define GOPRO_SATURATION 265
+
+/*
+ Minimum ISO (Protune)
+ */
+#define GOPRO_ISO_MIN 266
+
+/*
+ Maximum ISO (Protune)
+ */
+#define GOPRO_ISO_MAX 267
+
+/*
+ Exposure compensation
+ */
+#define GOPRO_EXPOSURE 268
+
+/*
+ Shutter speed
+ */
+#define GOPRO_SHUTTER 269
+
+/*
+ Metering mode
+ */
+#define GOPRO_METERING 270
+
+/*
+ Spot meter area
+ */
+#define GOPRO_SPOT_METER 271
+
+/*
+ Electronic Image Stabilization
+ */
+#define GOPRO_EIS 272
+
+/*
+ HyperSmooth level
+ */
+#define GOPRO_HYPERSMOOTH 273
+
+/*
+ HyperSmooth Boost
+ */
+#define GOPRO_BOOST 274
+
+/*
+ Stabilization mode
+ */
+#define GOPRO_STABILIZATION_MODE 275
+
+/*
+ Auto Boost mode
+ */
+#define GOPRO_AUTO_BOOST 276
+
+/*
+ SuperPhoto mode
+ */
+#define GOPRO_SUPER_PHOTO 277
+
+/*
+ HDR photo mode
+ */
+#define GOPRO_HDR 278
+
+/*
+ Digital zoom level
+ */
+#define GOPRO_DIGITAL_ZOOM 279
+
+/*
+ Raw audio enabled
+ */
+#define GOPRO_RAW_AUDIO 280
+
+/*
+ Wind noise reduction
+ */
+#define GOPRO_WIND_NOISE 281
+
+/*
+ TimeWarp speed multiplier
+ */
+#define GOPRO_TIMEWARP_SPEED 282
+
+/*
+ Video codec (H.264/H.265)
+ */
+#define GOPRO_VIDEO_ENCODING 283
+
+/*
+ Video bitrate
+ */
+#define GOPRO_BIT_RATE 284
+
+/*
+ Camera orientation
+ */
+#define GOPRO_ORIENTATION 285
+
+/*
+ GPS fix status
+ */
+#define GOPRO_GPS_FIX 286
+
+/*
+ Lens model identifier
+ */
+#define GOPRO_LENS_MODEL 287
+
+/*
+ Night photo mode
+ */
+#define GOPRO_NIGHT_PHOTO 288
+
+/*
+ Burst photo rate
+ */
+#define GOPRO_BURST_RATE 289
+
+/*
+ Live burst mode
+ */
+#define GOPRO_LIVE_BURST 290
+
+/*
+ Time lapse interval (ms)
+ */
+#define GOPRO_TIMELAPSE_INTERVAL 291
+
+/*
+ Night lapse interval
+ */
+#define GOPRO_NIGHT_LAPSE_INTERVAL 292
+
+/*
+ Loop recording duration
+ */
+#define GOPRO_LOOP_DURATION 293
+
+/*
+ Camera model identifier
+ */
+#define LYTRO_MODEL 1
+
+/*
+ Camera serial number
+ */
+#define LYTRO_SERIAL 2
+
+/*
+ Firmware version
+ */
+#define LYTRO_FIRMWARE 3
+
+/*
+ Light field data version
+ */
+#define LYTRO_LF_VERSION 256
+
+/*
+ Microlens pitch (micrometers)
+ */
+#define LYTRO_MICROLENS_PITCH 257
+
+/*
+ Microlens array rotation
+ */
+#define LYTRO_MICROLENS_ROTATION 258
+
+/*
+ Minimum depth (mm)
+ */
+#define LYTRO_DEPTH_MIN 259
+
+/*
+ Maximum depth (mm)
+ */
+#define LYTRO_DEPTH_MAX 260
+
+/*
+ Current focus plane depth (mm)
+ */
+#define LYTRO_FOCUS_DEPTH 261
+
+/*
+ Refocusable depth range (mm)
+ */
+#define LYTRO_REFOCUS_RANGE 262
+
+/*
+ Sensor resolution code
+ */
+#define LYTRO_SENSOR_RESOLUTION 263
+
+/*
+ Image orientation
+ */
+#define LYTRO_IMAGE_ORIENTATION 264
+
+/*
+ Exposure duration (ms)
+ */
+#define LYTRO_EXPOSURE_DURATION 265
+
+/*
+ ISO setting
+ */
+#define LYTRO_ISO_SPEED 266
+
+/*
+ Zoom factor (x100)
+ */
+#define LYTRO_ZOOM_FACTOR 267
+
+/*
+ Processing algorithm version
+ */
+#define LYTRO_ALGORITHM_VERSION 268
+
+/*
+ Depth map generation enabled
+ */
+#define LYTRO_DEPTH_MAP_ENABLED 269
+
+/*
+ Perspective shift capability
+ */
+#define LYTRO_PERSPECTIVE_SHIFT 270
+
+/*
+ Camera calibration date
+ */
+#define LYTRO_CALIBRATION_DATE 271
+
+/*
+ Sensor temperature (°C)
+ */
+#define LYTRO_TEMPERATURE 272
+
+/*
+ Raw light field data size (MB)
+ */
+#define LYTRO_RAW_DATA_SIZE 273
+
+/*
  Special tag IDs for IFD pointers
  */
 #define EXIF_IFD_POINTER 34665

@@ -30,27 +30,48 @@ use std::collections::HashMap;
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
 
+/// Camera model identifier
 pub const LYTRO_MODEL: u16 = 0x0001;
+/// Camera serial number
 pub const LYTRO_SERIAL: u16 = 0x0002;
+/// Firmware version
 pub const LYTRO_FIRMWARE: u16 = 0x0003;
-pub const LYTRO_LF_VERSION: u16 = 0x0100; // Light field data version
-pub const LYTRO_MICROLENS_PITCH: u16 = 0x0101; // Microlens pitch (micrometers)
-pub const LYTRO_MICROLENS_ROTATION: u16 = 0x0102; // Microlens array rotation
-pub const LYTRO_DEPTH_MIN: u16 = 0x0103; // Minimum depth (mm)
-pub const LYTRO_DEPTH_MAX: u16 = 0x0104; // Maximum depth (mm)
-pub const LYTRO_FOCUS_DEPTH: u16 = 0x0105; // Current focus plane depth (mm)
-pub const LYTRO_REFOCUS_RANGE: u16 = 0x0106; // Refocusable depth range (mm)
-pub const LYTRO_SENSOR_RESOLUTION: u16 = 0x0107; // Sensor resolution code
-pub const LYTRO_IMAGE_ORIENTATION: u16 = 0x0108; // Image orientation
-pub const LYTRO_EXPOSURE_DURATION: u16 = 0x0109; // Exposure duration (ms)
-pub const LYTRO_ISO_SPEED: u16 = 0x010A; // ISO setting
-pub const LYTRO_ZOOM_FACTOR: u16 = 0x010B; // Zoom factor (x100)
-pub const LYTRO_ALGORITHM_VERSION: u16 = 0x010C; // Processing algorithm version
-pub const LYTRO_DEPTH_MAP_ENABLED: u16 = 0x010D; // Depth map generation enabled
-pub const LYTRO_PERSPECTIVE_SHIFT: u16 = 0x010E; // Perspective shift capability
-pub const LYTRO_CALIBRATION_DATE: u16 = 0x010F; // Camera calibration date
-pub const LYTRO_TEMPERATURE: u16 = 0x0110; // Sensor temperature (°C)
-pub const LYTRO_RAW_DATA_SIZE: u16 = 0x0111; // Raw light field data size (MB)
+/// Light field data version
+pub const LYTRO_LF_VERSION: u16 = 0x0100;
+/// Microlens pitch (micrometers)
+pub const LYTRO_MICROLENS_PITCH: u16 = 0x0101;
+/// Microlens array rotation
+pub const LYTRO_MICROLENS_ROTATION: u16 = 0x0102;
+/// Minimum depth (mm)
+pub const LYTRO_DEPTH_MIN: u16 = 0x0103;
+/// Maximum depth (mm)
+pub const LYTRO_DEPTH_MAX: u16 = 0x0104;
+/// Current focus plane depth (mm)
+pub const LYTRO_FOCUS_DEPTH: u16 = 0x0105;
+/// Refocusable depth range (mm)
+pub const LYTRO_REFOCUS_RANGE: u16 = 0x0106;
+/// Sensor resolution code
+pub const LYTRO_SENSOR_RESOLUTION: u16 = 0x0107;
+/// Image orientation
+pub const LYTRO_IMAGE_ORIENTATION: u16 = 0x0108;
+/// Exposure duration (ms)
+pub const LYTRO_EXPOSURE_DURATION: u16 = 0x0109;
+/// ISO setting
+pub const LYTRO_ISO_SPEED: u16 = 0x010A;
+/// Zoom factor (x100)
+pub const LYTRO_ZOOM_FACTOR: u16 = 0x010B;
+/// Processing algorithm version
+pub const LYTRO_ALGORITHM_VERSION: u16 = 0x010C;
+/// Depth map generation enabled
+pub const LYTRO_DEPTH_MAP_ENABLED: u16 = 0x010D;
+/// Perspective shift capability
+pub const LYTRO_PERSPECTIVE_SHIFT: u16 = 0x010E;
+/// Camera calibration date
+pub const LYTRO_CALIBRATION_DATE: u16 = 0x010F;
+/// Sensor temperature (°C)
+pub const LYTRO_TEMPERATURE: u16 = 0x0110;
+/// Raw light field data size (MB)
+pub const LYTRO_RAW_DATA_SIZE: u16 = 0x0111;
 
 const LYTRO_SIGNATURE: &[u8] = b"Lytro";
 

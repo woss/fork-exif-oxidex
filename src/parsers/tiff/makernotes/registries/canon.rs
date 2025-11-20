@@ -4,8 +4,7 @@ use super::super::shared::{array_schemas::*, tag_registry::TagRegistry};
 
 // Re-export existing decoders from canon.rs
 use super::super::canon::{
-    MACRO_MODE, QUALITY, FLASH_MODE, DRIVE_MODE,
-    FOCUS_MODE, METERING_MODE, EXPOSURE_MODE,
+    DRIVE_MODE, EXPOSURE_MODE, FLASH_MODE, FOCUS_MODE, MACRO_MODE, METERING_MODE, QUALITY,
 };
 
 // ============================================================================

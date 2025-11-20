@@ -343,19 +343,20 @@ fn format_red_value(tag_id: u16, entry: &IfdEntry, data: &[u8], byte_order: Byte
     if let Some(array) = extract_i16_array(entry, data, byte_order) {
         if let Some(&val) = array.first() {
             return match tag_id {
-                0x0101 => DECODE_RESOLUTION.decode(val),      // Resolution
-                0x0102 => DECODE_REDCODE.decode(val),        // REDCODE
-                0x0103 => format!("{} fps", val),            // FrameRate
+                0x0101 => DECODE_RESOLUTION.decode(val),        // Resolution
+                0x0102 => DECODE_REDCODE.decode(val),           // REDCODE
+                0x0103 => format!("{} fps", val),               // FrameRate
                 0x0104 => format!("{:.1}°", val as f64 / 10.0), // ShutterAngle
-                0x0105 => val.to_string(),                   // ISO
-                0x0106 => format!("{} K", val),              // ColorTemperature
-                0x0107 => format!("{:+}", val),              // Tint
+                0x0105 => val.to_string(),                      // ISO
+                0x0106 => format!("{} K", val),                 // ColorTemperature
+                0x0107 => format!("{:+}", val),                 // Tint
                 0x0108 => format!("{:.2} stops", val as f64 / 100.0), // ExposureCompensation
-                0x0109 => DECODE_GAMMA.decode(val),          // GammaCurve
-                0x010A => DECODE_COLOR_SPACE.decode(val),    // ColorSpace
-                0x010B => DECODE_LENS_TYPE.decode(val),      // LensMount
-                0x010C => format!("{} mm", val),             // FocalLength
-                0x010D => {                                  // FocusDistance
+                0x0109 => DECODE_GAMMA.decode(val),             // GammaCurve
+                0x010A => DECODE_COLOR_SPACE.decode(val),       // ColorSpace
+                0x010B => DECODE_LENS_TYPE.decode(val),         // LensMount
+                0x010C => format!("{} mm", val),                // FocalLength
+                0x010D => {
+                    // FocusDistance
                     if val == 0 {
                         "Infinity".to_string()
                     } else {
@@ -364,9 +365,9 @@ fn format_red_value(tag_id: u16, entry: &IfdEntry, data: &[u8], byte_order: Byte
                 }
                 0x010E => format!("T{:.1}", val as f64 / 10.0), // Aperture
                 0x0112 | 0x0117 => if val != 0 { "On" } else { "Off" }.to_string(), // HDRx, KelvinOverride
-                0x0115 => DECODE_CROP_MODE.decode(val),      // CropMode
-                0x0116 => format!("{} fps", val),            // ProjectFPS
-                0x0118..=0x011D => val.to_string(),          // Shadow, Highlight, Saturation, etc.
+                0x0115 => DECODE_CROP_MODE.decode(val),                             // CropMode
+                0x0116 => format!("{} fps", val),                                   // ProjectFPS
+                0x0118..=0x011D => val.to_string(), // Shadow, Highlight, Saturation, etc.
                 _ => val.to_string(),
             };
         }

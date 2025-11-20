@@ -6,14 +6,18 @@
 use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from nintendo.rs
-use super::super::nintendo::{
-    CAMERA_MODE, CAMERA_SELECTION, FILTER,
-};
+use super::super::nintendo::{CAMERA_MODE, CAMERA_SELECTION, FILTER};
 
 // Wrapper functions to convert SimpleValueDecoder to function pointers
-fn decode_camera_mode(value: i16) -> String { CAMERA_MODE.decode(value) }
-fn decode_camera_selection(value: i16) -> String { CAMERA_SELECTION.decode(value) }
-fn decode_filter(value: i16) -> String { FILTER.decode(value) }
+fn decode_camera_mode(value: i16) -> String {
+    CAMERA_MODE.decode(value)
+}
+fn decode_camera_selection(value: i16) -> String {
+    CAMERA_SELECTION.decode(value)
+}
+fn decode_filter(value: i16) -> String {
+    FILTER.decode(value)
+}
 
 /// Create and return the Nintendo tag registry
 ///
@@ -29,22 +33,17 @@ pub fn nintendo_registry() -> TagRegistry {
         // Device Information
         .register_raw(0x0001, "Model")
         .register_raw(0x0002, "SystemVersion")
-
         // Camera Modes
         .register_i16(0x0100, "CameraMode", decode_camera_mode)
         .register_i16(0x0101, "CameraSelection", decode_camera_selection)
-
         // Stereoscopic Settings
         .register_raw(0x0102, "Parallax")
         .register_raw(0x0103, "3DEffect")
-
         // Detection Features
         .register_raw(0x0104, "FaceDetection")
         .register_raw(0x0105, "MiiDetected")
-
         // Photo Effects
         .register_i16(0x0106, "Filter", decode_filter)
-
         // Game Integration
         .register_raw(0x0107, "GameTitle")
 }

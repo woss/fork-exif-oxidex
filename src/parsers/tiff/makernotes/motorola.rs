@@ -26,10 +26,10 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::registries::motorola::motorola_registry;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::motorola::motorola_registry;
 
 // ============================================================================
 // Declarative Decoder Definitions
@@ -247,10 +247,7 @@ mod tests {
 
     #[test]
     fn test_tag_registry() {
-        assert_eq!(
-            TAG_REGISTRY.get_tag_name(0x0001),
-            Some("CameraMode")
-        );
+        assert_eq!(TAG_REGISTRY.get_tag_name(0x0001), Some("CameraMode"));
         assert!(TAG_REGISTRY.has_tag(0x0002));
     }
 }

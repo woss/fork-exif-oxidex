@@ -26,7 +26,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (8, "Nikkor 200mm f/4"),
     (9, "Nikkor 300mm f/4.5"),
     (10, "Nikkor 35-70mm f/3.5"),
-
     // AF Nikkor lenses (Autofocus era)
     (11, "Nikkor AF 50mm f/1.4D"),
     (12, "Nikkor AF 50mm f/1.8D"),
@@ -38,7 +37,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (18, "Nikkor AF 135mm f/2D DC"),
     (19, "Nikkor AF 105mm f/2.8D Macro"),
     (20, "Nikkor AF 60mm f/2.8D Micro"),
-
     // AF-D zoom lenses
     (21, "Nikkor AF 28-85mm f/3.5-4.5D"),
     (22, "Nikkor AF 35-70mm f/2.8D"),
@@ -50,7 +48,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (28, "Nikkor AF 70-300mm f/4-5.6D ED"),
     (29, "Nikkor AF 28-200mm f/3.5-5.6D"),
     (30, "Nikkor AF 75-300mm f/4.5-5.6"),
-
     // Professional AF lenses
     (31, "Nikkor AF 300mm f/2.8D ED"),
     (32, "Nikkor AF 400mm f/2.8D ED"),
@@ -62,7 +59,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (38, "Nikkor AF 180mm f/2.8D ED"),
     (39, "Nikkor AF Fisheye 16mm f/2.8D"),
     (40, "Nikkor AF 17-35mm f/2.8D ED"),
-
     // AF-S lenses (Silent Wave Motor - modern autofocus)
     (119, "Nikkor AF-S DX 18-55mm f/3.5-5.6G VR"),
     (120, "Nikkor AF-S DX 18-55mm f/3.5-5.6G VR II"),
@@ -74,7 +70,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (126, "Nikkor AF-S DX 18-200mm f/3.5-5.6G ED VR II"),
     (127, "Nikkor AF-S DX 18-105mm f/3.5-5.6G ED VR"),
     (128, "Nikkor AF-S DX 10-24mm f/3.5-4.5G ED"),
-
     // AF-S DX telephoto and macro
     (129, "Nikkor AF-S DX 35mm f/1.8G"),
     (130, "Nikkor AF-S DX 40mm f/2.8G Micro"),
@@ -88,7 +83,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (138, "Nikkor AF-S DX 55-300mm f/4.5-5.6G ED VR"),
     (139, "Nikkor AF-S DX 18-300mm f/3.5-5.6G ED VR"),
     (140, "Nikkor AF-S DX 18-300mm f/3.5-6.3G ED VR"),
-
     // Full-frame AF-S professional zooms
     (141, "Nikkor AF-S 14-24mm f/2.8G ED"),
     (142, "Nikkor AF-S 24-70mm f/2.8G ED"),
@@ -100,7 +94,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (148, "Nikkor AF-S 24-120mm f/4G ED VR"),
     (149, "Nikkor AF-S 80-400mm f/4.5-5.6G ED VR"),
     (150, "Nikkor AF-S 200-500mm f/5.6E ED VR"),
-
     // AF-S telephoto professional (super-telephoto)
     (151, "Nikkor AF-S 70-200mm f/2.8G ED VR"),
     (152, "Nikkor AF-S 70-200mm f/2.8G ED VR II"),
@@ -112,7 +105,6 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (158, "Nikkor AF-S 600mm f/4G ED VR"),
     (159, "Nikkor AF-S 800mm f/5.6E FL ED VR"),
     (160, "Nikkor AF-S 200-400mm f/4G ED VR II"),
-
     // AF-S prime lenses
     (161, "Nikkor AF-S 35mm f/1.8G"),
     (162, "Nikkor AF-S 50mm f/1.8G"),
@@ -124,12 +116,10 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (168, "Nikkor AF-S 105mm f/1.4E ED"),
     (169, "Nikkor AF-S 28mm f/1.8G"),
     (170, "Nikkor AF-S 50mm f/1.4G"),
-
     // AF-S Micro (macro) lenses
     (171, "Nikkor AF-S VR Micro 105mm f/2.8G IF-ED"),
     (172, "Nikkor AF-S VR Micro 60mm f/2.8G ED"),
     (173, "Nikkor AF-S Micro 40mm f/2.8G"),
-
     // Nikkor Z-mount lenses (mirrorless system)
     (174, "Nikkor Z 24-70mm f/4 S"),
     (175, "Nikkor Z 14-30mm f/4 S"),
@@ -151,21 +141,18 @@ static NIKON_LENSES: [(u16, &str); 139] = [
     (191, "Nikkor Z 24-200mm f/4-6.3 VR"),
     (192, "Nikkor Z 100-400mm f/4.5-5.6 VR S"),
     (193, "Nikkor Z 800mm f/6.3 VR S"),
-
     // Z-mount telephoto primes
     (194, "Nikkor Z 400mm f/2.8 TC VR S"),
     (195, "Nikkor Z 400mm f/4.5 VR S"),
     (196, "Nikkor Z 600mm f/4 TC VR S"),
     (197, "Nikkor Z 800mm f/6.3 VR S"),
     (198, "Nikkor Z 600mm f/6.3 VR S"),
-
     // Z-mount DX (APS-C mirrorless)
     (199, "Nikkor Z DX 16-50mm f/3.5-6.3 VR"),
     (200, "Nikkor Z DX 50-250mm f/4.5-6.3 VR"),
     (201, "Nikkor Z DX 18-140mm f/3.5-6.3 VR"),
     (202, "Nikkor Z DX 24mm f/1.7"),
     (203, "Nikkor Z DX 12-28mm f/3.5-5.6 PZ VR"),
-
     // Third-party lenses commonly used with Nikon
     (210, "Sigma 18-35mm f/1.8 DC HSM Art"),
     (211, "Sigma 35mm f/1.4 DG HSM Art"),
@@ -285,11 +272,7 @@ mod tests {
     #[test]
     fn test_database_size() {
         // Should have 139 lens entries
-        assert_eq!(
-            NIKON_LENSES.len(),
-            139,
-            "Expected 139 lens entries"
-        );
+        assert_eq!(NIKON_LENSES.len(), 139, "Expected 139 lens entries");
     }
 
     #[test]

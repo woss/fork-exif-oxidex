@@ -9,15 +9,13 @@
 //! - **AFInfo** (0x9400, 0x9402): 5 autofocus parameters
 //! - **ShotInfo** (0x3000): 10 shot-specific parameters
 
-use super::super::shared::{
-    array_schemas::*, generic_decoders::*, tag_registry::TagRegistry,
-};
+use super::super::shared::{array_schemas::*, generic_decoders::*, tag_registry::TagRegistry};
 
 // Re-export existing decoders from sony.rs
 // These decoders are defined using const_decoder! macros in the main parser
 use super::super::sony::{
-    AF_AREA_MODE, COLOR_MODE, DRIVE_MODE, DRO, FLASH_MODE, FOCUS_MODE, HDR,
-    IMAGE_STABILIZATION, METERING_MODE, NOISE_REDUCTION, WHITE_BALANCE,
+    AF_AREA_MODE, COLOR_MODE, DRIVE_MODE, DRO, FLASH_MODE, FOCUS_MODE, HDR, IMAGE_STABILIZATION,
+    METERING_MODE, NOISE_REDUCTION, WHITE_BALANCE,
 };
 
 // ============================================================================

@@ -426,7 +426,13 @@ impl MakerNoteParser for OlympusParser {
                         // Equipment array has complex byte-level parsing that requires special handling
                         // beyond what the registry array schema provides. Use the specialized helper.
                         use super::registries::olympus::process_equipment_with_lens;
-                        process_equipment_with_lens(&array, "Olympus", get_lens_database(), byte_order, tags);
+                        process_equipment_with_lens(
+                            &array,
+                            "Olympus",
+                            get_lens_database(),
+                            byte_order,
+                            tags,
+                        );
                     }
                 }
 
@@ -438,10 +444,7 @@ impl MakerNoteParser for OlympusParser {
                             // ASCII field type
                             if let Some(value) = extract_string_value(&entry, data, 8) {
                                 if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
-                                    tags.insert(
-                                        format!("Olympus:{}", tag_name),
-                                        value,
-                                    );
+                                    tags.insert(format!("Olympus:{}", tag_name), value);
                                 }
                             }
                         } else {

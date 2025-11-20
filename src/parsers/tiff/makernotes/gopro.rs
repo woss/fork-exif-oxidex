@@ -50,47 +50,88 @@ use super::registries::gopro_registry;
 use crate::const_decoder;
 
 // GoPro MakerNote Tag IDs
-pub const GOPRO_VERSION: u16 = 0x0001; // Firmware version
-pub const GOPRO_MODEL: u16 = 0x0002; // Camera model
-pub const GOPRO_SERIAL: u16 = 0x0003; // Serial number
-pub const GOPRO_RESOLUTION: u16 = 0x0100; // Video/Photo resolution
-pub const GOPRO_FRAME_RATE: u16 = 0x0101; // Frame rate (fps)
-pub const GOPRO_FOV: u16 = 0x0102; // Field of view
-pub const GOPRO_LOW_LIGHT: u16 = 0x0103; // Low light mode
-pub const GOPRO_PROTUNE: u16 = 0x0104; // Protune enabled
-pub const GOPRO_WHITE_BALANCE: u16 = 0x0105; // White balance setting
-pub const GOPRO_COLOR: u16 = 0x0106; // Color profile (flat/GoPro)
-pub const GOPRO_SHARPNESS: u16 = 0x0107; // Sharpness level
-pub const GOPRO_CONTRAST: u16 = 0x0108; // Contrast (Protune)
-pub const GOPRO_SATURATION: u16 = 0x0109; // Saturation (Protune)
-pub const GOPRO_ISO_MIN: u16 = 0x010A; // Minimum ISO (Protune)
-pub const GOPRO_ISO_MAX: u16 = 0x010B; // Maximum ISO (Protune)
-pub const GOPRO_EXPOSURE: u16 = 0x010C; // Exposure compensation
-pub const GOPRO_SHUTTER: u16 = 0x010D; // Shutter speed
-pub const GOPRO_METERING: u16 = 0x010E; // Metering mode
-pub const GOPRO_SPOT_METER: u16 = 0x010F; // Spot meter area
-pub const GOPRO_EIS: u16 = 0x0110; // Electronic Image Stabilization
-pub const GOPRO_HYPERSMOOTH: u16 = 0x0111; // HyperSmooth level
-pub const GOPRO_BOOST: u16 = 0x0112; // HyperSmooth Boost
-pub const GOPRO_STABILIZATION_MODE: u16 = 0x0113; // Stabilization mode
-pub const GOPRO_AUTO_BOOST: u16 = 0x0114; // Auto Boost mode
-pub const GOPRO_SUPER_PHOTO: u16 = 0x0115; // SuperPhoto mode
-pub const GOPRO_HDR: u16 = 0x0116; // HDR photo mode
-pub const GOPRO_DIGITAL_ZOOM: u16 = 0x0117; // Digital zoom level
-pub const GOPRO_RAW_AUDIO: u16 = 0x0118; // Raw audio enabled
-pub const GOPRO_WIND_NOISE: u16 = 0x0119; // Wind noise reduction
-pub const GOPRO_TIMEWARP_SPEED: u16 = 0x011A; // TimeWarp speed multiplier
-pub const GOPRO_VIDEO_ENCODING: u16 = 0x011B; // Video codec (H.264/H.265)
-pub const GOPRO_BIT_RATE: u16 = 0x011C; // Video bitrate
-pub const GOPRO_ORIENTATION: u16 = 0x011D; // Camera orientation
-pub const GOPRO_GPS_FIX: u16 = 0x011E; // GPS fix status
-pub const GOPRO_LENS_MODEL: u16 = 0x011F; // Lens model identifier
-pub const GOPRO_NIGHT_PHOTO: u16 = 0x0120; // Night photo mode
-pub const GOPRO_BURST_RATE: u16 = 0x0121; // Burst photo rate
-pub const GOPRO_LIVE_BURST: u16 = 0x0122; // Live burst mode
-pub const GOPRO_TIMELAPSE_INTERVAL: u16 = 0x0123; // Time lapse interval (ms)
-pub const GOPRO_NIGHT_LAPSE_INTERVAL: u16 = 0x0124; // Night lapse interval
-pub const GOPRO_LOOP_DURATION: u16 = 0x0125; // Loop recording duration
+/// Firmware version
+pub const GOPRO_VERSION: u16 = 0x0001;
+/// Camera model
+pub const GOPRO_MODEL: u16 = 0x0002;
+/// Serial number
+pub const GOPRO_SERIAL: u16 = 0x0003;
+/// Video/Photo resolution
+pub const GOPRO_RESOLUTION: u16 = 0x0100;
+/// Frame rate (fps)
+pub const GOPRO_FRAME_RATE: u16 = 0x0101;
+/// Field of view
+pub const GOPRO_FOV: u16 = 0x0102;
+/// Low light mode
+pub const GOPRO_LOW_LIGHT: u16 = 0x0103;
+/// Protune enabled
+pub const GOPRO_PROTUNE: u16 = 0x0104;
+/// White balance setting
+pub const GOPRO_WHITE_BALANCE: u16 = 0x0105;
+/// Color profile (flat/GoPro)
+pub const GOPRO_COLOR: u16 = 0x0106;
+/// Sharpness level
+pub const GOPRO_SHARPNESS: u16 = 0x0107;
+/// Contrast (Protune)
+pub const GOPRO_CONTRAST: u16 = 0x0108;
+/// Saturation (Protune)
+pub const GOPRO_SATURATION: u16 = 0x0109;
+/// Minimum ISO (Protune)
+pub const GOPRO_ISO_MIN: u16 = 0x010A;
+/// Maximum ISO (Protune)
+pub const GOPRO_ISO_MAX: u16 = 0x010B;
+/// Exposure compensation
+pub const GOPRO_EXPOSURE: u16 = 0x010C;
+/// Shutter speed
+pub const GOPRO_SHUTTER: u16 = 0x010D;
+/// Metering mode
+pub const GOPRO_METERING: u16 = 0x010E;
+/// Spot meter area
+pub const GOPRO_SPOT_METER: u16 = 0x010F;
+/// Electronic Image Stabilization
+pub const GOPRO_EIS: u16 = 0x0110;
+/// HyperSmooth level
+pub const GOPRO_HYPERSMOOTH: u16 = 0x0111;
+/// HyperSmooth Boost
+pub const GOPRO_BOOST: u16 = 0x0112;
+/// Stabilization mode
+pub const GOPRO_STABILIZATION_MODE: u16 = 0x0113;
+/// Auto Boost mode
+pub const GOPRO_AUTO_BOOST: u16 = 0x0114;
+/// SuperPhoto mode
+pub const GOPRO_SUPER_PHOTO: u16 = 0x0115;
+/// HDR photo mode
+pub const GOPRO_HDR: u16 = 0x0116;
+/// Digital zoom level
+pub const GOPRO_DIGITAL_ZOOM: u16 = 0x0117;
+/// Raw audio enabled
+pub const GOPRO_RAW_AUDIO: u16 = 0x0118;
+/// Wind noise reduction
+pub const GOPRO_WIND_NOISE: u16 = 0x0119;
+/// TimeWarp speed multiplier
+pub const GOPRO_TIMEWARP_SPEED: u16 = 0x011A;
+/// Video codec (H.264/H.265)
+pub const GOPRO_VIDEO_ENCODING: u16 = 0x011B;
+/// Video bitrate
+pub const GOPRO_BIT_RATE: u16 = 0x011C;
+/// Camera orientation
+pub const GOPRO_ORIENTATION: u16 = 0x011D;
+/// GPS fix status
+pub const GOPRO_GPS_FIX: u16 = 0x011E;
+/// Lens model identifier
+pub const GOPRO_LENS_MODEL: u16 = 0x011F;
+/// Night photo mode
+pub const GOPRO_NIGHT_PHOTO: u16 = 0x0120;
+/// Burst photo rate
+pub const GOPRO_BURST_RATE: u16 = 0x0121;
+/// Live burst mode
+pub const GOPRO_LIVE_BURST: u16 = 0x0122;
+/// Time lapse interval (ms)
+pub const GOPRO_TIMELAPSE_INTERVAL: u16 = 0x0123;
+/// Night lapse interval
+pub const GOPRO_NIGHT_LAPSE_INTERVAL: u16 = 0x0124;
+/// Loop recording duration
+pub const GOPRO_LOOP_DURATION: u16 = 0x0125;
 
 // GoPro signature
 const GOPRO_SIGNATURE: &[u8] = b"GoPro";
@@ -388,7 +429,6 @@ fn format_loop_duration(value: i16) -> String {
     format!("{} min", value)
 }
 
-
 /// GoPro MakerNote parser implementing the MakerNoteParser trait
 #[derive(Default)]
 pub struct GoProParser;
@@ -472,8 +512,8 @@ impl MakerNoteParser for GoProParser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::shared::generic_decoders::{ON_OFF, YES_NO};
+    use super::*;
 
     #[test]
     fn test_gopro_parser_creation() {

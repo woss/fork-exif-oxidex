@@ -29,10 +29,10 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use super::minolta_lens_database::lookup_minolta_lens;
+use super::registries::minolta::minolta_registry;
 use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
-use super::registries::minolta::minolta_registry;
 
 // ===== Minolta MakerNote Tag IDs =====
 // Tag definitions are now centralized in the registry.
@@ -146,14 +146,18 @@ fn extract_string(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Optio
 
 use crate::const_decoder;
 
-/// Decoder for Minolta image quality settings
+// Decoder for Minolta image quality settings
+// Maps image quality codes to quality level names:
+// - 0 = Standard quality (baseline compression)
+// - 1 = Super Fine quality (highest setting, minimal compression)
+// - 2 = Fine quality (medium-high setting, moderate compression)
 const_decoder!(pub DECODE_IMAGE_QUALITY, u16, [
     (0, "Standard"),
-    (1, "Fine"),
-    (2, "Super Fine"),
+    (1, "Super Fine"),
+    (2, "Fine"),
 ]);
 
-/// Decoder for Minolta flash modes
+// Decoder for Minolta flash modes
 const_decoder!(pub DECODE_FLASH_MODE, u16, [
     (0, "Off"),
     (1, "Auto"),
@@ -162,7 +166,7 @@ const_decoder!(pub DECODE_FLASH_MODE, u16, [
     (4, "Fill Flash"),
 ]);
 
-/// Decoder for Minolta white balance settings
+// Decoder for Minolta white balance settings
 const_decoder!(pub DECODE_WHITE_BALANCE, u16, [
     (0, "Auto"),
     (1, "Daylight"),
@@ -173,7 +177,7 @@ const_decoder!(pub DECODE_WHITE_BALANCE, u16, [
     (6, "Custom"),
 ]);
 
-/// Decoder for Minolta focus modes
+// Decoder for Minolta focus modes
 const_decoder!(pub DECODE_FOCUS_MODE, u16, [
     (0, "Single Shot"),
     (1, "Continuous"),
@@ -182,7 +186,7 @@ const_decoder!(pub DECODE_FOCUS_MODE, u16, [
     (4, "AF-C"),
 ]);
 
-/// Decoder for Minolta color modes
+// Decoder for Minolta color modes
 const_decoder!(pub DECODE_COLOR_MODE, u16, [
     (0, "Standard"),
     (1, "Vivid"),
@@ -191,7 +195,7 @@ const_decoder!(pub DECODE_COLOR_MODE, u16, [
     (4, "Sepia"),
 ]);
 
-/// Decoder for Minolta exposure modes
+// Decoder for Minolta exposure modes
 const_decoder!(pub DECODE_EXPOSURE_MODE, u16, [
     (0, "Auto"),
     (1, "Program"),
@@ -200,7 +204,7 @@ const_decoder!(pub DECODE_EXPOSURE_MODE, u16, [
     (4, "Manual"),
 ]);
 
-/// Decoder for Minolta scene modes
+// Decoder for Minolta scene modes
 const_decoder!(pub DECODE_SCENE_MODE, u16, [
     (0, "Standard"),
     (1, "Portrait"),
@@ -250,9 +254,11 @@ impl MinoltaParser {
         let formatted_value = match entry.tag_id {
             // Lens ID (0x0054) - use database lookup for lens name
             0x0054 => {
-                let lens_id = extract_u16_value(entry, data, byte_order)
-                    .unwrap_or(0);
-                tags.insert(format!("Minolta:{}", tag_name), format!("0x{:04X}", lens_id));
+                let lens_id = extract_u16_value(entry, data, byte_order).unwrap_or(0);
+                tags.insert(
+                    format!("Minolta:{}", tag_name),
+                    format!("0x{:04X}", lens_id),
+                );
                 if let Some(lens_name) = lookup_minolta_lens(lens_id) {
                     tags.insert("Minolta:LensType".to_string(), lens_name);
                 }
@@ -292,12 +298,14 @@ impl MinoltaParser {
             // Macro mode (0x004B) - binary on/off
             0x004B => {
                 let value = extract_u16_value(entry, data, byte_order).unwrap_or(0);
-                if value > 0 { "On".to_string() } else { "Off".to_string() }
+                if value > 0 {
+                    "On".to_string()
+                } else {
+                    "Off".to_string()
+                }
             }
             // Firmware version (0x0058) - extract as string
-            0x0058 => {
-                extract_string(entry, data, byte_order).unwrap_or_default()
-            }
+            0x0058 => extract_string(entry, data, byte_order).unwrap_or_default(),
             // All other tags use registry decoder if available
             _ => {
                 if let Some(value) = extract_u16_value(entry, data, byte_order) {

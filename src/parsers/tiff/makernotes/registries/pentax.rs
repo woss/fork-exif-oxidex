@@ -4,17 +4,14 @@
 //! Pentax uses a straightforward tag structure with mostly simple value types
 //! (strings, integers, and enumerated values) and optional array-based tags.
 
-use super::super::shared::{
-    generic_decoders::*, tag_registry::TagRegistry,
-};
+use super::super::shared::tag_registry::TagRegistry;
 
 // Re-export decoders from pentax.rs
 // These decoders are defined using const_decoder! macros in the main parser
 use super::super::pentax::{
-    AUTO_BRACKETING, COLOR_SPACE, CONTRAST, DRIVE_MODE, FLASH_MODE, FOCUS_MODE,
-    IMAGE_SIZE, METERING_MODE, PICTURE_MODE, QUALITY, SATURATION, SHAKE_REDUCTION,
+    AUTO_BRACKETING, COLOR_SPACE, CONTRAST, DRIVE_MODE, FLASH_MODE, FOCUS_MODE, IMAGE_SIZE,
+    METERING_MODE, PICTURE_MODE, PIXEL_SHIFT_RESOLUTION, QUALITY, SATURATION, SHAKE_REDUCTION,
     SHARPNESS, WHITE_BALANCE, WHITE_BALANCE_MODE, WORLD_TIME_LOCATION,
-    PIXEL_SHIFT_RESOLUTION,
 };
 
 // ============================================================================
@@ -38,7 +35,6 @@ pub fn pentax_registry() -> TagRegistry {
         .register_string_tag(0x0006, "Date")
         .register_string_tag(0x0007, "Time")
         .register_string_tag(0x009F, "LensModel")
-
         // Enumerated tags with decoders
         .register_raw(0x0001, "PentaxModelType")
         .register_enum_tag_required(0x0008, "Quality", &QUALITY)
@@ -59,7 +55,6 @@ pub fn pentax_registry() -> TagRegistry {
         .register_enum_tag_required(0x0037, "ColorSpace", &COLOR_SPACE)
         .register_enum_tag_required(0x003C, "ShakeReductionInfo", &SHAKE_REDUCTION)
         .register_enum_tag_required(0x0086, "PixelShiftResolution", &PIXEL_SHIFT_RESOLUTION)
-
         // Simple integer/numeric tags
         .register_integer_tag(0x0002, "PreviewImageSize", None)
         .register_integer_tag(0x0003, "PreviewImageLength", None)
