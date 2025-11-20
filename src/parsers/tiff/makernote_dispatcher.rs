@@ -35,14 +35,20 @@ pub fn dispatch_makernote(
         "canon" => Some(Box::new(canon::CanonParser)),
         "nikon" | "nikon corporation" => Some(Box::new(nikon::NikonParser)),
         "sony" => Some(Box::new(sony::SonyParser)),
-        "olympus" | "olympus corporation" | "olympus imaging corp." => Some(Box::new(olympus::OlympusParser)),
+        "olympus" | "olympus corporation" | "olympus imaging corp." => {
+            Some(Box::new(olympus::OlympusParser))
+        }
         "panasonic" => Some(Box::new(panasonic::PanasonicParser)),
-        "pentax" | "pentax corporation" | "ricoh imaging company, ltd." => Some(Box::new(pentax::PentaxParser)),
+        "pentax" | "pentax corporation" | "ricoh imaging company, ltd." => {
+            Some(Box::new(pentax::PentaxParser))
+        }
         "fujifilm" | "fuji photo film co., ltd." => Some(Box::new(fujifilm::FujifilmParser)),
         "leica" | "leica camera ag" => Some(Box::new(leica::LeicaMakerNoteParser)),
         "sigma" | "sigma corporation" => Some(Box::new(sigma::SigmaMakerNoteParser)),
         "phase one" | "phase one a/s" => Some(Box::new(phaseone::PhaseOneMakerNoteParser)),
-        "minolta" | "konica minolta" | "minolta co., ltd." => Some(Box::new(minolta::MinoltaParser)),
+        "minolta" | "konica minolta" | "minolta co., ltd." => {
+            Some(Box::new(minolta::MinoltaParser))
+        }
 
         // Smartphones
         "apple" => Some(Box::new(apple::AppleParser)),
