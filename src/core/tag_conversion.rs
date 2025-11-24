@@ -10,11 +10,12 @@
 //! - Heuristic conversion for unknown or ambiguous types
 //! - Utility functions for reading multi-byte values in different byte orders
 
+use crate::core::operations_helpers::{
+    gcd, is_datetime_string, is_printable_ascii, parse_exif_datetime, read_i32, read_u16, read_u32,
+};
 use crate::core::TagValue;
-use crate::error::Result;
 use crate::parsers::common::exif_types::ExifType;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
-use chrono;
 
 // ============================================================================
 // PUBLIC API
@@ -360,10 +361,7 @@ fn heuristic_bytes_to_tag_value(bytes: &[u8], byte_order: ByteOrder) -> TagValue
         return TagValue::new_integer(value);
     }
 
-    if bytes
-        .iter()
-        .all(|&b| (32..=126).contains(&b) || b == 0 || b == b'\n' || b == b'\r' || b == b'\t')
-    {
+    if is_printable_ascii(bytes) {
         let s = String::from_utf8_lossy(bytes);
         let s = s.trim_end_matches('\0');
         if !s.is_empty() {
@@ -382,62 +380,6 @@ fn heuristic_bytes_to_tag_value(bytes: &[u8], byte_order: ByteOrder) -> TagValue
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
-/// Checks if a string matches the EXIF DateTime format.
-pub fn is_datetime_string(s: &str) -> bool {
-    s.len() == 19
-        && s.chars().filter(|&c| c == ':').count() == 4
-        && s.chars().filter(|&c| c == ' ').count() == 1
-        && s.chars().nth(4) == Some(':')
-        && s.chars().nth(7) == Some(':')
-        && s.chars().nth(10) == Some(' ')
-        && s.chars().nth(13) == Some(':')
-        && s.chars().nth(16) == Some(':')
-}
-
-/// Parses an EXIF DateTime string into a chrono::DateTime<Utc>.
-pub fn parse_exif_datetime(s: &str) -> Result<chrono::DateTime<chrono::Utc>> {
-    use crate::error::ExifToolError;
-    use chrono::NaiveDateTime;
-
-    let naive = NaiveDateTime::parse_from_str(s, "%Y:%m:%d %H:%M:%S")
-        .map_err(|e| ExifToolError::parse_error(format!("Invalid DateTime: {}", e)))?;
-
-    Ok(chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
-        naive,
-        chrono::Utc,
-    ))
-}
-
-/// Reads an unsigned 16-bit integer from bytes.
-pub fn read_u16(bytes: &[u8], byte_order: ByteOrder) -> u16 {
-    match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-    }
-}
-
-/// Reads an unsigned 32-bit integer from bytes.
-pub fn read_u32(bytes: &[u8], byte_order: ByteOrder) -> u32 {
-    match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-    }
-}
-
-/// Reads a signed 32-bit integer from bytes.
-pub fn read_i32(bytes: &[u8], byte_order: ByteOrder) -> i32 {
-    match byte_order {
-        ByteOrder::LittleEndian => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        ByteOrder::BigEndian => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-    }
-}
-
-/// Computes the Greatest Common Divisor using Euclid's algorithm.
-fn gcd(a: u32, b: u32) -> u32 {
-    if b == 0 {
-        a
-    } else {
-        gcd(b, a % b)
-    }
-}
+// Note: Utility functions (read_u16, read_u32, read_i32, is_datetime_string,
+// parse_exif_datetime, gcd) are imported from operations_helpers module
+// to avoid duplication.

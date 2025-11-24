@@ -1,5 +1,5 @@
 use oxidex::core::{FileFormat, FileReader};
-use oxidex::parsers::format_detector::detect_format;
+use oxidex::parsers::detection::detect_format;
 use std::io;
 
 struct TestReader {

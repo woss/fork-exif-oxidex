@@ -5,7 +5,7 @@
 
 use oxidex::core::{FileFormat, FileReader};
 use oxidex::io::MMapReader;
-use oxidex::parsers::format_detector::detect_format;
+use oxidex::parsers::detection::detect_format;
 use oxidex::parsers::jpeg::segment_parser::parse_segments;
 use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use std::io::Write;

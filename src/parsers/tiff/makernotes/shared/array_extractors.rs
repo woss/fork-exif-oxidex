@@ -1,5 +1,113 @@
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 
+// ============================================================================
+// GENERIC ARRAY EXTRACTION INFRASTRUCTURE
+// ============================================================================
+
+/// Trait for types that can be extracted from IFD byte arrays.
+///
+/// This trait enables generic array extraction for numeric types,
+/// eliminating the need for separate functions for each type.
+pub trait FromIfdBytes: Sized + Copy {
+    /// Size of this type in bytes
+    const SIZE: usize;
+
+    /// Parse a single value from bytes with the given byte order
+    fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self;
+}
+
+impl FromIfdBytes for i16 {
+    const SIZE: usize = 2;
+
+    fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
+        match byte_order {
+            ByteOrder::LittleEndian => i16::from_le_bytes([bytes[0], bytes[1]]),
+            ByteOrder::BigEndian => i16::from_be_bytes([bytes[0], bytes[1]]),
+        }
+    }
+}
+
+impl FromIfdBytes for u16 {
+    const SIZE: usize = 2;
+
+    fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
+        match byte_order {
+            ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
+            ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
+        }
+    }
+}
+
+impl FromIfdBytes for i32 {
+    const SIZE: usize = 4;
+
+    fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
+        match byte_order {
+            ByteOrder::LittleEndian => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+            ByteOrder::BigEndian => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+        }
+    }
+}
+
+impl FromIfdBytes for u32 {
+    const SIZE: usize = 4;
+
+    fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
+        match byte_order {
+            ByteOrder::LittleEndian => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+            ByteOrder::BigEndian => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+        }
+    }
+}
+
+/// Generic array extraction from IFD entry.
+///
+/// Extracts an array of any numeric type that implements `FromIfdBytes`.
+/// Handles offset-based arrays stored at entry.value_offset.
+///
+/// # Type Parameters
+/// - `T`: The numeric type to extract (i16, u16, i32, u32, etc.)
+///
+/// # Parameters
+/// - `entry`: The IFD entry containing the array data
+/// - `data`: The complete data buffer for offset-based reads
+/// - `byte_order`: Byte order for parsing (little or big endian)
+///
+/// # Returns
+/// Optional vector of values, or None if data is invalid
+pub fn extract_array<T: FromIfdBytes>(
+    entry: &IfdEntry,
+    data: &[u8],
+    byte_order: ByteOrder,
+) -> Option<Vec<T>> {
+    if entry.value_count == 0 {
+        return None;
+    }
+
+    let count = entry.value_count as usize;
+    let bytes_needed = count * T::SIZE;
+
+    let offset = entry.value_offset as usize;
+    if offset + bytes_needed > data.len() {
+        return None;
+    }
+
+    let mut result = Vec::with_capacity(count);
+    let array_data = &data[offset..offset + bytes_needed];
+
+    for i in 0..count {
+        let byte_offset = i * T::SIZE;
+        let value = T::from_bytes(&array_data[byte_offset..byte_offset + T::SIZE], byte_order);
+        result.push(value);
+    }
+
+    Some(result)
+}
+
+// ============================================================================
+// TYPE-SPECIFIC EXTRACTION FUNCTIONS (thin wrappers for compatibility)
+// ============================================================================
+
 /// Extract i16 array from IFD entry
 ///
 /// Handles both inline arrays (≤2 values fitting in 4-byte value_offset)
@@ -78,87 +186,25 @@ pub fn extract_i16_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
 /// Extract u16 array from IFD entry
 ///
 /// Used by: Nikon LensData, Sony AFInfo, Fuji FaceDetection
+#[inline]
 pub fn extract_u16_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<Vec<u16>> {
-    if entry.value_count == 0 {
-        return None;
-    }
-
-    let offset = entry.value_offset as usize;
-    if offset + (entry.value_count as usize * 2) > data.len() {
-        return None;
-    }
-
-    let mut array = Vec::with_capacity(entry.value_count as usize);
-    for i in 0..entry.value_count {
-        let pos = offset + (i as usize * 2);
-        let value = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[pos], data[pos + 1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[pos], data[pos + 1]]),
-        };
-        array.push(value);
-    }
-
-    Some(array)
+    extract_array::<u16>(entry, data, byte_order)
 }
 
 /// Extract u32 array from IFD entry
 ///
 /// Used by: Canon FileInfo, Nikon ShutterData, Pentax CameraInfo
+#[inline]
 pub fn extract_u32_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<Vec<u32>> {
-    if entry.value_count == 0 {
-        return None;
-    }
-
-    let offset = entry.value_offset as usize;
-    if offset + (entry.value_count as usize * 4) > data.len() {
-        return None;
-    }
-
-    let mut array = Vec::with_capacity(entry.value_count as usize);
-    for i in 0..entry.value_count {
-        let pos = offset + (i as usize * 4);
-        let value = match byte_order {
-            ByteOrder::LittleEndian => {
-                u32::from_le_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]])
-            }
-            ByteOrder::BigEndian => {
-                u32::from_be_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]])
-            }
-        };
-        array.push(value);
-    }
-
-    Some(array)
+    extract_array::<u32>(entry, data, byte_order)
 }
 
 /// Extract i32 array from IFD entry
 ///
 /// Used by: Olympus CameraSettings, Panasonic WBInfo
+#[inline]
 pub fn extract_i32_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<Vec<i32>> {
-    if entry.value_count == 0 {
-        return None;
-    }
-
-    let offset = entry.value_offset as usize;
-    if offset + (entry.value_count as usize * 4) > data.len() {
-        return None;
-    }
-
-    let mut array = Vec::with_capacity(entry.value_count as usize);
-    for i in 0..entry.value_count {
-        let pos = offset + (i as usize * 4);
-        let value = match byte_order {
-            ByteOrder::LittleEndian => {
-                i32::from_le_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]])
-            }
-            ByteOrder::BigEndian => {
-                i32::from_be_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]])
-            }
-        };
-        array.push(value);
-    }
-
-    Some(array)
+    extract_array::<i32>(entry, data, byte_order)
 }
 
 /// Extract single i16 value from IFD entry
@@ -250,24 +296,13 @@ pub fn extract_i32_value(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
     } else {
         // Offset-based - read from data buffer
         let offset = entry.value_offset as usize;
-        if offset + 4 > data.len() {
+        if offset + i32::SIZE > data.len() {
             return None;
         }
-        let value = match byte_order {
-            ByteOrder::LittleEndian => i32::from_le_bytes([
-                data[offset],
-                data[offset + 1],
-                data[offset + 2],
-                data[offset + 3],
-            ]),
-            ByteOrder::BigEndian => i32::from_be_bytes([
-                data[offset],
-                data[offset + 1],
-                data[offset + 2],
-                data[offset + 3],
-            ]),
-        };
-        Some(value)
+        Some(i32::from_bytes(
+            &data[offset..offset + i32::SIZE],
+            byte_order,
+        ))
     }
 }
 
@@ -339,39 +374,20 @@ pub fn extract_rational_array(
         return None;
     }
 
+    let count = entry.value_count as usize;
+    let rational_size = u32::SIZE * 2; // 8 bytes per rational (numerator + denominator)
     let offset = entry.value_offset as usize;
-    if offset + (entry.value_count as usize * 8) > data.len() {
+
+    if offset + (count * rational_size) > data.len() {
         return None;
     }
 
-    let mut array = Vec::with_capacity(entry.value_count as usize);
-    for i in 0..entry.value_count {
-        let pos = offset + (i as usize * 8);
-        let (numerator, denominator) = match byte_order {
-            ByteOrder::LittleEndian => {
-                let num =
-                    u32::from_le_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]);
-                let den = u32::from_le_bytes([
-                    data[pos + 4],
-                    data[pos + 5],
-                    data[pos + 6],
-                    data[pos + 7],
-                ]);
-                (num, den)
-            }
-            ByteOrder::BigEndian => {
-                let num =
-                    u32::from_be_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]);
-                let den = u32::from_be_bytes([
-                    data[pos + 4],
-                    data[pos + 5],
-                    data[pos + 6],
-                    data[pos + 7],
-                ]);
-                (num, den)
-            }
-        };
-        array.push((numerator, denominator));
+    let mut array = Vec::with_capacity(count);
+    for i in 0..count {
+        let pos = offset + (i * rational_size);
+        let num = u32::from_bytes(&data[pos..pos + u32::SIZE], byte_order);
+        let den = u32::from_bytes(&data[pos + u32::SIZE..pos + rational_size], byte_order);
+        array.push((num, den));
     }
 
     Some(array)

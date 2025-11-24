@@ -4,7 +4,8 @@
 //! and extracting metadata from different segment types (JFIF, EXIF, XMP, IPTC, ICC).
 
 use super::{FileReader, MetadataMap, TagValue};
-use crate::core::tag_conversion::{parse_string_to_tag_value, raw_bytes_to_tag_value, read_u32};
+use crate::core::operations_helpers::read_u32;
+use crate::core::tag_conversion::{parse_string_to_tag_value, raw_bytes_to_tag_value};
 use crate::core::tiff_helpers::{parse_exif_subifd, parse_gps_subifd};
 use crate::parsers::jpeg::segment_parser::Segment;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
@@ -273,7 +274,7 @@ pub fn process_icc_segments(segments: &[Segment], metadata: &mut MetadataMap) {
             if chunk_num == 1 && total_chunks == 1 {
                 // Single chunk - parse ICC profile directly
                 let icc_data = &segment.data[14..];
-                match crate::parsers::icc_parser::parse_icc_profile_data(icc_data) {
+                match crate::parsers::icc::parse_icc_profile_data(icc_data) {
                     Ok(icc_tags) => {
                         // Add all ICC tags to metadata with "Profile:" prefix
                         for (tag_name, value) in icc_tags {

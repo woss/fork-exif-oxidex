@@ -4,7 +4,8 @@
 //! processing tags, and handling sub-IFDs (EXIF, GPS) and MakerNotes.
 
 use super::{FileReader, MetadataMap, TagValue};
-use crate::core::tag_conversion::{raw_bytes_to_tag_value, read_u32};
+use crate::core::operations_helpers::read_u32;
+use crate::core::tag_conversion::raw_bytes_to_tag_value;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
@@ -157,7 +158,7 @@ fn process_tiff_ifd_tags<'a>(
         // Check for ICC Profile tag (0x8773)
         if *tag_id == 0x8773 && bytes.len() >= 128 {
             // Parse ICC profile data
-            match crate::parsers::icc_parser::parse_icc_profile_data(bytes) {
+            match crate::parsers::icc::parse_icc_profile_data(bytes) {
                 Ok(icc_tags) => {
                     // Add all ICC tags to metadata with "Profile:" prefix
                     for (tag_name, value) in icc_tags {

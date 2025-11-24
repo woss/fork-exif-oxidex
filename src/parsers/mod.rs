@@ -8,10 +8,10 @@
 pub mod archive;
 pub mod audio;
 pub mod common;
+pub mod detection;
 pub mod document;
 pub mod font;
-pub mod format_detector;
-pub mod icc_parser;
+pub mod icc;
 pub mod image;
 pub mod jpeg;
 pub mod pdf;
@@ -26,4 +26,4 @@ pub mod video;
 pub mod xmp;
 
 // Re-export the format detection function for convenient access
-pub use format_detector::detect_format;
+pub use detection::detect_format;

@@ -10,14 +10,14 @@ use crate::core::jpeg_helpers::{
     process_exif_segments, process_icc_segments, process_iptc_segments, process_jfif_segments,
     process_xmp_segments,
 };
+use crate::core::operations_helpers::{read_u16, read_u32};
 #[cfg(test)]
 use crate::core::tag_conversion::raw_bytes_to_tag_value;
-use crate::core::tag_conversion::{read_u16, read_u32};
 use crate::core::tiff_helpers::parse_ifd_chain;
 use crate::core::validation::validate_tag_value_with_name;
 use crate::error::{ExifToolError, Result};
 use crate::io::MMapReader;
-use crate::parsers::format_detector::detect_format;
+use crate::parsers::detection::detect_format;
 use crate::parsers::jpeg::segment_parser::parse_segments;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 #[cfg(test)]
