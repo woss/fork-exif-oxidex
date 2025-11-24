@@ -101,3 +101,10 @@ stacks.txt
 dtrace.out
 perf.data
 perf.data.old
+
+# Claude Flow and Swarm directories
+.claude-flow/
+.swarm/
+
+# TrID definitions
+triddefs.trd
