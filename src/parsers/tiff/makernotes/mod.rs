@@ -39,6 +39,7 @@ pub mod jvc;
 pub mod kodak;
 pub mod leaf;
 pub mod leaf_lens_database;
+pub mod lens_data;
 pub mod minolta;
 pub mod minolta_lens_database;
 pub mod motorola;

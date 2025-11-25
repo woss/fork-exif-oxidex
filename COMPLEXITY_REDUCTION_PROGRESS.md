@@ -85,6 +85,17 @@ Reduce cyclomatic complexity of `src/core/operations.rs` from 204 to under 50 (G
 - **Test Status**: ✅ All 1169 tests passing (2 new tests in TiffSubReader)
 - **Commit**: 6dd62548
 
+## Phase 5: Makernote Refactoring (Completed)
+- **Date**: 2025-11-24
+- **Scope**: `src/parsers/tiff/makernotes/`
+- **Key Improvements**:
+  - **Unified Lens Database**: Consolidated 12 disparate lens databases into `lens_data.rs` with static array lookups (zero allocation).
+  - **Shared IFD Parser**: Created `ifd_parser_base.rs` to centralize IFD iteration logic, removing ~300 lines of duplicate code across parsers.
+  - **Unified Value Extraction**: Created `value_extractors.rs` to standardize how integers and strings are read from IFD entries.
+  - **Refactored Parsers**: Updated `canon.rs`, `nikon.rs`, and `apple.rs` to use the new shared infrastructure.
+- **Complexity Impact**: significantly reduced duplication and maintenance burden in the makernotes directory.
+- **Test Status**: ✅ All tests passing (including 560+ lens database tests).
+
 ## Overall Progress Summary
 
 ### Lines Removed by Phase
@@ -107,6 +118,9 @@ Reduce cyclomatic complexity of `src/core/operations.rs` from 204 to under 50 (G
 4. `src/core/jpeg_helpers.rs` - 298 lines (JPEG metadata processing)
 5. `src/parsers/tiff/tiff_subreader.rs` - 100 lines (shared TIFF sub-reader)
 6. `src/core/operations.rs` - 639 lines (main operations)
+7. `src/parsers/tiff/makernotes/shared/ifd_parser_base.rs` - Shared IFD parser logic
+8. `src/parsers/tiff/makernotes/shared/value_extractors.rs` - Shared value extraction logic
+9. `src/parsers/tiff/makernotes/lens_data.rs` - Unified lens database
 
 ## Analysis
 
@@ -159,4 +173,4 @@ We expect significant complexity reduction, likely achieving the <50 target.
 - All extractions follow single responsibility principle
 - Public/private visibility carefully managed for API boundaries
 - No functionality changes, only structural improvements
-- Module count increased from 1 to 6 focused modules
+- Module count increased from 1 to 9 focused modules

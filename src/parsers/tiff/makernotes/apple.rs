@@ -23,6 +23,12 @@
 
 use crate::const_decoder;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
+use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
+    parse_ifd_entries, IfdParserConfig,
+};
+use crate::parsers::tiff::makernotes::shared::value_extractors::{
+    extract_i16_value, extract_string_with_byteorder, extract_u32_value,
+};
 use std::collections::HashMap;
 
 use super::shared::array_extractors::extract_i16_array;
@@ -122,99 +128,6 @@ const_decoder! {
     ]
 }
 
-/// Extracts a 16-bit signed value from IFD entry
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the value
-/// * `data` - Full MakerNote data buffer
-/// * `byte_order` - Byte order for parsing
-///
-/// # Returns
-/// Extracted value or None if invalid
-fn extract_i16_value(entry: &IfdEntry, _data: &[u8], byte_order: ByteOrder) -> Option<i16> {
-    if entry.value_count != 1 {
-        return None;
-    }
-
-    // For SHORT type (value_count=1), value is inline in value_offset field
-    let value = match byte_order {
-        ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as i16,
-        ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as i16,
-    };
-
-    Some(value)
-}
-
-/// Extracts a 32-bit unsigned value from IFD entry
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the value
-/// * `data` - Full MakerNote data buffer
-/// * `byte_order` - Byte order for parsing
-///
-/// # Returns
-/// Extracted value or None if invalid
-fn extract_u32_value(entry: &IfdEntry, _data: &[u8], _byte_order: ByteOrder) -> Option<u32> {
-    if entry.value_count != 1 {
-        return None;
-    }
-
-    Some(entry.value_offset)
-}
-
-/// Extracts an ASCII string from IFD entry
-///
-/// # Arguments
-/// * `entry` - IFD entry containing the string
-/// * `data` - Full MakerNote data buffer
-/// * `byte_order` - Byte order for parsing
-///
-/// # Returns
-/// Extracted string or None if invalid
-fn extract_string(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<String> {
-    if entry.value_count == 0 {
-        return None;
-    }
-
-    let value_bytes = if entry.value_count <= 4 {
-        // Inline string (stored in value_offset field)
-        let mut bytes = Vec::new();
-        for i in 0..entry.value_count as usize {
-            let byte = match byte_order {
-                ByteOrder::LittleEndian => ((entry.value_offset >> (i * 8)) & 0xFF) as u8,
-                ByteOrder::BigEndian => ((entry.value_offset >> (24 - i * 8)) & 0xFF) as u8,
-            };
-            if byte == 0 {
-                break;
-            }
-            bytes.push(byte);
-        }
-        bytes
-    } else {
-        // External string (offset points to data)
-        let offset = entry.value_offset as usize;
-        if offset >= data.len() {
-            return None;
-        }
-        let end = std::cmp::min(offset + entry.value_count as usize, data.len());
-        data[offset..end].to_vec()
-    };
-
-    if value_bytes.is_empty() {
-        return None;
-    }
-
-    let string = String::from_utf8_lossy(&value_bytes)
-        .trim_end_matches('\0')
-        .to_string();
-
-    if string.is_empty() {
-        None
-    } else {
-        Some(string)
-    }
-}
-
 /// Apple MakerNote parser implementation
 pub struct AppleParser;
 
@@ -231,15 +144,6 @@ impl AppleParser {
     }
 
     /// Parse a single IFD entry and extract tag value using registry-based approach
-    ///
-    /// This method uses the Apple tag registry for cleaner, more maintainable tag handling.
-    /// Special cases (like LivePhoto detection and custom formatting) are handled separately.
-    ///
-    /// # Arguments
-    /// * `entry` - IFD entry to parse
-    /// * `data` - Full MakerNote data buffer
-    /// * `byte_order` - Byte order for multi-byte values
-    /// * `tags` - HashMap to insert extracted tags into
     fn parse_entry(
         &self,
         entry: &IfdEntry,
@@ -296,7 +200,7 @@ impl AppleParser {
             }
             // String tags
             APPLE_BURST_UUID | APPLE_CONTENT_IDENTIFIER | APPLE_IMAGE_UNIQUE_ID => {
-                if let Some(string_value) = extract_string(entry, data, byte_order) {
+                if let Some(string_value) = extract_string_with_byteorder(entry, data, byte_order) {
                     if let Some(tag_name) = registry.get_tag_name(tag_id) {
                         tags.insert(format!("Apple:{}", tag_name), string_value);
                     }
@@ -304,7 +208,7 @@ impl AppleParser {
             }
             // Special case: LivePhoto detection
             APPLE_LIVE_PHOTO_ID => {
-                if let Some(id) = extract_string(entry, data, byte_order) {
+                if let Some(id) = extract_string_with_byteorder(entry, data, byte_order) {
                     tags.insert("Apple:LivePhotoVideoID".to_string(), id);
                     // Additional flag to indicate this is a Live Photo
                     tags.insert("Apple:LivePhoto".to_string(), "Yes".to_string());
@@ -331,100 +235,16 @@ impl MakerNoteParser for AppleParser {
         byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> Result<(), String> {
-        if data.len() < 10 {
-            return Err("Apple MakerNote data too short".to_string());
-        }
-
-        // Apple MakerNotes don't always have a consistent header
-        // Some start with "Apple iOS", others are just IFD data
-        let ifd_offset = if data.len() >= 9 && &data[0..9] == APPLE_SIGNATURE {
-            // Skip signature and any padding
-            10
-        } else {
-            // Assume IFD starts immediately
-            0
+        let config = IfdParserConfig {
+            signature: Some(APPLE_SIGNATURE),
+            signature_offset: 10, // "Apple iOS" (9) + 1 padding byte = 10
+            max_entries: 500,
         };
 
-        if ifd_offset + 2 > data.len() {
-            return Err("Invalid IFD offset".to_string());
-        }
-
-        // Read number of IFD entries
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-        };
-
-        if entry_count == 0 || entry_count > 500 {
-            return Err(format!(
-                "Invalid entry count: {} (expected 1-500)",
-                entry_count
-            ));
-        }
-
-        // Parse each IFD entry
-        let entry_size = 12; // Standard IFD entry size
-        let mut offset = ifd_offset + 2;
-
-        for _ in 0..entry_count {
-            if offset + entry_size > data.len() {
-                break;
-            }
-
-            // Parse IFD entry manually
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset], data[offset + 1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset], data[offset + 1]]),
-            };
-
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset + 2], data[offset + 3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset + 2], data[offset + 3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-            };
-
-            let entry = IfdEntry {
-                tag_id: tag,
-                field_type,
-                value_count: count,
-                value_offset,
-            };
-
-            self.parse_entry(&entry, data, byte_order, tags);
-
-            offset += entry_size;
-        }
-
-        Ok(())
+        parse_ifd_entries(data, byte_order, &config, |entry, _ifd_data| {
+            // Pass full data buffer to parse_entry as it expects absolute offsets
+            self.parse_entry(entry, data, byte_order, tags);
+        })
     }
 
     fn validate_header(&self, data: &[u8]) -> bool {

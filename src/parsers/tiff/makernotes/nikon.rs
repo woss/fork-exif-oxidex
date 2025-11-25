@@ -10,6 +10,12 @@
 
 use crate::error::{ExifToolError, Result};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
+use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
+    parse_ifd_entries, IfdParserConfig,
+};
+use crate::parsers::tiff::makernotes::shared::value_extractors::{
+    extract_string_value, extract_string_with_offset,
+};
 use nom::{
     combinator::map,
     multi::count,
@@ -271,247 +277,250 @@ impl MakerNoteParser for NikonParser {
             return Ok(());
         }
 
-        let ifd_data = &data[ifd_offset..];
-
-        // Parse IFD entry count
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([ifd_data[0], ifd_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([ifd_data[0], ifd_data[1]]),
+        let config = IfdParserConfig {
+            signature: None, // Signature already checked and skipped via offset
+            signature_offset: 0,
+            max_entries: 200,
         };
 
-        // Parse IFD entries
-        let entries_start = &ifd_data[2..];
-        let entries = match parse_ifd_entries(entries_start, entry_count, byte_order) {
-            Ok((_, entries)) => entries,
-            Err(_) => return Ok(()), // Return empty on parse failure
-        };
+        // Nikon parse_ifd_entries call
+        // We pass the slice starting at ifd_offset
+        let _ = parse_ifd_entries(
+            &data[ifd_offset..],
+            byte_order,
+            &config,
+            |entry, _ifd_data| {
+                // For extract_string_value, we need the full data and the absolute offset
+                // Since _ifd_data is relative to ifd_offset, we can use 'data' directly if we adjust offsets
+                // BUT extract_string_value logic expects absolute offsets relative to the start of the *file* or *segment* provided
+                // In Nikon case, offsets are relative to the start of the MakerNote (which is 'data')
 
-        // Extract tags from entries
-        for entry in entries {
-            match entry.tag_id {
-                // Simple string tags
-                NIKON_VERSION | NIKON_SERIAL_NUMBER => {
-                    if let Some(value) = extract_string_value(&entry, data, ifd_offset) {
-                        let tag_name = nikon_tag_to_name(entry.tag_id);
-                        tags.insert(tag_name, value);
-                    }
-                }
-
-                // Simple integer tags
-                NIKON_ISO_SPEED => {
-                    let value = entry.value_offset as i32;
-                    tags.insert("Nikon:ISOSpeed".to_string(), format!("ISO {}", value));
-                }
-
-                NIKON_SHUTTER_COUNT => {
-                    let value = entry.value_offset;
-                    tags.insert("Nikon:ShutterCount".to_string(), value.to_string());
-                }
-
-                NIKON_IMAGE_COUNT => {
-                    let value = entry.value_offset;
-                    tags.insert("Nikon:ImageCount".to_string(), value.to_string());
-                }
-
-                // Enumerated values
-                NIKON_QUALITY => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:Quality".to_string(),
-                        decode_quality(value).to_string(),
-                    );
-                }
-
-                NIKON_WHITE_BALANCE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:WhiteBalance".to_string(),
-                        decode_white_balance(value).to_string(),
-                    );
-                }
-
-                NIKON_FOCUS_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:FocusMode".to_string(),
-                        decode_focus_mode(value).to_string(),
-                    );
-                }
-
-                NIKON_FLASH_SETTING => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:FlashSetting".to_string(),
-                        decode_flash_setting(value).to_string(),
-                    );
-                }
-
-                NIKON_FLASH_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:FlashMode".to_string(),
-                        decode_flash_mode(value).to_string(),
-                    );
-                }
-
-                NIKON_SHOOTING_MODE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:ShootingMode".to_string(),
-                        decode_shooting_mode(value).to_string(),
-                    );
-                }
-
-                NIKON_COLOR_SPACE => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:ColorSpace".to_string(),
-                        decode_color_space(value).to_string(),
-                    );
-                }
-
-                NIKON_ACTIVE_D_LIGHTING => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:ActiveDLighting".to_string(),
-                        decode_active_d_lighting(value).to_string(),
-                    );
-                }
-
-                NIKON_VIGNETTE_CONTROL => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Nikon:VignetteControl".to_string(),
-                        decode_vignette_control(value).to_string(),
-                    );
-                }
-
-                // Lens information (simple format)
-                NIKON_LENS_TYPE => {
-                    let value = entry.value_offset;
-                    tags.insert("Nikon:LensType".to_string(), format!("0x{:02X}", value));
-                }
-
-                // LensData array (complex)
-                NIKON_LENS_DATA => {
-                    if let Some(array) = extract_u16_array(&entry, data, byte_order) {
-                        // Extract lens ID and look up lens name
-                        if array.len() > LENS_DATA_LENS_ID {
-                            let lens_id = array[LENS_DATA_LENS_ID];
-                            if let Some(lens_name) = lookup_lens_name(lens_id) {
-                                tags.insert("Nikon:LensID".to_string(), lens_name);
-                            } else {
-                                tags.insert(
-                                    "Nikon:LensID".to_string(),
-                                    format!("Unknown ({})", lens_id),
-                                );
-                            }
-                        }
-
-                        // Extract focal length
-                        if array.len() > LENS_DATA_FOCAL_LENGTH {
-                            let focal_length = array[LENS_DATA_FOCAL_LENGTH];
-                            tags.insert(
-                                "Nikon:FocalLength".to_string(),
-                                format!("{} mm", focal_length),
-                            );
-                        }
-
-                        // Extract focus distance
-                        if array.len() > LENS_DATA_FOCUS_DISTANCE {
-                            let focus_distance = array[LENS_DATA_FOCUS_DISTANCE];
-                            tags.insert(
-                                "Nikon:FocusDistance".to_string(),
-                                format!("{} mm", focus_distance),
-                            );
-                        }
-
-                        // Extract aperture range
-                        if array.len() > LENS_DATA_MAX_APERTURE_AT_MIN_FOCAL {
-                            let max_aperture_min = array[LENS_DATA_MAX_APERTURE_AT_MIN_FOCAL];
-                            tags.insert(
-                                "Nikon:MaxApertureAtMinFocal".to_string(),
-                                format!("f/{:.1}", max_aperture_min as f32 / 10.0),
-                            );
-                        }
-
-                        if array.len() > LENS_DATA_MAX_APERTURE_AT_MAX_FOCAL {
-                            let max_aperture_max = array[LENS_DATA_MAX_APERTURE_AT_MAX_FOCAL];
-                            tags.insert(
-                                "Nikon:MaxApertureAtMaxFocal".to_string(),
-                                format!("f/{:.1}", max_aperture_max as f32 / 10.0),
-                            );
+                match entry.tag_id {
+                    // Simple string tags
+                    NIKON_VERSION | NIKON_SERIAL_NUMBER => {
+                        // Nikon string offsets are relative to the IFD start (after header)
+                        if let Some(value) = extract_string_with_offset(entry, data, ifd_offset) {
+                            let tag_name = nikon_tag_to_name(entry.tag_id);
+                            tags.insert(tag_name, value);
                         }
                     }
-                }
 
-                // ShotInfo array
-                NIKON_SHOT_INFO => {
-                    if let Some(array) = extract_u16_array(&entry, data, byte_order) {
-                        // Version
-                        if !array.is_empty() {
-                            tags.insert(
-                                "Nikon:ShotInfoVersion".to_string(),
-                                format!("{}", array[SHOT_INFO_VERSION]),
-                            );
-                        }
+                    // Simple integer tags
+                    NIKON_ISO_SPEED => {
+                        let value = entry.value_offset as i32;
+                        tags.insert("Nikon:ISOSpeed".to_string(), format!("ISO {}", value));
+                    }
 
-                        // Shutter count (alternative location)
-                        if array.len() > SHOT_INFO_SHUTTER_COUNT {
-                            let shutter_count = array[SHOT_INFO_SHUTTER_COUNT];
-                            if shutter_count > 0 {
+                    NIKON_SHUTTER_COUNT => {
+                        let value = entry.value_offset;
+                        tags.insert("Nikon:ShutterCount".to_string(), value.to_string());
+                    }
+
+                    NIKON_IMAGE_COUNT => {
+                        let value = entry.value_offset;
+                        tags.insert("Nikon:ImageCount".to_string(), value.to_string());
+                    }
+
+                    // Enumerated values
+                    NIKON_QUALITY => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:Quality".to_string(),
+                            decode_quality(value).to_string(),
+                        );
+                    }
+
+                    NIKON_WHITE_BALANCE => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:WhiteBalance".to_string(),
+                            decode_white_balance(value).to_string(),
+                        );
+                    }
+
+                    NIKON_FOCUS_MODE => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:FocusMode".to_string(),
+                            decode_focus_mode(value).to_string(),
+                        );
+                    }
+
+                    NIKON_FLASH_SETTING => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:FlashSetting".to_string(),
+                            decode_flash_setting(value).to_string(),
+                        );
+                    }
+
+                    NIKON_FLASH_MODE => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:FlashMode".to_string(),
+                            decode_flash_mode(value).to_string(),
+                        );
+                    }
+
+                    NIKON_SHOOTING_MODE => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:ShootingMode".to_string(),
+                            decode_shooting_mode(value).to_string(),
+                        );
+                    }
+
+                    NIKON_COLOR_SPACE => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:ColorSpace".to_string(),
+                            decode_color_space(value).to_string(),
+                        );
+                    }
+
+                    NIKON_ACTIVE_D_LIGHTING => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:ActiveDLighting".to_string(),
+                            decode_active_d_lighting(value).to_string(),
+                        );
+                    }
+
+                    NIKON_VIGNETTE_CONTROL => {
+                        let value = entry.value_offset as i32;
+                        tags.insert(
+                            "Nikon:VignetteControl".to_string(),
+                            decode_vignette_control(value).to_string(),
+                        );
+                    }
+
+                    // Lens information (simple format)
+                    NIKON_LENS_TYPE => {
+                        let value = entry.value_offset;
+                        tags.insert("Nikon:LensType".to_string(), format!("0x{:02X}", value));
+                    }
+
+                    // LensData array (complex)
+                    NIKON_LENS_DATA => {
+                        if let Some(array) = extract_u16_array(entry, data, byte_order) {
+                            // Extract lens ID and look up lens name
+                            if array.len() > LENS_DATA_LENS_ID {
+                                let lens_id = array[LENS_DATA_LENS_ID];
+                                if let Some(lens_name) = lookup_lens_name(lens_id) {
+                                    tags.insert("Nikon:LensID".to_string(), lens_name);
+                                } else {
+                                    tags.insert(
+                                        "Nikon:LensID".to_string(),
+                                        format!("Unknown ({})", lens_id),
+                                    );
+                                }
+                            }
+
+                            // Extract focal length
+                            if array.len() > LENS_DATA_FOCAL_LENGTH {
+                                let focal_length = array[LENS_DATA_FOCAL_LENGTH];
                                 tags.insert(
-                                    "Nikon:ShotInfoShutterCount".to_string(),
-                                    shutter_count.to_string(),
+                                    "Nikon:FocalLength".to_string(),
+                                    format!("{} mm", focal_length),
                                 );
                             }
-                        }
 
-                        // AF point used
-                        if array.len() > SHOT_INFO_AF_POINT_USED {
-                            let af_point = array[SHOT_INFO_AF_POINT_USED];
-                            tags.insert("Nikon:AFPointUsed".to_string(), af_point.to_string());
-                        }
-
-                        // Vibration reduction
-                        if array.len() > SHOT_INFO_VIBRATION_REDUCTION {
-                            let vr = array[SHOT_INFO_VIBRATION_REDUCTION];
-                            let vr_status = if vr == 0 { "Off" } else { "On" };
-                            tags.insert(
-                                "Nikon:VibrationReduction".to_string(),
-                                vr_status.to_string(),
-                            );
-                        }
-
-                        // Auto ISO
-                        if array.len() > SHOT_INFO_AUTO_ISO {
-                            let auto_iso = array[SHOT_INFO_AUTO_ISO];
-                            if auto_iso > 0 {
+                            // Extract focus distance
+                            if array.len() > LENS_DATA_FOCUS_DISTANCE {
+                                let focus_distance = array[LENS_DATA_FOCUS_DISTANCE];
                                 tags.insert(
-                                    "Nikon:AutoISO".to_string(),
-                                    format!("ISO {}", auto_iso),
+                                    "Nikon:FocusDistance".to_string(),
+                                    format!("{} mm", focus_distance),
+                                );
+                            }
+
+                            // Extract aperture range
+                            if array.len() > LENS_DATA_MAX_APERTURE_AT_MIN_FOCAL {
+                                let max_aperture_min = array[LENS_DATA_MAX_APERTURE_AT_MIN_FOCAL];
+                                tags.insert(
+                                    "Nikon:MaxApertureAtMinFocal".to_string(),
+                                    format!("f/{:.1}", max_aperture_min as f32 / 10.0),
+                                );
+                            }
+
+                            if array.len() > LENS_DATA_MAX_APERTURE_AT_MAX_FOCAL {
+                                let max_aperture_max = array[LENS_DATA_MAX_APERTURE_AT_MAX_FOCAL];
+                                tags.insert(
+                                    "Nikon:MaxApertureAtMaxFocal".to_string(),
+                                    format!("f/{:.1}", max_aperture_max as f32 / 10.0),
                                 );
                             }
                         }
                     }
-                }
 
-                // ColorBalance array (white balance RGB coefficients)
-                NIKON_COLOR_BALANCE_A => {
-                    if let Some(array) = extract_u16_array(&entry, data, byte_order) {
-                        if array.len() >= 4 {
-                            tags.insert(
-                                "Nikon:WB_RBLevels".to_string(),
-                                format!("{} {}", array[0], array[1]),
-                            );
+                    // ShotInfo array
+                    NIKON_SHOT_INFO => {
+                        if let Some(array) = extract_u16_array(entry, data, byte_order) {
+                            // Version
+                            if !array.is_empty() {
+                                tags.insert(
+                                    "Nikon:ShotInfoVersion".to_string(),
+                                    format!("{}", array[SHOT_INFO_VERSION]),
+                                );
+                            }
+
+                            // Shutter count (alternative location)
+                            if array.len() > SHOT_INFO_SHUTTER_COUNT {
+                                let shutter_count = array[SHOT_INFO_SHUTTER_COUNT];
+                                if shutter_count > 0 {
+                                    tags.insert(
+                                        "Nikon:ShotInfoShutterCount".to_string(),
+                                        shutter_count.to_string(),
+                                    );
+                                }
+                            }
+
+                            // AF point used
+                            if array.len() > SHOT_INFO_AF_POINT_USED {
+                                let af_point = array[SHOT_INFO_AF_POINT_USED];
+                                tags.insert("Nikon:AFPointUsed".to_string(), af_point.to_string());
+                            }
+
+                            // Vibration reduction
+                            if array.len() > SHOT_INFO_VIBRATION_REDUCTION {
+                                let vr = array[SHOT_INFO_VIBRATION_REDUCTION];
+                                let vr_status = if vr == 0 { "Off" } else { "On" };
+                                tags.insert(
+                                    "Nikon:VibrationReduction".to_string(),
+                                    vr_status.to_string(),
+                                );
+                            }
+
+                            // Auto ISO
+                            if array.len() > SHOT_INFO_AUTO_ISO {
+                                let auto_iso = array[SHOT_INFO_AUTO_ISO];
+                                if auto_iso > 0 {
+                                    tags.insert(
+                                        "Nikon:AutoISO".to_string(),
+                                        format!("ISO {}", auto_iso),
+                                    );
+                                }
+                            }
                         }
                     }
-                }
 
-                // Other array tags - skip for now or add basic extraction
-                _ => continue,
-            }
-        }
+                    // ColorBalance array (white balance RGB coefficients)
+                    NIKON_COLOR_BALANCE_A => {
+                        if let Some(array) = extract_u16_array(entry, data, byte_order) {
+                            if array.len() >= 4 {
+                                tags.insert(
+                                    "Nikon:WB_RBLevels".to_string(),
+                                    format!("{} {}", array[0], array[1]),
+                                );
+                            }
+                        }
+                    }
+
+                    // Other array tags - skip for now or add basic extraction
+                    _ => {}
+                }
+            },
+        );
 
         Ok(())
     }
@@ -544,94 +553,6 @@ fn nikon_tag_to_name(tag_id: u16) -> String {
     };
 
     format!("Nikon:{}", tag_name)
-}
-
-/// Parses IFD entries in the specified byte order
-fn parse_ifd_entries(
-    input: &[u8],
-    entry_count: u16,
-    byte_order: ByteOrder,
-) -> IResult<&[u8], Vec<IfdEntry>> {
-    use nom::Parser;
-    match byte_order {
-        ByteOrder::LittleEndian => count(parse_ifd_entry_le, entry_count as usize).parse(input),
-        ByteOrder::BigEndian => count(parse_ifd_entry_be, entry_count as usize).parse(input),
-    }
-}
-
-/// Parses a single IFD entry in little-endian byte order
-fn parse_ifd_entry_le(input: &[u8]) -> IResult<&[u8], IfdEntry> {
-    use nom::Parser;
-    map(
-        |input| {
-            let (input, tag_id) = le_u16(input)?;
-            let (input, field_type) = le_u16(input)?;
-            let (input, value_count) = le_u32(input)?;
-            let (input, value_offset) = le_u32(input)?;
-            Ok((input, (tag_id, field_type, value_count, value_offset)))
-        },
-        |(tag_id, field_type, value_count, value_offset)| IfdEntry {
-            tag_id,
-            field_type,
-            value_count,
-            value_offset,
-        },
-    )
-    .parse(input)
-}
-
-/// Parses a single IFD entry in big-endian byte order
-fn parse_ifd_entry_be(input: &[u8]) -> IResult<&[u8], IfdEntry> {
-    use nom::Parser;
-    map(
-        |input| {
-            let (input, tag_id) = be_u16(input)?;
-            let (input, field_type) = be_u16(input)?;
-            let (input, value_count) = be_u32(input)?;
-            let (input, value_offset) = be_u32(input)?;
-            Ok((input, (tag_id, field_type, value_count, value_offset)))
-        },
-        |(tag_id, field_type, value_count, value_offset)| IfdEntry {
-            tag_id,
-            field_type,
-            value_count,
-            value_offset,
-        },
-    )
-    .parse(input)
-}
-
-/// Extracts string value from IFD entry
-///
-/// Handles both inline strings (≤4 bytes) and offset-based strings
-fn extract_string_value(entry: &IfdEntry, full_data: &[u8], ifd_offset: usize) -> Option<String> {
-    let byte_count = entry.value_count as usize;
-
-    // For inline strings (≤4 bytes), value is in value_offset field
-    if byte_count <= 4 {
-        let bytes = entry.value_offset.to_le_bytes();
-        let s = std::str::from_utf8(&bytes[0..byte_count])
-            .ok()?
-            .trim_end_matches('\0')
-            .trim();
-        return Some(s.to_string());
-    }
-
-    // For longer strings, read from offset
-    // Nikon offsets are relative to IFD start (after header)
-    let offset = entry.value_offset as usize;
-    let abs_offset = ifd_offset + offset;
-
-    if abs_offset + byte_count <= full_data.len() {
-        let bytes = &full_data[abs_offset..abs_offset + byte_count];
-        let s = std::str::from_utf8(bytes)
-            .ok()?
-            .trim_end_matches('\0')
-            .trim();
-        return Some(s.to_string());
-    }
-
-    None
 }
 
 /// Public function to parse Nikon MakerNotes

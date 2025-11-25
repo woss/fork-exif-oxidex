@@ -8,6 +8,9 @@
 
 use crate::error::{ExifToolError, Result};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
+use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
+    parse_ifd_entries, IfdParserConfig,
+};
 use nom::{
     combinator::map,
     multi::count,
@@ -18,6 +21,9 @@ use std::collections::HashMap;
 
 use super::canon_lens_database::lookup_lens_name;
 use super::shared::array_extractors::extract_i16_array;
+use super::shared::value_extractors::{
+    extract_inline_value, extract_integer_value, extract_string_value,
+};
 use super::shared::MakerNoteParser;
 use crate::const_decoder;
 
@@ -247,73 +253,6 @@ pub fn canon_tag_to_name(tag_id: u16) -> String {
     format!("Canon:{}", tag_name)
 }
 
-/// Parses a single IFD entry (12 bytes) in little-endian byte order.
-///
-/// This is a helper function for parsing Canon MakerNote IFD entries.
-fn parse_ifd_entry_le(input: &[u8]) -> IResult<&[u8], IfdEntry> {
-    use nom::Parser;
-    map(
-        |input| {
-            let (input, tag_id) = le_u16(input)?;
-            let (input, field_type) = le_u16(input)?;
-            let (input, value_count) = le_u32(input)?;
-            let (input, value_offset) = le_u32(input)?;
-            Ok((input, (tag_id, field_type, value_count, value_offset)))
-        },
-        |(tag_id, field_type, value_count, value_offset)| IfdEntry {
-            tag_id,
-            field_type,
-            value_count,
-            value_offset,
-        },
-    )
-    .parse(input)
-}
-
-/// Parses a single IFD entry (12 bytes) in big-endian byte order.
-///
-/// This is a helper function for parsing Canon MakerNote IFD entries.
-fn parse_ifd_entry_be(input: &[u8]) -> IResult<&[u8], IfdEntry> {
-    use nom::Parser;
-    map(
-        |input| {
-            let (input, tag_id) = be_u16(input)?;
-            let (input, field_type) = be_u16(input)?;
-            let (input, value_count) = be_u32(input)?;
-            let (input, value_offset) = be_u32(input)?;
-            Ok((input, (tag_id, field_type, value_count, value_offset)))
-        },
-        |(tag_id, field_type, value_count, value_offset)| IfdEntry {
-            tag_id,
-            field_type,
-            value_count,
-            value_offset,
-        },
-    )
-    .parse(input)
-}
-
-/// Parses IFD entries in the specified byte order.
-///
-/// # Parameters
-/// - `input`: Input byte slice containing IFD entries
-/// - `entry_count`: Number of entries to parse
-/// - `byte_order`: Byte order for parsing
-///
-/// # Returns
-/// IResult with remaining input and vector of IFD entries
-fn parse_ifd_entries(
-    input: &[u8],
-    entry_count: u16,
-    byte_order: ByteOrder,
-) -> IResult<&[u8], Vec<IfdEntry>> {
-    use nom::Parser;
-    match byte_order {
-        ByteOrder::LittleEndian => count(parse_ifd_entry_le, entry_count as usize).parse(input),
-        ByteOrder::BigEndian => count(parse_ifd_entry_be, entry_count as usize).parse(input),
-    }
-}
-
 /// Represents a Canon MakerNote parser
 pub struct CanonParser;
 
@@ -410,41 +349,23 @@ fn parse_canon_makernote_impl(
         return Ok(HashMap::new());
     }
 
-    // Skip Canon signature if present
-    let ifd_data = if data.starts_with(CANON_SIGNATURE) {
-        &data[CANON_SIGNATURE.len()..]
-    } else {
-        data
-    };
-
-    // Parse IFD entry count
-    if ifd_data.len() < 2 {
-        return Ok(HashMap::new());
-    }
-
-    let entry_count = match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([ifd_data[0], ifd_data[1]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([ifd_data[0], ifd_data[1]]),
-    };
-
-    // Parse IFD entries
-    let entries_start = &ifd_data[2..];
-    let entries = match parse_ifd_entries(entries_start, entry_count, byte_order) {
-        Ok((_, entries)) => entries,
-        Err(_) => {
-            // If parsing fails, return empty map rather than failing entire extraction
-            return Ok(HashMap::new());
-        }
-    };
-
     let mut tags = HashMap::new();
 
-    // Extract values from entries
-    for entry in entries {
+    let config = IfdParserConfig {
+        signature: Some(CANON_SIGNATURE),
+        signature_offset: CANON_SIGNATURE.len(),
+        max_entries: 200,
+    };
+
+    // Use shared IFD parser
+    // Note: we don't propagate errors here to maintain existing behavior of
+    // returning whatever tags we found even if parsing isn't perfect
+    let _ = parse_ifd_entries(data, byte_order, &config, |entry, ifd_data| {
         match entry.tag_id {
             // Simple string tags (Phase 1)
+            // These tags seem to use offsets relative to the IFD start
             CANON_IMAGE_TYPE | CANON_FIRMWARE_VERSION | CANON_OWNER_NAME | CANON_SERIAL_NUMBER => {
-                if let Some(value) = extract_string_value(&entry, data) {
+                if let Some(value) = extract_string_value(entry, ifd_data) {
                     let tag_name = canon_tag_to_name(entry.tag_id);
                     tags.insert(tag_name, value);
                 }
@@ -452,7 +373,7 @@ fn parse_canon_makernote_impl(
 
             // Simple integer tags (Phase 1)
             CANON_MODEL_ID | CANON_FILE_NUMBER => {
-                if let Some(value) = extract_integer_value(&entry) {
+                if let Some(value) = extract_integer_value(entry) {
                     let tag_name = canon_tag_to_name(entry.tag_id);
                     tags.insert(tag_name, value);
                 }
@@ -460,7 +381,7 @@ fn parse_canon_makernote_impl(
 
             // CameraSettings array (Phase 2)
             CANON_CAMERA_SETTINGS => {
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
+                if let Some(array) = extract_i16_array(entry, data, byte_order) {
                     // Extract specific settings from array using const decoders
                     if array.len() > CAMERA_SETTINGS_MACRO_MODE {
                         tags.insert(
@@ -515,7 +436,7 @@ fn parse_canon_makernote_impl(
 
             // ShotInfo array (Phase 2)
             CANON_SHOT_INFO => {
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
+                if let Some(array) = extract_i16_array(entry, data, byte_order) {
                     if array.len() > SHOT_INFO_AUTO_ISO {
                         tags.insert(
                             "Canon:AutoISO".to_string(),
@@ -558,7 +479,7 @@ fn parse_canon_makernote_impl(
 
             // FocalLength array (Phase 2)
             CANON_FOCAL_LENGTH => {
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
+                if let Some(array) = extract_i16_array(entry, data, byte_order) {
                     // array[0] = focal type
                     // array[1] = focal length
                     if !array.is_empty() {
@@ -609,7 +530,7 @@ fn parse_canon_makernote_impl(
             // FileInfo array (Phase 3) - contains lens ID and shutter count
             CANON_FILE_INFO => {
                 // FileInfo is a SHORT array
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
+                if let Some(array) = extract_i16_array(entry, data, byte_order) {
                     // Extract lens ID (index 6)
                     if let Some(&lens_id) = array.get(FILE_INFO_LENS_ID) {
                         if lens_id > 0 {
@@ -642,7 +563,7 @@ fn parse_canon_makernote_impl(
             // AFInfo array (Phase 3) - autofocus point information
             CANON_AF_INFO | CANON_AF_INFO2 => {
                 // AFInfo is a SHORT array
-                if let Some(array) = extract_i16_array(&entry, data, byte_order) {
+                if let Some(array) = extract_i16_array(entry, data, byte_order) {
                     // Number of AF points
                     if let Some(&num_points) = array.get(AF_INFO_NUM_AF_POINTS) {
                         if num_points > 0 {
@@ -681,9 +602,9 @@ fn parse_canon_makernote_impl(
             }
 
             // Other array tags - skip for now (will add in future phases)
-            _ => continue,
+            _ => {}
         }
-    }
+    });
 
     Ok(tags)
 }
@@ -720,89 +641,6 @@ pub fn parse_canon_makernotes(
 ///
 /// For values that fit in 4 bytes or less, they are stored directly
 /// in the value_offset field rather than at an external offset.
-///
-/// # Parameters
-/// - `value_offset`: The value_offset field from IFD entry
-/// - `count`: Number of bytes to extract
-/// - `byte_order`: Byte order for extraction
-///
-/// # Returns
-/// Vector of bytes extracted from value_offset field
-fn extract_inline_value(value_offset: u32, count: usize, byte_order: ByteOrder) -> Vec<u8> {
-    let bytes = match byte_order {
-        ByteOrder::LittleEndian => value_offset.to_le_bytes(),
-        ByteOrder::BigEndian => value_offset.to_be_bytes(),
-    };
-    bytes[0..count.min(4)].to_vec()
-}
-
-/// Extracts string value from IFD entry.
-///
-/// Handles both inline strings (≤4 bytes stored in value_offset field)
-/// and offset-based strings (>4 bytes stored at specified offset).
-///
-/// # Parameters
-/// - `entry`: IFD entry containing string data
-/// - `full_data`: Complete MakerNote data (including Canon signature if present)
-///
-/// # Returns
-/// Optional string value, trimmed and null-terminated
-fn extract_string_value(entry: &IfdEntry, full_data: &[u8]) -> Option<String> {
-    // Calculate the byte size based on value count
-    let byte_count = entry.value_count as usize;
-
-    // For inline strings (≤4 bytes), value is in value_offset field
-    if byte_count <= 4 {
-        let bytes = entry.value_offset.to_le_bytes();
-        let s = std::str::from_utf8(&bytes[0..byte_count])
-            .ok()?
-            .trim_end_matches('\0')
-            .trim();
-        return Some(s.to_string());
-    }
-
-    // For longer strings, read from offset
-    // Canon MakerNote offsets are relative to the start of the IFD data
-    // (after the Canon signature if present)
-    let offset = entry.value_offset as usize;
-
-    // Calculate the IFD start position in full_data
-    let ifd_start = if full_data.starts_with(CANON_SIGNATURE) {
-        CANON_SIGNATURE.len()
-    } else {
-        0
-    };
-
-    // Calculate absolute offset in full_data
-    let abs_offset = ifd_start + offset;
-
-    // Bounds check and extract string
-    if abs_offset + byte_count <= full_data.len() {
-        let bytes = &full_data[abs_offset..abs_offset + byte_count];
-        let s = std::str::from_utf8(bytes)
-            .ok()?
-            .trim_end_matches('\0')
-            .trim();
-        return Some(s.to_string());
-    }
-
-    None
-}
-
-/// Extracts integer value from IFD entry.
-///
-/// For simple integer tags, the value is stored directly in the value_offset field.
-///
-/// # Parameters
-/// - `entry`: IFD entry containing integer data
-///
-/// # Returns
-/// Optional string representation of the integer value
-fn extract_integer_value(entry: &IfdEntry) -> Option<String> {
-    // For simple integer tags (LONG type), value is in value_offset field
-    Some(entry.value_offset.to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
