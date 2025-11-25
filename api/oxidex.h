@@ -1254,6 +1254,23 @@ typedef struct ExifToolHandle {
 } ExifToolHandle;
 
 /*
+ Retrieves the last error message.
+
+ # Returns
+ Pointer to null-terminated error message string.
+ Never returns NULL (returns "No error" if no error occurred).
+
+ # String Lifetime
+ The returned string is valid until:
+ - Next API call that sets an error on the same thread
+ - Thread termination
+
+ # Thread Safety
+ Thread-safe. Each thread has its own error message.
+ */
+const char *exiftool_get_last_error(void);
+
+/*
  Creates a new ExifTool handle.
 
  # Returns
@@ -1508,22 +1525,5 @@ int exiftool_remove_tag(struct ExifToolHandle *handle, const char *tag_name);
  Thread-safe for read-only access to handle.
  */
 int exiftool_write_file(const struct ExifToolHandle *handle, const char *filepath);
-
-/*
- Retrieves the last error message.
-
- # Returns
- Pointer to null-terminated error message string.
- Never returns NULL (returns "No error" if no error occurred).
-
- # String Lifetime
- The returned string is valid until:
- - Next API call that sets an error on the same thread
- - Thread termination
-
- # Thread Safety
- Thread-safe. Each thread has its own error message.
- */
-const char *exiftool_get_last_error(void);
 
 #endif  /* OXIDEX_H */
