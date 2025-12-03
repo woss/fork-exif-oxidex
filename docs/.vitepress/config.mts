@@ -56,7 +56,8 @@ export default defineConfig({
         {
           text: 'Formats',
           items: [
-            { text: 'Overview', link: '/reference/formats/' }
+            { text: 'Overview', link: '/reference/formats/' },
+            { text: 'Camera RAW', link: '/reference/formats/camera-raw' }
           ]
         },
         {
@@ -77,15 +78,10 @@ export default defineConfig({
           text: 'Architecture',
           items: [
             { text: 'Overview', link: '/architecture/' },
-            { text: 'Hexagonal Architecture', link: '/architecture/hexagonal' },
-            { text: 'Domain Model', link: '/architecture/domain-model' },
-            { text: 'Parser Design', link: '/architecture/parser-design' }
-          ]
-        },
-        {
-          text: 'Diagrams',
-          items: [
-            { text: 'System Diagrams', link: '/diagrams/' }
+            { text: 'Multi-Crate Tags', link: '/architecture/multi-crate-tags' },
+            { text: 'Parser Shared Infrastructure', link: '/architecture/parser-shared-infrastructure' },
+            { text: 'Parser Migration Guide', link: '/architecture/parser-migration-guide' },
+            { text: 'OxiDex Tags Shared', link: '/architecture/oxidex-tags-shared' }
           ]
         }
       ],
@@ -97,6 +93,15 @@ export default defineConfig({
             { text: 'Benchmarks', link: '/performance/benchmarks' },
             { text: 'Profiling', link: '/performance/profiling' },
             { text: 'Optimization Strategy', link: '/performance/optimization-strategy' }
+          ]
+        },
+        {
+          text: 'Historical Data',
+          collapsed: true,
+          items: [
+            { text: 'Baseline (2025-11-15)', link: '/performance/baseline-2025-11-15' },
+            { text: 'Post-Optimization (2025-11-15)', link: '/performance/post-optimization-2025-11-15' },
+            { text: 'Compilation Speedup', link: '/performance/compilation-speedup' }
           ]
         }
       ],
@@ -111,16 +116,25 @@ export default defineConfig({
           text: 'Development',
           items: [
             { text: 'Development Guide', link: '/contributing/development/' },
-            { text: 'Development Environment', link: '/contributing/development/environment' },
-            { text: 'Code Style', link: '/contributing/development/code-style' }
+            { text: 'Archived Context', link: '/contributing/development/archived-context' }
           ]
         },
         {
           text: 'Testing',
           items: [
             { text: 'Testing Guide', link: '/contributing/testing/' },
-            { text: 'Test Strategy', link: '/contributing/testing/strategy' },
-            { text: 'Writing Tests', link: '/contributing/testing/writing-tests' }
+            { text: 'Integration Test Plan', link: '/contributing/testing/integration_test_plan' },
+            { text: 'Test Failure Triage', link: '/contributing/testing/TEST_FAILURE_TRIAGE' }
+          ]
+        },
+        {
+          text: 'ExifTool Comparison',
+          collapsed: true,
+          items: [
+            { text: 'Overview', link: '/contributing/testing/comparison/README' },
+            { text: 'Parity Report', link: '/contributing/testing/comparison/PARITY_REPORT' },
+            { text: 'Field Naming Guide', link: '/contributing/testing/comparison/FIELD_NAMING_GUIDE' },
+            { text: 'Test Coverage', link: '/contributing/testing/comparison/TEST_COVERAGE' }
           ]
         }
       ],
@@ -129,15 +143,12 @@ export default defineConfig({
           text: 'Tag Domains',
           items: [
             { text: 'Overview', link: '/tag-domains/' },
-            { text: 'Domain Reference', link: '/tag-domains/reference' }
-          ]
-        }
-      ],
-      '/diagrams/': [
-        {
-          text: 'Diagrams',
-          items: [
-            { text: 'System Architecture', link: '/diagrams/' }
+            { text: 'Core', link: '/tag-domains/core' },
+            { text: 'Camera', link: '/tag-domains/camera' },
+            { text: 'Image', link: '/tag-domains/image' },
+            { text: 'Media', link: '/tag-domains/media' },
+            { text: 'Document', link: '/tag-domains/document' },
+            { text: 'Specialty', link: '/tag-domains/specialty' }
           ]
         }
       ]
