@@ -16,6 +16,9 @@ C-compatible Foreign Function Interface for integrating OxiDex with other progra
 ### [Tag Database](/reference/tag-database)
 Information about the metadata tag database, including supported tag families and auto-generation from ExifTool source.
 
+### [Tag Coverage Analysis](/reference/tag-coverage-analysis)
+Detailed analysis of the gap between defined tags and extracted tags, with recommendations for improving coverage.
+
 ### [Supported Formats](/reference/formats/)
 Complete list of supported file formats with implementation details and coverage information.
 

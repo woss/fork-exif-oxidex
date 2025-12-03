@@ -373,3 +373,9 @@ docs-generate-tags:
     cargo run -p oxidex-tags --example render_domain -- image docs/tag-domains/image.md
     cargo run -p oxidex-tags --example render_domain -- document docs/tag-domains/document.md
     cargo run -p oxidex-tags --example render_domain -- specialty docs/tag-domains/specialty.md
+
+# Regenerate tag coverage analysis report
+docs-coverage:
+    @echo "Regenerating tag coverage analysis..."
+    uv run scripts/generate_tag_coverage.py --output docs/reference/tag-coverage-analysis.md
+    @echo "Tag coverage report updated"
