@@ -164,10 +164,10 @@ impl PrefetchParser {
     fn read_last_run_time(reader: &dyn FileReader, version: u32) -> Result<u64> {
         // Location varies by version
         let offset = match version {
-            VERSION_XP => 120, // v17: offset 0x78
-            VERSION_VISTA => 120, // v23: offset 0x78
+            VERSION_XP => 120,                   // v17: offset 0x78
+            VERSION_VISTA => 120,                // v23: offset 0x78
             VERSION_WIN8 | VERSION_WIN10 => 128, // v26/v30: offset 0x80
-            _ => 128, // Default to newer format
+            _ => 128,                            // Default to newer format
         };
         Self::read_u64_le(reader, offset)
     }
@@ -269,12 +269,14 @@ impl FormatParser for PrefetchParser {
         // Detect MAM compression (Windows 10+)
         metadata.insert(
             "Prefetch:IsCompressed".to_string(),
-            TagValue::String(if is_compressed {
-                "true (MAM LZXPRESS HUFFMAN)"
-            } else {
-                "false"
-            }
-            .to_string()),
+            TagValue::String(
+                if is_compressed {
+                    "true (MAM LZXPRESS HUFFMAN)"
+                } else {
+                    "false"
+                }
+                .to_string(),
+            ),
         );
 
         // If compressed, we can only read the header for now
@@ -625,14 +627,8 @@ mod tests {
 
     #[test]
     fn test_version_to_os_name() {
-        assert_eq!(
-            PrefetchParser::version_to_os_name(17),
-            "Windows XP/2003"
-        );
-        assert_eq!(
-            PrefetchParser::version_to_os_name(23),
-            "Windows Vista/7"
-        );
+        assert_eq!(PrefetchParser::version_to_os_name(17), "Windows XP/2003");
+        assert_eq!(PrefetchParser::version_to_os_name(23), "Windows Vista/7");
         assert_eq!(PrefetchParser::version_to_os_name(26), "Windows 8/8.1");
         assert_eq!(PrefetchParser::version_to_os_name(30), "Windows 10/11");
         assert_eq!(PrefetchParser::version_to_os_name(99), "Unknown");
@@ -640,14 +636,8 @@ mod tests {
 
     #[test]
     fn test_format_version() {
-        assert_eq!(
-            PrefetchParser::format_version(30),
-            "30 (Windows 10/11)"
-        );
-        assert_eq!(
-            PrefetchParser::format_version(23),
-            "23 (Windows Vista/7)"
-        );
+        assert_eq!(PrefetchParser::format_version(30), "30 (Windows 10/11)");
+        assert_eq!(PrefetchParser::format_version(23), "23 (Windows Vista/7)");
     }
 
     #[test]
@@ -730,9 +720,7 @@ mod tests {
         );
         assert_eq!(
             metadata.get("Prefetch:IsCompressed"),
-            Some(&TagValue::String(
-                "true (MAM LZXPRESS HUFFMAN)".to_string()
-            ))
+            Some(&TagValue::String("true (MAM LZXPRESS HUFFMAN)".to_string()))
         );
         assert!(metadata.contains_key("Prefetch:Note"));
     }

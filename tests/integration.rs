@@ -99,3 +99,6 @@ mod pe_import_test;
 
 #[path = "integration/makernote_integration.rs"]
 mod makernote_integration;
+
+#[path = "forensic/mod.rs"]
+mod forensic;

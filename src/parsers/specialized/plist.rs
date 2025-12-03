@@ -102,7 +102,8 @@ impl PlistParser {
         let data = reader.read(0, check_size)?;
 
         // Check for <?xml declaration
-        if data.len() >= XML_DECLARATION.len() && &data[..XML_DECLARATION.len()] == XML_DECLARATION {
+        if data.len() >= XML_DECLARATION.len() && &data[..XML_DECLARATION.len()] == XML_DECLARATION
+        {
             // Look for <plist or <!DOCTYPE plist within the checked bytes
             if Self::contains_subsequence(data, PLIST_TAG)
                 || Self::contains_subsequence(data, DOCTYPE_PLIST)
@@ -255,7 +256,9 @@ impl PlistParser {
         // For now, we'll note that full object parsing would be needed
         metadata.insert(
             "Plist:Note".to_string(),
-            TagValue::String("Full object tree parsing requires additional implementation".to_string()),
+            TagValue::String(
+                "Full object tree parsing requires additional implementation".to_string(),
+            ),
         );
 
         Ok(metadata)
@@ -285,7 +288,10 @@ impl PlistParser {
 
         // Look for CFBundleIdentifier
         if let Some(value) = Self::extract_plist_string(&text, "CFBundleIdentifier") {
-            metadata.insert("Plist:CFBundleIdentifier".to_string(), TagValue::String(value));
+            metadata.insert(
+                "Plist:CFBundleIdentifier".to_string(),
+                TagValue::String(value),
+            );
         }
 
         // Look for CFBundleName
@@ -418,10 +424,7 @@ impl FormatParser for PlistParser {
 
         // Add format version
         let version = Self::extract_format_version(reader)?;
-        metadata.insert(
-            "Plist:FormatVersion".to_string(),
-            TagValue::String(version),
-        );
+        metadata.insert("Plist:FormatVersion".to_string(), TagValue::String(version));
 
         // Parse format-specific metadata
         let format_metadata = if format == "Binary" {

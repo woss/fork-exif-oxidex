@@ -66,6 +66,19 @@ const PCAPNG_BLOCK_SHB: u32 = 0x0a0d0d0a; // Section Header Block
 const PCAPNG_BLOCK_IDB: u32 = 0x00000001; // Interface Description Block
 const PCAPNG_BLOCK_EPB: u32 = 0x00000006; // Enhanced Packet Block
 const PCAPNG_BLOCK_SPB: u32 = 0x00000003; // Simple Packet Block
+const PCAPNG_BLOCK_NRB: u32 = 0x00000004; // Name Resolution Block
+const PCAPNG_BLOCK_ISB: u32 = 0x00000005; // Interface Statistics Block
+
+/// PCAP-NG IDB option codes
+const PCAPNG_OPT_IF_NAME: u16 = 2;
+const PCAPNG_OPT_IF_DESCRIPTION: u16 = 3;
+const PCAPNG_OPT_IF_IPV4ADDR: u16 = 4;
+const PCAPNG_OPT_IF_IPV6ADDR: u16 = 5;
+const PCAPNG_OPT_IF_MACADDR: u16 = 6;
+const PCAPNG_OPT_IF_SPEED: u16 = 8;
+const PCAPNG_OPT_IF_TSRESOL: u16 = 9;
+const PCAPNG_OPT_IF_FILTER: u16 = 11;
+const PCAPNG_OPT_IF_OS: u16 = 12;
 
 /// Maximum reasonable snaplen to prevent parsing extremely large files
 const MAX_REASONABLE_SNAPLEN: u32 = 262144; // 256KB
@@ -138,10 +151,10 @@ impl PCAPParser {
 
         match magic_bytes {
             [0x0a, 0x0d, 0x0d, 0x0a] => Ok(("PCAP-NG", true, false)),
-            [0xa1, 0xb2, 0xc3, 0xd4] => Ok(("PCAP", false, false)),  // Big-endian
-            [0xd4, 0xc3, 0xb2, 0xa1] => Ok(("PCAP", true, false)),   // Little-endian
-            [0xa1, 0xb2, 0x3c, 0x4d] => Ok(("PCAP", false, true)),   // Big-endian nanosecond
-            [0x4d, 0x3c, 0xb2, 0xa1] => Ok(("PCAP", true, true)),    // Little-endian nanosecond
+            [0xa1, 0xb2, 0xc3, 0xd4] => Ok(("PCAP", false, false)), // Big-endian
+            [0xd4, 0xc3, 0xb2, 0xa1] => Ok(("PCAP", true, false)),  // Little-endian
+            [0xa1, 0xb2, 0x3c, 0x4d] => Ok(("PCAP", false, true)),  // Big-endian nanosecond
+            [0x4d, 0x3c, 0xb2, 0xa1] => Ok(("PCAP", true, true)),   // Little-endian nanosecond
             _ => Err(ExifToolError::parse_error("Invalid PCAP/PCAP-NG signature")),
         }
     }
@@ -262,23 +275,27 @@ impl PCAPParser {
         // Byte order
         metadata.insert(
             "PCAP:ByteOrder".to_string(),
-            TagValue::String(if little_endian {
-                "Little-endian"
-            } else {
-                "Big-endian"
-            }
-            .to_string()),
+            TagValue::String(
+                if little_endian {
+                    "Little-endian"
+                } else {
+                    "Big-endian"
+                }
+                .to_string(),
+            ),
         );
 
         // Timestamp precision
         metadata.insert(
             "PCAP:TimestampPrecision".to_string(),
-            TagValue::String(if is_nanosecond {
-                "Nanoseconds"
-            } else {
-                "Microseconds"
-            }
-            .to_string()),
+            TagValue::String(
+                if is_nanosecond {
+                    "Nanoseconds"
+                } else {
+                    "Microseconds"
+                }
+                .to_string(),
+            ),
         );
 
         // Count packets and find timestamps
@@ -381,6 +398,8 @@ impl PCAPParser {
         let mut hardware: Option<String> = None;
         let mut os: Option<String> = None;
         let mut application: Option<String> = None;
+        let mut first_packet_ts: Option<u64> = None;
+        let mut last_packet_ts: Option<u64> = None;
 
         // Parse blocks
         while offset + 12 <= file_size {
@@ -419,9 +438,97 @@ impl PCAPParser {
                 }
                 PCAPNG_BLOCK_IDB => {
                     interface_count += 1;
+                    // Parse IDB options
+                    if block_length > 20 && offset + block_length as u64 <= file_size {
+                        if let Ok(idb_data) = reader.read(offset, block_length as usize) {
+                            // IDB header: link_type (2) + reserved (2) + snaplen (4) = 8 bytes after block header
+                            if idb_data.len() > 16 {
+                                let link_type = Self::read_u16(&idb_data[8..10], little_endian);
+                                let snaplen = Self::read_u32(&idb_data[12..16], little_endian);
+
+                                // First interface's link type
+                                if interface_count == 1 {
+                                    metadata.insert(
+                                        "PCAPNG:LinkType".to_string(),
+                                        TagValue::String(link_type.to_string()),
+                                    );
+                                    metadata.insert(
+                                        "PCAPNG:LinkTypeName".to_string(),
+                                        TagValue::String(
+                                            Self::link_type_name(link_type as u32).to_string(),
+                                        ),
+                                    );
+                                    metadata.insert(
+                                        "PCAPNG:SnapLen".to_string(),
+                                        TagValue::String(format!("{} bytes", snaplen)),
+                                    );
+                                }
+
+                                // Parse IDB options (starts at offset 16)
+                                let idb_opts =
+                                    Self::parse_pcapng_idb_options(&idb_data[16..], little_endian);
+                                for (key, value) in idb_opts {
+                                    if !metadata.contains_key(&key) {
+                                        metadata.insert(key, value);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 PCAPNG_BLOCK_EPB | PCAPNG_BLOCK_SPB => {
                     packet_count += 1;
+
+                    // Parse EPB timestamp for first and last packet
+                    if block_type == PCAPNG_BLOCK_EPB && block_length >= 32 {
+                        if let Ok(epb_data) = reader.read(offset, 32.min(block_length as usize)) {
+                            if epb_data.len() >= 20 {
+                                // Timestamp is at offset 8 (after block header)
+                                // Stored as two 32-bit values: high (upper 32 bits) and low (lower 32 bits)
+                                let ts_high = Self::read_u32(&epb_data[8..12], little_endian);
+                                let ts_low = Self::read_u32(&epb_data[12..16], little_endian);
+                                let timestamp_us = ((ts_high as u64) << 32) | (ts_low as u64);
+
+                                if first_packet_ts.is_none() {
+                                    first_packet_ts = Some(timestamp_us);
+                                }
+                                last_packet_ts = Some(timestamp_us);
+                            }
+                        }
+                    }
+                }
+                PCAPNG_BLOCK_NRB => {
+                    metadata.insert(
+                        "PCAPNG:HasNameResolution".to_string(),
+                        TagValue::String("Yes".to_string()),
+                    );
+                    // Parse NRB records for forensic value
+                    if let Ok(nrb_data) = reader.read(offset, block_length as usize) {
+                        let record_count = Self::count_nrb_records(&nrb_data[8..], little_endian);
+                        metadata.insert(
+                            "PCAPNG:NameResolutionRecords".to_string(),
+                            TagValue::String(record_count.to_string()),
+                        );
+                    }
+                }
+                PCAPNG_BLOCK_ISB => {
+                    // Interface Statistics Block
+                    if let Ok(isb_data) = reader.read(offset, block_length as usize) {
+                        if isb_data.len() >= 24 {
+                            let isb_starttime_high =
+                                Self::read_u32(&isb_data[12..16], little_endian);
+                            let isb_starttime_low =
+                                Self::read_u32(&isb_data[16..20], little_endian);
+                            if isb_starttime_high != 0 || isb_starttime_low != 0 {
+                                let ts = ((isb_starttime_high as u64) << 32)
+                                    | (isb_starttime_low as u64);
+                                metadata.insert(
+                                    "PCAPNG:CaptureStartTime".to_string(),
+                                    TagValue::String(Self::format_pcapng_timestamp(ts)),
+                                );
+                            }
+                        }
+                    }
                 }
                 _ => {}
             }
@@ -454,13 +561,41 @@ impl PCAPParser {
 
         metadata.insert(
             "PCAPNG:ByteOrder".to_string(),
-            TagValue::String(if little_endian {
-                "Little-endian"
-            } else {
-                "Big-endian"
-            }
-            .to_string()),
+            TagValue::String(
+                if little_endian {
+                    "Little-endian"
+                } else {
+                    "Big-endian"
+                }
+                .to_string(),
+            ),
         );
+
+        // Add timestamp information
+        if let Some(first_ts) = first_packet_ts {
+            metadata.insert(
+                "PCAPNG:FirstPacketTime".to_string(),
+                TagValue::String(Self::format_pcapng_timestamp(first_ts)),
+            );
+        }
+
+        if let Some(last_ts) = last_packet_ts {
+            metadata.insert(
+                "PCAPNG:LastPacketTime".to_string(),
+                TagValue::String(Self::format_pcapng_timestamp(last_ts)),
+            );
+
+            if let Some(first_ts) = first_packet_ts {
+                if last_ts >= first_ts {
+                    let duration_us = last_ts - first_ts;
+                    let duration_secs = duration_us / 1_000_000;
+                    metadata.insert(
+                        "PCAPNG:Duration".to_string(),
+                        TagValue::String(Self::format_duration(duration_secs as u32)),
+                    );
+                }
+            }
+        }
 
         Ok(metadata)
     }
@@ -512,6 +647,146 @@ impl PCAPParser {
             }
 
             // Options are padded to 4-byte boundaries
+            offset += opt_length.div_ceil(4) * 4;
+        }
+
+        options
+    }
+
+    /// Parses PCAP-NG Interface Description Block options
+    fn parse_pcapng_idb_options(data: &[u8], little_endian: bool) -> Vec<(String, TagValue)> {
+        let mut options = Vec::new();
+        let mut offset = 0;
+
+        while offset + 4 <= data.len() {
+            let opt_code = Self::read_u16(&data[offset..offset + 2], little_endian);
+            let opt_length = Self::read_u16(&data[offset + 2..offset + 4], little_endian) as usize;
+
+            if opt_code == 0 {
+                break;
+            }
+
+            offset += 4;
+
+            if offset + opt_length > data.len() {
+                break;
+            }
+
+            if opt_length > 0 {
+                let value_bytes = &data[offset..offset + opt_length];
+
+                match opt_code {
+                    PCAPNG_OPT_IF_NAME => {
+                        let value = String::from_utf8_lossy(value_bytes)
+                            .trim_matches('\0')
+                            .to_string();
+                        if !value.is_empty() {
+                            options.push((
+                                "PCAPNG:InterfaceName".to_string(),
+                                TagValue::String(value),
+                            ));
+                        }
+                    }
+                    PCAPNG_OPT_IF_DESCRIPTION => {
+                        let value = String::from_utf8_lossy(value_bytes)
+                            .trim_matches('\0')
+                            .to_string();
+                        if !value.is_empty() {
+                            options.push((
+                                "PCAPNG:InterfaceDescription".to_string(),
+                                TagValue::String(value),
+                            ));
+                        }
+                    }
+                    PCAPNG_OPT_IF_MACADDR if opt_length >= 6 => {
+                        let mac = format!(
+                            "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
+                            value_bytes[0],
+                            value_bytes[1],
+                            value_bytes[2],
+                            value_bytes[3],
+                            value_bytes[4],
+                            value_bytes[5]
+                        );
+                        options.push(("PCAPNG:InterfaceMAC".to_string(), TagValue::String(mac)));
+                    }
+                    PCAPNG_OPT_IF_SPEED if opt_length >= 8 => {
+                        let speed = if little_endian {
+                            u64::from_le_bytes([
+                                value_bytes[0],
+                                value_bytes[1],
+                                value_bytes[2],
+                                value_bytes[3],
+                                value_bytes[4],
+                                value_bytes[5],
+                                value_bytes[6],
+                                value_bytes[7],
+                            ])
+                        } else {
+                            u64::from_be_bytes([
+                                value_bytes[0],
+                                value_bytes[1],
+                                value_bytes[2],
+                                value_bytes[3],
+                                value_bytes[4],
+                                value_bytes[5],
+                                value_bytes[6],
+                                value_bytes[7],
+                            ])
+                        };
+                        let speed_str = if speed >= 1_000_000_000 {
+                            format!("{} Gbps", speed / 1_000_000_000)
+                        } else if speed >= 1_000_000 {
+                            format!("{} Mbps", speed / 1_000_000)
+                        } else {
+                            format!("{} bps", speed)
+                        };
+                        options.push((
+                            "PCAPNG:InterfaceSpeed".to_string(),
+                            TagValue::String(speed_str),
+                        ));
+                    }
+                    PCAPNG_OPT_IF_TSRESOL if opt_length >= 1 => {
+                        let resol = value_bytes[0];
+                        let resol_str = if resol & 0x80 != 0 {
+                            let power = resol & 0x7F;
+                            format!("2^-{} seconds", power)
+                        } else {
+                            let power = resol;
+                            format!("10^-{} seconds", power)
+                        };
+                        options.push((
+                            "PCAPNG:TimestampResolution".to_string(),
+                            TagValue::String(resol_str),
+                        ));
+                    }
+                    PCAPNG_OPT_IF_FILTER => {
+                        // First byte is filter type (0=string), rest is filter
+                        if opt_length > 1 {
+                            let filter = String::from_utf8_lossy(&value_bytes[1..])
+                                .trim_matches('\0')
+                                .to_string();
+                            if !filter.is_empty() {
+                                options.push((
+                                    "PCAPNG:CaptureFilter".to_string(),
+                                    TagValue::String(filter),
+                                ));
+                            }
+                        }
+                    }
+                    PCAPNG_OPT_IF_OS => {
+                        let value = String::from_utf8_lossy(value_bytes)
+                            .trim_matches('\0')
+                            .to_string();
+                        if !value.is_empty() {
+                            options
+                                .push(("PCAPNG:InterfaceOS".to_string(), TagValue::String(value)));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
             offset += opt_length.div_ceil(4) * 4;
         }
 
@@ -595,6 +870,37 @@ impl PCAPParser {
             format!("{} days {} hours", days, hours)
         }
     }
+
+    /// Formats PCAP-NG timestamp (microseconds since epoch) to ISO 8601
+    fn format_pcapng_timestamp(timestamp_us: u64) -> String {
+        let seconds = (timestamp_us / 1_000_000) as u32;
+        Self::format_timestamp(seconds)
+    }
+
+    /// Counts name resolution records in NRB data
+    fn count_nrb_records(data: &[u8], little_endian: bool) -> u32 {
+        let mut count = 0u32;
+        let mut offset = 0;
+
+        while offset + 4 <= data.len() {
+            let record_type = Self::read_u16(&data[offset..offset + 2], little_endian);
+            let record_length =
+                Self::read_u16(&data[offset + 2..offset + 4], little_endian) as usize;
+
+            if record_type == 0 {
+                break;
+            }
+
+            if record_type == 1 || record_type == 2 {
+                // IPv4 or IPv6 record
+                count += 1;
+            }
+
+            offset += 4 + record_length.div_ceil(4) * 4;
+        }
+
+        count
+    }
 }
 
 impl FormatParser for PCAPParser {
@@ -611,9 +917,7 @@ impl FormatParser for PCAPParser {
     fn parse(&self, reader: &dyn FileReader) -> Result<MetadataMap> {
         // Verify this is a valid PCAP or PCAP-NG file
         if !Self::verify_signature(reader)? {
-            return Err(ExifToolError::parse_error(
-                "Invalid PCAP/PCAP-NG signature",
-            ));
+            return Err(ExifToolError::parse_error("Invalid PCAP/PCAP-NG signature"));
         }
 
         let mut metadata = MetadataMap::new();
@@ -936,10 +1240,7 @@ mod tests {
     #[test]
     fn test_format_timestamp() {
         // Unix epoch
-        assert_eq!(
-            PCAPParser::format_timestamp(0),
-            "1970-01-01T00:00:00Z"
-        );
+        assert_eq!(PCAPParser::format_timestamp(0), "1970-01-01T00:00:00Z");
 
         // Known timestamp: 2020-01-01 00:00:00
         assert_eq!(
@@ -975,5 +1276,97 @@ mod tests {
         let parser = PCAPParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_pcapng_idb_options() {
+        // IDB with if_name option (code 2) = "eth0"
+        let mut data = create_pcapng_shb();
+
+        // Add Interface Description Block
+        data.extend_from_slice(&PCAPNG_BLOCK_IDB.to_le_bytes()); // Block type
+        data.extend_from_slice(&32u32.to_le_bytes()); // Block length
+        data.extend_from_slice(&1u16.to_le_bytes()); // Link type (Ethernet)
+        data.extend_from_slice(&0u16.to_le_bytes()); // Reserved
+        data.extend_from_slice(&65535u32.to_le_bytes()); // SnapLen
+                                                         // Option: if_name (code 2), length 4, "eth0"
+        data.extend_from_slice(&2u16.to_le_bytes()); // opt_code
+        data.extend_from_slice(&4u16.to_le_bytes()); // opt_length
+        data.extend_from_slice(b"eth0");
+        // End of options
+        data.extend_from_slice(&0u16.to_le_bytes());
+        data.extend_from_slice(&0u16.to_le_bytes());
+        data.extend_from_slice(&32u32.to_le_bytes()); // Block length (repeated)
+
+        let reader = TestReader::new(data);
+        let parser = PCAPParser;
+        let metadata = parser.parse(&reader).unwrap();
+
+        assert_eq!(
+            metadata.get("PCAPNG:InterfaceName"),
+            Some(&TagValue::String("eth0".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_pcapng_epb_timestamps() {
+        let mut data = create_pcapng_shb();
+
+        // Add IDB (required before EPB)
+        data.extend_from_slice(&PCAPNG_BLOCK_IDB.to_le_bytes());
+        data.extend_from_slice(&20u32.to_le_bytes()); // Block length
+        data.extend_from_slice(&1u16.to_le_bytes()); // Link type
+        data.extend_from_slice(&0u16.to_le_bytes()); // Reserved
+        data.extend_from_slice(&65535u32.to_le_bytes()); // SnapLen
+        data.extend_from_slice(&20u32.to_le_bytes()); // Block length (repeated)
+
+        // Add EPB with known timestamp
+        data.extend_from_slice(&PCAPNG_BLOCK_EPB.to_le_bytes());
+        data.extend_from_slice(&36u32.to_le_bytes()); // Block length
+        data.extend_from_slice(&0u32.to_le_bytes()); // Interface ID
+        data.extend_from_slice(&0x0005E0FCu32.to_le_bytes()); // Timestamp high (Jan 1, 2020)
+        data.extend_from_slice(&0x0u32.to_le_bytes()); // Timestamp low
+        data.extend_from_slice(&4u32.to_le_bytes()); // Captured length
+        data.extend_from_slice(&4u32.to_le_bytes()); // Original length
+        data.extend_from_slice(&[0u8; 4]); // Packet data
+        data.extend_from_slice(&36u32.to_le_bytes()); // Block length (repeated)
+
+        let reader = TestReader::new(data);
+        let parser = PCAPParser;
+        let metadata = parser.parse(&reader).unwrap();
+
+        assert!(metadata.contains_key("PCAPNG:FirstPacketTime"));
+        assert_eq!(
+            metadata.get("PCAPNG:PacketCount"),
+            Some(&TagValue::String("1".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_pcapng_nrb() {
+        let mut data = create_pcapng_shb();
+
+        // Add Name Resolution Block
+        let nrb_type: u32 = 0x00000004;
+        data.extend_from_slice(&nrb_type.to_le_bytes());
+        data.extend_from_slice(&28u32.to_le_bytes()); // Block length
+                                                      // NRB record: type 1 (IPv4), length, IP, name
+        data.extend_from_slice(&1u16.to_le_bytes()); // Record type (IPv4)
+        data.extend_from_slice(&12u16.to_le_bytes()); // Record length
+        data.extend_from_slice(&[192, 168, 1, 1]); // IP address
+        data.extend_from_slice(b"router\0\0"); // Name (padded to 4 bytes)
+                                               // End of records
+        data.extend_from_slice(&0u16.to_le_bytes());
+        data.extend_from_slice(&0u16.to_le_bytes());
+        data.extend_from_slice(&28u32.to_le_bytes()); // Block length (repeated)
+
+        let reader = TestReader::new(data);
+        let parser = PCAPParser;
+        let metadata = parser.parse(&reader).unwrap();
+
+        assert_eq!(
+            metadata.get("PCAPNG:HasNameResolution"),
+            Some(&TagValue::String("Yes".to_string()))
+        );
     }
 }

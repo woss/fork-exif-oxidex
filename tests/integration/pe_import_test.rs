@@ -62,10 +62,10 @@ fn test_pe_with_imports() {
     // Directory 0: Export Table
     data.extend_from_slice(&0u32.to_le_bytes()); // RVA
     data.extend_from_slice(&0u32.to_le_bytes()); // Size
-    // Directory 1: Import Table (RVA 0x3000, size doesn't matter much)
+                                                 // Directory 1: Import Table (RVA 0x3000, size doesn't matter much)
     data.extend_from_slice(&0x3000u32.to_le_bytes()); // RVA
     data.extend_from_slice(&0x100u32.to_le_bytes()); // Size
-    // Directories 2-15: Empty
+                                                     // Directories 2-15: Empty
     for _ in 2..16 {
         data.extend_from_slice(&0u32.to_le_bytes());
         data.extend_from_slice(&0u32.to_le_bytes());
@@ -160,7 +160,9 @@ fn test_pe_with_imports() {
     }
 
     // Verify import metadata
-    let imported_dlls = metadata.get_string("PE:ImportedDLLs").expect("PE:ImportedDLLs not found");
+    let imported_dlls = metadata
+        .get_string("PE:ImportedDLLs")
+        .expect("PE:ImportedDLLs not found");
     assert!(imported_dlls.contains("kernel32.dll"));
     assert!(imported_dlls.contains("user32.dll"));
 
@@ -177,8 +179,5 @@ fn test_pe_with_imports() {
     assert!(imported_functions.contains("user32.dll:MessageBoxW"));
 
     // Verify suspicious imports flag (VirtualAlloc is suspicious)
-    assert_eq!(
-        metadata.get_integer("PE:HasSuspiciousImports").unwrap(),
-        1
-    );
+    assert_eq!(metadata.get_integer("PE:HasSuspiciousImports").unwrap(), 1);
 }

@@ -6,6 +6,7 @@
 
 #![allow(dead_code)]
 
+pub mod anomaly_detector;
 pub mod coff_parser;
 pub mod debug_parser;
 pub mod dos_parser;
@@ -71,7 +72,7 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         // Read data between DOS stub and PE header for Rich Header parsing
         let rich_region_size = (pe_offset - 0x80) as usize + 128;
         if let Ok(rich_data) = reader.read(0, 0x80 + rich_region_size) {
-            if let Some(rich_header) = parse_rich_header(&rich_data, 0x80, pe_offset as usize) {
+            if let Some(rich_header) = parse_rich_header(rich_data, 0x80, pe_offset as usize) {
                 extract_rich_header_metadata(&rich_header, &mut metadata);
             }
         }
@@ -213,7 +214,7 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     // Step 12: Parse export directory if present (data directory index 0)
     if let Some(ref nt_header) = nt_header_opt {
-        if let Some(&(export_rva, export_size)) = nt_header.data_directories.get(0) {
+        if let Some(&(export_rva, export_size)) = nt_header.data_directories.first() {
             if export_rva > 0 && export_size > 0 {
                 // Parse exports (pass sections for RVA resolution)
                 if let Ok(export_info) = parse_exports(reader, export_rva, export_size, &sections) {
@@ -225,7 +226,7 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     // Step 13: Parse import directory if present (data directory index 1)
     if let Some(ref nt_header) = nt_header_opt {
-        if let Some(&(import_rva, _import_size)) = nt_header.data_directories.get(1) {
+        if let Some(&(import_rva, import_size)) = nt_header.data_directories.get(1) {
             if import_rva > 0 {
                 // Find section containing import directory
                 if let Some(import_section) = sections.iter().find(|s| {
@@ -235,9 +236,16 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     let import_offset = import_section.pointer_to_raw_data as u64
                         + (import_rva - import_section.virtual_address) as u64;
 
-                    // Read import directory (limit to 100 descriptors max)
+                    // Read import directory (use directory size from PE header, or limit to 100 descriptors max)
                     let max_descriptors = 100;
-                    let import_data_size = 20 * max_descriptors; // 20 bytes per descriptor
+                    // Use the actual import directory size if available, otherwise estimate
+                    let import_data_size =
+                        if import_size > 0 && import_size < 20 * max_descriptors as u32 {
+                            import_size as usize
+                        } else {
+                            20 * max_descriptors
+                        };
+
                     if let Ok(import_data) = reader.read(import_offset, import_data_size) {
                         let mut imports = Vec::new();
                         let mut offset = 0;

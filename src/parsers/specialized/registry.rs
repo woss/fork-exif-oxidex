@@ -302,7 +302,9 @@ impl FormatParser for RegistryParser {
     fn parse(&self, reader: &dyn FileReader) -> Result<MetadataMap> {
         // Verify this is a valid registry hive file
         if !Self::verify_signature(reader)? {
-            return Err(ExifToolError::parse_error("Invalid registry hive signature"));
+            return Err(ExifToolError::parse_error(
+                "Invalid registry hive signature",
+            ));
         }
 
         let mut metadata = MetadataMap::new();
@@ -466,7 +468,9 @@ impl FormatParser for RegistryParser {
 /// # Ok(())
 /// # }
 /// ```
-pub fn parse_registry_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
+pub fn parse_registry_metadata(
+    reader: &dyn FileReader,
+) -> std::result::Result<MetadataMap, String> {
     let parser = RegistryParser;
     parser.parse(reader).map_err(|e| e.to_string())
 }
@@ -577,7 +581,10 @@ mod tests {
         let reader = TestReader::new(data);
 
         assert_eq!(RegistryParser::read_primary_sequence(&reader).unwrap(), 100);
-        assert_eq!(RegistryParser::read_secondary_sequence(&reader).unwrap(), 100);
+        assert_eq!(
+            RegistryParser::read_secondary_sequence(&reader).unwrap(),
+            100
+        );
         assert_eq!(
             RegistryParser::read_last_written(&reader).unwrap(),
             133000000000000000

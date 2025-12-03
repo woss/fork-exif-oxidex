@@ -566,5 +566,8 @@ fn test_evtx_file_too_small() {
     let result = parse_evtx_metadata(&reader);
 
     // Should return error for file too small
-    assert!(result.is_err(), "Should reject file smaller than EVTX header");
+    assert!(
+        result.is_err(),
+        "Should reject file smaller than EVTX header"
+    );
 }

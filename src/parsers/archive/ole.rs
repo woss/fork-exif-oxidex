@@ -21,6 +21,9 @@ const MAX_SECTOR_SIZE: usize = 4096;
 /// Directory entry size in bytes
 const DIR_ENTRY_SIZE: usize = 128;
 
+/// MS-OVBA compression signature
+const VBA_COMPRESSION_SIGNATURE: u8 = 0x01;
+
 /// Parser for OLE (Compound File Binary Format) files
 ///
 /// Extracts metadata from OLE files including:
@@ -85,12 +88,10 @@ impl OLEParser {
 
         // Parse FAT information
         let total_sectors = u32::from_le_bytes([header[44], header[45], header[46], header[47]]);
-        let first_dir_sector =
-            u32::from_le_bytes([header[48], header[49], header[50], header[51]]);
+        let first_dir_sector = u32::from_le_bytes([header[48], header[49], header[50], header[51]]);
         let first_mini_fat_sector =
             u32::from_le_bytes([header[60], header[61], header[62], header[63]]);
-        let mini_fat_sectors =
-            u32::from_le_bytes([header[64], header[65], header[66], header[67]]);
+        let mini_fat_sectors = u32::from_le_bytes([header[64], header[65], header[66], header[67]]);
         let first_difat_sector =
             u32::from_le_bytes([header[68], header[69], header[70], header[71]]);
         let difat_sectors = u32::from_le_bytes([header[72], header[73], header[74], header[75]]);
@@ -120,7 +121,9 @@ impl OLEParser {
         let dir_offset = 512 + (header.first_dir_sector as usize * header.sector_size);
 
         if dir_offset + header.sector_size > reader.size() as usize {
-            return Err(ExifToolError::parse_error("Invalid directory sector offset"));
+            return Err(ExifToolError::parse_error(
+                "Invalid directory sector offset",
+            ));
         }
 
         // Read first directory sector
@@ -242,7 +245,7 @@ impl FormatParser for OLEParser {
 }
 
 /// VBA Macro analyzer for forensic detection
-struct VBAAnalyzer;
+pub struct VBAAnalyzer;
 
 impl VBAAnalyzer {
     /// Analyze VBA macros in the OLE file
@@ -261,17 +264,11 @@ impl VBAAnalyzer {
         });
 
         if vba_dir.is_none() {
-            metadata.insert(
-                "OLE:HasVBAMacros".to_string(),
-                TagValue::new_string("No"),
-            );
+            metadata.insert("OLE:HasVBAMacros".to_string(), TagValue::new_string("No"));
             return metadata;
         }
 
-        metadata.insert(
-            "OLE:HasVBAMacros".to_string(),
-            TagValue::new_string("Yes"),
-        );
+        metadata.insert("OLE:HasVBAMacros".to_string(), TagValue::new_string("Yes"));
 
         // Look for VBA project streams
         let vba_project = entries
@@ -390,6 +387,36 @@ impl VBAAnalyzer {
             );
         }
 
+        // Try to extract code from modules
+        let mut code_snippets = Vec::new();
+        for entry in entries.iter() {
+            if entry.entry_type != STGTY_STREAM || entry.size == 0 {
+                continue;
+            }
+
+            // Skip known non-code streams
+            if entry.name.starts_with('_')
+                || entry.name.eq_ignore_ascii_case("dir")
+                || entry.name.eq_ignore_ascii_case("PROJECT")
+                || entry.name.eq_ignore_ascii_case("PROJECTwm")
+            {
+                continue;
+            }
+
+            if let Some((snippet, _)) = Self::analyze_module(reader, entry, header) {
+                if !snippet.is_empty() && snippet.len() > 10 {
+                    code_snippets.push(format!("{}:\n{}", entry.name, snippet));
+                }
+            }
+        }
+
+        if !code_snippets.is_empty() {
+            metadata.insert(
+                "OLE:VBACodePreview".to_string(),
+                TagValue::new_string(code_snippets.join("\n---\n")),
+            );
+        }
+
         metadata
     }
 
@@ -418,7 +445,7 @@ impl VBAAnalyzer {
     }
 
     /// Check for suspicious patterns in VBA code/streams
-    fn check_suspicious_patterns(data: &[u8]) -> Vec<String> {
+    pub fn check_suspicious_patterns(data: &[u8]) -> Vec<String> {
         let mut findings = Vec::new();
 
         // Convert to lowercase string for pattern matching
@@ -523,56 +550,110 @@ impl VBAAnalyzer {
         findings
     }
 
-    /// Basic VBA RLE decompression (MS-OVBA algorithm)
+    /// Decompresses VBA compressed data using MS-OVBA algorithm
     ///
-    /// This is a simplified implementation for detection purposes.
-    /// Full decompression requires proper token parsing and buffer management.
+    /// The MS-OVBA compression format consists of:
+    /// - 1 byte signature (0x01)
+    /// - Compressed chunks, each with:
+    ///   - 2 byte header (little-endian): bits 0-11 = size-1, bit 15 = compressed flag, bits 12-14 = signature (0b011)
+    ///   - Compressed or raw data
+    ///
+    /// Compressed chunks use a flag byte followed by up to 8 tokens:
+    /// - Flag bit 0 = literal byte
+    /// - Flag bit 1 = copy token (offset + length)
     #[allow(dead_code)]
     fn decompress_vba(data: &[u8]) -> Option<Vec<u8>> {
         if data.len() < 3 {
             return None;
         }
 
-        // Check for compressed chunk signature (0x01)
-        if data[0] != 0x01 {
+        // Check signature
+        if data[0] != VBA_COMPRESSION_SIGNATURE {
             return None;
         }
 
         let mut output = Vec::new();
-        let mut pos = 3; // Skip signature and size header
+        let mut pos = 1; // Skip signature
 
-        while pos < data.len() {
-            let flag_byte = data[pos];
-            pos += 1;
+        while pos + 2 <= data.len() {
+            // Read chunk header (2 bytes, little-endian)
+            let chunk_header = u16::from_le_bytes([data[pos], data[pos + 1]]);
+            pos += 2;
 
-            for bit in 0..8 {
-                if pos >= data.len() {
-                    break;
+            // Parse header fields
+            let chunk_size = ((chunk_header & 0x0FFF) + 1) as usize;
+            let chunk_is_compressed = (chunk_header & 0x8000) != 0;
+            let chunk_signature = (chunk_header >> 12) & 0x07;
+
+            // Validate signature bits should be 0b011
+            if chunk_signature != 0b011 {
+                // Try to recover by treating as uncompressed
+                if pos + chunk_size <= data.len() {
+                    output.extend_from_slice(&data[pos..pos + chunk_size]);
+                    pos += chunk_size;
+                    continue;
                 }
+                break;
+            }
 
-                if (flag_byte & (1 << bit)) == 0 {
-                    // Literal byte
-                    output.push(data[pos]);
-                    pos += 1;
-                } else {
-                    // Copy token
-                    if pos + 1 >= data.len() {
+            if pos + chunk_size > data.len() {
+                break;
+            }
+
+            if !chunk_is_compressed {
+                // Raw chunk - copy directly
+                output.extend_from_slice(&data[pos..pos + chunk_size]);
+                pos += chunk_size;
+            } else {
+                // Compressed chunk
+                let chunk_end = pos + chunk_size;
+                let chunk_start_output_len = output.len();
+
+                while pos < chunk_end {
+                    if pos >= data.len() {
                         break;
                     }
 
-                    let token = u16::from_le_bytes([data[pos], data[pos + 1]]);
-                    pos += 2;
+                    let flag_byte = data[pos];
+                    pos += 1;
 
-                    let offset = (token & 0x0FFF) as usize;
-                    let length = ((token >> 12) & 0x0F) as usize + 3;
+                    for bit in 0..8 {
+                        if pos >= chunk_end {
+                            break;
+                        }
 
-                    // Copy from output buffer
-                    if offset < output.len() {
-                        let start = output.len() - offset;
-                        for i in 0..length {
-                            if start + i < output.len() {
-                                let byte = output[start + i];
-                                output.push(byte);
+                        if (flag_byte & (1 << bit)) == 0 {
+                            // Literal byte
+                            if pos < data.len() {
+                                output.push(data[pos]);
+                                pos += 1;
+                            }
+                        } else {
+                            // Copy token
+                            if pos + 1 >= data.len() {
+                                break;
+                            }
+
+                            let token = u16::from_le_bytes([data[pos], data[pos + 1]]);
+                            pos += 2;
+
+                            // Calculate offset and length based on decompressed size
+                            let decompressed_chunk_size = output.len() - chunk_start_output_len;
+                            let (_offset_bits, length_bits, length_mask) =
+                                Self::get_copy_token_params(decompressed_chunk_size);
+
+                            let length = ((token & length_mask) + 3) as usize;
+                            let offset = ((token >> length_bits) + 1) as usize;
+
+                            // Copy from output buffer
+                            if offset <= output.len() {
+                                let copy_start = output.len() - offset;
+                                for i in 0..length {
+                                    if copy_start + (i % offset) < output.len() {
+                                        let byte = output[copy_start + (i % offset)];
+                                        output.push(byte);
+                                    }
+                                }
                             }
                         }
                     }
@@ -580,7 +661,100 @@ impl VBAAnalyzer {
             }
         }
 
-        Some(output)
+        if output.is_empty() {
+            None
+        } else {
+            Some(output)
+        }
+    }
+
+    /// Calculates copy token parameters based on decompressed chunk size
+    /// Returns (offset_bits, length_bits, length_mask)
+    fn get_copy_token_params(decompressed_size: usize) -> (u32, u32, u16) {
+        let decompressed_size = decompressed_size.max(1);
+
+        // Find the number of bits needed to represent the offset
+        let offset_bits = if decompressed_size <= 16 {
+            4
+        } else if decompressed_size <= 32 {
+            5
+        } else if decompressed_size <= 64 {
+            6
+        } else if decompressed_size <= 128 {
+            7
+        } else if decompressed_size <= 256 {
+            8
+        } else if decompressed_size <= 512 {
+            9
+        } else if decompressed_size <= 1024 {
+            10
+        } else if decompressed_size <= 2048 {
+            11
+        } else {
+            12
+        };
+
+        let length_bits = 16 - offset_bits;
+        let length_mask = (1u16 << length_bits) - 1;
+
+        (offset_bits, length_bits, length_mask)
+    }
+
+    /// Extracts a code snippet from decompressed VBA data
+    ///
+    /// # Arguments
+    /// * `data` - Decompressed VBA data
+    /// * `max_length` - Maximum length of snippet to extract
+    fn extract_code_snippet(data: &[u8], max_length: usize) -> String {
+        // Try to find actual VBA code patterns
+        let text = String::from_utf8_lossy(data);
+
+        // Look for Sub/Function declarations
+        let code_start = text
+            .find("Sub ")
+            .or_else(|| text.find("Function "))
+            .or_else(|| text.find("Private Sub"))
+            .or_else(|| text.find("Public Sub"))
+            .unwrap_or(0);
+
+        let snippet: String = text[code_start..]
+            .chars()
+            .filter(|c| c.is_ascii() && (*c >= ' ' || *c == '\n' || *c == '\r' || *c == '\t'))
+            .take(max_length)
+            .collect();
+
+        // Clean up the snippet
+        snippet.trim().to_string()
+    }
+
+    /// Analyzes VBA module and extracts metadata including code snippets
+    #[allow(dead_code)]
+    fn analyze_module(
+        reader: &dyn FileReader,
+        entry: &DirectoryEntry,
+        header: &OLEHeader,
+    ) -> Option<(String, Vec<String>)> {
+        // Read and decompress the module stream
+        let stream_data = Self::read_stream(reader, entry, header).ok()?;
+
+        if stream_data.is_empty() {
+            return None;
+        }
+
+        // Try to decompress
+        let decompressed = if stream_data.first() == Some(&VBA_COMPRESSION_SIGNATURE) {
+            Self::decompress_vba(&stream_data)?
+        } else {
+            stream_data
+        };
+
+        // Extract code snippet
+        let snippet = Self::extract_code_snippet(&decompressed, 200);
+
+        // Check for suspicious patterns in the decompressed code
+        let patterns = Self::check_suspicious_patterns(&decompressed);
+
+        Some((snippet, patterns))
     }
 }
 
@@ -701,5 +875,55 @@ mod tests {
         }
         let patterns = VBAAnalyzer::check_suspicious_patterns(data.as_bytes());
         assert!(patterns.iter().any(|p| p.contains("concatenation")));
+    }
+
+    #[test]
+    fn test_decompress_vba_simple() {
+        // Create a simple compressed VBA chunk with proper MS-OVBA header
+        // Signature byte (0x01) + chunk header with signature bits 0b011
+        let compressed = vec![
+            0x01, // Signature byte
+            0x0D,
+            0xB0, // Chunk header: size=14 (0x00D), compressed=1 (0x8000), signature=0b011 (0x3000)
+            // Combined: 0x000D | 0x8000 | 0x3000 = 0xB00D
+            0x00, // Flag byte (all literals for first 8 tokens)
+            b'H', b'e', b'l', b'l', b'o', b' ', b'W', b'o',
+            0x00, // Flag byte (all literals for next 4 tokens)
+            b'r', b'l', b'd', b'!',
+        ];
+
+        let result = VBAAnalyzer::decompress_vba(&compressed);
+        assert!(result.is_some());
+        let decompressed = result.unwrap();
+        assert_eq!(&decompressed, b"Hello World!");
+    }
+
+    #[test]
+    fn test_decompress_vba_with_copy_token() {
+        // Test MS-OVBA decompression with a copy token
+        // This tests the copy token parameter calculation
+        let compressed = vec![
+            0x01, // Signature byte
+            0x08, 0xB0, // Chunk header: size=9, compressed=1, signature=0b011
+            0x00, // Flag byte: all 8 tokens are literals
+            b'H', b'e', b'l', b'l', b'o', b'A', b'B', b'C',
+            0x01, // Flag byte: bit 0 set = copy token, rest literals
+            0x00, 0x00, // Copy token: offset=1, length=3 (copy last 3 bytes "ABC")
+        ];
+
+        let result = VBAAnalyzer::decompress_vba(&compressed);
+        assert!(result.is_some());
+        let decompressed = result.unwrap();
+        // Should have 8 literal bytes, then copy the last 3
+        assert!(decompressed.len() >= 8);
+        assert_eq!(&decompressed[0..8], b"HelloABC");
+    }
+
+    #[test]
+    fn test_extract_vba_code_snippet() {
+        // Test extracting code from decompressed VBA
+        let vba_code = b"Sub Test()\n  MsgBox \"Hello\"\nEnd Sub\n";
+        let snippet = VBAAnalyzer::extract_code_snippet(vba_code, 50);
+        assert!(snippet.contains("Sub Test"));
     }
 }

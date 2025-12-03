@@ -332,8 +332,8 @@ fn test_pe_with_exports() {
     // Data Directories (16 entries, 8 bytes each)
     // Export Directory (index 0)
     data.extend_from_slice(&0x3000u32.to_le_bytes()); // RVA of export directory
-    data.extend_from_slice(&100u32.to_le_bytes()); // Size of export directory
-                                                   // Other directories (zeroed)
+    data.extend_from_slice(&0x200u32.to_le_bytes()); // Size of export directory (must cover forwarder at 0x3110)
+                                                     // Other directories (zeroed)
     for _ in 1..16 {
         data.extend_from_slice(&0u32.to_le_bytes());
         data.extend_from_slice(&0u32.to_le_bytes());

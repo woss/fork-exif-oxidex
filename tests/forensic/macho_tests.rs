@@ -1,0 +1,514 @@
+//! Integration tests for Mach-O parser
+//!
+//! These tests verify comprehensive metadata extraction from Mach-O executable files
+//! used in macOS, iOS, and other Apple platforms. Tests cover 32-bit and 64-bit formats,
+//! different endianness, CPU types, file types, and load commands.
+
+use oxidex::core::{FormatParser, TagValue};
+use oxidex::parsers::specialized::macho::MachOParser;
+
+/// Test implementation of FileReader for unit testing
+struct TestReader {
+    data: Vec<u8>,
+}
+
+impl TestReader {
+    fn new(data: Vec<u8>) -> Self {
+        Self { data }
+    }
+}
+
+impl oxidex::core::FileReader for TestReader {
+    fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
+        let start = offset as usize;
+        let end = start.saturating_add(length).min(self.data.len());
+
+        if start > self.data.len() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "offset beyond end of data",
+            ));
+        }
+
+        Ok(&self.data[start..end])
+    }
+
+    fn size(&self) -> u64 {
+        self.data.len() as u64
+    }
+}
+
+// Mach-O magic numbers
+const MH_MAGIC: u32 = 0xFEEDFACE; // 32-bit little-endian
+const MH_CIGAM: u32 = 0xCEFAEDFE; // 32-bit big-endian
+const MH_MAGIC_64: u32 = 0xFEEDFACF; // 64-bit little-endian
+const MH_CIGAM_64: u32 = 0xCFFAEDFE; // 64-bit big-endian
+const FAT_MAGIC: u32 = 0xCAFEBABE; // Fat binary
+const FAT_CIGAM: u32 = 0xBEBAFECA; // Fat binary (reverse)
+
+// CPU types
+const CPU_TYPE_X86: u32 = 7;
+const CPU_TYPE_X86_64: u32 = 0x01000007;
+const CPU_TYPE_ARM: u32 = 12;
+const CPU_TYPE_ARM64: u32 = 0x0100000C;
+const CPU_TYPE_POWERPC: u32 = 18;
+
+// File types
+const MH_OBJECT: u32 = 1; // Relocatable object file
+const MH_EXECUTE: u32 = 2; // Executable
+const MH_FVMLIB: u32 = 3; // Fixed VM shared library
+const MH_CORE: u32 = 4; // Core file
+const MH_PRELOAD: u32 = 5; // Preloaded executable
+const MH_DYLIB: u32 = 6; // Dynamically bound shared library
+const MH_DYLINKER: u32 = 7; // Dynamic link editor
+const MH_BUNDLE: u32 = 8; // Bundle
+const MH_DYLIB_STUB: u32 = 9; // Shared library stub
+
+// Load command types
+const LC_SEGMENT: u32 = 0x1; // Segment of this file to be mapped
+const LC_SEGMENT_64: u32 = 0x19; // 64-bit segment
+const LC_UUID: u32 = 0x1B; // UUID of the binary
+const LC_CODE_SIGNATURE: u32 = 0x1D; // Code signature
+
+/// Helper function to create a 32-bit Mach-O header
+///
+/// The 32-bit Mach-O header is 28 bytes:
+/// - magic (4 bytes): MH_MAGIC or MH_CIGAM
+/// - cputype (4 bytes): CPU architecture
+/// - cpusubtype (4 bytes): CPU subtype
+/// - filetype (4 bytes): File type (executable, dylib, etc.)
+/// - ncmds (4 bytes): Number of load commands
+/// - sizeofcmds (4 bytes): Size of all load commands
+/// - flags (4 bytes): Flags
+fn create_macho32_header(
+    magic: u32,
+    cputype: u32,
+    cpusubtype: u32,
+    filetype: u32,
+    ncmds: u32,
+    sizeofcmds: u32,
+    flags: u32,
+) -> Vec<u8> {
+    let mut data = Vec::new();
+
+    // Determine endianness from magic
+    let is_little_endian = magic == MH_MAGIC;
+
+    if is_little_endian {
+        data.extend_from_slice(&magic.to_le_bytes());
+        data.extend_from_slice(&cputype.to_le_bytes());
+        data.extend_from_slice(&cpusubtype.to_le_bytes());
+        data.extend_from_slice(&filetype.to_le_bytes());
+        data.extend_from_slice(&ncmds.to_le_bytes());
+        data.extend_from_slice(&sizeofcmds.to_le_bytes());
+        data.extend_from_slice(&flags.to_le_bytes());
+    } else {
+        data.extend_from_slice(&magic.to_be_bytes());
+        data.extend_from_slice(&cputype.to_be_bytes());
+        data.extend_from_slice(&cpusubtype.to_be_bytes());
+        data.extend_from_slice(&filetype.to_be_bytes());
+        data.extend_from_slice(&ncmds.to_be_bytes());
+        data.extend_from_slice(&sizeofcmds.to_be_bytes());
+        data.extend_from_slice(&flags.to_be_bytes());
+    }
+
+    data
+}
+
+/// Helper function to create a 64-bit Mach-O header
+///
+/// The 64-bit Mach-O header is 32 bytes (includes reserved field):
+/// - magic (4 bytes): MH_MAGIC_64 or MH_CIGAM_64
+/// - cputype (4 bytes): CPU architecture
+/// - cpusubtype (4 bytes): CPU subtype
+/// - filetype (4 bytes): File type (executable, dylib, etc.)
+/// - ncmds (4 bytes): Number of load commands
+/// - sizeofcmds (4 bytes): Size of all load commands
+/// - flags (4 bytes): Flags
+/// - reserved (4 bytes): Reserved
+fn create_macho64_header(
+    magic: u32,
+    cputype: u32,
+    cpusubtype: u32,
+    filetype: u32,
+    ncmds: u32,
+    sizeofcmds: u32,
+    flags: u32,
+) -> Vec<u8> {
+    let mut data = Vec::new();
+
+    // Determine endianness from magic
+    let is_little_endian = magic == MH_MAGIC_64;
+
+    if is_little_endian {
+        data.extend_from_slice(&magic.to_le_bytes());
+        data.extend_from_slice(&cputype.to_le_bytes());
+        data.extend_from_slice(&cpusubtype.to_le_bytes());
+        data.extend_from_slice(&filetype.to_le_bytes());
+        data.extend_from_slice(&ncmds.to_le_bytes());
+        data.extend_from_slice(&sizeofcmds.to_le_bytes());
+        data.extend_from_slice(&flags.to_le_bytes());
+        data.extend_from_slice(&0u32.to_le_bytes()); // reserved
+    } else {
+        data.extend_from_slice(&magic.to_be_bytes());
+        data.extend_from_slice(&cputype.to_be_bytes());
+        data.extend_from_slice(&cpusubtype.to_be_bytes());
+        data.extend_from_slice(&filetype.to_be_bytes());
+        data.extend_from_slice(&ncmds.to_be_bytes());
+        data.extend_from_slice(&sizeofcmds.to_be_bytes());
+        data.extend_from_slice(&flags.to_be_bytes());
+        data.extend_from_slice(&0u32.to_be_bytes()); // reserved
+    }
+
+    data
+}
+
+/// Helper function to create a load command
+///
+/// Load command structure (at least 8 bytes):
+/// - cmd (4 bytes): Command type
+/// - cmdsize (4 bytes): Size of command including data
+fn create_load_command(cmd: u32, cmdsize: u32, is_little_endian: bool) -> Vec<u8> {
+    let mut data = Vec::new();
+
+    if is_little_endian {
+        data.extend_from_slice(&cmd.to_le_bytes());
+        data.extend_from_slice(&cmdsize.to_le_bytes());
+    } else {
+        data.extend_from_slice(&cmd.to_be_bytes());
+        data.extend_from_slice(&cmdsize.to_be_bytes());
+    }
+
+    // Pad to cmdsize
+    while data.len() < cmdsize as usize {
+        data.push(0);
+    }
+
+    data
+}
+
+#[test]
+fn test_macho64_executable_x86_64() {
+    // Create a 64-bit x86_64 executable
+    let data = create_macho64_header(
+        MH_MAGIC_64,
+        CPU_TYPE_X86_64,
+        3, // CPU_SUBTYPE_X86_64_ALL
+        MH_EXECUTE,
+        0, // No load commands
+        0,
+        0,
+    );
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    // Verify basic metadata
+    assert_eq!(
+        metadata.get("FileType"),
+        Some(&TagValue::String("Mach-O".to_string()))
+    );
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("64-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho32_executable_x86() {
+    // Create a 32-bit x86 executable
+    let data = create_macho32_header(
+        MH_MAGIC,
+        CPU_TYPE_X86,
+        3, // CPU_SUBTYPE_I386_ALL
+        MH_EXECUTE,
+        0,
+        0,
+        0,
+    );
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("FileType"),
+        Some(&TagValue::String("Mach-O".to_string()))
+    );
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("32-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho64_arm64_executable() {
+    // Create a 64-bit ARM64 executable (for Apple Silicon)
+    let data = create_macho64_header(
+        MH_MAGIC_64,
+        CPU_TYPE_ARM64,
+        0, // CPU_SUBTYPE_ARM64_ALL
+        MH_EXECUTE,
+        0,
+        0,
+        0,
+    );
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("64-bit".to_string()))
+    );
+    assert_eq!(
+        metadata.get("FileType"),
+        Some(&TagValue::String("Mach-O".to_string()))
+    );
+}
+
+#[test]
+fn test_macho64_big_endian() {
+    // Create a 64-bit big-endian Mach-O (PowerPC)
+    let data = create_macho64_header(MH_CIGAM_64, CPU_TYPE_POWERPC, 0, MH_EXECUTE, 0, 0, 0);
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("64-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho32_big_endian() {
+    // Create a 32-bit big-endian Mach-O (PowerPC)
+    let data = create_macho32_header(MH_CIGAM, CPU_TYPE_POWERPC, 0, MH_EXECUTE, 0, 0, 0);
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("32-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho64_dylib() {
+    // Create a 64-bit dynamic library
+    let data = create_macho64_header(MH_MAGIC_64, CPU_TYPE_X86_64, 3, MH_DYLIB, 0, 0, 0);
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("FileType"),
+        Some(&TagValue::String("Mach-O".to_string()))
+    );
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("64-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho64_bundle() {
+    // Create a 64-bit bundle
+    let data = create_macho64_header(MH_MAGIC_64, CPU_TYPE_X86_64, 3, MH_BUNDLE, 0, 0, 0);
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("FileType"),
+        Some(&TagValue::String("Mach-O".to_string()))
+    );
+}
+
+#[test]
+fn test_macho64_object_file() {
+    // Create a 64-bit object file (relocatable)
+    let data = create_macho64_header(MH_MAGIC_64, CPU_TYPE_X86_64, 3, MH_OBJECT, 0, 0, 0);
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("64-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho64_with_load_commands() {
+    // Create a 64-bit executable with load commands
+    let mut data = create_macho64_header(
+        MH_MAGIC_64,
+        CPU_TYPE_X86_64,
+        3,
+        MH_EXECUTE,
+        2,  // 2 load commands
+        80, // Size of load commands
+        0,
+    );
+
+    // Add LC_SEGMENT_64 load command (minimal)
+    data.extend_from_slice(&create_load_command(LC_SEGMENT_64, 48, true));
+
+    // Add LC_UUID load command
+    data.extend_from_slice(&create_load_command(LC_UUID, 32, true));
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("64-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho64_with_code_signature() {
+    // Create a 64-bit executable with code signature load command
+    let mut data = create_macho64_header(
+        MH_MAGIC_64,
+        CPU_TYPE_ARM64,
+        0,
+        MH_EXECUTE,
+        1,  // 1 load command
+        16, // Size of load command
+        0,
+    );
+
+    // Add LC_CODE_SIGNATURE load command
+    data.extend_from_slice(&create_load_command(LC_CODE_SIGNATURE, 16, true));
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("64-bit".to_string()))
+    );
+}
+
+#[test]
+fn test_macho_minimal_file() {
+    // Test a minimal valid Mach-O file (just magic number)
+    let data = vec![0xCF, 0xFA, 0xED, 0xFE]; // MH_MAGIC_64 bytes
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+
+    // Should parse but may have limited metadata
+    let result = parser.parse(&reader);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_macho_truncated_header() {
+    // Test truncated header (less than 4 bytes)
+    let data = vec![0xCF, 0xFA]; // Incomplete magic
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+
+    let result = parser.parse(&reader);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_macho_invalid_magic() {
+    // Test invalid magic number
+    let data = vec![0x00, 0x00, 0x00, 0x00];
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+
+    let result = parser.parse(&reader);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_macho32_arm_executable() {
+    // Create a 32-bit ARM executable (for older iOS devices)
+    let data = create_macho32_header(
+        MH_MAGIC,
+        CPU_TYPE_ARM,
+        9, // CPU_SUBTYPE_ARM_V7
+        MH_EXECUTE,
+        0,
+        0,
+        0,
+    );
+
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("Architecture"),
+        Some(&TagValue::String("32-bit".to_string()))
+    );
+    assert_eq!(
+        metadata.get("FileType"),
+        Some(&TagValue::String("Mach-O".to_string()))
+    );
+}
+
+#[test]
+fn test_macho_file_size() {
+    // Test that file size is correctly extracted
+    let data = create_macho64_header(MH_MAGIC_64, CPU_TYPE_X86_64, 3, MH_EXECUTE, 0, 0, 0);
+
+    let expected_size = data.len();
+    let reader = TestReader::new(data);
+    let parser = MachOParser;
+    let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
+
+    assert_eq!(
+        metadata.get("FileSize"),
+        Some(&TagValue::String(expected_size.to_string()))
+    );
+}
+
+#[test]
+fn test_macho_verify_signature_32bit() {
+    // Test signature verification for 32-bit
+    let data = create_macho32_header(MH_MAGIC, CPU_TYPE_X86, 3, MH_EXECUTE, 0, 0, 0);
+
+    let reader = TestReader::new(data);
+    assert!(MachOParser::verify_signature(&reader).unwrap());
+}
+
+#[test]
+fn test_macho_verify_signature_64bit() {
+    // Test signature verification for 64-bit
+    let data = create_macho64_header(MH_MAGIC_64, CPU_TYPE_X86_64, 3, MH_EXECUTE, 0, 0, 0);
+
+    let reader = TestReader::new(data);
+    assert!(MachOParser::verify_signature(&reader).unwrap());
+}
+
+#[test]
+fn test_macho_read_arch() {
+    // Test architecture detection
+    let data_32 = create_macho32_header(MH_MAGIC, CPU_TYPE_X86, 3, MH_EXECUTE, 0, 0, 0);
+    let reader_32 = TestReader::new(data_32);
+    assert_eq!(MachOParser::read_arch(&reader_32).unwrap(), "32-bit");
+
+    let data_64 = create_macho64_header(MH_MAGIC_64, CPU_TYPE_X86_64, 3, MH_EXECUTE, 0, 0, 0);
+    let reader_64 = TestReader::new(data_64);
+    assert_eq!(MachOParser::read_arch(&reader_64).unwrap(), "64-bit");
+}
