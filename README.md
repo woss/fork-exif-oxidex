@@ -19,7 +19,6 @@ OxiDex is a memory-safe, drop-in replacement for the Perl-based ExifTool. It pro
 - **Library + CLI** - Use as a Rust crate or standalone binary
 
 ## Quick Start
-```
 
 ### Download Binary
 
