@@ -768,3 +768,192 @@ fn test_jpeg_with_iptc_metadata() {
     assert_eq!(iptc_tags[0].0, "IPTC:ObjectName");
     assert_eq!(iptc_tags[0].1, "IPTC Title");
 }
+
+/// Creates a minimal valid 128-byte ICC profile header for testing.
+///
+/// This creates a minimal sRGB-like display profile with just the header.
+/// The header contains:
+/// - Profile size (128 bytes - header only)
+/// - CMM type: "none"
+/// - Version: 2.1.0
+/// - Profile class: Display Device Profile ("mntr")
+/// - Color space: RGB
+/// - PCS: XYZ
+/// - Date/time: 2024-01-01 00:00:00
+/// - Signature: "acsp"
+/// - Platform: Apple ("APPL")
+/// - Rendering intent: Perceptual
+fn create_minimal_icc_profile() -> Vec<u8> {
+    let mut profile = vec![0u8; 128];
+
+    // Profile size (128 bytes) at offset 0 - big-endian u32
+    profile[0..4].copy_from_slice(&128u32.to_be_bytes());
+
+    // CMM Type at offset 4: "none" (4 bytes)
+    profile[4..8].copy_from_slice(b"none");
+
+    // Profile version at offset 8: 2.1.0
+    // Byte 8: major version (2)
+    // Byte 9: minor.bugfix (0x10 = 1.0)
+    profile[8] = 2;
+    profile[9] = 0x10;
+    profile[10] = 0;
+    profile[11] = 0;
+
+    // Profile class at offset 12: Display Device Profile ("mntr")
+    profile[12..16].copy_from_slice(b"mntr");
+
+    // Color space at offset 16: RGB ("RGB ")
+    profile[16..20].copy_from_slice(b"RGB ");
+
+    // Profile Connection Space at offset 20: XYZ ("XYZ ")
+    profile[20..24].copy_from_slice(b"XYZ ");
+
+    // Date/time at offset 24 (12 bytes):
+    // Year (2024), Month (1), Day (1), Hour (0), Minute (0), Second (0)
+    profile[24..26].copy_from_slice(&2024u16.to_be_bytes()); // Year
+    profile[26..28].copy_from_slice(&1u16.to_be_bytes()); // Month
+    profile[28..30].copy_from_slice(&1u16.to_be_bytes()); // Day
+    profile[30..32].copy_from_slice(&0u16.to_be_bytes()); // Hour
+    profile[32..34].copy_from_slice(&0u16.to_be_bytes()); // Minute
+    profile[34..36].copy_from_slice(&0u16.to_be_bytes()); // Second
+
+    // Profile file signature at offset 36: "acsp" (required)
+    profile[36..40].copy_from_slice(b"acsp");
+
+    // Primary platform at offset 40: Apple ("APPL")
+    profile[40..44].copy_from_slice(b"APPL");
+
+    // CMM flags at offset 44: 0 (not embedded, independent)
+    profile[44..48].copy_from_slice(&0u32.to_be_bytes());
+
+    // Device manufacturer at offset 48: "TEST"
+    profile[48..52].copy_from_slice(b"TEST");
+
+    // Device model at offset 52: "MOD1"
+    profile[52..56].copy_from_slice(b"MOD1");
+
+    // Device attributes at offset 56 (8 bytes): 0 (reflective, glossy, positive, color)
+    profile[56..64].copy_from_slice(&0u64.to_be_bytes());
+
+    // Rendering intent at offset 64: 0 (Perceptual)
+    profile[64..68].copy_from_slice(&0u32.to_be_bytes());
+
+    // Connection space illuminant at offset 68 (12 bytes - XYZ s15.16 fixed-point)
+    // D50 illuminant: X=0.9642, Y=1.0, Z=0.8249
+    // s15.16 format: integer part in high 16 bits, fraction in low 16 bits
+    // 0.9642 * 65536 = 63189.7 -> 0x0000F6D5
+    // 1.0 * 65536 = 65536 -> 0x00010000
+    // 0.8249 * 65536 = 54061.7 -> 0x0000D32D
+    profile[68..72].copy_from_slice(&0x0000F6D5u32.to_be_bytes()); // X
+    profile[72..76].copy_from_slice(&0x00010000u32.to_be_bytes()); // Y
+    profile[76..80].copy_from_slice(&0x0000D32Du32.to_be_bytes()); // Z
+
+    // Profile creator at offset 80: "TEST"
+    profile[80..84].copy_from_slice(b"TEST");
+
+    // Profile ID at offset 84 (16 bytes): zeros (not computed)
+    // Already zeros from initialization
+
+    // Tag count at offset 128 would normally be here, but for minimal profile
+    // we just have the header (0 tags)
+
+    profile
+}
+
+#[test]
+fn test_jpeg_with_icc_profile() {
+    use oxidex::core::jpeg_helpers::process_icc_segments;
+    use oxidex::core::MetadataMap;
+    use oxidex::parsers::jpeg::segment_parser::parse_segments;
+
+    // Create minimal JPEG with APP2 (ICC) segment
+    let mut jpeg_data = Vec::new();
+
+    // SOI marker
+    jpeg_data.extend_from_slice(&[0xFF, 0xD8]);
+
+    // APP2 marker (ICC Profile)
+    jpeg_data.extend_from_slice(&[0xFF, 0xE2]);
+
+    // Create ICC profile payload
+    let mut icc_payload = Vec::new();
+    icc_payload.extend_from_slice(b"ICC_PROFILE\0"); // 12 bytes identifier
+    icc_payload.push(1); // Chunk number (1)
+    icc_payload.push(1); // Total chunks (1)
+
+    // Add minimal ICC profile data
+    let icc_profile = create_minimal_icc_profile();
+    icc_payload.extend_from_slice(&icc_profile);
+
+    // APP2 length (includes length field itself)
+    let app2_length = (icc_payload.len() + 2) as u16;
+    jpeg_data.extend_from_slice(&app2_length.to_be_bytes());
+    jpeg_data.extend_from_slice(&icc_payload);
+
+    // EOI marker
+    jpeg_data.extend_from_slice(&[0xFF, 0xD9]);
+
+    // Parse segments
+    let reader = TestReader::new(jpeg_data);
+    let segments = parse_segments(&reader).expect("Failed to parse segments");
+
+    // Verify we found the APP2 segment
+    let app2_segments: Vec<_> = segments.iter().filter(|s| s.marker == 0xFFE2).collect();
+    assert_eq!(app2_segments.len(), 1, "Should have exactly one APP2 segment");
+
+    // Verify segment has ICC_PROFILE identifier
+    assert!(
+        app2_segments[0].data.starts_with(b"ICC_PROFILE\0"),
+        "APP2 segment should start with ICC_PROFILE identifier"
+    );
+
+    // Extract ICC metadata using the process_icc_segments function
+    let mut metadata = MetadataMap::new();
+    process_icc_segments(&segments, &mut metadata);
+
+    // Verify ICC tags were extracted
+    println!("Extracted ICC tags:");
+    for (key, value) in metadata.iter() {
+        println!("  {}: {:?}", key, value);
+    }
+
+    // Check for expected ICC profile header fields
+    assert!(
+        metadata.contains_key("Profile:ProfileVersion"),
+        "Should have Profile:ProfileVersion tag"
+    );
+    assert!(
+        metadata.contains_key("Profile:ProfileClass"),
+        "Should have Profile:ProfileClass tag"
+    );
+    assert!(
+        metadata.contains_key("Profile:ColorSpaceData"),
+        "Should have Profile:ColorSpaceData tag"
+    );
+    assert!(
+        metadata.contains_key("Profile:RenderingIntent"),
+        "Should have Profile:RenderingIntent tag"
+    );
+
+    // Verify specific values
+    let version = metadata.get("Profile:ProfileVersion").unwrap();
+    assert!(
+        format!("{:?}", version).contains("2.1"),
+        "Profile version should be 2.1.0"
+    );
+
+    let profile_class = metadata.get("Profile:ProfileClass").unwrap();
+    assert!(
+        format!("{:?}", profile_class).contains("Display Device"),
+        "Profile class should be Display Device"
+    );
+
+    let color_space = metadata.get("Profile:ColorSpaceData").unwrap();
+    assert!(
+        format!("{:?}", color_space).contains("RGB"),
+        "Color space should be RGB"
+    );
+
+    println!("\nICC profile extraction test passed!");
+}

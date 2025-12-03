@@ -15,7 +15,7 @@
 //! Uses TestReader pattern with synthetic ELF data to ensure reproducible tests.
 
 use oxidex::core::{FileReader, FormatParser, TagValue};
-use oxidex::parsers::specialized::elf::ELFParser;
+use oxidex::parsers::elf::ELFParser;
 use std::io;
 
 /// Test implementation of FileReader for unit testing
@@ -204,7 +204,7 @@ fn test_elf64_little_endian_x86_64() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("64-bit".to_string()))
     );
 }
@@ -225,7 +225,7 @@ fn test_elf32_little_endian_x86() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("32-bit".to_string()))
     );
 }
@@ -246,7 +246,7 @@ fn test_elf64_big_endian_arm() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("64-bit".to_string()))
     );
 }
@@ -268,7 +268,7 @@ fn test_elf32_big_endian_mips() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("32-bit".to_string()))
     );
 }
@@ -292,7 +292,7 @@ fn test_elf64_shared_object_aarch64() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("64-bit".to_string()))
     );
 }
@@ -313,7 +313,7 @@ fn test_elf32_relocatable_arm() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("32-bit".to_string()))
     );
 }
@@ -334,7 +334,7 @@ fn test_elf64_core_dump() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("64-bit".to_string()))
     );
 }
@@ -355,7 +355,7 @@ fn test_elf64_riscv() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("64-bit".to_string()))
     );
 }
@@ -392,7 +392,7 @@ fn test_elf_truncated_header() {
     );
     // Class should be "Unknown" for truncated file
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("Unknown".to_string()))
     );
 }
@@ -413,7 +413,7 @@ fn test_elf_minimal_size() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("64-bit".to_string()))
     );
 }
@@ -446,7 +446,7 @@ fn test_elf_unknown_class() {
         Some(&TagValue::String("ELF".to_string()))
     );
     assert_eq!(
-        metadata.get("ELFClass"),
+        metadata.get("ELF:Class"),
         Some(&TagValue::String("Unknown".to_string()))
     );
 }

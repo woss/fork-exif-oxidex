@@ -47,6 +47,7 @@ pub fn detect_pe_format(data: &[u8], reader: &dyn FileReader) -> Option<FileForm
 /// Detect Mach-O binary format
 ///
 /// Mach-O has several magic numbers for different architectures and endianness.
+/// Also detects FAT/Universal binaries which contain multiple architectures.
 ///
 /// # Arguments
 ///
@@ -54,17 +55,25 @@ pub fn detect_pe_format(data: &[u8], reader: &dyn FileReader) -> Option<FileForm
 ///
 /// # Returns
 ///
-/// `true` if Mach-O magic number detected
+/// `true` if Mach-O or FAT magic number detected
 pub fn is_macho(data: &[u8]) -> bool {
     if data.len() < 4 {
         return false;
     }
 
     let macho_signatures = [
-        [0xFE, 0xED, 0xFA, 0xCE],
-        [0xFE, 0xED, 0xFA, 0xCF],
-        [0xCE, 0xFA, 0xED, 0xFE],
-        [0xCF, 0xFA, 0xED, 0xFE],
+        // Mach-O 32-bit
+        [0xFE, 0xED, 0xFA, 0xCE], // MH_MAGIC (BE)
+        [0xCE, 0xFA, 0xED, 0xFE], // MH_CIGAM (LE)
+        // Mach-O 64-bit
+        [0xFE, 0xED, 0xFA, 0xCF], // MH_MAGIC_64 (BE)
+        [0xCF, 0xFA, 0xED, 0xFE], // MH_CIGAM_64 (LE)
+        // FAT/Universal binary 32-bit
+        [0xCA, 0xFE, 0xBA, 0xBE], // FAT_MAGIC
+        [0xBE, 0xBA, 0xFE, 0xCA], // FAT_CIGAM
+        // FAT/Universal binary 64-bit
+        [0xCA, 0xFE, 0xBA, 0xBF], // FAT_MAGIC_64
+        [0xBF, 0xBA, 0xFE, 0xCA], // FAT_CIGAM_64
     ];
 
     macho_signatures.iter().any(|sig| data.starts_with(sig))
