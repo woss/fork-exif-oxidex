@@ -46,7 +46,10 @@ jobs:
           tool: cargo-nextest
       - run: cargo build --release --all-features
       - run: cargo nextest run --release --all-features
-      - run: cargo test --doc --all-features
+      - name: Run doc tests
+        run: |
+          cargo clean --release
+          cargo test --doc --all-features
       - name: Verify C header is up-to-date
         run: |
           cbindgen --config cbindgen.toml --crate oxidex --output api/oxidex.h.tmp
@@ -57,7 +60,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y libimage-exiftool-perl
       - name: Integration tests (ExifTool comparison)
-        run: cargo test --release --features exiftool-comparison
+        run: cargo test --features exiftool-comparison
 
   multi-platform:
     name: Multi-platform Build (${{ matrix.target }})
