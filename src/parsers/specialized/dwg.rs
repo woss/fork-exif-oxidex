@@ -29,6 +29,99 @@ impl DWGParser {
         let version = reader.read(0, 6)?;
         Ok(String::from_utf8_lossy(version).to_string())
     }
+
+    /// Maps DWG version code to friendly AutoCAD release name
+    pub fn map_version_to_release(version_code: &str) -> &'static str {
+        match version_code {
+            "AC1012" => "R13",
+            "AC1014" => "R14",
+            "AC1015" => "R2000",
+            "AC1018" => "R2004",
+            "AC1021" => "R2007",
+            "AC1024" => "R2010",
+            "AC1027" => "R2013",
+            "AC1032" => "R2018",
+            _ => "Unknown",
+        }
+    }
+
+    /// Reads security flags from header to detect encryption
+    pub fn is_encrypted(reader: &dyn FileReader) -> Result<bool> {
+        // Security flags are at bytes 13-17
+        if reader.size() < 18 {
+            return Ok(false);
+        }
+        let security_flags = reader.read(13, 5)?;
+        // Check if any encryption/password bits are set
+        // Bit patterns vary by version, but non-zero typically indicates encryption
+        Ok(security_flags.iter().any(|&b| b != 0))
+    }
+
+    /// Reads codepage information from header
+    pub fn read_codepage(reader: &dyn FileReader) -> Result<Option<u16>> {
+        // Codepage is typically at offset 19-20 for R2007+ (AC1021+)
+        if reader.size() < 21 {
+            return Ok(None);
+        }
+
+        let version = Self::read_version(reader)?;
+        // Codepage only reliable in R2007+
+        if version.as_str() >= "AC1021" {
+            let codepage_bytes = reader.read(19, 2)?;
+            let codepage = u16::from_le_bytes([codepage_bytes[0], codepage_bytes[1]]);
+            if codepage > 0 {
+                return Ok(Some(codepage));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Reads preview image information from header
+    pub fn read_preview_info(reader: &dyn FileReader) -> Result<Option<(u64, u64)>> {
+        // Preview address typically at bytes 13-20 (varies by version)
+        if reader.size() < 21 {
+            return Ok(None);
+        }
+
+        // For R2004+ (AC1018+), preview data location is in header
+        let version = Self::read_version(reader)?;
+        if version.as_str() >= "AC1018" {
+            // Read potential preview address at offset 13
+            let preview_bytes = reader.read(13, 8)?;
+            let preview_offset = u64::from_le_bytes([
+                preview_bytes[0],
+                preview_bytes[1],
+                preview_bytes[2],
+                preview_bytes[3],
+                preview_bytes[4],
+                preview_bytes[5],
+                preview_bytes[6],
+                preview_bytes[7],
+            ]);
+
+            // Validate offset is within file bounds
+            if preview_offset > 0 && preview_offset < reader.size() {
+                // Try to read preview size (typically follows offset)
+                if reader.size() >= 29 {
+                    let size_bytes = reader.read(21, 8)?;
+                    let preview_size = u64::from_le_bytes([
+                        size_bytes[0],
+                        size_bytes[1],
+                        size_bytes[2],
+                        size_bytes[3],
+                        size_bytes[4],
+                        size_bytes[5],
+                        size_bytes[6],
+                        size_bytes[7],
+                    ]);
+                    if preview_size > 0 && preview_offset + preview_size <= reader.size() {
+                        return Ok(Some((preview_offset, preview_size)));
+                    }
+                }
+            }
+        }
+        Ok(None)
+    }
 }
 
 impl FormatParser for DWGParser {
@@ -43,8 +136,40 @@ impl FormatParser for DWGParser {
             TagValue::String(reader.size().to_string()),
         );
 
+        // Extract version information
         let version = Self::read_version(reader)?;
-        metadata.insert("DWGVersion".to_string(), TagValue::String(version));
+        metadata.insert("DWGVersion".to_string(), TagValue::String(version.clone()));
+
+        // Map to friendly release name
+        let release = Self::map_version_to_release(&version);
+        metadata.insert(
+            "AutoCADRelease".to_string(),
+            TagValue::String(release.to_string()),
+        );
+
+        // Check for encryption
+        if let Ok(encrypted) = Self::is_encrypted(reader) {
+            if encrypted {
+                metadata.insert("Encrypted".to_string(), TagValue::String("Yes".to_string()));
+            }
+        }
+
+        // Extract codepage if available
+        if let Ok(Some(codepage)) = Self::read_codepage(reader) {
+            metadata.insert("CodePage".to_string(), TagValue::String(codepage.to_string()));
+        }
+
+        // Extract preview image information
+        if let Ok(Some((offset, size))) = Self::read_preview_info(reader) {
+            metadata.insert(
+                "PreviewImageOffset".to_string(),
+                TagValue::String(offset.to_string()),
+            );
+            metadata.insert(
+                "PreviewImageSize".to_string(),
+                TagValue::String(size.to_string()),
+            );
+        }
 
         Ok(metadata)
     }
