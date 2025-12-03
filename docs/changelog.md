@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Weekly ExifTool tag sync**: New CI workflow (`sync-exiftool-tags.yml`) automatically checks ExifTool master branch every Sunday and creates `[BETA]` PRs when updates are available
+- **Documentation improvements**:
+  - Added missing sidebar pages (tag-domains, contributing/testing, contributing/development)
+  - Added Camera RAW format documentation
+  - Added performance historical data section
+
+### Changed
+- **CI/CD optimizations**: Consolidated 7 CI jobs into 4, added Rust caching for 40-60% faster builds
+- **Documentation sync**: Benchmark metadata now auto-updates on each deployment
+
+### Removed
+- Removed `test.yml` workflow (redundant with `ci.yml`)
+- Removed VitePress build artifacts from repository (now built by CI only)
+
+### Fixed
+- Fixed sidebar links pointing to non-existent documentation pages
+- Fixed panic strategy conflict in CI doc tests
+
 ## [1.2.1] - 2025-11-19
 
 ### Added
@@ -51,32 +70,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Full benchmark suite (audio_benchmarks.rs, video_benchmarks.rs)
     - Format detection support for all 12 new types
   - **Performance**: Pure Rust parsing with memory-mapped I/O
-
-### Changed
-- **BREAKING**: Project renamed from `exiftool-rs` to `oxidex`
-  - Binary renamed: `exiftool-rs` → `oxidex`
-  - Library renamed: `exiftool_rs` → `oxidex`
-  - All crates renamed: `exiftool-tags*` → `oxidex-tags*`
-  - Install with: `cargo install oxidex`
-  - GitHub repository: `swack-tools/oxidex`
-- **Dependency Upgrades**: Updated all major dependencies to latest versions for improved performance and security
-  - `criterion` 0.5 → 0.7 - Modern benchmarking framework with improved measurement accuracy
-  - `indicatif` 0.17 → 0.18 - Enhanced progress bar library with better terminal compatibility
-  - `nom` 7.1 → 8.0 - Binary parser combinator with refined error handling and improved performance
-  - `quick-xml` 0.31 → 0.38 - XML parser for XMP metadata with enhanced API and better namespace support
-  - `bincode` 1.3 → 2.0 - Binary serialization across all tag workspace crates with new encoding API
-  - **Breaking Changes Addressed:**
-    - Bincode: Migrated from `serialize`/`deserialize` to `encode`/`decode` API across 6 workspace crates
-    - Bincode: Regenerated all tag database binary files with new format
-    - Nom: Updated parser error types and combinator APIs
-    - Quick-xml: Migrated Reader and Event APIs to 0.38 interface
-  - **Verification:**
-    - All 800+ unit tests passing
-    - Benchmarks compile successfully (note: `criterion::black_box` deprecation warnings present)
-    - CLI tested and verified with JPEG, PNG, PDF, and TIFF formats
-    - Clean build from scratch successful
-
-### Added
 - **Canon MakerNotes Phase 1**: Basic Canon-specific metadata extraction from EXIF MakerNote tags
   - **Supported Tags:**
     - `Canon:ImageType` - Image type identifier (e.g., "IMG:EOS R5")
@@ -95,7 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `src/parsers/tiff/makernotes/mod.rs` - MakerNotes module structure
     - `src/parsers/tiff/makernotes/canon.rs` - Canon MakerNote parser with comprehensive documentation
   - **Integration:** Canon MakerNotes are automatically extracted from JPEG EXIF data when present
-
 - **Canon MakerNotes Phase 2**: Complex array tag support for camera settings and shot information
   - **CameraSettings Array (tag 0x0001) - 8 tags:**
     - `Canon:MacroMode` - Macro mode setting (Macro, Normal)
@@ -124,7 +116,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - All values gracefully handle missing/invalid data
   - **Files Modified:**
     - `src/parsers/tiff/makernotes/canon.rs` (+400 lines of tests and implementation)
-- **CI/CD**: New `cross-compile` job in CI workflow that tests both ARM64 (`aarch64-unknown-linux-musl`) and x86_64 (`x86_64-unknown-linux-musl`) Linux builds using the `cross` tool with QEMU emulation support.
+- **CI/CD**: New `cross-compile` job in CI workflow that tests both ARM64 (`aarch64-unknown-linux-musl`) and x86_64 (`x86_64-unknown-linux-musl`) Linux builds using the `cross` tool with QEMU emulation support
+
+### Changed
+- **BREAKING**: Project renamed from `exiftool-rs` to `oxidex`
+  - Binary renamed: `exiftool-rs` → `oxidex`
+  - Library renamed: `exiftool_rs` → `oxidex`
+  - All crates renamed: `exiftool-tags*` → `oxidex-tags*`
+  - Install with: `cargo install oxidex`
+  - GitHub repository: `swack-tools/oxidex`
+- **Dependency Upgrades**: Updated all major dependencies to latest versions for improved performance and security
+  - `criterion` 0.5 → 0.7 - Modern benchmarking framework with improved measurement accuracy
+  - `indicatif` 0.17 → 0.18 - Enhanced progress bar library with better terminal compatibility
+  - `nom` 7.1 → 8.0 - Binary parser combinator with refined error handling and improved performance
+  - `quick-xml` 0.31 → 0.38 - XML parser for XMP metadata with enhanced API and better namespace support
+  - `bincode` 1.3 → 2.0 - Binary serialization across all tag workspace crates with new encoding API
+  - **Breaking Changes Addressed:**
+    - Bincode: Migrated from `serialize`/`deserialize` to `encode`/`decode` API across 6 workspace crates
+    - Bincode: Regenerated all tag database binary files with new format
+    - Nom: Updated parser error types and combinator APIs
+    - Quick-xml: Migrated Reader and Event APIs to 0.38 interface
+  - **Verification:**
+    - All 800+ unit tests passing
+    - Benchmarks compile successfully (note: `criterion::black_box` deprecation warnings present)
+    - CLI tested and verified with JPEG, PNG, PDF, and TIFF formats
+    - Clean build from scratch successful
 
 ### Fixed
 - **CI/CD**: Fixed ARM64 cross-compilation in GitHub Actions by implementing QEMU emulation. Previously, attempting to run ARM64 Docker images (`ghcr.io/cross-rs/aarch64-unknown-linux-musl`) on x86_64 runners resulted in "exec format error". The fix adds `docker/setup-qemu-action` and `docker/setup-buildx-action` to enable multi-platform builds on x86_64 runners.
@@ -205,7 +221,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 OxiDex delivers exceptional performance improvements over Perl ExifTool (version 13.36) on Apple M4 hardware:
 
 | Operation | Perl ExifTool | OxiDex | Speedup |
-|-----------|---------------|-------------|---------|
+|-----------|---------------|--------|---------|
 | Single JPEG read | 37.5ms ± 0.5ms | 2.3ms ± 0.1ms | **16.1x faster** |
 | Batch processing (1000 files) | 916.4ms ± 8.0ms | 14.1ms ± 0.3ms | **64.9x faster** |
 | Write operation (modify EXIF) | 96.8ms ± 1.3ms | 7.3ms ± 0.6ms | **13.3x faster** |
@@ -238,51 +254,10 @@ These features are planned for future releases (v1.1+):
   - Current impact: Rational value precision may be lost in some round-trip scenarios
   - Workaround: Ensure EXIF type information is present
 
-## [Unreleased]
-
-### Future Enhancements (Roadmap)
-
-**Phase 2 (v1.1 - v2.0): Expansion & Performance**
-- Expand to 150+ formats (obscure camera formats, extended maker notes)
-- SIMD optimizations for bulk operations (UTF-8 validation, checksums)
-- WebAssembly build for browser-based metadata extraction
-- Profile-guided optimization (PGO) builds
-- Incremental metadata updates (avoid full file rewrites)
-
-**Phase 3 (v2.1+): Ecosystem & Intelligence**
-- Machine learning integration for tag suggestion and auto-correction
-- Cloud storage integration (S3, Azure Blob with async I/O)
-- Metadata analytics and query DSL
-- Optional GUI (egui framework)
-- Streaming API for real-time video metadata processing
-- Distributed processing for million-file archives
-
 ---
 
-## Release Notes
-
-### v1.0.0: Initial Stable Release
-
-OxiDex achieves its foundational milestone with a fully-featured, production-ready metadata management tool. This release completes **Phase 1: Foundation & Adoption** with:
-
-- **50+ format support** covering 90% of common use cases (JPEG, PNG, TIFF, PDF, MP4, RAW formats)
-- **16-65x performance improvement** over Perl ExifTool through compiled code and parallel processing
-- **Memory safety guarantees** eliminating entire classes of security vulnerabilities
-- **Cross-platform binaries** for Linux, macOS, Windows with zero runtime dependencies
-- **Comprehensive documentation** and migration guide for Perl ExifTool users
-
-This release is suitable for production use in:
-- Automated media processing pipelines
-- Digital asset management systems
-- Photography workflow automation
-- Embedded systems requiring native binaries
-- Cross-language integration via C FFI (Python, Node.js, Go, etc.)
-
-**Migration from Perl ExifTool**: OxiDex is designed as a drop-in replacement for 90% of common workflows. See the migration guide in `docs/book/src/migration.md` for compatibility notes and feature differences.
-
-**Installation**: `cargo install oxidex` or download pre-built binaries from [GitHub Releases](https://github.com/swack-tools/oxidex/releases/tag/v1.0.0).
-
----
-
-[1.1.0]: https://github.com/swack-tools/oxidex/releases/tag/v1.1.0
+[Unreleased]: https://github.com/swack-tools/oxidex/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/swack-tools/oxidex/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/swack-tools/oxidex/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/swack-tools/oxidex/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/swack-tools/oxidex/releases/tag/v1.0.0
