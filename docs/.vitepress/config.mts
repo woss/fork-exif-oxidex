@@ -50,14 +50,17 @@ export default defineConfig({
             { text: 'Architecture', link: '/reference/architecture' },
             { text: 'API Reference', link: '/reference/api-reference' },
             { text: 'FFI API', link: '/reference/ffi-api' },
-            { text: 'Tag Database', link: '/reference/tag-database' }
+            { text: 'Tag Database', link: '/reference/tag-database' },
+            { text: 'MakerNotes', link: '/reference/makernotes' },
+            { text: 'ExifTool Coverage', link: '/reference/exiftool-coverage' }
           ]
         },
         {
           text: 'Formats',
           items: [
             { text: 'Overview', link: '/reference/formats/' },
-            { text: 'Camera RAW', link: '/reference/formats/camera-raw' }
+            { text: 'Camera RAW', link: '/reference/formats/camera-raw' },
+            { text: 'PE Executable', link: '/reference/formats/pe-executable' }
           ]
         },
         {
@@ -78,6 +81,7 @@ export default defineConfig({
           text: 'Architecture',
           items: [
             { text: 'Overview', link: '/architecture/' },
+            { text: 'Tag Database', link: '/architecture/tag-database' },
             { text: 'Multi-Crate Tags', link: '/architecture/multi-crate-tags' },
             { text: 'Parser Shared Infrastructure', link: '/architecture/parser-shared-infrastructure' },
             { text: 'Parser Migration Guide', link: '/architecture/parser-migration-guide' },
@@ -109,13 +113,16 @@ export default defineConfig({
         {
           text: 'Contributing',
           items: [
-            { text: 'Getting Started', link: '/contributing/' }
+            { text: 'Getting Started', link: '/contributing/' },
+            { text: 'Release Checklist', link: '/contributing/release-checklist' }
           ]
         },
         {
           text: 'Development',
           items: [
             { text: 'Development Guide', link: '/contributing/development/' },
+            { text: 'Code Quality Patterns', link: '/contributing/development/code-quality-patterns' },
+            { text: 'TagRegistry Refactoring', link: '/contributing/development/tagregistry-refactoring' },
             { text: 'Archived Context', link: '/contributing/development/archived-context' }
           ]
         },

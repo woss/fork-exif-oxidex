@@ -2,9 +2,41 @@
 
 This guide explains how to profile OxiDex to identify performance bottlenecks and validate optimizations.
 
+## Quick Start: Text-Based Profiling
+
+For accessible, cross-platform performance analysis without visual tools:
+
+```bash
+just profile-simple
+```
+
+This runs all benchmarks and displays timing results in plain text:
+
+```
+Benchmark: full_read_metadata
+time:   [3.4 ms 3.5 ms 3.6 ms]
+
+Benchmark: tiff_simple
+time:   [5.3 ms 5.5 ms 5.7 ms]  ← Slowest, optimization target
+```
+
+**Benefits:**
+- No sudo required
+- Works on all platforms
+- Screen-reader friendly
+- Easy to compare before/after
+
 ## Overview
 
-OxiDex uses **samply** for profiling, which provides interactive flame graphs, call trees, and timelines through the Firefox Profiler UI. This allows you to:
+OxiDex supports multiple profiling approaches:
+
+1. **Text-based benchmarking** (recommended) - Simple timing via Criterion benchmarks
+2. **samply profiling** - Interactive visual profiling with Firefox Profiler UI
+3. **cargo-flamegraph** - SVG flame graph generation (Linux preferred)
+
+### samply
+
+samply provides interactive flame graphs, call trees, and timelines through the Firefox Profiler UI. This allows you to:
 
 - Identify CPU hotspots (functions consuming the most time)
 - Visualize call stacks and execution flow
@@ -394,6 +426,55 @@ This is expected for I/O-heavy workloads. Focus on:
 - What's calling those syscalls
 - Can you batch the operations?
 - Are you memory-mapping (already using memmap2)?
+
+## macOS Limitations
+
+**Symbol Resolution:** samply on macOS may not resolve function symbols properly, showing hex addresses (like `0x44f8`) instead of function names. This is a known limitation of macOS profiling tools.
+
+**Workarounds:**
+- Use `just profile-simple` for text-based timing analysis
+- Use Instruments.app (requires Xcode)
+- Add manual instrumentation for specific functions
+- Focus on benchmark timing comparisons rather than deep profiling
+
+**Why this happens:** macOS DTrace and samply have difficulty resolving symbols from Rust binaries even with debug info enabled. Linux's `perf` tool works better for symbol resolution.
+
+## Alternative: cargo-flamegraph
+
+cargo-flamegraph generates visual flame graphs as SVG files. It uses:
+- **Linux**: `perf` (no sudo required)
+- **macOS**: `dtrace` (requires sudo)
+
+### Installation
+
+```bash
+cargo install flamegraph
+```
+
+### Usage (Linux - recommended)
+
+```bash
+# Profile a benchmark
+cargo flamegraph --bench parse_benchmarks -o flamegraph.svg -- --bench full_read_metadata
+
+# Profile the CLI
+cargo flamegraph --bin oxidex -o flamegraph.svg -- tests/fixtures/jpeg/sample_with_exif.jpg
+
+# View in browser
+firefox flamegraph.svg
+```
+
+### Comparison: samply vs flamegraph vs text-based
+
+| Feature | Text-Based | samply | flamegraph |
+|---------|------------|--------|------------|
+| **Accessibility** | Screen-reader friendly | Visual | Visual (SVG) |
+| **macOS sudo** | Not required | Not required | Required |
+| **Symbol resolution** | N/A | May fail on macOS | May fail on macOS |
+| **Detail level** | Benchmark-level | Function-level | Function-level |
+| **Best for** | Quick comparison | Interactive analysis | Static reports |
+
+**Recommendation:** Start with `just profile-simple` to identify slow benchmarks, then use samply (Linux) or Instruments (macOS) for function-level detail.
 
 ## Additional Resources
 

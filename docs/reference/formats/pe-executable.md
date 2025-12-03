@@ -2,7 +2,7 @@
 
 ## Overview
 
-ExifTool-RS supports extracting metadata from Windows PE (Portable Executable) files including executables (.exe), dynamic libraries (.dll), and system drivers (.sys).
+OxiDex supports extracting metadata from Windows PE (Portable Executable) files including executables (.exe), dynamic libraries (.dll), and system drivers (.sys).
 
 ## Supported Metadata
 
@@ -37,28 +37,26 @@ ExifTool-RS supports extracting metadata from Windows PE (Portable Executable) f
 
 ```bash
 # Extract all metadata from an executable
-exiftool-rs program.exe
+oxidex program.exe
 
 # Extract specific PE tags
-exiftool-rs -PE:MachineType -PE:CompileTime -PE:Subsystem program.exe
+oxidex -PE:MachineType -PE:CompileTime -PE:Subsystem program.exe
 
 # JSON output
-exiftool-rs -json program.exe
+oxidex -json program.exe
 ```
 
 ### Library API
 
 ```rust
-use exiftool_rs::parsers::pe::parse_pe_metadata;
-use exiftool_rs::io::MMapReader;
+use oxidex::Metadata;
 use std::path::Path;
 
-let reader = MMapReader::new(Path::new("program.exe"))?;
-let metadata = parse_pe_metadata(&reader)?;
+let metadata = Metadata::from_path("program.exe")?;
 
-println!("Machine: {}", metadata.get_string("PE:MachineType")?);
-println!("Compiled: {}", metadata.get_string("PE:CompileTime")?);
-println!("Subsystem: {}", metadata.get_string("PE:Subsystem")?);
+println!("Machine: {}", metadata.get_string("PE:MachineType").unwrap_or("Unknown"));
+println!("Compiled: {}", metadata.get_string("PE:CompileTime").unwrap_or("Unknown"));
+println!("Subsystem: {}", metadata.get_string("PE:Subsystem").unwrap_or("Unknown"));
 ```
 
 ## Technical Details
