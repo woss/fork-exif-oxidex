@@ -55,7 +55,7 @@ test-package package:
 # Run tests for all tag crates
 test-tags:
     @echo "Running tests for all tag crates..."
-    cargo test -p oxidex-tags -p oxidex-tags-core -p oxidex-tags-camera -p oxidex-tags-media -p oxidex-tags-image -p oxidex-tags-document -p oxidex-tags-specialty
+    cargo test -p oxidex-tags -p oxidex-tags-core -p oxidex-tags-camera -p oxidex-tags-media -p oxidex-tags-image -p oxidex-tags-document -p oxidex-tags-specialty -p oxidex-tags-shared
 
 # Build the project in debug mode
 build:
@@ -343,6 +343,28 @@ release version: release-check
     cargo build --release
     just tag {{version}}
     @echo "Release v{{version}} created and tagged!"
+
+# C FFI header generation
+# -----------------------
+
+# Regenerate C header file (requires cbindgen)
+cbindgen:
+    @echo "Regenerating C header..."
+    cbindgen --config cbindgen.toml --crate oxidex --output api/oxidex.h
+    @echo "C header updated at api/oxidex.h"
+
+# Verify C header is up-to-date
+cbindgen-check:
+    @echo "Checking C header is up-to-date..."
+    cbindgen --config cbindgen.toml --crate oxidex --output api/oxidex.h.tmp
+    diff -q api/oxidex.h api/oxidex.h.tmp || (rm api/oxidex.h.tmp && echo "C header out of date! Run 'just cbindgen'" && exit 1)
+    rm api/oxidex.h.tmp
+    @echo "C header is up-to-date"
+
+# Documentation
+# -------------
+
+# Regenerate tag domain documentation
 docs-generate-tags:
     @echo "Regenerating tag domain documentation..."
     cargo run -p oxidex-tags --example render_domain -- core docs/tag-domains/core.md

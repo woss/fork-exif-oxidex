@@ -50,6 +50,32 @@ oxidex -json photo.jpg
 - [API Reference](https://docs.rs/oxidex) - Rust library documentation
 - [GitHub Issues](https://github.com/swack-tools/oxidex/issues) - Bug reports and feature requests
 
+## Development
+
+### Prerequisites
+
+Install development tools via Homebrew:
+```bash
+brew install cargo-watch cargo-nextest cargo-audit cargo-outdated
+```
+
+Install additional tools via Cargo:
+```bash
+cargo install cargo-tarpaulin
+```
+
+### Just Commands
+
+This project uses [just](https://github.com/casey/just) as a command runner. Run `just` to see all available commands:
+
+```bash
+just          # List all commands
+just ci       # Run full CI checks
+just test     # Run all tests
+just lint     # Run clippy linter
+just fmt      # Format code
+```
+
 ## Contributing
 
 Contributions welcome! Please ensure:
