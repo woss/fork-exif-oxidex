@@ -1,6 +1,7 @@
 //! 7z archive format parser
 //!
-//! Implements basic metadata extraction from 7-Zip archive files.
+//! Implements comprehensive metadata extraction from 7-Zip archive files.
+//! Parses the 32-byte start header to extract version, offsets, sizes, and CRCs.
 
 #![allow(dead_code)]
 
@@ -9,6 +10,50 @@ use crate::error::{ExifToolError, Result};
 
 /// 7z signature: 0x37 0x7A 0xBC 0xAF 0x27 0x1C
 const SEVENZ_SIGNATURE: &[u8] = &[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C];
+const START_HEADER_SIZE: usize = 32;
+
+/// 7z start header structure
+#[derive(Debug)]
+struct StartHeader {
+    major_version: u8,
+    minor_version: u8,
+    start_header_crc: u32,
+    next_header_offset: u64,
+    next_header_size: u64,
+    next_header_crc: u32,
+}
+
+impl StartHeader {
+    /// Parse start header from reader
+    fn parse(reader: &dyn FileReader) -> Result<Self> {
+        if reader.size() < START_HEADER_SIZE as u64 {
+            return Err(ExifToolError::parse_error("File too small for 7z header"));
+        }
+
+        let header = reader.read(0, START_HEADER_SIZE)?;
+
+        Ok(Self {
+            major_version: header[6],
+            minor_version: header[7],
+            start_header_crc: u32::from_le_bytes([header[8], header[9], header[10], header[11]]),
+            next_header_offset: u64::from_le_bytes([
+                header[12], header[13], header[14], header[15],
+                header[16], header[17], header[18], header[19],
+            ]),
+            next_header_size: u64::from_le_bytes([
+                header[20], header[21], header[22], header[23],
+                header[24], header[25], header[26], header[27],
+            ]),
+            next_header_crc: u32::from_le_bytes([header[28], header[29], header[30], header[31]]),
+        })
+    }
+
+    /// Calculate CRC32 for header validation (bytes 12-31)
+    fn calculate_header_crc(data: &[u8]) -> u32 {
+        let crc = crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
+        crc.checksum(&data[12..32])
+    }
+}
 
 /// 7z parser for extracting metadata from 7-Zip archives
 pub struct SevenZParser;
@@ -23,22 +68,6 @@ impl SevenZParser {
         let header = reader.read(0, 6)?;
         Ok(header == SEVENZ_SIGNATURE)
     }
-
-    /// Reads version bytes (major.minor)
-    pub fn read_version(reader: &dyn FileReader) -> Result<String> {
-        if reader.size() < 8 {
-            return Ok("Unknown".to_string());
-        }
-
-        let header = reader.read(0, 8)?;
-        if header.len() >= 8 {
-            let major = header[6];
-            let minor = header[7];
-            Ok(format!("{}.{}", major, minor))
-        } else {
-            Ok("Unknown".to_string())
-        }
-    }
 }
 
 impl FormatParser for SevenZParser {
@@ -49,14 +78,62 @@ impl FormatParser for SevenZParser {
         }
 
         let mut metadata = MetadataMap::new();
+        let file_size = reader.size();
 
-        // Extract version
-        let version = Self::read_version(reader)?;
+        // Parse start header
+        let start_header = StartHeader::parse(reader)?;
+
+        // Basic metadata
         metadata.insert("FileType".to_string(), TagValue::String("7z".to_string()));
-        metadata.insert("7zVersion".to_string(), TagValue::String(version));
         metadata.insert(
-            "FileSize".to_string(),
-            TagValue::String(reader.size().to_string()),
+            "7zVersion".to_string(),
+            TagValue::String(format!("{}.{}", start_header.major_version, start_header.minor_version)),
+        );
+        metadata.insert("FileSize".to_string(), TagValue::String(file_size.to_string()));
+
+        // Start header metadata
+        metadata.insert(
+            "StartHeaderCRC".to_string(),
+            TagValue::String(format!("0x{:08X}", start_header.start_header_crc)),
+        );
+
+        // Next header (encoded header) information
+        metadata.insert(
+            "NextHeaderOffset".to_string(),
+            TagValue::String(start_header.next_header_offset.to_string()),
+        );
+        metadata.insert(
+            "NextHeaderSize".to_string(),
+            TagValue::String(start_header.next_header_size.to_string()),
+        );
+        metadata.insert(
+            "NextHeaderCRC".to_string(),
+            TagValue::String(format!("0x{:08X}", start_header.next_header_crc)),
+        );
+
+        // Calculate derived metrics
+        let data_offset = START_HEADER_SIZE as u64 + start_header.next_header_offset;
+        metadata.insert("DataOffset".to_string(), TagValue::String(data_offset.to_string()));
+
+        let header_size = START_HEADER_SIZE as u64 + start_header.next_header_size;
+        metadata.insert("HeaderSize".to_string(), TagValue::String(header_size.to_string()));
+
+        // Header overhead (total header size vs actual data)
+        let header_overhead = START_HEADER_SIZE as u64 + start_header.next_header_size;
+        metadata.insert("HeaderOverhead".to_string(), TagValue::String(header_overhead.to_string()));
+
+        // Validate header CRC if possible
+        if let Ok(header_data) = reader.read(0, START_HEADER_SIZE) {
+            let calculated_crc = StartHeader::calculate_header_crc(header_data);
+            let crc_valid = calculated_crc == start_header.start_header_crc;
+            metadata.insert("HeaderCRCValid".to_string(), TagValue::String(crc_valid.to_string()));
+        }
+
+        // Detect if archive has encoded header (check if next header exists)
+        let has_encoded_header = start_header.next_header_size > 0;
+        metadata.insert(
+            "HasEncodedHeader".to_string(),
+            TagValue::String(has_encoded_header.to_string()),
         );
 
         Ok(metadata)
@@ -130,9 +207,43 @@ mod tests {
     }
 
     #[test]
-    fn test_7z_version() {
-        let data = vec![0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, 0x00, 0x04];
+    fn test_7z_start_header_parse() {
+        // Create minimal valid 7z header
+        let data = vec![
+            0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, // Signature
+            0x00, 0x04,                         // Version 0.4
+            0x00, 0x00, 0x00, 0x00,            // Start header CRC
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header offset
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header size
+            0x00, 0x00, 0x00, 0x00,            // Next header CRC
+        ];
         let reader = TestReader::new(data);
-        assert_eq!(SevenZParser::read_version(&reader).unwrap(), "0.4");
+
+        let header = StartHeader::parse(&reader).unwrap();
+        assert_eq!(header.major_version, 0);
+        assert_eq!(header.minor_version, 4);
+    }
+
+    #[test]
+    fn test_7z_metadata_extraction() {
+        // Create minimal valid 7z header
+        let data = vec![
+            0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, // Signature
+            0x00, 0x04,                         // Version 0.4
+            0x27, 0x17, 0xB5, 0xD0,            // Start header CRC (example)
+            0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header offset: 32
+            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header size: 64
+            0x00, 0x00, 0x00, 0x00,            // Next header CRC
+        ];
+        let reader = TestReader::new(data);
+
+        let parser = SevenZParser;
+        let metadata = parser.parse(&reader).unwrap();
+
+        assert_eq!(metadata.get("FileType").unwrap(), &TagValue::String("7z".to_string()));
+        assert_eq!(metadata.get("7zVersion").unwrap(), &TagValue::String("0.4".to_string()));
+        assert_eq!(metadata.get("NextHeaderOffset").unwrap(), &TagValue::String("32".to_string()));
+        assert_eq!(metadata.get("NextHeaderSize").unwrap(), &TagValue::String("64".to_string()));
+        assert_eq!(metadata.get("HasEncodedHeader").unwrap(), &TagValue::String("true".to_string()));
     }
 }
