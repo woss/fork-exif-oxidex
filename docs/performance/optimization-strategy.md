@@ -4,7 +4,7 @@ OxiDex uses a data-driven profiling infrastructure and systematic optimization w
 
 ## Current Performance
 
-**Micro-Benchmark Baseline:**
+**Micro-Benchmark Baseline** *(Last updated: 2025-12-03)*:
 - Format detection: ~2.2 ns
 - JPEG segment parsing: ~24 ns
 - TIFF IFD parsing: ~94 ns
