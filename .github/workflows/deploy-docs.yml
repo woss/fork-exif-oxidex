@@ -24,6 +24,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run benchmarks
+        run: cargo bench --bench integration_benchmarks --bench parse_benchmarks
+
+      - name: Update benchmark metadata in docs
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          COMMIT=$(git rev-parse --short HEAD)
+          sed -i "s/- \*\*Date:\*\* .*/- **Date:** $DATE/" docs/performance/index.md
+          sed -i "s/- \*\*Commit:\*\* .*/- **Commit:** [\`$COMMIT\`](https:\/\/github.com\/swack-tools\/oxidex\/commit\/$COMMIT)/" docs/performance/index.md
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -38,14 +53,6 @@ jobs:
       - name: Build VitePress site
         run: npm run docs:build
         working-directory: docs
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Run benchmarks
-        run: cargo bench --bench integration_benchmarks --bench parse_benchmarks
 
       - name: Copy benchmark reports to site
         run: |
