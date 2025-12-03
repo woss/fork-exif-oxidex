@@ -31,9 +31,6 @@ jobs:
         if: steps.check.outputs.current != steps.check.outputs.latest
         uses: dtolnay/rust-toolchain@stable
 
-      - uses: Swatinem/rust-cache@v2
-        if: steps.check.outputs.current != steps.check.outputs.latest
-
       - name: Install dependencies
         if: steps.check.outputs.current != steps.check.outputs.latest
         run: sudo apt-get update && sudo apt-get install -y unzip
