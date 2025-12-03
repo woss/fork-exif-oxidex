@@ -26,7 +26,7 @@ use crate::parsers::font::otf::parse_otf_metadata;
 use crate::parsers::font::ttf::parse_ttf_metadata;
 use crate::parsers::font::woff::parse_woff_metadata;
 use crate::parsers::font::woff2::parse_woff2_metadata;
-use crate::parsers::image::avif::parse_avif_metadata;
+// Note: AVIF uses parse_quicktime_metadata since AVIF is ISOBMFF-based
 use crate::parsers::image::bmp::parse_bmp_metadata;
 use crate::parsers::image::bpg::parse_bpg_metadata;
 use crate::parsers::image::exr::parse_exr_metadata;
@@ -125,7 +125,8 @@ pub fn dispatch_format_parser(reader: &dyn FileReader, format: FileFormat) -> Re
         FileFormat::WOFF => convert_string_error(parse_woff_metadata(reader), "WOFF"),
         FileFormat::WOFF2 => convert_string_error(parse_woff2_metadata(reader), "WOFF2"),
         // Advanced image formats
-        FileFormat::AVIF => convert_string_error(parse_avif_metadata(reader), "AVIF"),
+        // AVIF uses ISOBMFF container (same as MP4/HEIF), use QuickTime parser for full metadata
+        FileFormat::AVIF => convert_string_error(parse_quicktime_metadata(reader), "AVIF"),
         // HEIF uses ISOBMFF container (same as MP4/MOV), use QuickTime parser for full EXIF extraction
         FileFormat::HEIF => convert_string_error(parse_quicktime_metadata(reader), "HEIF"),
         FileFormat::JXL => convert_string_error(parse_jxl_metadata(reader), "JXL"),
