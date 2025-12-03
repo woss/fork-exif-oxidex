@@ -108,3 +108,7 @@ perf.data.old
 
 # TrID definitions
 triddefs.trd
+
+# VitePress build output (built by CI)
+docs/.vitepress/dist/
+docs/.vitepress/cache/
