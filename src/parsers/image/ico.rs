@@ -110,9 +110,16 @@ impl FormatParser for ICOParser {
         let mut metadata = MetadataMap::new();
 
         let file_type = Self::read_file_type(reader)?;
-        let type_name = if file_type == ICO_TYPE_CURSOR { "CUR" } else { "ICO" };
+        let type_name = if file_type == ICO_TYPE_CURSOR {
+            "CUR"
+        } else {
+            "ICO"
+        };
 
-        metadata.insert("FileType".to_string(), TagValue::String(type_name.to_string()));
+        metadata.insert(
+            "FileType".to_string(),
+            TagValue::String(type_name.to_string()),
+        );
         metadata.insert(
             "FileSize".to_string(),
             TagValue::String(reader.size().to_string()),

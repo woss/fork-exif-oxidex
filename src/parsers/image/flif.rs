@@ -115,8 +115,14 @@ fn parse_flif_header(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
     let (height, height_bytes) = read_varint(reader, offset)?;
     offset += height_bytes;
 
-    metadata.insert("FLIF:ImageWidth".to_string(), TagValue::Integer(width as i64));
-    metadata.insert("FLIF:ImageHeight".to_string(), TagValue::Integer(height as i64));
+    metadata.insert(
+        "FLIF:ImageWidth".to_string(),
+        TagValue::Integer(width as i64),
+    );
+    metadata.insert(
+        "FLIF:ImageHeight".to_string(),
+        TagValue::Integer(height as i64),
+    );
 
     // Parse frame count if animated
     if is_animated {
@@ -230,8 +236,12 @@ fn parse_flif_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 
     // Get IFD0 offset
     let ifd_offset = match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([exif_data[4], exif_data[5], exif_data[6], exif_data[7]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([exif_data[4], exif_data[5], exif_data[6], exif_data[7]]),
+        ByteOrder::LittleEndian => {
+            u32::from_le_bytes([exif_data[4], exif_data[5], exif_data[6], exif_data[7]])
+        }
+        ByteOrder::BigEndian => {
+            u32::from_be_bytes([exif_data[4], exif_data[5], exif_data[6], exif_data[7]])
+        }
     };
 
     // Create in-memory reader for EXIF data
@@ -241,7 +251,8 @@ fn parse_flif_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     if let Ok(ifd0_tags) = parse_ifd(&exif_reader, ifd_offset as u64, byte_order) {
         for (tag_id, field_type, value_count, raw_bytes) in &ifd0_tags {
             let tag_name = crate::tag_db::lookup_tag_name(*tag_id, "EXIF");
-            let tag_value = raw_bytes_to_tag_value(raw_bytes, *field_type, *value_count, byte_order);
+            let tag_value =
+                raw_bytes_to_tag_value(raw_bytes, *field_type, *value_count, byte_order);
             metadata.insert(format!("EXIF:{}", tag_name), tag_value);
         }
     }
@@ -298,7 +309,12 @@ impl FileReader for FLIFExifReader {
 }
 
 /// Convert raw EXIF bytes to TagValue
-fn raw_bytes_to_tag_value(bytes: &[u8], field_type: u16, value_count: u32, byte_order: ByteOrder) -> TagValue {
+fn raw_bytes_to_tag_value(
+    bytes: &[u8],
+    field_type: u16,
+    value_count: u32,
+    byte_order: ByteOrder,
+) -> TagValue {
     use crate::parsers::common::exif_types::ExifType;
 
     if let Some(exif_type) = ExifType::from_u16(field_type) {
@@ -325,8 +341,12 @@ fn raw_bytes_to_tag_value(bytes: &[u8], field_type: u16, value_count: u32, byte_
             ExifType::Long if bytes.len() >= 4 => {
                 if value_count == 1 {
                     let val = match byte_order {
-                        ByteOrder::LittleEndian => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-                        ByteOrder::BigEndian => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+                        ByteOrder::LittleEndian => {
+                            u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                        }
+                        ByteOrder::BigEndian => {
+                            u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                        }
                     };
                     return TagValue::Integer(val as i64);
                 }

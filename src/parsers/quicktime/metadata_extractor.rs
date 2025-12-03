@@ -941,7 +941,7 @@ fn extract_heif_metadata(
                 pos += 2;
 
                 // base_offset: variable size
-                let base_offset = read_variable_size(&iloc.data, &mut pos, base_offset_size);
+                let base_offset = read_variable_size(iloc.data, &mut pos, base_offset_size);
 
                 // extent_count: 2 bytes
                 if pos + 2 > iloc.data.len() {
@@ -956,9 +956,9 @@ fn extract_heif_metadata(
                     // For simplicity, we skip extent_index if present (most HEIF files don't use it)
 
                     // extent_offset: variable size
-                    let extent_offset = read_variable_size(&iloc.data, &mut pos, offset_size);
+                    let extent_offset = read_variable_size(iloc.data, &mut pos, offset_size);
                     // extent_length: variable size
-                    let extent_length = read_variable_size(&iloc.data, &mut pos, length_size);
+                    let extent_length = read_variable_size(iloc.data, &mut pos, length_size);
 
                     let total_offset = base_offset + extent_offset;
                     item_locations.insert(item_id, (total_offset, extent_length));
@@ -997,9 +997,10 @@ fn extract_heif_metadata(
     }
 
     // If we found an Exif item and its location, extract EXIF data from mdat
-    if let (Some(_item_id), Some(&(offset, length))) =
-        (exif_item_id, exif_item_id.and_then(|id| item_locations.get(&id)))
-    {
+    if let (Some(_item_id), Some(&(offset, length))) = (
+        exif_item_id,
+        exif_item_id.and_then(|id| item_locations.get(&id)),
+    ) {
         // Find mdat atom
         if let Some(mdat) = root_atoms.iter().find(|a| a.atom_type.matches("mdat")) {
             // The offset in iloc is absolute file offset, but mdat.data is already the content
@@ -1089,7 +1090,9 @@ fn read_variable_size(data: &[u8], pos: &mut usize, size: usize) -> u64 {
         0 => 0u64,
         1 => data[*pos] as u64,
         2 => u16::from_be_bytes([data[*pos], data[*pos + 1]]) as u64,
-        4 => u32::from_be_bytes([data[*pos], data[*pos + 1], data[*pos + 2], data[*pos + 3]]) as u64,
+        4 => {
+            u32::from_be_bytes([data[*pos], data[*pos + 1], data[*pos + 2], data[*pos + 3]]) as u64
+        }
         8 => u64::from_be_bytes([
             data[*pos],
             data[*pos + 1],
@@ -1255,7 +1258,7 @@ fn raw_bytes_to_tag_value(
     if let Some(exif_type) = ExifType::from_u16(field_type) {
         match exif_type {
             // BYTE (type 1): 8-bit unsigned integer
-            ExifType::Byte if bytes.len() >= 1 => {
+            ExifType::Byte if !bytes.is_empty() => {
                 if value_count == 1 {
                     return TagValue::Integer(bytes[0] as i64);
                 } else {
@@ -1375,14 +1378,16 @@ fn raw_bytes_to_tag_value(
             }
 
             // SBYTE (type 6): 8-bit signed integer
-            ExifType::SByte if bytes.len() >= 1 => {
+            ExifType::SByte if !bytes.is_empty() => {
                 return TagValue::Integer(bytes[0] as i8 as i64);
             }
 
             // UNDEFINED (type 7): arbitrary bytes
             ExifType::Undefined => {
                 // Try to interpret as string if printable
-                if bytes.iter().all(|&b| b.is_ascii_graphic() || b.is_ascii_whitespace() || b == 0)
+                if bytes
+                    .iter()
+                    .all(|&b| b.is_ascii_graphic() || b.is_ascii_whitespace() || b == 0)
                 {
                     let text = String::from_utf8_lossy(bytes);
                     let trimmed = text.trim_end_matches('\0');

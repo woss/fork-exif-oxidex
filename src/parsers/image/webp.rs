@@ -94,8 +94,10 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                     let flags = vp8x_data[0];
 
                     // Extract image dimensions (24-bit values)
-                    let width = u32::from_le_bytes([vp8x_data[4], vp8x_data[5], vp8x_data[6], 0]) + 1;
-                    let height = u32::from_le_bytes([vp8x_data[7], vp8x_data[8], vp8x_data[9], 0]) + 1;
+                    let width =
+                        u32::from_le_bytes([vp8x_data[4], vp8x_data[5], vp8x_data[6], 0]) + 1;
+                    let height =
+                        u32::from_le_bytes([vp8x_data[7], vp8x_data[8], vp8x_data[9], 0]) + 1;
 
                     metadata.insert(
                         "WebP:ImageWidth".to_string(),
@@ -170,7 +172,12 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                     // Check signature byte (0x2F)
                     if vp8l_data[0] == 0x2F {
                         // Dimensions are packed in bytes 1-4
-                        let bits = u32::from_le_bytes([vp8l_data[1], vp8l_data[2], vp8l_data[3], vp8l_data[4]]);
+                        let bits = u32::from_le_bytes([
+                            vp8l_data[1],
+                            vp8l_data[2],
+                            vp8l_data[3],
+                            vp8l_data[4],
+                        ]);
                         let width = (bits & 0x3FFF) + 1;
                         let height = ((bits >> 14) & 0x3FFF) + 1;
 
@@ -191,7 +198,7 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                 // EXIF metadata - contains TIFF/EXIF data
                 if chunk_size > 0 && chunk_data_offset + chunk_size <= file_size {
                     let exif_data = reader.read(chunk_data_offset, chunk_size as usize)?;
-                    if let Err(_) = parse_webp_exif(exif_data, metadata) {
+                    if parse_webp_exif(exif_data, metadata).is_err() {
                         // Silently ignore EXIF parsing errors
                     }
                 }
@@ -223,7 +230,7 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
 
         // Move to next chunk (chunks are padded to even byte boundary)
         offset = chunk_data_offset + chunk_size;
-        if chunk_size % 2 != 0 {
+        if !chunk_size.is_multiple_of(2) {
             offset += 1; // Padding byte
         }
     }
@@ -314,7 +321,8 @@ fn parse_webp_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
             }
 
             let tag_name = lookup_tag_name(*tag_id, "IFD0");
-            let tag_value = raw_bytes_to_tag_value(raw_bytes, *field_type, *value_count, byte_order);
+            let tag_value =
+                raw_bytes_to_tag_value(raw_bytes, *field_type, *value_count, byte_order);
             metadata.insert(tag_name, tag_value);
         }
     }
@@ -324,7 +332,8 @@ fn parse_webp_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         if let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
                 let tag_name = lookup_tag_name(tag_id, "ExifIFD");
-                let tag_value = raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+                let tag_value =
+                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
                 metadata.insert(tag_name, tag_value);
             }
         }
@@ -335,7 +344,8 @@ fn parse_webp_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         if let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
                 let tag_name = lookup_tag_name(tag_id, "GPS");
-                let tag_value = raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+                let tag_value =
+                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
                 metadata.insert(tag_name, tag_value);
             }
         }
@@ -428,7 +438,10 @@ fn raw_bytes_to_tag_value(
                 }
             }
             ExifType::Undefined => {
-                if bytes.iter().all(|&b| b.is_ascii_graphic() || b.is_ascii_whitespace() || b == 0) {
+                if bytes
+                    .iter()
+                    .all(|&b| b.is_ascii_graphic() || b.is_ascii_whitespace() || b == 0)
+                {
                     let text = String::from_utf8_lossy(bytes);
                     let trimmed = text.trim_end_matches('\0');
                     if !trimmed.is_empty() {

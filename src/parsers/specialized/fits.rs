@@ -39,12 +39,12 @@ impl FITSParser {
         }
 
         // Check for HISTORY or COMMENT records (no '=')
-        if record_str.starts_with("HISTORY ") {
-            let content = record_str[8..].trim().to_string();
+        if let Some(rest) = record_str.strip_prefix("HISTORY ") {
+            let content = rest.trim().to_string();
             return Some(("HISTORY".to_string(), content, None));
         }
-        if record_str.starts_with("COMMENT ") {
-            let content = record_str[8..].trim().to_string();
+        if let Some(rest) = record_str.strip_prefix("COMMENT ") {
+            let content = rest.trim().to_string();
             return Some(("COMMENT".to_string(), content, None));
         }
 
@@ -116,10 +116,8 @@ impl FITSParser {
                     if keyword != "HISTORY" && keyword != "COMMENT" && keyword != "END" {
                         if let Some(cmt) = comment {
                             if !cmt.is_empty() {
-                                metadata.insert(
-                                    format!("{}Comment", keyword),
-                                    TagValue::String(cmt),
-                                );
+                                metadata
+                                    .insert(format!("{}Comment", keyword), TagValue::String(cmt));
                             }
                         }
                     }
@@ -137,7 +135,8 @@ impl FITSParser {
                         }
                         "BITPIX" => {
                             if let Ok(bitpix) = value.parse::<i32>() {
-                                metadata.insert("BITPIX".to_string(), TagValue::Integer(bitpix as i64));
+                                metadata
+                                    .insert("BITPIX".to_string(), TagValue::Integer(bitpix as i64));
                                 metadata.insert(
                                     "PixelFormat".to_string(),
                                     TagValue::String(Self::bitpix_to_format(bitpix)),
@@ -160,8 +159,8 @@ impl FITSParser {
                                 metadata.insert(keyword, TagValue::Float(float_val));
                             }
                         }
-                        "TELESCOP" | "INSTRUME" | "OBJECT" | "OBSERVER"
-                        | "ORIGIN" | "AUTHOR" | "DATE-OBS" | "FILTER" => {
+                        "TELESCOP" | "INSTRUME" | "OBJECT" | "OBSERVER" | "ORIGIN" | "AUTHOR"
+                        | "DATE-OBS" | "FILTER" => {
                             if !value.is_empty() {
                                 metadata.insert(keyword, TagValue::String(value));
                             }
@@ -186,23 +185,13 @@ impl FITSParser {
         if !history_entries.is_empty() {
             metadata.insert(
                 "History".to_string(),
-                TagValue::Array(
-                    history_entries
-                        .into_iter()
-                        .map(TagValue::String)
-                        .collect(),
-                ),
+                TagValue::Array(history_entries.into_iter().map(TagValue::String).collect()),
             );
         }
         if !comment_entries.is_empty() {
             metadata.insert(
                 "Comments".to_string(),
-                TagValue::Array(
-                    comment_entries
-                        .into_iter()
-                        .map(TagValue::String)
-                        .collect(),
-                ),
+                TagValue::Array(comment_entries.into_iter().map(TagValue::String).collect()),
             );
         }
 

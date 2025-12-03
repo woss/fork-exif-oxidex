@@ -37,12 +37,12 @@ impl StartHeader {
             minor_version: header[7],
             start_header_crc: u32::from_le_bytes([header[8], header[9], header[10], header[11]]),
             next_header_offset: u64::from_le_bytes([
-                header[12], header[13], header[14], header[15],
-                header[16], header[17], header[18], header[19],
+                header[12], header[13], header[14], header[15], header[16], header[17], header[18],
+                header[19],
             ]),
             next_header_size: u64::from_le_bytes([
-                header[20], header[21], header[22], header[23],
-                header[24], header[25], header[26], header[27],
+                header[20], header[21], header[22], header[23], header[24], header[25], header[26],
+                header[27],
             ]),
             next_header_crc: u32::from_le_bytes([header[28], header[29], header[30], header[31]]),
         })
@@ -87,9 +87,15 @@ impl FormatParser for SevenZParser {
         metadata.insert("FileType".to_string(), TagValue::String("7z".to_string()));
         metadata.insert(
             "7zVersion".to_string(),
-            TagValue::String(format!("{}.{}", start_header.major_version, start_header.minor_version)),
+            TagValue::String(format!(
+                "{}.{}",
+                start_header.major_version, start_header.minor_version
+            )),
         );
-        metadata.insert("FileSize".to_string(), TagValue::String(file_size.to_string()));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(file_size.to_string()),
+        );
 
         // Start header metadata
         metadata.insert(
@@ -113,20 +119,32 @@ impl FormatParser for SevenZParser {
 
         // Calculate derived metrics
         let data_offset = START_HEADER_SIZE as u64 + start_header.next_header_offset;
-        metadata.insert("DataOffset".to_string(), TagValue::String(data_offset.to_string()));
+        metadata.insert(
+            "DataOffset".to_string(),
+            TagValue::String(data_offset.to_string()),
+        );
 
         let header_size = START_HEADER_SIZE as u64 + start_header.next_header_size;
-        metadata.insert("HeaderSize".to_string(), TagValue::String(header_size.to_string()));
+        metadata.insert(
+            "HeaderSize".to_string(),
+            TagValue::String(header_size.to_string()),
+        );
 
         // Header overhead (total header size vs actual data)
         let header_overhead = START_HEADER_SIZE as u64 + start_header.next_header_size;
-        metadata.insert("HeaderOverhead".to_string(), TagValue::String(header_overhead.to_string()));
+        metadata.insert(
+            "HeaderOverhead".to_string(),
+            TagValue::String(header_overhead.to_string()),
+        );
 
         // Validate header CRC if possible
         if let Ok(header_data) = reader.read(0, START_HEADER_SIZE) {
             let calculated_crc = StartHeader::calculate_header_crc(header_data);
             let crc_valid = calculated_crc == start_header.start_header_crc;
-            metadata.insert("HeaderCRCValid".to_string(), TagValue::String(crc_valid.to_string()));
+            metadata.insert(
+                "HeaderCRCValid".to_string(),
+                TagValue::String(crc_valid.to_string()),
+            );
         }
 
         // Detect if archive has encoded header (check if next header exists)
@@ -211,11 +229,11 @@ mod tests {
         // Create minimal valid 7z header
         let data = vec![
             0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, // Signature
-            0x00, 0x04,                         // Version 0.4
-            0x00, 0x00, 0x00, 0x00,            // Start header CRC
+            0x00, 0x04, // Version 0.4
+            0x00, 0x00, 0x00, 0x00, // Start header CRC
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header offset
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header size
-            0x00, 0x00, 0x00, 0x00,            // Next header CRC
+            0x00, 0x00, 0x00, 0x00, // Next header CRC
         ];
         let reader = TestReader::new(data);
 
@@ -229,21 +247,36 @@ mod tests {
         // Create minimal valid 7z header
         let data = vec![
             0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, // Signature
-            0x00, 0x04,                         // Version 0.4
-            0x27, 0x17, 0xB5, 0xD0,            // Start header CRC (example)
+            0x00, 0x04, // Version 0.4
+            0x27, 0x17, 0xB5, 0xD0, // Start header CRC (example)
             0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header offset: 32
             0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Next header size: 64
-            0x00, 0x00, 0x00, 0x00,            // Next header CRC
+            0x00, 0x00, 0x00, 0x00, // Next header CRC
         ];
         let reader = TestReader::new(data);
 
         let parser = SevenZParser;
         let metadata = parser.parse(&reader).unwrap();
 
-        assert_eq!(metadata.get("FileType").unwrap(), &TagValue::String("7z".to_string()));
-        assert_eq!(metadata.get("7zVersion").unwrap(), &TagValue::String("0.4".to_string()));
-        assert_eq!(metadata.get("NextHeaderOffset").unwrap(), &TagValue::String("32".to_string()));
-        assert_eq!(metadata.get("NextHeaderSize").unwrap(), &TagValue::String("64".to_string()));
-        assert_eq!(metadata.get("HasEncodedHeader").unwrap(), &TagValue::String("true".to_string()));
+        assert_eq!(
+            metadata.get("FileType").unwrap(),
+            &TagValue::String("7z".to_string())
+        );
+        assert_eq!(
+            metadata.get("7zVersion").unwrap(),
+            &TagValue::String("0.4".to_string())
+        );
+        assert_eq!(
+            metadata.get("NextHeaderOffset").unwrap(),
+            &TagValue::String("32".to_string())
+        );
+        assert_eq!(
+            metadata.get("NextHeaderSize").unwrap(),
+            &TagValue::String("64".to_string())
+        );
+        assert_eq!(
+            metadata.get("HasEncodedHeader").unwrap(),
+            &TagValue::String("true".to_string())
+        );
     }
 }

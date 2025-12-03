@@ -33,9 +33,12 @@ impl HDF5Parser {
         match version {
             0 | 1 => Self::parse_superblock_v0_v1(reader, metadata)?,
             2 | 3 => Self::parse_superblock_v2_v3(reader, metadata)?,
-            _ => return Err(ExifToolError::parse_error(&format!(
-                "Unsupported superblock version: {}", version
-            ))),
+            _ => {
+                return Err(ExifToolError::parse_error(format!(
+                    "Unsupported superblock version: {}",
+                    version
+                )))
+            }
         }
         Ok(())
     }
@@ -43,7 +46,9 @@ impl HDF5Parser {
     /// Parses superblock version 0 or 1
     fn parse_superblock_v0_v1(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Result<()> {
         if reader.size() < 32 {
-            return Err(ExifToolError::parse_error("File too small for v0/v1 superblock"));
+            return Err(ExifToolError::parse_error(
+                "File too small for v0/v1 superblock",
+            ));
         }
 
         let sb = reader.read(8, 24)?;
@@ -70,7 +75,7 @@ impl HDF5Parser {
         // Base address at offset 16 (after flags)
         if reader.size() >= (32 + offset_size as u64) {
             let addr_bytes = reader.read(24, offset_size as usize)?;
-            let base_addr = Self::read_offset(&addr_bytes, offset_size);
+            let base_addr = Self::read_offset(addr_bytes, offset_size);
             Self::insert_int(metadata, "BaseAddress", base_addr as i64);
         }
 
@@ -80,7 +85,9 @@ impl HDF5Parser {
     /// Parses superblock version 2 or 3
     fn parse_superblock_v2_v3(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Result<()> {
         if reader.size() < 24 {
-            return Err(ExifToolError::parse_error("File too small for v2/v3 superblock"));
+            return Err(ExifToolError::parse_error(
+                "File too small for v2/v3 superblock",
+            ));
         }
 
         let sb = reader.read(8, 16)?;
@@ -97,11 +104,11 @@ impl HDF5Parser {
         // Base address and EOF address at offset 12+
         if reader.size() >= (20 + 2 * offset_size as u64) {
             let addr_bytes = reader.read(20, offset_size as usize)?;
-            let base_addr = Self::read_offset(&addr_bytes, offset_size);
+            let base_addr = Self::read_offset(addr_bytes, offset_size);
             Self::insert_int(metadata, "BaseAddress", base_addr as i64);
 
             let eof_bytes = reader.read(20 + offset_size as u64, offset_size as usize)?;
-            let eof_addr = Self::read_offset(&eof_bytes, offset_size);
+            let eof_addr = Self::read_offset(eof_bytes, offset_size);
             Self::insert_int(metadata, "EndOfFileAddress", eof_addr as i64);
         }
 
@@ -113,8 +120,7 @@ impl HDF5Parser {
         match size {
             4 => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as u64,
             8 => u64::from_le_bytes([
-                bytes[0], bytes[1], bytes[2], bytes[3],
-                bytes[4], bytes[5], bytes[6], bytes[7],
+                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
             ]),
             _ => 0,
         }
@@ -127,12 +133,18 @@ impl HDF5Parser {
 
     fn insert_addressing_mode(metadata: &mut MetadataMap, offset_size: u8) {
         let mode = if offset_size == 8 { "64-bit" } else { "32-bit" };
-        metadata.insert("AddressingMode".to_string(), TagValue::String(mode.to_string()));
+        metadata.insert(
+            "AddressingMode".to_string(),
+            TagValue::String(mode.to_string()),
+        );
     }
 
     fn insert_closed_status(metadata: &mut MetadataMap, properly_closed: bool) {
         let status = if properly_closed { "Yes" } else { "No" };
-        metadata.insert("FileProperlyClosed".to_string(), TagValue::String(status.to_string()));
+        metadata.insert(
+            "FileProperlyClosed".to_string(),
+            TagValue::String(status.to_string()),
+        );
     }
 }
 
@@ -144,7 +156,10 @@ impl FormatParser for HDF5Parser {
 
         let mut metadata = MetadataMap::new();
         metadata.insert("FileType".to_string(), TagValue::String("HDF5".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
 
         Self::parse_superblock(reader, &mut metadata)?;
 

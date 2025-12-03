@@ -132,9 +132,7 @@ impl JXLParser {
                 if pos + 1 >= data.len() {
                     return None;
                 }
-                let val = ((data[pos] >> 2) as u32)
-                    | (((data[pos + 1] & 0x3F) as u32) << 6)
-                    + 20;
+                let val = ((data[pos] >> 2) as u32) | ((((data[pos + 1] & 0x3F) as u32) << 6) + 20);
                 Some((val, pos + 2))
             }
             3 => {
@@ -145,8 +143,7 @@ impl JXLParser {
                 let val = ((data[pos] >> 2) as u32)
                     | ((data[pos + 1] as u32) << 6)
                     | ((data[pos + 2] as u32) << 14)
-                    | (((data[pos + 3] & 0x0F) as u32) << 22)
-                    + 276;
+                    | ((((data[pos + 3] & 0x0F) as u32) << 22) + 276);
                 Some((val, pos + 4))
             }
             _ => None,
@@ -160,7 +157,8 @@ impl JXLParser {
 
         while offset + 8 <= file_size {
             let header = reader.read(offset as u64, 8)?;
-            let box_size = u32::from_be_bytes([header[0], header[1], header[2], header[3]]) as usize;
+            let box_size =
+                u32::from_be_bytes([header[0], header[1], header[2], header[3]]) as usize;
             let box_type = std::str::from_utf8(&header[4..8]).unwrap_or("????");
 
             if box_size == 0 {
@@ -210,10 +208,7 @@ impl JXLParser {
                     if box_size >= 12 {
                         let level_data = reader.read((offset + 8) as u64, 4)?;
                         let level = level_data[0];
-                        metadata.insert(
-                            "JXLLevel".to_string(),
-                            TagValue::Integer(level as i64),
-                        );
+                        metadata.insert("JXLLevel".to_string(), TagValue::Integer(level as i64));
                     }
                 }
                 _ => {}
@@ -398,7 +393,10 @@ impl FormatParser for JXLParser {
 
         let mut metadata = MetadataMap::new();
         metadata.insert("FileType".to_string(), TagValue::String("JXL".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::Integer(reader.size() as i64));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::Integer(reader.size() as i64),
+        );
 
         if Self::is_container_format(reader)? {
             // Container format (ISOBMFF-based)

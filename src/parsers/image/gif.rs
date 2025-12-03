@@ -105,7 +105,8 @@ impl GIFParser {
             };
 
             match byte {
-                0x21 => { // Extension introducer
+                0x21 => {
+                    // Extension introducer
                     if pos + 1 >= reader.size() {
                         break;
                     }
@@ -113,7 +114,8 @@ impl GIFParser {
                     pos += 2;
 
                     match label {
-                        0xFF => { // Application extension
+                        0xFF => {
+                            // Application extension
                             if let Ok(block_size) = reader.read(pos, 1) {
                                 let size = block_size[0] as u64;
                                 pos += 1;
@@ -130,10 +132,12 @@ impl GIFParser {
                             }
                             pos = Self::skip_sub_blocks(reader, pos)?;
                         }
-                        0xFE => { // Comment extension
+                        0xFE => {
+                            // Comment extension
                             pos = Self::read_comment_blocks(reader, pos, &mut comment)?;
                         }
-                        0xF9 => { // Graphic control extension
+                        0xF9 => {
+                            // Graphic control extension
                             pos = Self::skip_sub_blocks(reader, pos)?;
                         }
                         _ => {
@@ -141,7 +145,8 @@ impl GIFParser {
                         }
                     }
                 }
-                0x2C => { // Image descriptor
+                0x2C => {
+                    // Image descriptor
                     frame_count += 1;
                     pos += 1;
 
@@ -153,7 +158,8 @@ impl GIFParser {
                         let has_local_color_table = (packed & 0b10000000) != 0;
 
                         if has_local_color_table {
-                            let local_color_table_size = 2u32.pow(((packed & 0b00000111) + 1) as u32);
+                            let local_color_table_size =
+                                2u32.pow(((packed & 0b00000111) + 1) as u32);
                             pos += (local_color_table_size as u64) * 3;
                         }
 
@@ -166,7 +172,8 @@ impl GIFParser {
                         pos = Self::skip_sub_blocks(reader, pos)?;
                     }
                 }
-                0x3B => { // Trailer - end of GIF
+                0x3B => {
+                    // Trailer - end of GIF
                     break;
                 }
                 _ => {
@@ -178,7 +185,11 @@ impl GIFParser {
         Ok(BlockScanResult {
             frame_count,
             is_animated,
-            comment: if comment.is_empty() { None } else { Some(comment) },
+            comment: if comment.is_empty() {
+                None
+            } else {
+                Some(comment)
+            },
         })
     }
 
@@ -196,7 +207,11 @@ impl GIFParser {
     }
 
     /// Reads comment blocks and appends to comment string
-    fn read_comment_blocks(reader: &dyn FileReader, mut pos: u64, comment: &mut String) -> Result<u64> {
+    fn read_comment_blocks(
+        reader: &dyn FileReader,
+        mut pos: u64,
+        comment: &mut String,
+    ) -> Result<u64> {
         while pos < reader.size() {
             let block_size = reader.read(pos, 1)?[0];
             pos += 1;
@@ -279,7 +294,14 @@ impl FormatParser for GIFParser {
 
         metadata.insert(
             "HasGlobalColorTable".to_string(),
-            TagValue::String(if lsd.global_color_table_flag { "yes" } else { "no" }.to_string()),
+            TagValue::String(
+                if lsd.global_color_table_flag {
+                    "yes"
+                } else {
+                    "no"
+                }
+                .to_string(),
+            ),
         );
 
         if lsd.global_color_table_flag {
@@ -310,17 +332,11 @@ impl FormatParser for GIFParser {
         );
 
         if scan_result.is_animated {
-            metadata.insert(
-                "Animation".to_string(),
-                TagValue::String("yes".to_string()),
-            );
+            metadata.insert("Animation".to_string(), TagValue::String("yes".to_string()));
         }
 
         if let Some(comment) = scan_result.comment {
-            metadata.insert(
-                "Comment".to_string(),
-                TagValue::String(comment),
-            );
+            metadata.insert("Comment".to_string(), TagValue::String(comment));
         }
 
         Ok(metadata)

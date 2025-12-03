@@ -19,14 +19,14 @@ const RAR4_BLOCK_ARCHIVE: u8 = 0x73;
 const RAR4_BLOCK_FILE: u8 = 0x74;
 
 /// RAR4 archive header flags (offset 2 in header)
-const RAR4_FLAG_VOLUME: u16 = 0x0001;        // Bit 0: Multi-part archive
-const RAR4_FLAG_COMMENT: u16 = 0x0002;       // Bit 1: Archive comment present
-const RAR4_FLAG_LOCK: u16 = 0x0004;          // Bit 2: Archive lock
-const RAR4_FLAG_SOLID: u16 = 0x0008;         // Bit 3: Solid archive
-const RAR4_FLAG_NEWNUMBERING: u16 = 0x0010;  // Bit 4: New naming scheme
-const RAR4_FLAG_AUTH: u16 = 0x0020;          // Bit 5: Authenticity info
-const RAR4_FLAG_RECOVERY: u16 = 0x0040;      // Bit 6: Recovery record
-const RAR4_FLAG_ENCRYPTED: u16 = 0x0080;     // Bit 7: Block headers encrypted
+const RAR4_FLAG_VOLUME: u16 = 0x0001; // Bit 0: Multi-part archive
+const RAR4_FLAG_COMMENT: u16 = 0x0002; // Bit 1: Archive comment present
+const RAR4_FLAG_LOCK: u16 = 0x0004; // Bit 2: Archive lock
+const RAR4_FLAG_SOLID: u16 = 0x0008; // Bit 3: Solid archive
+const RAR4_FLAG_NEWNUMBERING: u16 = 0x0010; // Bit 4: New naming scheme
+const RAR4_FLAG_AUTH: u16 = 0x0020; // Bit 5: Authenticity info
+const RAR4_FLAG_RECOVERY: u16 = 0x0040; // Bit 6: Recovery record
+const RAR4_FLAG_ENCRYPTED: u16 = 0x0080; // Bit 7: Block headers encrypted
 
 /// RAR5 header types
 const RAR5_HEADER_MAIN: u64 = 1;
@@ -178,10 +178,10 @@ impl RARParser {
         }
 
         // Parse variable-length header
-        let (_header_crc, pos) = Self::read_rar5_u32(&header_data, 0)?;
-        let (_header_size, pos) = Self::read_rar5_vint(&header_data, pos)?;
-        let (header_type, pos) = Self::read_rar5_vint(&header_data, pos)?;
-        let (header_flags, _) = Self::read_rar5_vint(&header_data, pos)?;
+        let (_header_crc, pos) = Self::read_rar5_u32(header_data, 0)?;
+        let (_header_size, pos) = Self::read_rar5_vint(header_data, pos)?;
+        let (header_type, pos) = Self::read_rar5_vint(header_data, pos)?;
+        let (header_flags, _) = Self::read_rar5_vint(header_data, pos)?;
 
         if header_type == RAR5_HEADER_MAIN {
             metadata.insert(
@@ -277,9 +277,9 @@ impl RARParser {
             }
 
             // Try to parse header
-            if let Ok((_, pos1)) = Self::read_rar5_u32(&block_data, 0) {
-                if let Ok((header_size, pos2)) = Self::read_rar5_vint(&block_data, pos1) {
-                    if let Ok((header_type, _)) = Self::read_rar5_vint(&block_data, pos2) {
+            if let Ok((_, pos1)) = Self::read_rar5_u32(block_data, 0) {
+                if let Ok((header_size, pos2)) = Self::read_rar5_vint(block_data, pos1) {
+                    if let Ok((header_type, _)) = Self::read_rar5_vint(block_data, pos2) {
                         if header_type == RAR5_HEADER_FILE {
                             file_count += 1;
                         }
@@ -423,10 +423,10 @@ mod tests {
         // Create minimal RAR4 archive with header
         let mut data = b"Rar!".to_vec();
         data.extend_from_slice(&[0x1A, 0x07, 0x00]); // RAR4 signature
-        // Archive header block
+                                                     // Archive header block
         data.extend_from_slice(&[
             0x33, 0x92, // HEAD_CRC
-            0x73,       // HEAD_TYPE (archive)
+            0x73, // HEAD_TYPE (archive)
             0x09, 0x00, // HEAD_FLAGS (solid + volume)
             0x0D, 0x00, // HEAD_SIZE
         ]);
@@ -477,7 +477,7 @@ mod tests {
         // Archive header
         data.extend_from_slice(&[
             0x33, 0x92, // CRC
-            0x73,       // Type: archive
+            0x73, // Type: archive
             0x00, 0x00, // Flags
             0x0D, 0x00, // Size: 13 bytes
         ]);
@@ -486,7 +486,7 @@ mod tests {
         // File header 1
         data.extend_from_slice(&[
             0x33, 0x92, // CRC
-            0x74,       // Type: file
+            0x74, // Type: file
             0x00, 0x00, // Flags
             0x20, 0x00, // Size: 32 bytes
         ]);
@@ -495,7 +495,7 @@ mod tests {
         // File header 2
         data.extend_from_slice(&[
             0x33, 0x92, // CRC
-            0x74,       // Type: file
+            0x74, // Type: file
             0x00, 0x00, // Flags
             0x20, 0x00, // Size: 32 bytes
         ]);

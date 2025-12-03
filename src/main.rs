@@ -9,7 +9,9 @@ use oxidex::cli::output_formatter::{
 };
 use oxidex::cli::rename;
 use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
-use oxidex::core::operations::{clear_all_metadata, copy_metadata, modify_tag, read_metadata, remove_tag};
+use oxidex::core::operations::{
+    clear_all_metadata, copy_metadata, modify_tag, read_metadata, remove_tag,
+};
 use oxidex::core::tag_value::TagValue;
 use std::process;
 
@@ -23,7 +25,6 @@ fn main() {
             std::process::exit(1);
         }
     };
-
 
     // Extract file path from arguments
     let file = match args.file() {
@@ -564,7 +565,11 @@ fn handle_clear_all_operation(file: &std::path::Path, args: &CliArgs) {
 
     // Clear all metadata
     if let Err(e) = clear_all_metadata(file) {
-        eprintln!("Error: Failed to clear metadata from '{}': {}", file.display(), e);
+        eprintln!(
+            "Error: Failed to clear metadata from '{}': {}",
+            file.display(),
+            e
+        );
         process::exit(1);
     }
 

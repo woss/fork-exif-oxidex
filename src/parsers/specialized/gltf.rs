@@ -59,7 +59,10 @@ impl GLTFParser {
             // Read chunk header: length(4) + type(4)
             let chunk_header = reader.read(12, 8)?;
             let chunk_length = u32::from_le_bytes([
-                chunk_header[0], chunk_header[1], chunk_header[2], chunk_header[3]
+                chunk_header[0],
+                chunk_header[1],
+                chunk_header[2],
+                chunk_header[3],
             ]) as usize;
 
             // Read JSON chunk data
@@ -83,9 +86,9 @@ impl GLTFParser {
         let colon_pos = after_key.find(':')?;
         let after_colon = &after_key[colon_pos + 1..].trim_start();
 
-        if after_colon.starts_with('"') {
-            let end_quote = after_colon[1..].find('"')?;
-            Some(after_colon[1..=end_quote].to_string())
+        if let Some(rest) = after_colon.strip_prefix('"') {
+            let end_quote = rest.find('"')?;
+            Some(rest[..end_quote].to_string())
         } else {
             None
         }
@@ -99,14 +102,19 @@ impl GLTFParser {
         let colon_pos = after_key.find(':')?;
         let after_colon = &after_key[colon_pos + 1..].trim_start();
 
-        if after_colon.starts_with('[') {
+        if let Some(array_content) = after_colon.strip_prefix('[') {
             // Find matching closing bracket
-            let mut depth = 0;
+            let mut depth = 1; // Already inside the first '['
             let mut count = 0;
             let mut in_string = false;
             let mut escape_next = false;
 
-            for ch in after_colon.chars() {
+            // Check if array is non-empty
+            if !array_content.trim_start().starts_with(']') {
+                count = 1;
+            }
+
+            for ch in array_content.chars() {
                 if escape_next {
                     escape_next = false;
                     continue;
@@ -117,13 +125,6 @@ impl GLTFParser {
                     '"' => in_string = !in_string,
                     '[' if !in_string => {
                         depth += 1;
-                        if depth == 1 {
-                            // Check if array is non-empty
-                            let rest = &after_colon[1..].trim_start();
-                            if !rest.starts_with(']') {
-                                count = 1;
-                            }
-                        }
                     }
                     ']' if !in_string => {
                         depth -= 1;
@@ -148,7 +149,9 @@ impl GLTFParser {
             return None;
         }
         let header = reader.read(4, 4).ok()?;
-        Some(u32::from_le_bytes([header[0], header[1], header[2], header[3]]))
+        Some(u32::from_le_bytes([
+            header[0], header[1], header[2], header[3],
+        ]))
     }
 }
 
@@ -167,10 +170,7 @@ impl FormatParser for GLTFParser {
 
         // Detect and add format
         let format = Self::detect_format(reader)?;
-        metadata.insert(
-            "Format".to_string(),
-            TagValue::String(format.to_string()),
-        );
+        metadata.insert("Format".to_string(), TagValue::String(format.to_string()));
 
         // Extract JSON content
         let json_content = match Self::extract_json_content(reader) {
@@ -180,24 +180,15 @@ impl FormatParser for GLTFParser {
 
         // Extract asset information
         if let Some(version) = Self::extract_json_string(&json_content, "version") {
-            metadata.insert(
-                "AssetVersion".to_string(),
-                TagValue::String(version),
-            );
+            metadata.insert("AssetVersion".to_string(), TagValue::String(version));
         }
 
         if let Some(generator) = Self::extract_json_string(&json_content, "generator") {
-            metadata.insert(
-                "AssetGenerator".to_string(),
-                TagValue::String(generator),
-            );
+            metadata.insert("AssetGenerator".to_string(), TagValue::String(generator));
         }
 
         if let Some(copyright) = Self::extract_json_string(&json_content, "copyright") {
-            metadata.insert(
-                "AssetCopyright".to_string(),
-                TagValue::String(copyright),
-            );
+            metadata.insert("AssetCopyright".to_string(), TagValue::String(copyright));
         }
 
         // Count array elements

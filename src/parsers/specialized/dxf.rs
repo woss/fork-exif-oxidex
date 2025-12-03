@@ -48,7 +48,12 @@ impl DXFParser {
         Ok(content)
     }
 
-    fn parse_section(lines: &[&str], start: usize, section_name: &str, content: &mut DXFContent) -> usize {
+    fn parse_section(
+        lines: &[&str],
+        start: usize,
+        section_name: &str,
+        content: &mut DXFContent,
+    ) -> usize {
         let mut i = start;
 
         if section_name == "HEADER" {
@@ -83,15 +88,30 @@ impl DXFParser {
                 let next_group = lines[i + 2].trim();
                 let var_value = lines[i + 3].trim();
 
-                if (var_name == "$EXTMIN" || var_name == "$EXTMAX") && next_group == "10" && i + 9 < lines.len() {
-                    let prefix = if var_name == "$EXTMIN" { "EXTMIN" } else { "EXTMAX" };
-                    content.header_vars.insert(format!("${}_X", prefix), var_value.to_string());
-                    content.header_vars.insert(format!("${}_Y", prefix), lines[i + 5].trim().to_string());
-                    content.header_vars.insert(format!("${}_Z", prefix), lines[i + 7].trim().to_string());
+                if (var_name == "$EXTMIN" || var_name == "$EXTMAX")
+                    && next_group == "10"
+                    && i + 9 < lines.len()
+                {
+                    let prefix = if var_name == "$EXTMIN" {
+                        "EXTMIN"
+                    } else {
+                        "EXTMAX"
+                    };
+                    content
+                        .header_vars
+                        .insert(format!("${}_X", prefix), var_value.to_string());
+                    content
+                        .header_vars
+                        .insert(format!("${}_Y", prefix), lines[i + 5].trim().to_string());
+                    content
+                        .header_vars
+                        .insert(format!("${}_Z", prefix), lines[i + 7].trim().to_string());
                     i += 8;
                     continue;
                 }
-                content.header_vars.insert(var_name.to_string(), var_value.to_string());
+                content
+                    .header_vars
+                    .insert(var_name.to_string(), var_value.to_string());
                 i += 4;
                 continue;
             }
@@ -168,23 +188,35 @@ impl FormatParser for DXFParser {
 
         // Extract AutoCAD version
         if let Some(version) = content.header_vars.get("$ACADVER") {
-            metadata.insert("AutoCADVersion".to_string(), TagValue::String(Self::map_version(version).to_string()));
+            metadata.insert(
+                "AutoCADVersion".to_string(),
+                TagValue::String(Self::map_version(version).to_string()),
+            );
         }
 
         // Extract drawing units
         if let Some(units) = content.header_vars.get("$INSUNITS") {
-            metadata.insert("DrawingUnits".to_string(), TagValue::String(Self::map_units(units).to_string()));
+            metadata.insert(
+                "DrawingUnits".to_string(),
+                TagValue::String(Self::map_units(units).to_string()),
+            );
         }
 
         // Extract drawing extents (bounding box)
         if let Some(x) = content.header_vars.get("$EXTMIN_X") {
             if let Some(y) = content.header_vars.get("$EXTMIN_Y") {
-                metadata.insert("ExtentMin".to_string(), TagValue::String(format!("{}, {}", x, y)));
+                metadata.insert(
+                    "ExtentMin".to_string(),
+                    TagValue::String(format!("{}, {}", x, y)),
+                );
             }
         }
         if let Some(x) = content.header_vars.get("$EXTMAX_X") {
             if let Some(y) = content.header_vars.get("$EXTMAX_Y") {
-                metadata.insert("ExtentMax".to_string(), TagValue::String(format!("{}, {}", x, y)));
+                metadata.insert(
+                    "ExtentMax".to_string(),
+                    TagValue::String(format!("{}, {}", x, y)),
+                );
             }
         }
 

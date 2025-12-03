@@ -102,7 +102,10 @@ impl BPGParser {
         );
 
         if alpha2_flag {
-            metadata.insert("AlphaPlane".to_string(), TagValue::String("Separate".to_string()));
+            metadata.insert(
+                "AlphaPlane".to_string(),
+                TagValue::String("Separate".to_string()),
+            );
         }
 
         if limited_range_flag {
@@ -113,7 +116,10 @@ impl BPGParser {
         }
 
         if animation_flag {
-            metadata.insert("IsAnimated".to_string(), TagValue::String("Yes".to_string()));
+            metadata.insert(
+                "IsAnimated".to_string(),
+                TagValue::String("Yes".to_string()),
+            );
         }
 
         pos += 1;
@@ -362,7 +368,10 @@ impl FormatParser for BPGParser {
 
         let mut metadata = MetadataMap::new();
         metadata.insert("FileType".to_string(), TagValue::String("BPG".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::Integer(reader.size() as i64));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::Integer(reader.size() as i64),
+        );
 
         // Read header and extension data (first 1KB should be enough for most cases)
         let header_size = (reader.size() as usize).min(1024);

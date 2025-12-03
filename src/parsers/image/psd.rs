@@ -71,7 +71,10 @@ impl PSDParser {
 
         // Channels (offset 12, 2 bytes)
         let channels = u16::from_be_bytes([header[12], header[13]]);
-        metadata.insert("NumChannels".to_string(), TagValue::Integer(channels as i64));
+        metadata.insert(
+            "NumChannels".to_string(),
+            TagValue::Integer(channels as i64),
+        );
 
         // Height (offset 14, 4 bytes)
         let height = u32::from_be_bytes([header[14], header[15], header[16], header[17]]);
@@ -114,8 +117,12 @@ impl PSDParser {
 
         // Color mode data length at offset 26
         let cmd_len_bytes = reader.read(26, 4)?;
-        let color_mode_data_length =
-            u32::from_be_bytes([cmd_len_bytes[0], cmd_len_bytes[1], cmd_len_bytes[2], cmd_len_bytes[3]]);
+        let color_mode_data_length = u32::from_be_bytes([
+            cmd_len_bytes[0],
+            cmd_len_bytes[1],
+            cmd_len_bytes[2],
+            cmd_len_bytes[3],
+        ]);
 
         // Image resources section starts after color mode data
         let resources_offset = 30 + color_mode_data_length as usize;
@@ -129,7 +136,8 @@ impl PSDParser {
         let resources_length =
             u32::from_be_bytes([irl_bytes[0], irl_bytes[1], irl_bytes[2], irl_bytes[3]]) as usize;
 
-        if resources_length == 0 || reader.size() < (resources_offset + 4 + resources_length) as u64 {
+        if resources_length == 0 || reader.size() < (resources_offset + 4 + resources_length) as u64
+        {
             return Ok(());
         }
 
@@ -146,13 +154,12 @@ impl PSDParser {
             pos += 4;
 
             // Resource ID (2 bytes)
-            let resource_id =
-                u16::from_be_bytes([resources_data[pos], resources_data[pos + 1]]);
+            let resource_id = u16::from_be_bytes([resources_data[pos], resources_data[pos + 1]]);
             pos += 2;
 
             // Pascal string name (padded to even)
             let name_len = resources_data[pos] as usize;
-            let padded_name_len = if (name_len + 1) % 2 == 0 {
+            let padded_name_len = if (name_len + 1).is_multiple_of(2) {
                 name_len + 1
             } else {
                 name_len + 2
@@ -209,7 +216,7 @@ impl PSDParser {
             }
 
             // Pad to even boundary
-            let padded_size = if data_size % 2 == 0 {
+            let padded_size = if data_size.is_multiple_of(2) {
                 data_size
             } else {
                 data_size + 1
@@ -383,7 +390,10 @@ impl FormatParser for PSDParser {
         }
 
         let mut metadata = MetadataMap::new();
-        metadata.insert("FileSize".to_string(), TagValue::Integer(reader.size() as i64));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::Integer(reader.size() as i64),
+        );
 
         // Parse header
         Self::parse_header(reader, &mut metadata)?;

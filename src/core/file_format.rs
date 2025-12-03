@@ -234,8 +234,14 @@ pub enum FileFormat {
     /// vCard contact format (.vcf)
     VCF,
 
+    /// Email message format (.eml)
+    EML,
+
     /// Windows shortcut (.lnk)
     LNK,
+
+    /// SQLite database (.db, .sqlite, .sqlite3)
+    SQLite,
 
     /// Unknown or unsupported format
     Unknown,
@@ -315,7 +321,9 @@ impl FileFormat {
             FileFormat::FITS => "FITS",
             FileFormat::HDF5 => "HDF5",
             FileFormat::VCF => "vCard",
+            FileFormat::EML => "EML",
             FileFormat::LNK => "Windows Shortcut",
+            FileFormat::SQLite => "SQLite",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -396,7 +404,9 @@ impl FileFormat {
             FileFormat::FITS => &["fits", "fit"],
             FileFormat::HDF5 => &["h5", "hdf5"],
             FileFormat::VCF => &["vcf", "vcard"],
+            FileFormat::EML => &["eml", "email"],
             FileFormat::LNK => &["lnk"],
+            FileFormat::SQLite => &["db", "sqlite", "sqlite3"],
             FileFormat::Unknown => &[],
         }
     }

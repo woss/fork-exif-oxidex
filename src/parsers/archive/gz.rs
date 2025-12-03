@@ -45,7 +45,10 @@ impl GZParser {
             8 => "DEFLATE",
             _ => "Unknown",
         };
-        metadata.insert("CompressionMethod".to_string(), TagValue::String(compression_name.to_string()));
+        metadata.insert(
+            "CompressionMethod".to_string(),
+            TagValue::String(compression_name.to_string()),
+        );
 
         let flags = header[3];
 
@@ -54,8 +57,10 @@ impl GZParser {
         if mtime != 0 {
             use chrono::{TimeZone, Utc};
             if let Some(dt) = Utc.timestamp_opt(mtime as i64, 0).single() {
-                metadata.insert("ModificationTime".to_string(),
-                    TagValue::String(dt.format("%Y:%m:%d %H:%M:%S").to_string()));
+                metadata.insert(
+                    "ModificationTime".to_string(),
+                    TagValue::String(dt.format("%Y:%m:%d %H:%M:%S").to_string()),
+                );
             }
         }
 
@@ -66,16 +71,34 @@ impl GZParser {
             4 => "Fastest compression",
             _ => "Normal",
         };
-        metadata.insert("CompressionLevel".to_string(), TagValue::String(compression_level.to_string()));
+        metadata.insert(
+            "CompressionLevel".to_string(),
+            TagValue::String(compression_level.to_string()),
+        );
 
         // OS: Operating system
         let os_name = match header[9] {
-            0 => "FAT", 1 => "Amiga", 2 => "VMS", 3 => "Unix", 4 => "VM/CMS",
-            5 => "Atari TOS", 6 => "HPFS", 7 => "Macintosh", 8 => "Z-System",
-            9 => "CP/M", 10 => "TOPS-20", 11 => "NTFS", 12 => "QDOS",
-            13 => "Acorn RISCOS", 255 => "Unknown", _ => "Unknown",
+            0 => "FAT",
+            1 => "Amiga",
+            2 => "VMS",
+            3 => "Unix",
+            4 => "VM/CMS",
+            5 => "Atari TOS",
+            6 => "HPFS",
+            7 => "Macintosh",
+            8 => "Z-System",
+            9 => "CP/M",
+            10 => "TOPS-20",
+            11 => "NTFS",
+            12 => "QDOS",
+            13 => "Acorn RISCOS",
+            255 => "Unknown",
+            _ => "Unknown",
         };
-        metadata.insert("OperatingSystem".to_string(), TagValue::String(os_name.to_string()));
+        metadata.insert(
+            "OperatingSystem".to_string(),
+            TagValue::String(os_name.to_string()),
+        );
 
         let mut offset = 10u64;
 
@@ -114,27 +137,46 @@ impl GZParser {
     }
 
     /// Reads null-terminated string from offset, returns (string, next_offset) or None
-    fn read_null_terminated_string(reader: &dyn FileReader, offset: u64) -> Result<Option<(String, u64)>> {
+    fn read_null_terminated_string(
+        reader: &dyn FileReader,
+        offset: u64,
+    ) -> Result<Option<(String, u64)>> {
         let available = (reader.size().saturating_sub(offset)).min(256);
-        if available == 0 { return Ok(None); }
+        if available == 0 {
+            return Ok(None);
+        }
 
         let data = reader.read(offset, available as usize)?;
-        data.iter().position(|&b| b == 0).map(|pos| {
-            (String::from_utf8_lossy(&data[..pos]).to_string(), offset + pos as u64 + 1)
-        }).map_or(Ok(None), |v| Ok(Some(v)))
+        data.iter()
+            .position(|&b| b == 0)
+            .map(|pos| {
+                (
+                    String::from_utf8_lossy(&data[..pos]).to_string(),
+                    offset + pos as u64 + 1,
+                )
+            })
+            .map_or(Ok(None), |v| Ok(Some(v)))
     }
 
     /// Parses the GZIP trailer (last 8 bytes: CRC32 and original size)
     pub fn parse_trailer(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Result<()> {
         let size = reader.size();
-        if size < 8 { return Ok(()); }
+        if size < 8 {
+            return Ok(());
+        }
 
         let trailer = reader.read(size - 8, 8)?;
         let crc32 = u32::from_le_bytes([trailer[0], trailer[1], trailer[2], trailer[3]]);
         let isize = u32::from_le_bytes([trailer[4], trailer[5], trailer[6], trailer[7]]);
 
-        metadata.insert("CRC32".to_string(), TagValue::String(format!("0x{:08X}", crc32)));
-        metadata.insert("OriginalSize".to_string(), TagValue::String(isize.to_string()));
+        metadata.insert(
+            "CRC32".to_string(),
+            TagValue::String(format!("0x{:08X}", crc32)),
+        );
+        metadata.insert(
+            "OriginalSize".to_string(),
+            TagValue::String(isize.to_string()),
+        );
         Ok(())
     }
 }
@@ -149,7 +191,10 @@ impl FormatParser for GZParser {
         let mut metadata = MetadataMap::new();
 
         metadata.insert("FileType".to_string(), TagValue::String("GZIP".to_string()));
-        metadata.insert("FileSize".to_string(), TagValue::String(reader.size().to_string()));
+        metadata.insert(
+            "FileSize".to_string(),
+            TagValue::String(reader.size().to_string()),
+        );
 
         // Parse header fields including optional fields
         Self::parse_header(reader, &mut metadata)?;
@@ -166,8 +211,12 @@ impl FormatParser for GZParser {
 }
 
 /// Standalone function for parsing GZIP metadata
-pub fn parse_gz_metadata(reader: &dyn crate::core::FileReader) -> std::result::Result<MetadataMap, String> {
-    GZParser.parse(reader).map_err(|e| format!("GZIP parse error: {}", e))
+pub fn parse_gz_metadata(
+    reader: &dyn crate::core::FileReader,
+) -> std::result::Result<MetadataMap, String> {
+    GZParser
+        .parse(reader)
+        .map_err(|e| format!("GZIP parse error: {}", e))
 }
 
 #[cfg(test)]

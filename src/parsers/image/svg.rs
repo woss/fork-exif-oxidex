@@ -187,7 +187,10 @@ impl FormatParser for SVGParser {
 
         // Check if animated
         if Self::is_animated(text) {
-            metadata.insert("SVG:Animated".to_string(), TagValue::String("true".to_string()));
+            metadata.insert(
+                "SVG:Animated".to_string(),
+                TagValue::String("true".to_string()),
+            );
         }
 
         Ok(metadata)
@@ -226,14 +229,23 @@ mod tests {
 
         assert_eq!(metadata.get("FileType").unwrap().as_string(), Some("SVG"));
         assert_eq!(metadata.get("ImageWidth").unwrap().as_string(), Some("200"));
-        assert_eq!(metadata.get("ImageHeight").unwrap().as_string(), Some("150"));
+        assert_eq!(
+            metadata.get("ImageHeight").unwrap().as_string(),
+            Some("150")
+        );
         assert_eq!(metadata.get("Title").unwrap().as_string(), Some("Test SVG"));
-        assert_eq!(metadata.get("Description").unwrap().as_string(), Some("A test description"));
+        assert_eq!(
+            metadata.get("Description").unwrap().as_string(),
+            Some("A test description")
+        );
         assert_eq!(
             metadata.get("SVG:Namespace").unwrap().as_string(),
             Some("http://www.w3.org/2000/svg")
         );
-        assert_eq!(metadata.get("SVG:Version").unwrap().as_string(), Some("1.1"));
+        assert_eq!(
+            metadata.get("SVG:Version").unwrap().as_string(),
+            Some("1.1")
+        );
     }
 
     #[test]
@@ -245,8 +257,14 @@ mod tests {
         let metadata = parser.parse(&reader).unwrap();
 
         assert_eq!(metadata.get("ImageWidth").unwrap().as_string(), Some("100"));
-        assert_eq!(metadata.get("ImageHeight").unwrap().as_string(), Some("200"));
-        assert_eq!(metadata.get("SVG:ViewBox").unwrap().as_string(), Some("0 0 100 200"));
+        assert_eq!(
+            metadata.get("ImageHeight").unwrap().as_string(),
+            Some("200")
+        );
+        assert_eq!(
+            metadata.get("SVG:ViewBox").unwrap().as_string(),
+            Some("0 0 100 200")
+        );
     }
 
     #[test]
@@ -258,7 +276,10 @@ mod tests {
         let metadata = parser.parse(&reader).unwrap();
 
         assert_eq!(metadata.get("ImageWidth").unwrap().as_string(), Some("300"));
-        assert_eq!(metadata.get("ImageHeight").unwrap().as_string(), Some("200"));
+        assert_eq!(
+            metadata.get("ImageHeight").unwrap().as_string(),
+            Some("200")
+        );
     }
 
     #[test]
@@ -273,7 +294,10 @@ mod tests {
         let parser = SVGParser;
         let metadata = parser.parse(&reader).unwrap();
 
-        assert_eq!(metadata.get("SVG:Animated").unwrap().as_string(), Some("true"));
+        assert_eq!(
+            metadata.get("SVG:Animated").unwrap().as_string(),
+            Some("true")
+        );
     }
 
     #[test]
@@ -290,8 +314,14 @@ mod tests {
         let parser = SVGParser;
         let metadata = parser.parse(&reader).unwrap();
 
-        assert_eq!(metadata.get("XMP:Title").unwrap().as_string(), Some("DC Title"));
-        assert_eq!(metadata.get("XMP:Creator").unwrap().as_string(), Some("DC Creator"));
+        assert_eq!(
+            metadata.get("XMP:Title").unwrap().as_string(),
+            Some("DC Title")
+        );
+        assert_eq!(
+            metadata.get("XMP:Creator").unwrap().as_string(),
+            Some("DC Creator")
+        );
         assert_eq!(
             metadata.get("XMP:Description").unwrap().as_string(),
             Some("DC Description")
@@ -317,6 +347,9 @@ mod tests {
         let metadata = parser.parse(&reader).unwrap();
 
         assert_eq!(metadata.get("ImageWidth").unwrap().as_string(), Some("100"));
-        assert_eq!(metadata.get("ImageHeight").unwrap().as_string(), Some("200"));
+        assert_eq!(
+            metadata.get("ImageHeight").unwrap().as_string(),
+            Some("200")
+        );
     }
 }

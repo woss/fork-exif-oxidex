@@ -156,7 +156,10 @@ impl FormatParser for DWGParser {
 
         // Extract codepage if available
         if let Ok(Some(codepage)) = Self::read_codepage(reader) {
-            metadata.insert("CodePage".to_string(), TagValue::String(codepage.to_string()));
+            metadata.insert(
+                "CodePage".to_string(),
+                TagValue::String(codepage.to_string()),
+            );
         }
 
         // Extract preview image information

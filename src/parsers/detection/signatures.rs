@@ -94,6 +94,7 @@ pub static SIMPLE_SIGNATURES: &[Signature] = &[
     signature!(b"SIMPLE", 0, FileFormat::FITS),
     signature!(b"BEGIN:VCARD", 0, FileFormat::VCF),
     signature!(b"\x4C\x00\x00\x00", 0, FileFormat::LNK),
+    signature!(b"SQLite format 3\0", 0, FileFormat::SQLite),
     // Archive formats with offset signatures
     signature!(b"ustar", 257, FileFormat::TAR),
     signature!(b"CD001", 32769, FileFormat::ISO),

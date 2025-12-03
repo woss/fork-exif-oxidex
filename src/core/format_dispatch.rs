@@ -51,6 +51,7 @@ use crate::parsers::specialized::hdf5::parse_hdf5_metadata;
 use crate::parsers::specialized::lnk::parse_lnk_metadata;
 use crate::parsers::specialized::macho::parse_macho_metadata;
 use crate::parsers::specialized::obj::parse_obj_metadata;
+use crate::parsers::specialized::sqlite::parse_sqlite_metadata;
 use crate::parsers::specialized::stl::parse_stl_metadata;
 use crate::parsers::text::vcf::parse_vcf_metadata;
 use crate::parsers::video::avi::parse_avi_metadata;
@@ -148,6 +149,7 @@ pub fn dispatch_format_parser(reader: &dyn FileReader, format: FileFormat) -> Re
         FileFormat::HDF5 => convert_string_error(parse_hdf5_metadata(reader), "HDF5"),
         FileFormat::VCF => convert_string_error(parse_vcf_metadata(reader), "VCF"),
         FileFormat::LNK => convert_string_error(parse_lnk_metadata(reader), "LNK"),
+        FileFormat::SQLite => convert_string_error(parse_sqlite_metadata(reader), "SQLite"),
         FileFormat::GIF => convert_string_error(parse_gif_metadata(reader), "GIF"),
         FileFormat::BMP => convert_string_error(parse_bmp_metadata(reader), "BMP"),
         FileFormat::WebP => convert_string_error(parse_webp_metadata(reader), "WebP"),

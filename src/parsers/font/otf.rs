@@ -64,18 +64,10 @@ impl OTFParser {
             let mut tag = [0u8; 4];
             tag.copy_from_slice(&entry_data[0..4]);
 
-            let checksum = u32::from_be_bytes([
-                entry_data[4],
-                entry_data[5],
-                entry_data[6],
-                entry_data[7],
-            ]);
-            let offset = u32::from_be_bytes([
-                entry_data[8],
-                entry_data[9],
-                entry_data[10],
-                entry_data[11],
-            ]);
+            let checksum =
+                u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]]);
+            let offset =
+                u32::from_be_bytes([entry_data[8], entry_data[9], entry_data[10], entry_data[11]]);
             let length = u32::from_be_bytes([
                 entry_data[12],
                 entry_data[13],
@@ -409,8 +401,17 @@ mod tests {
         let parser = OTFParser;
         let metadata = parser.parse(&reader).unwrap();
 
-        assert_eq!(metadata.get("FileType"), Some(&TagValue::String("OTF".to_string())));
-        assert_eq!(metadata.get("NumTables"), Some(&TagValue::String("2".to_string())));
-        assert_eq!(metadata.get("OutlineFormat"), Some(&TagValue::String("CFF".to_string())));
+        assert_eq!(
+            metadata.get("FileType"),
+            Some(&TagValue::String("OTF".to_string()))
+        );
+        assert_eq!(
+            metadata.get("NumTables"),
+            Some(&TagValue::String("2".to_string()))
+        );
+        assert_eq!(
+            metadata.get("OutlineFormat"),
+            Some(&TagValue::String("CFF".to_string()))
+        );
     }
 }

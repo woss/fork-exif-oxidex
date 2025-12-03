@@ -9,6 +9,7 @@ pub mod hdf5;
 pub mod lnk;
 pub mod macho;
 pub mod obj;
+pub mod sqlite;
 pub mod stl;
 
 pub use dwg::DWGParser;
@@ -20,4 +21,5 @@ pub use hdf5::HDF5Parser;
 pub use lnk::LNKParser;
 pub use macho::MachOParser;
 pub use obj::OBJParser;
+pub use sqlite::SQLiteParser;
 pub use stl::STLParser;

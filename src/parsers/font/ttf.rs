@@ -87,12 +87,8 @@ impl TTFParser {
 
             let entry_data = reader.read(entry_offset, 16)?;
             let tag = [entry_data[0], entry_data[1], entry_data[2], entry_data[3]];
-            let offset = u32::from_be_bytes([
-                entry_data[8],
-                entry_data[9],
-                entry_data[10],
-                entry_data[11],
-            ]);
+            let offset =
+                u32::from_be_bytes([entry_data[8], entry_data[9], entry_data[10], entry_data[11]]);
             let length = u32::from_be_bytes([
                 entry_data[12],
                 entry_data[13],
@@ -100,7 +96,11 @@ impl TTFParser {
                 entry_data[15],
             ]);
 
-            tables.push(TableEntry { tag, offset, length });
+            tables.push(TableEntry {
+                tag,
+                offset,
+                length,
+            });
         }
 
         Ok(tables)
@@ -164,7 +164,7 @@ impl TTFParser {
         let decoded = match record.platform_id {
             PLATFORM_WINDOWS => {
                 // Windows platform uses UTF-16BE
-                if str_len % 2 != 0 {
+                if !str_len.is_multiple_of(2) {
                     return Ok(None);
                 }
                 let utf16_chars: Vec<u16> = str_data
@@ -184,10 +184,7 @@ impl TTFParser {
     }
 
     /// Extracts metadata from name table
-    fn extract_name_metadata(
-        reader: &dyn FileReader,
-        table: &TableEntry,
-    ) -> Result<MetadataMap> {
+    fn extract_name_metadata(reader: &dyn FileReader, table: &TableEntry) -> Result<MetadataMap> {
         let mut metadata = MetadataMap::new();
         let offset = table.offset as u64;
 
@@ -225,7 +222,9 @@ impl TTFParser {
                 });
 
             if let Some(rec) = record {
-                if let Ok(Some(value)) = Self::extract_name_string(reader, table, rec, string_offset) {
+                if let Ok(Some(value)) =
+                    Self::extract_name_string(reader, table, rec, string_offset)
+                {
                     if !value.is_empty() {
                         metadata.insert(key.to_string(), TagValue::String(value));
                     }
@@ -273,10 +272,7 @@ impl TTFParser {
     }
 
     /// Extracts metadata from head table
-    fn extract_head_metadata(
-        reader: &dyn FileReader,
-        table: &TableEntry,
-    ) -> Result<MetadataMap> {
+    fn extract_head_metadata(reader: &dyn FileReader, table: &TableEntry) -> Result<MetadataMap> {
         let mut metadata = MetadataMap::new();
         let offset = table.offset as u64;
 
@@ -481,31 +477,43 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, // offset 4: fontRevision
             0x00, 0x00, 0x00, 0x00, // offset 8: checksumAdjustment
             0x5F, 0x0F, 0x3C, 0xF5, // offset 12: magicNumber
-            0x00, 0x00,             // offset 16: flags
-            0x08, 0x00,             // offset 18: unitsPerEm = 2048
+            0x00, 0x00, // offset 16: flags
+            0x08, 0x00, // offset 18: unitsPerEm = 2048
             0x00, 0x00, 0x00, 0x00, // offset 20: created (high)
             0xD4, 0x36, 0x5E, 0x80, // offset 24: created (low)
             0x00, 0x00, 0x00, 0x00, // offset 28: modified (high)
             0xD4, 0x36, 0x5E, 0x80, // offset 32: modified (low)
-            0x00, 0x00,             // offset 36: xMin
-            0x00, 0x00,             // offset 38: yMin
-            0x00, 0x00,             // offset 40: xMax
-            0x00, 0x00,             // offset 42: yMax
-            0x00, 0x00,             // offset 44: macStyle
-            0x00, 0x08,             // offset 46: lowestRecPPEM
-            0x00, 0x00,             // offset 48: fontDirectionHint
-            0x00, 0x00,             // offset 50: indexToLocFormat
-            0x00, 0x00,             // offset 52: glyphDataFormat
+            0x00, 0x00, // offset 36: xMin
+            0x00, 0x00, // offset 38: yMin
+            0x00, 0x00, // offset 40: xMax
+            0x00, 0x00, // offset 42: yMax
+            0x00, 0x00, // offset 44: macStyle
+            0x00, 0x08, // offset 46: lowestRecPPEM
+            0x00, 0x00, // offset 48: fontDirectionHint
+            0x00, 0x00, // offset 50: indexToLocFormat
+            0x00, 0x00, // offset 52: glyphDataFormat
         ]);
 
         let reader = TestReader::new(data);
         let parser = TTFParser;
         let metadata = parser.parse(&reader).unwrap();
 
-        assert_eq!(metadata.get("FileType"), Some(&TagValue::String("TTF".to_string())));
-        assert_eq!(metadata.get("NumTables"), Some(&TagValue::String("2".to_string())));
-        assert_eq!(metadata.get("UnitsPerEm"), Some(&TagValue::String("2048".to_string())));
-        assert_eq!(metadata.get("FontFamily"), Some(&TagValue::String("Test".to_string())));
+        assert_eq!(
+            metadata.get("FileType"),
+            Some(&TagValue::String("TTF".to_string()))
+        );
+        assert_eq!(
+            metadata.get("NumTables"),
+            Some(&TagValue::String("2".to_string()))
+        );
+        assert_eq!(
+            metadata.get("UnitsPerEm"),
+            Some(&TagValue::String("2048".to_string()))
+        );
+        assert_eq!(
+            metadata.get("FontFamily"),
+            Some(&TagValue::String("Test".to_string()))
+        );
         assert!(metadata.contains_key("FontCreated"));
         assert!(metadata.contains_key("FontModified"));
     }

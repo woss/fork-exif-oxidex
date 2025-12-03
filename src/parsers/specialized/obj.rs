@@ -105,16 +105,28 @@ impl FormatParser for OBJParser {
 
         // Insert counts
         if vertex_count > 0 {
-            metadata.insert("VertexCount".to_string(), TagValue::Integer(vertex_count as i64));
+            metadata.insert(
+                "VertexCount".to_string(),
+                TagValue::Integer(vertex_count as i64),
+            );
         }
         if face_count > 0 {
-            metadata.insert("FaceCount".to_string(), TagValue::Integer(face_count as i64));
+            metadata.insert(
+                "FaceCount".to_string(),
+                TagValue::Integer(face_count as i64),
+            );
         }
         if normal_count > 0 {
-            metadata.insert("NormalCount".to_string(), TagValue::Integer(normal_count as i64));
+            metadata.insert(
+                "NormalCount".to_string(),
+                TagValue::Integer(normal_count as i64),
+            );
         }
         if texture_coord_count > 0 {
-            metadata.insert("TextureCoordCount".to_string(), TagValue::Integer(texture_coord_count as i64));
+            metadata.insert(
+                "TextureCoordCount".to_string(),
+                TagValue::Integer(texture_coord_count as i64),
+            );
         }
 
         // Insert boolean flags

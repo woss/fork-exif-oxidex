@@ -74,27 +74,45 @@ impl WOFFParser {
         let header = WOFFHeader {
             num_tables: u16::from_be_bytes([header_data[12], header_data[13]]),
             total_sfnt_size: u32::from_be_bytes([
-                header_data[16], header_data[17], header_data[18], header_data[19]
+                header_data[16],
+                header_data[17],
+                header_data[18],
+                header_data[19],
             ]),
             major_version: u16::from_be_bytes([header_data[20], header_data[21]]),
             minor_version: u16::from_be_bytes([header_data[22], header_data[23]]),
             meta_offset: u32::from_be_bytes([
-                header_data[24], header_data[25], header_data[26], header_data[27]
+                header_data[24],
+                header_data[25],
+                header_data[26],
+                header_data[27],
             ]),
             meta_length: u32::from_be_bytes([
-                header_data[28], header_data[29], header_data[30], header_data[31]
+                header_data[28],
+                header_data[29],
+                header_data[30],
+                header_data[31],
             ]),
             meta_orig_length: u32::from_be_bytes([
-                header_data[32], header_data[33], header_data[34], header_data[35]
+                header_data[32],
+                header_data[33],
+                header_data[34],
+                header_data[35],
             ]),
         };
 
         // Extract privOffset and privLength
         let priv_offset = u32::from_be_bytes([
-            header_data[36], header_data[37], header_data[38], header_data[39]
+            header_data[36],
+            header_data[37],
+            header_data[38],
+            header_data[39],
         ]);
         let priv_length = u32::from_be_bytes([
-            header_data[40], header_data[41], header_data[42], header_data[43]
+            header_data[40],
+            header_data[41],
+            header_data[42],
+            header_data[43],
         ]);
 
         Ok((header, priv_offset, priv_length))
@@ -111,13 +129,22 @@ impl WOFFParser {
         Ok(WOFFTableEntry {
             tag: [entry_data[0], entry_data[1], entry_data[2], entry_data[3]],
             offset: u32::from_be_bytes([
-                entry_data[4], entry_data[5], entry_data[6], entry_data[7]
+                entry_data[4],
+                entry_data[5],
+                entry_data[6],
+                entry_data[7],
             ]),
             comp_length: u32::from_be_bytes([
-                entry_data[8], entry_data[9], entry_data[10], entry_data[11]
+                entry_data[8],
+                entry_data[9],
+                entry_data[10],
+                entry_data[11],
             ]),
             orig_length: u32::from_be_bytes([
-                entry_data[12], entry_data[13], entry_data[14], entry_data[15]
+                entry_data[12],
+                entry_data[13],
+                entry_data[14],
+                entry_data[15],
             ]),
         })
     }
@@ -126,14 +153,22 @@ impl WOFFParser {
     fn decompress_zlib(compressed: &[u8]) -> Result<Vec<u8>> {
         let mut decoder = ZlibDecoder::new(compressed);
         let mut decompressed = Vec::new();
-        decoder.read_to_end(&mut decompressed)
+        decoder
+            .read_to_end(&mut decompressed)
             .map_err(|e| ExifToolError::parse_error(format!("Decompression failed: {}", e)))?;
         Ok(decompressed)
     }
 
     /// Extracts metadata from XML metadata block (simplified)
     fn parse_xml_metadata(xml: &str) -> Vec<(String, String)> {
-        let tags = ["vendor", "credits", "description", "license", "copyright", "trademark"];
+        let tags = [
+            "vendor",
+            "credits",
+            "description",
+            "license",
+            "copyright",
+            "trademark",
+        ];
         tags.iter()
             .filter_map(|tag| {
                 let open_tag = format!("<{}", tag);
@@ -142,7 +177,9 @@ impl WOFFParser {
                 let content_start = start + xml[start..].find('>')? + 1;
                 let end = xml[content_start..].find(&close_tag)?;
                 let content = xml[content_start..content_start + end].trim();
-                if content.is_empty() { return None; }
+                if content.is_empty() {
+                    return None;
+                }
                 let mut key = String::from("WOFF");
                 key.push_str(&tag[..1].to_uppercase());
                 key.push_str(&tag[1..]);
@@ -152,7 +189,11 @@ impl WOFFParser {
     }
 
     /// Finds table by tag
-    fn find_table(reader: &dyn FileReader, num_tables: u16, tag: &[u8; 4]) -> Result<Option<WOFFTableEntry>> {
+    fn find_table(
+        reader: &dyn FileReader,
+        num_tables: u16,
+        tag: &[u8; 4],
+    ) -> Result<Option<WOFFTableEntry>> {
         for i in 0..num_tables {
             let entry = Self::parse_table_entry(reader, 44 + (i as u64 * 20))?;
             if &entry.tag == tag {
@@ -164,24 +205,38 @@ impl WOFFParser {
 
     /// Extracts font names from name table
     fn extract_names_from_table(data: &[u8]) -> Vec<(String, String)> {
-        if data.len() < 6 { return Vec::new(); }
+        if data.len() < 6 {
+            return Vec::new();
+        }
         let count = u16::from_be_bytes([data[2], data[3]]);
         let str_offset = u16::from_be_bytes([data[4], data[5]]) as usize;
 
         (0..count.min(20))
             .filter_map(|i| {
                 let rec = 6 + (i as usize * 12);
-                if rec + 12 > data.len() { return None; }
+                if rec + 12 > data.len() {
+                    return None;
+                }
                 let id = u16::from_be_bytes([data[rec + 6], data[rec + 7]]);
                 let len = u16::from_be_bytes([data[rec + 8], data[rec + 9]]) as usize;
                 let off = u16::from_be_bytes([data[rec + 10], data[rec + 11]]) as usize;
                 let start = str_offset + off;
-                if start + len > data.len() { return None; }
-                let text = String::from_utf8_lossy(&data[start..start + len]).trim().to_string();
-                if text.is_empty() { return None; }
+                if start + len > data.len() {
+                    return None;
+                }
+                let text = String::from_utf8_lossy(&data[start..start + len])
+                    .trim()
+                    .to_string();
+                if text.is_empty() {
+                    return None;
+                }
                 let tag = match id {
-                    0 => "FontCopyright", 1 => "FontFamily", 2 => "FontSubfamily",
-                    4 => "FontName", 5 => "FontVersion", 6 => "PostScriptName",
+                    0 => "FontCopyright",
+                    1 => "FontFamily",
+                    2 => "FontSubfamily",
+                    4 => "FontName",
+                    5 => "FontVersion",
+                    6 => "PostScriptName",
                     _ => return None,
                 };
                 Some((tag.to_string(), text))
@@ -210,24 +265,38 @@ impl FormatParser for WOFFParser {
 
         // Parse WOFF header
         let (header, priv_offset, _priv_length) = Self::parse_header(reader)?;
-        metadata.insert("NumTables".to_string(), TagValue::String(header.num_tables.to_string()));
-        metadata.insert("TotalSfntSize".to_string(), TagValue::String(header.total_sfnt_size.to_string()));
-        metadata.insert("FontVersion".to_string(),
-            TagValue::String(format!("{}.{}", header.major_version, header.minor_version)));
+        metadata.insert(
+            "NumTables".to_string(),
+            TagValue::String(header.num_tables.to_string()),
+        );
+        metadata.insert(
+            "TotalSfntSize".to_string(),
+            TagValue::String(header.total_sfnt_size.to_string()),
+        );
+        metadata.insert(
+            "FontVersion".to_string(),
+            TagValue::String(format!("{}.{}", header.major_version, header.minor_version)),
+        );
 
         // Calculate compression ratio
         let file_size = reader.size();
         if header.total_sfnt_size > 0 {
             let ratio = (file_size as f64 / header.total_sfnt_size as f64) * 100.0;
-            metadata.insert("CompressionRatio".to_string(),
-                TagValue::String(format!("{:.1}%", ratio)));
+            metadata.insert(
+                "CompressionRatio".to_string(),
+                TagValue::String(format!("{:.1}%", ratio)),
+            );
         }
 
         // Check for metadata and private data blocks
-        metadata.insert("HasMetadata".to_string(),
-            TagValue::String(if header.meta_offset > 0 { "Yes" } else { "No" }.to_string()));
-        metadata.insert("HasPrivateData".to_string(),
-            TagValue::String(if priv_offset > 0 { "Yes" } else { "No" }.to_string()));
+        metadata.insert(
+            "HasMetadata".to_string(),
+            TagValue::String(if header.meta_offset > 0 { "Yes" } else { "No" }.to_string()),
+        );
+        metadata.insert(
+            "HasPrivateData".to_string(),
+            TagValue::String(if priv_offset > 0 { "Yes" } else { "No" }.to_string()),
+        );
 
         // Extract XML metadata if present
         if header.meta_offset > 0 && header.meta_length > 0 {
@@ -383,13 +452,34 @@ mod tests {
         let parser = WOFFParser;
         let metadata = parser.parse(&reader).unwrap();
 
-        assert_eq!(metadata.get("FileType").unwrap(), &TagValue::String("WOFF".to_string()));
-        assert_eq!(metadata.get("FontFlavor").unwrap(), &TagValue::String("TrueType".to_string()));
-        assert_eq!(metadata.get("NumTables").unwrap(), &TagValue::String("3".to_string()));
-        assert_eq!(metadata.get("FontVersion").unwrap(), &TagValue::String("1.0".to_string()));
-        assert_eq!(metadata.get("TotalSfntSize").unwrap(), &TagValue::String("4096".to_string()));
-        assert_eq!(metadata.get("HasMetadata").unwrap(), &TagValue::String("No".to_string()));
-        assert_eq!(metadata.get("HasPrivateData").unwrap(), &TagValue::String("No".to_string()));
+        assert_eq!(
+            metadata.get("FileType").unwrap(),
+            &TagValue::String("WOFF".to_string())
+        );
+        assert_eq!(
+            metadata.get("FontFlavor").unwrap(),
+            &TagValue::String("TrueType".to_string())
+        );
+        assert_eq!(
+            metadata.get("NumTables").unwrap(),
+            &TagValue::String("3".to_string())
+        );
+        assert_eq!(
+            metadata.get("FontVersion").unwrap(),
+            &TagValue::String("1.0".to_string())
+        );
+        assert_eq!(
+            metadata.get("TotalSfntSize").unwrap(),
+            &TagValue::String("4096".to_string())
+        );
+        assert_eq!(
+            metadata.get("HasMetadata").unwrap(),
+            &TagValue::String("No".to_string())
+        );
+        assert_eq!(
+            metadata.get("HasPrivateData").unwrap(),
+            &TagValue::String("No".to_string())
+        );
         assert!(metadata.contains_key("CompressionRatio"));
     }
 
@@ -404,8 +494,14 @@ mod tests {
         "#;
         let metadata = WOFFParser::parse_xml_metadata(xml);
 
-        assert!(metadata.iter().any(|(k, v)| k == "WOFFVendor" && v == "Test Vendor"));
-        assert!(metadata.iter().any(|(k, v)| k == "WOFFDescription" && v == "Test Font Description"));
-        assert!(metadata.iter().any(|(k, v)| k == "WOFFLicense" && v == "MIT License"));
+        assert!(metadata
+            .iter()
+            .any(|(k, v)| k == "WOFFVendor" && v == "Test Vendor"));
+        assert!(metadata
+            .iter()
+            .any(|(k, v)| k == "WOFFDescription" && v == "Test Font Description"));
+        assert!(metadata
+            .iter()
+            .any(|(k, v)| k == "WOFFLicense" && v == "MIT License"));
     }
 }

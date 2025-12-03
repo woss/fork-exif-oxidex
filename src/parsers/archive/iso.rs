@@ -101,7 +101,10 @@ impl ISOParser {
         // Volume size calculation
         let volume_sectors = Self::read_u32_both(reader, PVD_OFFSET + 80)?;
         let block_size = Self::read_u32_both(reader, PVD_OFFSET + 128)?;
-        metadata.insert("BlockSize".to_string(), TagValue::String(block_size.to_string()));
+        metadata.insert(
+            "BlockSize".to_string(),
+            TagValue::String(block_size.to_string()),
+        );
         metadata.insert(
             "VolumeSize".to_string(),
             TagValue::String((volume_sectors as u64 * block_size as u64).to_string()),

@@ -30,7 +30,7 @@ enum TARTypeFlag {
     HardLink,
     CharDevice,
     BlockDevice,
-    FIFO,
+    Fifo,
     ExtendedHeader,
     GlobalExtendedHeader,
     LongName,
@@ -47,7 +47,7 @@ impl TARTypeFlag {
             b'1' => Self::HardLink,
             b'3' => Self::CharDevice,
             b'4' => Self::BlockDevice,
-            b'6' => Self::FIFO,
+            b'6' => Self::Fifo,
             b'x' => Self::ExtendedHeader,
             b'g' => Self::GlobalExtendedHeader,
             b'L' => Self::LongName,
@@ -166,7 +166,7 @@ impl TARParser {
     /// Calculate offset of next entry (headers + content aligned to 512 bytes)
     fn next_entry_offset(current_offset: u64, content_size: u64) -> u64 {
         let header_end = current_offset + TAR_HEADER_SIZE;
-        let blocks_needed = (content_size + TAR_HEADER_SIZE - 1) / TAR_HEADER_SIZE;
+        let blocks_needed = content_size.div_ceil(TAR_HEADER_SIZE);
         header_end + (blocks_needed * TAR_HEADER_SIZE)
     }
 
@@ -269,7 +269,9 @@ impl FormatParser for TARParser {
         );
 
         // First file metadata (first regular file entry)
-        if let Some(first_file) = headers.iter().find(|h| matches!(h.typeflag, TARTypeFlag::File))
+        if let Some(first_file) = headers
+            .iter()
+            .find(|h| matches!(h.typeflag, TARTypeFlag::File))
         {
             metadata.insert(
                 "FirstFileName".to_string(),
