@@ -18,7 +18,7 @@ The following benchmarks compare OxiDex against the original Perl ExifTool runni
 ### Benchmark Metadata
 
 - **Date:** 2025-12-03 08:45:23 UTC
-- **Commit:** [`502bdba1`](https://github.com/codemaestro64/oxidex/commit/502bdba1)
+- **Commit:** [`502bdba1`](https://github.com/swack-tools/oxidex/commit/502bdba1)
 
 ### System Specifications
 
