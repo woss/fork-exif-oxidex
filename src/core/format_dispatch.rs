@@ -32,7 +32,7 @@ use crate::parsers::image::bpg::parse_bpg_metadata;
 use crate::parsers::image::exr::parse_exr_metadata;
 use crate::parsers::image::flif::parse_flif_metadata;
 use crate::parsers::image::gif::parse_gif_metadata;
-use crate::parsers::image::heif::parse_heif_metadata;
+// Note: HEIF uses parse_quicktime_metadata since HEIF is ISOBMFF-based
 use crate::parsers::image::ico::parse_ico_metadata;
 use crate::parsers::image::jxl::parse_jxl_metadata;
 use crate::parsers::image::psd::parse_psd_metadata;
@@ -126,7 +126,8 @@ pub fn dispatch_format_parser(reader: &dyn FileReader, format: FileFormat) -> Re
         FileFormat::WOFF2 => convert_string_error(parse_woff2_metadata(reader), "WOFF2"),
         // Advanced image formats
         FileFormat::AVIF => convert_string_error(parse_avif_metadata(reader), "AVIF"),
-        FileFormat::HEIF => convert_string_error(parse_heif_metadata(reader), "HEIF"),
+        // HEIF uses ISOBMFF container (same as MP4/MOV), use QuickTime parser for full EXIF extraction
+        FileFormat::HEIF => convert_string_error(parse_quicktime_metadata(reader), "HEIF"),
         FileFormat::JXL => convert_string_error(parse_jxl_metadata(reader), "JXL"),
         FileFormat::BPG => convert_string_error(parse_bpg_metadata(reader), "BPG"),
         FileFormat::EXR => convert_string_error(parse_exr_metadata(reader), "EXR"),

@@ -5,11 +5,15 @@
 //! 2. iTunes-style metadata (moov→udta→meta)
 //! 3. MP4 metadata with keys/ilst (moov→meta→keys + moov→meta→ilst)
 //! 4. XMP metadata in uuid atoms
+//! 5. HEIF/HEIC EXIF data from meta→iinf/iloc referencing mdat
 
 use super::atom_parser::Atom;
-use crate::core::{MetadataMap, TagValue};
+use crate::core::{FileReader, MetadataMap, TagValue};
+use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::tag_db::lookup_tag_name;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::io;
 
 /// Extract all metadata from QuickTime/MP4 atoms
 pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
@@ -83,8 +87,8 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
             }
         }
 
-        // Extract HEIF-specific metadata (iinf, iloc, etc.)
-        extract_heif_metadata(meta, &mut metadata)?;
+        // Extract HEIF-specific metadata (iinf, iloc, etc.) including EXIF data
+        extract_heif_metadata(meta, root_atoms, &mut metadata)?;
     }
 
     // If no metadata was extracted, return error
@@ -800,8 +804,12 @@ fn decode_utf16(data: &[u8]) -> Option<String> {
     String::from_utf16(&utf16_chars).ok()
 }
 
-/// Extract HEIF-specific metadata from meta atom
-fn extract_heif_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), String> {
+/// Extract HEIF-specific metadata from meta atom including EXIF data
+fn extract_heif_metadata(
+    meta: &Atom,
+    root_atoms: &[Atom],
+    metadata: &mut MetadataMap,
+) -> Result<(), String> {
     // Parse meta children (skip version/flags if present)
     let meta_data = if meta.data.len() >= 4 && meta.data[0..4] == [0, 0, 0, 0] {
         &meta.data[4..]
@@ -814,29 +822,153 @@ fn extract_heif_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), 
         Err(_) => return Ok(()), // Gracefully handle parsing errors
     };
 
-    // Extract image information from iinf (item information) atom
+    // Find the Exif item ID from iinf (item information) atom
+    let mut exif_item_id: Option<u16> = None;
+
     if let Some(iinf) = children.iter().find(|a| a.atom_type.matches("iinf")) {
-        if iinf.data.len() >= 8 {
-            // Skip version/flags (4 bytes)
-            let entry_count_bytes = &iinf.data[4..8];
-            // Entry count could be 2 or 4 bytes depending on version
-            let entry_count = if iinf.data[0] == 0 {
+        if iinf.data.len() >= 6 {
+            let version = iinf.data[0];
+            // Skip version/flags (4 bytes), then entry count
+            let (entry_count, entries_offset) = if version == 0 {
                 // Version 0: 2-byte entry count
-                u16::from_be_bytes([entry_count_bytes[0], entry_count_bytes[1]]) as u32
+                let count = u16::from_be_bytes([iinf.data[4], iinf.data[5]]) as u32;
+                (count, 6usize)
             } else {
                 // Version 1+: 4-byte entry count
-                u32::from_be_bytes([
-                    entry_count_bytes[0],
-                    entry_count_bytes[1],
-                    entry_count_bytes[2],
-                    entry_count_bytes[3],
-                ])
+                if iinf.data.len() >= 8 {
+                    let count = u32::from_be_bytes([
+                        iinf.data[4],
+                        iinf.data[5],
+                        iinf.data[6],
+                        iinf.data[7],
+                    ]);
+                    (count, 8usize)
+                } else {
+                    (0, 6usize)
+                }
             };
 
             metadata.insert(
                 "HEIF:ItemCount".to_string(),
                 TagValue::Integer(entry_count as i64),
             );
+
+            // Parse infe (item info entry) atoms to find Exif item
+            if let Ok((_, infe_atoms)) =
+                super::atom_parser::parse_atoms(&iinf.data[entries_offset..])
+            {
+                for infe in infe_atoms.iter().filter(|a| a.atom_type.matches("infe")) {
+                    // infe format: version(1) + flags(3) + item_id(2) + protection_index(2) + item_type(4) + name(null-terminated)
+                    if infe.data.len() >= 12 {
+                        let item_id = u16::from_be_bytes([infe.data[4], infe.data[5]]);
+                        let item_type = &infe.data[8..12];
+
+                        // Check if this is the Exif item
+                        if item_type == b"Exif" {
+                            exif_item_id = Some(item_id);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Parse iloc (item location) atom to find Exif data location
+    let mut item_locations: HashMap<u16, (u64, u64)> = HashMap::new(); // item_id -> (offset, length)
+
+    if let Some(iloc) = children.iter().find(|a| a.atom_type.matches("iloc")) {
+        if iloc.data.len() >= 8 {
+            let version = iloc.data[0];
+            // Byte 4 contains offset_size(4 bits) | length_size(4 bits)
+            // Byte 5 contains base_offset_size(4 bits) | (version>=1: index_size(4 bits) | reserved)
+            let offset_size = ((iloc.data[4] >> 4) & 0x0F) as usize;
+            let length_size = (iloc.data[4] & 0x0F) as usize;
+            let base_offset_size = ((iloc.data[5] >> 4) & 0x0F) as usize;
+
+            // Item count position depends on version
+            let (item_count, mut pos) = if version < 2 {
+                // Version 0 or 1: 2-byte item count
+                if iloc.data.len() >= 8 {
+                    let count = u16::from_be_bytes([iloc.data[6], iloc.data[7]]) as u32;
+                    (count, 8usize)
+                } else {
+                    (0, 8usize)
+                }
+            } else {
+                // Version 2: 4-byte item count
+                if iloc.data.len() >= 10 {
+                    let count = u32::from_be_bytes([
+                        iloc.data[6],
+                        iloc.data[7],
+                        iloc.data[8],
+                        iloc.data[9],
+                    ]);
+                    (count, 10usize)
+                } else {
+                    (0, 10usize)
+                }
+            };
+
+            // Parse each item entry
+            for _ in 0..item_count {
+                if pos + 2 > iloc.data.len() {
+                    break;
+                }
+
+                // item_id: 2 bytes (version < 2) or 4 bytes (version >= 2)
+                let item_id = if version < 2 {
+                    let id = u16::from_be_bytes([iloc.data[pos], iloc.data[pos + 1]]);
+                    pos += 2;
+                    id
+                } else {
+                    let id = u32::from_be_bytes([
+                        iloc.data[pos],
+                        iloc.data[pos + 1],
+                        iloc.data[pos + 2],
+                        iloc.data[pos + 3],
+                    ]) as u16;
+                    pos += 4;
+                    id
+                };
+
+                // version >= 1: construction_method (2 bytes, but we only use first byte's low 4 bits)
+                if version >= 1 {
+                    pos += 2;
+                }
+
+                // data_reference_index: 2 bytes
+                pos += 2;
+
+                // base_offset: variable size
+                let base_offset = read_variable_size(&iloc.data, &mut pos, base_offset_size);
+
+                // extent_count: 2 bytes
+                if pos + 2 > iloc.data.len() {
+                    break;
+                }
+                let extent_count = u16::from_be_bytes([iloc.data[pos], iloc.data[pos + 1]]);
+                pos += 2;
+
+                // We only handle single-extent items for simplicity
+                if extent_count >= 1 {
+                    // version >= 1 and index_size > 0: extent_index (variable)
+                    // For simplicity, we skip extent_index if present (most HEIF files don't use it)
+
+                    // extent_offset: variable size
+                    let extent_offset = read_variable_size(&iloc.data, &mut pos, offset_size);
+                    // extent_length: variable size
+                    let extent_length = read_variable_size(&iloc.data, &mut pos, length_size);
+
+                    let total_offset = base_offset + extent_offset;
+                    item_locations.insert(item_id, (total_offset, extent_length));
+
+                    // Skip remaining extents
+                    for _ in 1..extent_count {
+                        pos += offset_size + length_size;
+                    }
+                }
+            }
         }
     }
 
@@ -864,7 +996,476 @@ fn extract_heif_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), 
         }
     }
 
+    // If we found an Exif item and its location, extract EXIF data from mdat
+    if let (Some(_item_id), Some(&(offset, length))) =
+        (exif_item_id, exif_item_id.and_then(|id| item_locations.get(&id)))
+    {
+        // Find mdat atom
+        if let Some(mdat) = root_atoms.iter().find(|a| a.atom_type.matches("mdat")) {
+            // The offset in iloc is absolute file offset, but mdat.data is already the content
+            // We need to calculate the relative offset within mdat
+            // mdat header is 8 bytes (size + type), so mdat data starts at file offset = mdat_start + 8
+
+            // For HEIF files, the iloc offset is typically relative to the start of the file
+            // The mdat atom's data is the raw media data, and iloc offset points into it
+            // We need to find where mdat starts in the file
+
+            // Since we don't have absolute file positions in the atom structure,
+            // we'll use a heuristic: check if the offset makes sense relative to mdat size
+            // The Exif item data format is: 4-byte size + "Exif" + 2-byte padding + TIFF data
+
+            // Calculate the expected position within mdat
+            // The iloc offset is from the start of the file, but we need to find the
+            // position of mdat in the file. For HEIF, typically:
+            // ftyp (varies) + meta (varies) + mdat starts
+            // We'll estimate based on the root atoms
+
+            // HEIF iloc offsets are absolute file positions
+            // mdat.data[0] corresponds to some file position mdat_data_start
+            // We need to find mdat_data_start to calculate: mdat_offset = iloc_offset - mdat_data_start
+            //
+            // Key insight: The Exif item data starts with "Exif" header.
+            // We can validate by checking if mdat.data[calculated_offset+4..+8] == "Exif"
+            //
+            // Strategy: Try different possible mdat header sizes (8, 16) and validate
+
+            let exif_length = length as usize;
+            let mut final_tiff_data: Option<&[u8]> = None;
+
+            // Try different header sizes: 8 (normal) or 16 (extended size)
+            for header_size in [8u64, 16u64] {
+                // Calculate where mdat data would start in file
+                let mut file_offset = 0u64;
+                for atom in root_atoms {
+                    if atom.atom_type.matches("mdat") {
+                        break;
+                    }
+                    file_offset += 8 + atom.data.len() as u64;
+                }
+                let mdat_start = file_offset + header_size;
+
+                if offset >= mdat_start {
+                    let mdat_offset = (offset - mdat_start) as usize;
+
+                    if mdat_offset + exif_length <= mdat.data.len() {
+                        let exif_item_data = &mdat.data[mdat_offset..mdat_offset + exif_length];
+
+                        // HEIF Exif item format: 4-byte size + "Exif" + 2-byte padding + TIFF
+                        if exif_item_data.len() >= 10 && &exif_item_data[4..8] == b"Exif" {
+                            let tiff_data = &exif_item_data[10..];
+                            final_tiff_data = Some(tiff_data);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If standard detection failed, try direct offset (iloc offset as mdat data position)
+            if final_tiff_data.is_none() && offset as usize + exif_length <= mdat.data.len() {
+                let exif_item_data = &mdat.data[offset as usize..offset as usize + exif_length];
+                if exif_item_data.len() >= 10 && &exif_item_data[4..8] == b"Exif" {
+                    final_tiff_data = Some(&exif_item_data[10..]);
+                }
+            }
+
+            if let Some(tiff_data) = final_tiff_data {
+                if let Err(_e) = parse_heif_exif_data(tiff_data, metadata) {
+                    // Silently ignore EXIF parsing errors - other metadata may still be valid
+                }
+            }
+        }
+    }
+
     Ok(())
+}
+
+/// Helper function to read variable-size integers from iloc data
+fn read_variable_size(data: &[u8], pos: &mut usize, size: usize) -> u64 {
+    if *pos + size > data.len() {
+        return 0;
+    }
+
+    let value = match size {
+        0 => 0u64,
+        1 => data[*pos] as u64,
+        2 => u16::from_be_bytes([data[*pos], data[*pos + 1]]) as u64,
+        4 => u32::from_be_bytes([data[*pos], data[*pos + 1], data[*pos + 2], data[*pos + 3]]) as u64,
+        8 => u64::from_be_bytes([
+            data[*pos],
+            data[*pos + 1],
+            data[*pos + 2],
+            data[*pos + 3],
+            data[*pos + 4],
+            data[*pos + 5],
+            data[*pos + 6],
+            data[*pos + 7],
+        ]),
+        _ => 0,
+    };
+    *pos += size;
+    value
+}
+
+/// Simple in-memory FileReader for EXIF data embedded in HEIF files
+struct HeifExifDataReader {
+    data: Vec<u8>,
+}
+
+impl HeifExifDataReader {
+    fn new(data: Vec<u8>) -> Self {
+        Self { data }
+    }
+}
+
+impl FileReader for HeifExifDataReader {
+    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
+        let start = offset as usize;
+        let end = start + length;
+
+        if end > self.data.len() {
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "read beyond end of EXIF data",
+            ));
+        }
+
+        Ok(&self.data[start..end])
+    }
+
+    fn size(&self) -> u64 {
+        self.data.len() as u64
+    }
+}
+
+/// Parse TIFF/EXIF data from HEIF Exif item and insert into metadata
+fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
+    if tiff_data.len() < 8 {
+        return Err("TIFF data too short".to_string());
+    }
+
+    // Detect byte order from TIFF header
+    let byte_order = match &tiff_data[0..2] {
+        b"II" => ByteOrder::LittleEndian,
+        b"MM" => ByteOrder::BigEndian,
+        _ => return Err("Invalid TIFF byte order marker".to_string()),
+    };
+
+    // Verify TIFF magic number (0x002A)
+    let magic = match byte_order {
+        ByteOrder::LittleEndian => u16::from_le_bytes([tiff_data[2], tiff_data[3]]),
+        ByteOrder::BigEndian => u16::from_be_bytes([tiff_data[2], tiff_data[3]]),
+    };
+
+    if magic != 0x002A {
+        return Err(format!("Invalid TIFF magic number: 0x{:04X}", magic));
+    }
+
+    // Read IFD0 offset
+    let ifd_offset = match byte_order {
+        ByteOrder::LittleEndian => {
+            u32::from_le_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
+        }
+        ByteOrder::BigEndian => {
+            u32::from_be_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
+        }
+    };
+
+    // Create a reader for the TIFF data
+    let exif_reader = HeifExifDataReader::new(tiff_data.to_vec());
+
+    // Track sub-IFD offsets
+    let mut exif_ifd_offset = None;
+    let mut gps_ifd_offset = None;
+
+    // Parse IFD0
+    let ifd0_tags = parse_ifd(&exif_reader, ifd_offset as u64, byte_order)
+        .map_err(|e| format!("Failed to parse IFD0: {}", e))?;
+
+    for (tag_id, field_type, value_count, raw_bytes) in &ifd0_tags {
+        // Check for ExifIFD pointer (tag 0x8769)
+        if *tag_id == 0x8769 && raw_bytes.len() >= 4 {
+            let offset = match byte_order {
+                ByteOrder::LittleEndian => {
+                    u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
+                }
+                ByteOrder::BigEndian => {
+                    u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
+                }
+            };
+            exif_ifd_offset = Some(offset as u64);
+            continue;
+        }
+
+        // Check for GPS Sub-IFD pointer (tag 0x8825)
+        if *tag_id == 0x8825 && raw_bytes.len() >= 4 {
+            let offset = match byte_order {
+                ByteOrder::LittleEndian => {
+                    u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
+                }
+                ByteOrder::BigEndian => {
+                    u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
+                }
+            };
+            gps_ifd_offset = Some(offset as u64);
+            continue;
+        }
+
+        // Convert tag to name and value
+        let tag_name = lookup_tag_name(*tag_id, "IFD0");
+        let tag_value = raw_bytes_to_tag_value(raw_bytes, *field_type, *value_count, byte_order);
+        metadata.insert(tag_name, tag_value);
+    }
+
+    // Parse ExifIFD if present
+    if let Some(offset) = exif_ifd_offset {
+        if let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+            for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
+                let tag_name = lookup_tag_name(tag_id, "ExifIFD");
+                let tag_value =
+                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+                metadata.insert(tag_name, tag_value);
+            }
+        }
+    }
+
+    // Parse GPS IFD if present
+    if let Some(offset) = gps_ifd_offset {
+        if let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+            for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
+                let tag_name = lookup_tag_name(tag_id, "GPS");
+                let tag_value =
+                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+                metadata.insert(tag_name, tag_value);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Convert raw EXIF bytes to TagValue
+fn raw_bytes_to_tag_value(
+    bytes: &[u8],
+    field_type: u16,
+    value_count: u32,
+    byte_order: ByteOrder,
+) -> TagValue {
+    use crate::parsers::common::exif_types::ExifType;
+
+    if let Some(exif_type) = ExifType::from_u16(field_type) {
+        match exif_type {
+            // BYTE (type 1): 8-bit unsigned integer
+            ExifType::Byte if bytes.len() >= 1 => {
+                if value_count == 1 {
+                    return TagValue::Integer(bytes[0] as i64);
+                } else {
+                    // Multiple bytes - return as binary or formatted
+                    return TagValue::Binary(bytes.to_vec());
+                }
+            }
+
+            // ASCII (type 2): null-terminated string
+            ExifType::Ascii => {
+                let text = String::from_utf8_lossy(bytes);
+                let trimmed = text.trim_end_matches('\0');
+                return TagValue::String(trimmed.to_string());
+            }
+
+            // SHORT (type 3): 16-bit unsigned integer
+            ExifType::Short if bytes.len() >= 2 => {
+                if value_count == 1 {
+                    let value = match byte_order {
+                        ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
+                        ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
+                    };
+                    return TagValue::Integer(value as i64);
+                } else {
+                    // Multiple shorts - format as space-separated
+                    let mut values = Vec::new();
+                    for i in 0..value_count as usize {
+                        let offset = i * 2;
+                        if offset + 2 <= bytes.len() {
+                            let value = match byte_order {
+                                ByteOrder::LittleEndian => {
+                                    u16::from_le_bytes([bytes[offset], bytes[offset + 1]])
+                                }
+                                ByteOrder::BigEndian => {
+                                    u16::from_be_bytes([bytes[offset], bytes[offset + 1]])
+                                }
+                            };
+                            values.push(value.to_string());
+                        }
+                    }
+                    return TagValue::String(values.join(" "));
+                }
+            }
+
+            // LONG (type 4): 32-bit unsigned integer
+            ExifType::Long if bytes.len() >= 4 => {
+                let value = match byte_order {
+                    ByteOrder::LittleEndian => {
+                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                    }
+                    ByteOrder::BigEndian => {
+                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                    }
+                };
+                return TagValue::Integer(value as i64);
+            }
+
+            // RATIONAL (type 5): Two LONGs (numerator/denominator)
+            ExifType::Rational if bytes.len() >= 8 => {
+                if value_count == 1 {
+                    let (num, den) = match byte_order {
+                        ByteOrder::LittleEndian => (
+                            u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+                            u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
+                        ),
+                        ByteOrder::BigEndian => (
+                            u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+                            u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
+                        ),
+                    };
+                    if den != 0 {
+                        return TagValue::Float(num as f64 / den as f64);
+                    }
+                } else {
+                    // Multiple rationals - format as space-separated
+                    let mut values = Vec::new();
+                    for i in 0..value_count as usize {
+                        let offset = i * 8;
+                        if offset + 8 <= bytes.len() {
+                            let (num, den) = match byte_order {
+                                ByteOrder::LittleEndian => (
+                                    u32::from_le_bytes([
+                                        bytes[offset],
+                                        bytes[offset + 1],
+                                        bytes[offset + 2],
+                                        bytes[offset + 3],
+                                    ]),
+                                    u32::from_le_bytes([
+                                        bytes[offset + 4],
+                                        bytes[offset + 5],
+                                        bytes[offset + 6],
+                                        bytes[offset + 7],
+                                    ]),
+                                ),
+                                ByteOrder::BigEndian => (
+                                    u32::from_be_bytes([
+                                        bytes[offset],
+                                        bytes[offset + 1],
+                                        bytes[offset + 2],
+                                        bytes[offset + 3],
+                                    ]),
+                                    u32::from_be_bytes([
+                                        bytes[offset + 4],
+                                        bytes[offset + 5],
+                                        bytes[offset + 6],
+                                        bytes[offset + 7],
+                                    ]),
+                                ),
+                            };
+                            if den != 0 {
+                                values.push(format!("{}", num as f64 / den as f64));
+                            }
+                        }
+                    }
+                    return TagValue::String(values.join(" "));
+                }
+            }
+
+            // SBYTE (type 6): 8-bit signed integer
+            ExifType::SByte if bytes.len() >= 1 => {
+                return TagValue::Integer(bytes[0] as i8 as i64);
+            }
+
+            // UNDEFINED (type 7): arbitrary bytes
+            ExifType::Undefined => {
+                // Try to interpret as string if printable
+                if bytes.iter().all(|&b| b.is_ascii_graphic() || b.is_ascii_whitespace() || b == 0)
+                {
+                    let text = String::from_utf8_lossy(bytes);
+                    let trimmed = text.trim_end_matches('\0');
+                    if !trimmed.is_empty() {
+                        return TagValue::String(trimmed.to_string());
+                    }
+                }
+                return TagValue::Binary(bytes.to_vec());
+            }
+
+            // SSHORT (type 8): 16-bit signed integer
+            ExifType::SShort if bytes.len() >= 2 => {
+                let value = match byte_order {
+                    ByteOrder::LittleEndian => i16::from_le_bytes([bytes[0], bytes[1]]),
+                    ByteOrder::BigEndian => i16::from_be_bytes([bytes[0], bytes[1]]),
+                };
+                return TagValue::Integer(value as i64);
+            }
+
+            // SLONG (type 9): 32-bit signed integer
+            ExifType::SLong if bytes.len() >= 4 => {
+                let value = match byte_order {
+                    ByteOrder::LittleEndian => {
+                        i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                    }
+                    ByteOrder::BigEndian => {
+                        i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                    }
+                };
+                return TagValue::Integer(value as i64);
+            }
+
+            // SRATIONAL (type 10): Two SLONGs
+            ExifType::SRational if bytes.len() >= 8 => {
+                let (num, den) = match byte_order {
+                    ByteOrder::LittleEndian => (
+                        i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+                        i32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
+                    ),
+                    ByteOrder::BigEndian => (
+                        i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+                        i32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
+                    ),
+                };
+                if den != 0 {
+                    return TagValue::Float(num as f64 / den as f64);
+                }
+            }
+
+            // FLOAT (type 11): 32-bit IEEE float
+            ExifType::Float if bytes.len() >= 4 => {
+                let bits = match byte_order {
+                    ByteOrder::LittleEndian => {
+                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                    }
+                    ByteOrder::BigEndian => {
+                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                    }
+                };
+                return TagValue::Float(f32::from_bits(bits) as f64);
+            }
+
+            // DOUBLE (type 12): 64-bit IEEE float
+            ExifType::Double if bytes.len() >= 8 => {
+                let bits = match byte_order {
+                    ByteOrder::LittleEndian => u64::from_le_bytes([
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
+                    ]),
+                    ByteOrder::BigEndian => u64::from_be_bytes([
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
+                    ]),
+                };
+                return TagValue::Float(f64::from_bits(bits));
+            }
+
+            _ => {}
+        }
+    }
+
+    // Fallback: store as binary
+    TagValue::Binary(bytes.to_vec())
 }
 
 #[cfg(test)]
