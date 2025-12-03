@@ -86,18 +86,18 @@ let iso = metadata.get("EXIF:ISO")?.as_integer()?;  // Option<i64>
 let make = metadata.get("EXIF:Make")?.as_string()?;  // Option<&str>
 ```
 
-## Planned High-Level API
+## High-Level API
 
-**Status**: 🔄 In Development
+**Status**: ✅ Available Now
 
-The high-level API is designed to provide an ergonomic, builder-pattern interface for common operations. These examples show the planned API design (not yet fully implemented).
+The high-level API provides an ergonomic, builder-pattern interface for common operations.
 
-### Reading Metadata (Planned)
+### Reading Metadata
 
-```rust,ignore
+```rust,no_run
 use oxidex::Metadata;
 
-fn main() -> oxidex::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Open file and extract all metadata
     let metadata = Metadata::from_path("photo.jpg")?;
 
@@ -114,17 +114,21 @@ fn main() -> oxidex::Result<()> {
 }
 ```
 
-### Writing Metadata (Planned)
+### Writing Metadata
 
-```rust,ignore
+```rust,no_run
 use oxidex::Metadata;
 
-fn main() -> oxidex::Result<()> {
-    // Load, modify, and write metadata using builder pattern
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load, modify, and save metadata using builder pattern
+    Metadata::from_path("photo.jpg")?
+        .set_tag("EXIF:Artist", "John Doe")
+        .set_tag("EXIF:Copyright", "2025 John Doe")
+        .save()?;
+
+    // Or write to a different file
     Metadata::from_path("input.jpg")?
-        .set_tag("EXIF:Artist", "John Doe")?
-        .set_tag("EXIF:Copyright", "2025 John Doe")?
-        .set_tag("EXIF:DateTime", "2025:01:15 14:30:00")?
+        .set_tag("EXIF:Artist", "John Doe")
         .write_to("output.jpg")?;
 
     println!("Metadata updated successfully");
@@ -132,20 +136,20 @@ fn main() -> oxidex::Result<()> {
 }
 ```
 
-### Copying Metadata (Planned)
+### Copying Metadata
 
-```rust,ignore
+```rust,no_run
 use oxidex::Metadata;
 
-fn main() -> oxidex::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Copy all metadata from source to destination
     Metadata::from_path("source.jpg")?
-        .copy_tags_to("dest.jpg")?
+        .copy_to("dest.jpg")?
         .execute()?;
 
     // Copy only specific tags
     Metadata::from_path("source.jpg")?
-        .copy_tags_to("dest.jpg")?
+        .copy_to("dest.jpg")?
         .with_tags(&["EXIF:DateTime", "EXIF:Make", "EXIF:Model"])?
         .execute()?;
 
@@ -153,9 +157,9 @@ fn main() -> oxidex::Result<()> {
 }
 ```
 
-## Current Low-Level API
+## Low-Level API
 
-**Status**: ✅ Available Now
+**Status**: ✅ Available
 
 The low-level API provides direct access to the core data structures. Use this for production code until the high-level API is fully implemented.
 

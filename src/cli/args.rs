@@ -356,6 +356,72 @@ impl CliArgs {
         Some(tag_names)
     }
 
+    /// Extracts specific tag names to display when reading metadata.
+    /// Returns None if no specific tags are requested (show all tags).
+    /// Returns Some(Vec) of tag names if specific tags are requested.
+    ///
+    /// This enables `-TAG` syntax for filtering output:
+    /// - `oxidex -Make photo.jpg` → shows only Make tag
+    /// - `oxidex -Make -Model photo.jpg` → shows Make and Model tags
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use oxidex::cli::args::CliArgs;
+    /// // If args are: ["-Make", "-Model", "photo.jpg"]
+    /// // Returns: Some(vec!["Make", "Model"])
+    /// ```
+    pub fn specific_tags(&self) -> Option<Vec<String>> {
+        // Don't apply in copy mode (tags_from_file handles its own filtering)
+        if self.tags_from_file.is_some() {
+            return None;
+        }
+
+        // Don't apply in write mode (has tag modifications with '=')
+        let has_modifications = self.args.iter().any(|arg| arg.contains('='));
+        if has_modifications {
+            return None;
+        }
+
+        // If only file argument present, show all tags
+        if self.args.len() <= 1 {
+            return None;
+        }
+
+        let mut tag_names = Vec::new();
+
+        // Process all arguments except the last one (file path)
+        for arg in &self.args[..self.args.len() - 1] {
+            // Tag extraction: starts with '-', does NOT contain '='
+            if arg.starts_with('-') && !arg.contains('=') {
+                let tag_name = arg.trim_start_matches('-').to_string();
+                tag_names.push(tag_name);
+            }
+        }
+
+        if tag_names.is_empty() {
+            None
+        } else {
+            Some(tag_names)
+        }
+    }
+
+    /// Checks if the user wants to clear all metadata (`-all=` syntax).
+    ///
+    /// This implements the ExifTool `-all=` command for removing all metadata
+    /// from a file for privacy purposes.
+    ///
+    /// # Examples
+    ///
+    /// - `oxidex -all= photo.jpg` → clears all metadata
+    /// - `oxidex -ALL= photo.jpg` → clears all metadata (case-insensitive)
+    pub fn is_clear_all_metadata(&self) -> bool {
+        self.args.iter().any(|arg| {
+            let lower = arg.to_lowercase();
+            lower == "-all=" || lower == "--all="
+        })
+    }
+
     /// Extracts the filename pattern from -FileName<pattern> argument.
     /// Returns None if no -FileName argument is found.
     /// Returns Some(pattern) with the pattern after the '<' character.

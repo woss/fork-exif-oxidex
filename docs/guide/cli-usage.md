@@ -610,13 +610,9 @@ OxiDex provides detailed error messages to help diagnose issues. Read the error 
 
 The following features are planned but not yet available:
 
-- ⏳ **Specific Tag Extraction**: `-TAG` to show only specific tags (currently shows all tags)
-- ⏳ **Tag Deletion**: `-TAG=` to delete a tag
-- ⏳ **Group Deletion**: `-all=` to delete all metadata
-- ⏳ **Short Format Output**: `-s` for compact output
 - ⏳ **Conditional Edits**: `-if` for conditional tag modifications
 
-For these features, use the original ExifTool in the meantime.
+For this feature, use the original ExifTool in the meantime.
 
 ## Compatibility with Original ExifTool
 
@@ -625,7 +621,11 @@ OxiDex aims for CLI compatibility with the original ExifTool. Most common comman
 **Compatible:**
 - ✅ Reading metadata: `oxidex file.jpg`
 - ✅ JSON output: `oxidex -j file.jpg`
+- ✅ Short format: `oxidex -s file.jpg`
 - ✅ Writing tags: `oxidex -TAG=VALUE file.jpg`
+- ✅ Tag-specific reading: `oxidex -Make -Model file.jpg`
+- ✅ Tag deletion: `oxidex -TAG= file.jpg`
+- ✅ Clear all metadata: `oxidex -all= file.jpg`
 - ✅ Recursive processing: `oxidex -r directory/`
 - ✅ Backup creation: `oxidex --backup file.jpg`
 - ✅ Date shifting: `oxidex '-AllDates+=1:0:0 0:0:0' file.jpg`
@@ -633,8 +633,6 @@ OxiDex aims for CLI compatibility with the original ExifTool. Most common comman
 - ✅ Metadata copying: `oxidex --TagsFromFile src.jpg dest.jpg`
 
 **Not Yet Compatible:**
-- ⏳ Tag-specific reading: `oxidex -Make -Model file.jpg`
-- ⏳ Tag deletion: `oxidex -TAG= file.jpg`
 - ⏳ Conditional operations: `oxidex -if '$Make eq "Canon"' file.jpg`
 
 ## Next Steps

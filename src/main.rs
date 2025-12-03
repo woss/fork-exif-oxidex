@@ -5,11 +5,11 @@
 use oxidex::cli::args::CliArgs;
 use oxidex::cli::batch_processor;
 use oxidex::cli::output_formatter::{
-    CsvFormatter, HumanReadableFormatter, JsonFormatter, OutputFormatter,
+    CsvFormatter, HumanReadableFormatter, JsonFormatter, OutputFormatter, ShortFormatter,
 };
 use oxidex::cli::rename;
 use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
-use oxidex::core::operations::{copy_metadata, modify_tag, read_metadata};
+use oxidex::core::operations::{clear_all_metadata, copy_metadata, modify_tag, read_metadata, remove_tag};
 use oxidex::core::tag_value::TagValue;
 use std::process;
 
@@ -24,10 +24,6 @@ fn main() {
         }
     };
 
-    // Display warning for unimplemented features
-    if args.short_format {
-        eprintln!("Warning: Short format output (-s) is not yet implemented");
-    }
 
     // Extract file path from arguments
     let file = match args.file() {
@@ -38,6 +34,12 @@ fn main() {
             process::exit(1);
         }
     };
+
+    // Check if this is a clear all metadata operation (-all=)
+    if args.is_clear_all_metadata() {
+        handle_clear_all_operation(&file, &args);
+        return;
+    }
 
     // Check if this is a date shift operation
     let date_shifts = args.date_shift_operations();
@@ -132,19 +134,27 @@ fn handle_write_operation(file: &std::path::Path, args: &CliArgs) {
 
     // Apply each modification
     for (tag_name, value) in &modifications {
-        // Convert value to TagValue (currently only supporting strings)
-        let tag_value = TagValue::new_string(value.clone());
-
-        // Call modify_tag from core operations
-        if let Err(e) = modify_tag(file, tag_name, tag_value) {
-            // Format error message based on error type
-            let error_msg = format!("{}", e);
-            if error_msg.contains("invalid") || error_msg.contains("Invalid") {
-                eprintln!("Error: Invalid value for {}: {}", tag_name, e);
-            } else {
-                eprintln!("Error: Failed to modify tag '{}': {}", tag_name, e);
+        if value.is_empty() {
+            // Empty value = delete tag (ExifTool -TAG= syntax)
+            if let Err(e) = remove_tag(file, tag_name) {
+                eprintln!("Error: Failed to remove tag '{}': {}", tag_name, e);
+                process::exit(1);
             }
-            process::exit(1);
+        } else {
+            // Non-empty value = modify tag
+            let tag_value = TagValue::new_string(value.clone());
+
+            // Call modify_tag from core operations
+            if let Err(e) = modify_tag(file, tag_name, tag_value) {
+                // Format error message based on error type
+                let error_msg = format!("{}", e);
+                if error_msg.contains("invalid") || error_msg.contains("Invalid") {
+                    eprintln!("Error: Invalid value for {}: {}", tag_name, e);
+                } else {
+                    eprintln!("Error: Failed to modify tag '{}': {}", tag_name, e);
+                }
+                process::exit(1);
+            }
         }
     }
 
@@ -174,27 +184,39 @@ fn handle_read_operation(file: &std::path::Path, args: &CliArgs) {
                 return;
             }
 
+            // Get specific tags filter if provided (e.g., oxidex -Make -Model photo.jpg)
+            let tag_filter = args.specific_tags();
+            let filter_slice = tag_filter.as_deref();
+
             // Output based on requested format using formatters
-            // Check CSV first, then JSON, then default to human-readable
+            // Check CSV first, then JSON, then short, then default to human-readable
             if args.csv {
                 // CSV output format
                 let formatter = CsvFormatter;
-                let output = formatter.format(&metadata, None);
+                let output = formatter.format(&metadata, filter_slice);
                 print!("{}", output);
             } else if args.json {
                 // JSON output format
                 let formatter = JsonFormatter;
-                let output = formatter.format(&metadata, None);
+                let output = formatter.format(&metadata, filter_slice);
                 println!("{}", output);
+            } else if args.short_format {
+                // Short format output (-s flag)
+                let formatter = ShortFormatter;
+                let output = formatter.format(&metadata, filter_slice);
+                print!("{}", output);
             } else {
                 // Human-readable output format
-                println!("File: {}", file.display());
-                println!("Found {} metadata tag(s):", metadata.len());
-                println!();
+                if filter_slice.is_none() {
+                    // Only show header when showing all tags
+                    println!("File: {}", file.display());
+                    println!("Found {} metadata tag(s):", metadata.len());
+                    println!();
+                }
 
                 // Use HumanReadableFormatter
                 let formatter = HumanReadableFormatter;
-                let output = formatter.format(&metadata, None);
+                let output = formatter.format(&metadata, filter_slice);
                 print!("{}", output);
             }
         }
@@ -474,6 +496,85 @@ fn handle_date_shift_operation(file: &std::path::Path, args: &CliArgs) {
             Err(e) => {
                 eprintln!("Warning: Could not restore file modification time: {}", e);
                 // Don't exit - the shift succeeded, only mtime restoration failed
+            }
+        }
+    }
+
+    // Print success message (matching ExifTool format)
+    println!("    1 image files updated");
+}
+
+/// Handles clear all metadata operation (-all=)
+fn handle_clear_all_operation(file: &std::path::Path, args: &CliArgs) {
+    // Check readonly flag FIRST - if set, prevent any writes
+    if args.readonly {
+        eprintln!("Error: Cannot clear metadata in read-only mode (--readonly flag set)");
+        process::exit(1);
+    }
+
+    // Verify file exists
+    if !file.exists() {
+        eprintln!("Error: File not found: {}", file.display());
+        process::exit(1);
+    }
+
+    // Check if file is writable
+    let file_metadata = match std::fs::metadata(file) {
+        Ok(metadata) => {
+            if metadata.permissions().readonly() {
+                eprintln!("Error: File is read-only: {}", file.display());
+                process::exit(1);
+            }
+            metadata
+        }
+        Err(e) => {
+            eprintln!("Error: Cannot access file '{}': {}", file.display(), e);
+            process::exit(1);
+        }
+    };
+
+    // Save original modification time if preserve_file_times is enabled
+    let original_mtime = if args.preserve_file_times {
+        match file_metadata.modified() {
+            Ok(mtime) => Some(mtime),
+            Err(e) => {
+                eprintln!("Warning: Could not read file modification time: {}", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    // Create backup if requested
+    if args.backup {
+        let mut backup_path = file.as_os_str().to_owned();
+        backup_path.push(".bak");
+        let backup_path = std::path::PathBuf::from(backup_path);
+
+        if let Err(e) = std::fs::copy(file, &backup_path) {
+            eprintln!(
+                "Error: Failed to create backup file '{}': {}",
+                backup_path.display(),
+                e
+            );
+            process::exit(1);
+        }
+    }
+
+    // Clear all metadata
+    if let Err(e) = clear_all_metadata(file) {
+        eprintln!("Error: Failed to clear metadata from '{}': {}", file.display(), e);
+        process::exit(1);
+    }
+
+    // Restore original modification time if requested
+    if let Some(mtime) = original_mtime {
+        use std::fs::File;
+        match File::open(file).and_then(|f| f.set_modified(mtime)) {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Warning: Could not restore file modification time: {}", e);
             }
         }
     }

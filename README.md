@@ -12,7 +12,7 @@ OxiDex is a memory-safe, drop-in replacement for the Perl-based ExifTool. It pro
 
 ## Why OxiDex?
 
-- **16-65x faster** than Perl ExifTool ([see benchmarks](https://oxidex.net/performance/#benchmark-results))
+- **3.7-9.7x faster** than Perl ExifTool ([see benchmarks](https://oxidex.net/performance/benchmarks))
 - **Memory safe** - No buffer overflows, use-after-free, or data races
 - **Drop-in compatible** - Same CLI arguments as original ExifTool
 - **Cross-platform** - Static binaries for Linux, macOS, and Windows

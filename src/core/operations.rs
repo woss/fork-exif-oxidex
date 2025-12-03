@@ -287,6 +287,77 @@ pub fn modify_tag(path: &Path, tag_name: &str, new_value: TagValue) -> Result<()
     Ok(())
 }
 
+/// Removes a metadata tag from a file.
+///
+/// This function reads the file's metadata, removes the specified tag,
+/// and writes the modified metadata back to the file.
+///
+/// # Arguments
+///
+/// * `path` - Path to the file
+/// * `tag_name` - Name of the tag to remove (e.g., "EXIF:Artist")
+///
+/// # Returns
+///
+/// * `Ok(())` - Tag was removed (or didn't exist)
+/// * `Err` - I/O error or unsupported format
+///
+/// # Examples
+///
+/// ```no_run
+/// use oxidex::core::operations::remove_tag;
+/// use std::path::Path;
+///
+/// // Remove the Artist tag from a JPEG file
+/// remove_tag(Path::new("photo.jpg"), "EXIF:Artist").unwrap();
+/// ```
+pub fn remove_tag(path: &Path, tag_name: &str) -> Result<()> {
+    // Step 1: Read existing metadata
+    let mut metadata = read_metadata(path)?;
+
+    // Step 2: Remove the tag (if it exists)
+    metadata.remove(tag_name);
+
+    // Step 3: Write metadata back to file
+    write_metadata(path, &metadata)?;
+
+    Ok(())
+}
+
+/// Clears all metadata from a file.
+///
+/// This function removes all metadata tags from a file, leaving only
+/// the essential file structure intact. Useful for privacy purposes
+/// before sharing files.
+///
+/// # Arguments
+///
+/// * `path` - Path to the file
+///
+/// # Returns
+///
+/// * `Ok(())` - All metadata was cleared
+/// * `Err` - I/O error or unsupported format
+///
+/// # Examples
+///
+/// ```no_run
+/// use oxidex::core::operations::clear_all_metadata;
+/// use std::path::Path;
+///
+/// // Remove all metadata from a file (privacy)
+/// clear_all_metadata(Path::new("photo.jpg")).unwrap();
+/// ```
+pub fn clear_all_metadata(path: &Path) -> Result<()> {
+    // Create empty metadata map
+    let metadata = MetadataMap::new();
+
+    // Write empty metadata (format-specific writers handle cleanup)
+    write_metadata(path, &metadata)?;
+
+    Ok(())
+}
+
 /// Copies metadata from a source file to a destination file.
 ///
 /// This function orchestrates the metadata copy workflow:

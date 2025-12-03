@@ -46,3 +46,6 @@ pub mod tag_db;
 
 /// Library version string
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+// Re-export the high-level API at crate root for convenience
+pub use crate::core::Metadata;

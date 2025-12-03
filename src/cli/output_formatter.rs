@@ -368,6 +368,134 @@ impl OutputFormatter for CsvFormatter {
     }
 }
 
+/// Formats metadata in short (compact) format
+///
+/// Output format: "ShortTagName: Value" with family prefix stripped
+/// and long values truncated. This provides a more concise view of metadata.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::cli::output_formatter::{OutputFormatter, ShortFormatter};
+/// use oxidex::core::metadata_map::MetadataMap;
+/// use oxidex::core::tag_value::TagValue;
+///
+/// let mut metadata = MetadataMap::new();
+/// metadata.insert("EXIF:Make", TagValue::new_string("Canon"));
+/// metadata.insert("EXIF:ISO", TagValue::new_integer(400));
+///
+/// let formatter = ShortFormatter;
+/// let output = formatter.format(&metadata, None);
+/// // Output:
+/// // Make: Canon
+/// // ISO: 400
+/// ```
+pub struct ShortFormatter;
+
+impl OutputFormatter for ShortFormatter {
+    fn format(&self, metadata: &MetadataMap, filter_tags: Option<&[String]>) -> String {
+        if metadata.is_empty() {
+            return String::new();
+        }
+
+        // Collect tags into a vector for sorting
+        let mut tags: Vec<_> = metadata.iter().collect();
+
+        // Filter tags if a filter is provided
+        if let Some(filter) = filter_tags {
+            tags.retain(|(name, _)| filter.contains(name));
+            if tags.is_empty() {
+                return String::new();
+            }
+        }
+
+        // Sort tags alphabetically by name
+        tags.sort_by_key(|(name, _)| *name);
+
+        // Format each tag in short format
+        let mut output = String::new();
+        for (tag_name, tag_value) in tags {
+            // Skip large binary data fields
+            if let TagValue::Binary(bytes) = tag_value {
+                if bytes.len() > 256 {
+                    continue;
+                }
+            }
+
+            // Skip known problematic tags
+            if matches!(
+                tag_name.as_str(),
+                "IFD0:LeafData"
+                    | "IFD1:LeafData"
+                    | "EXIF:MakerNoteApple"
+                    | "EXIF:PrintIM"
+                    | "EXIF:ApplicationNotes"
+            ) {
+                continue;
+            }
+
+            // Extract short name (after last colon)
+            let short_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
+            let formatted_value = format_tag_value_short(tag_name, tag_value);
+            output.push_str(&format!("{}: {}\n", short_name, formatted_value));
+        }
+
+        output
+    }
+}
+
+/// Helper function to format a TagValue for short format display
+///
+/// Similar to format_tag_value but truncates long strings for compact output.
+fn format_tag_value_short(tag_name: &str, value: &TagValue) -> String {
+    if let Some(label) = friendly_enum_name(tag_name, value) {
+        // Truncate enum labels if too long
+        if label.len() > 50 {
+            return format!("{}...", &label[..47]);
+        }
+        return label;
+    }
+
+    match value {
+        TagValue::String(s) => {
+            // Truncate long strings for short format
+            if s.len() > 50 {
+                format!("{}...", &s[..47])
+            } else {
+                s.clone()
+            }
+        }
+        TagValue::Integer(i) => i.to_string(),
+        TagValue::Float(f) => format!("{:.2}", f), // Limit decimal places
+        TagValue::Rational {
+            numerator,
+            denominator,
+        } => {
+            if *denominator == 1 {
+                numerator.to_string()
+            } else if *denominator == 0 {
+                "0".to_string()
+            } else {
+                format!("{}/{}", numerator, denominator)
+            }
+        }
+        TagValue::Binary(bytes) => format!("({} bytes)", bytes.len()),
+        TagValue::DateTime(dt) => dt.format("%Y:%m:%d %H:%M:%S").to_string(),
+        TagValue::Struct(_) => "(struct)".to_string(),
+        TagValue::Array(values) => {
+            if values.len() > 3 {
+                format!("[{} items]", values.len())
+            } else {
+                let formatted: Vec<String> = values
+                    .iter()
+                    .map(|v| format_tag_value_short(tag_name, v))
+                    .collect();
+                format!("[{}]", formatted.join(", "))
+            }
+        }
+    }
+}
+
 /// Helper function to format a TagValue for human-readable display
 ///
 /// Converts each TagValue variant into a clean string representation
