@@ -28,20 +28,43 @@ env:
   CARGO_PROFILE_TEST_DEBUG: 0
 
 jobs:
-  test:
-    name: Test Suite
+  # Fast checks that can fail early (runs in parallel with build-test)
+  lint-fmt:
+    name: Lint & Format
     runs-on: arc-runner-set
-    timeout-minutes: 30
-
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
-      - name: Build
-        run: cargo build --release --verbose --all-features
+      - name: Check formatting
+        run: cargo fmt --all -- --check
 
-      - name: Run tests
-        run: cargo test --verbose --all-features
+      - name: Run Clippy (release profile)
+        run: cargo clippy --release --all-features -- -D warnings
+
+  # Main build and test job
+  build-test:
+    name: Build & Test
+    runs-on: arc-runner-set
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@735e5933943122c5ac182670a935f54a949265c1 # v2
+        with:
+          tool: cargo-nextest
+
+      - name: Build (release)
+        run: cargo build --release --all-features
+
+      - name: Run tests (nextest)
+        run: cargo nextest run --release --all-features
+
+      - name: Run doc tests
+        run: cargo test --doc --all-features
 
       - name: Verify C header is up-to-date
         run: |
@@ -57,10 +80,11 @@ jobs:
           rm api/oxidex.h.tmp
           echo "C header file is up-to-date"
 
+  # Security audit (runs in parallel)
   audit:
     name: Security Audit
     runs-on: arc-runner-set
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
@@ -69,17 +93,6 @@ jobs:
         uses: rustsec/audit-check@e9159ac5f7d7d873ce074ca134da2f445c0a4a61 # v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run Clippy
-        run: cargo clippy --all-features -- -D warnings
-
-      - name: Generate build artifacts
-        run: cargo check --all-features
-        env:
-          CARGO_TERM_COLOR: always
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
 
   integration-tests:
     name: Integration Tests (ExifTool Comparison)

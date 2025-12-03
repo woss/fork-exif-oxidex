@@ -9,7 +9,12 @@ default:
 # Run all tests (matches CI exactly)
 test:
     @echo "Running all tests (matching CI)..."
-    cargo test --release --verbose --all-features
+    cargo test --release --all-features
+
+# Run all tests with cargo-nextest (faster parallel execution)
+test-nextest:
+    @echo "Running all tests with nextest..."
+    cargo nextest run --release --all-features
 
 # Run tests in debug mode
 test-debug:
@@ -60,7 +65,7 @@ build:
 # Build the project in release mode (matches CI configuration)
 build-release:
     @echo "Building project (release, matching CI)..."
-    cargo build --release --verbose --all-features
+    cargo build --release --all-features
 
 # Build just the binary
 build-bin:
@@ -82,10 +87,15 @@ check-all:
     @echo "Checking project with all features..."
     cargo check --workspace --all-features
 
-# Run clippy linter (matches CI configuration)
+# Run clippy linter (dev profile)
 lint:
-    @echo "Running clippy (matching CI)..."
+    @echo "Running clippy (dev profile)..."
     cargo clippy --all-features -- -D warnings
+
+# Run clippy linter (release profile - shares artifacts with build-release)
+lint-release:
+    @echo "Running clippy (release profile)..."
+    cargo clippy --release --all-features -- -D warnings
 
 # Fix clippy warnings automatically
 lint-fix:
@@ -213,13 +223,21 @@ rpm:
     cargo build --release
     cargo generate-rpm
 
-# Run CI checks (matches GitHub Actions CI workflow)
-ci: build-release test lint fmt-check
+# Run CI checks (optimized order - shares release artifacts)
+ci: fmt-check lint-release build-release test
     @echo "All CI checks passed!"
+    @echo "✓ Format check"
+    @echo "✓ Clippy (release profile)"
     @echo "✓ Build (release with all features)"
     @echo "✓ Tests (release with all features)"
-    @echo "✓ Clippy (all features, deny warnings)"
+
+# Run CI checks with nextest (faster test execution)
+ci-fast: fmt-check lint-release build-release test-nextest
+    @echo "All CI checks passed!"
     @echo "✓ Format check"
+    @echo "✓ Clippy (release profile)"
+    @echo "✓ Build (release with all features)"
+    @echo "✓ Tests (nextest, release)"
 
 # Pre-commit hook: format, lint, test
 pre-commit: fmt lint test
