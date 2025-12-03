@@ -9,10 +9,14 @@
 pub mod coff_parser;
 pub mod debug_parser;
 pub mod dos_parser;
+pub mod export_parser;
+pub mod import_parser;
 pub mod metadata_extractor;
 pub mod optional_parser;
 pub mod resource_parser;
+pub mod rich_header_parser;
 pub mod section_parser;
+pub mod signature_parser;
 pub mod structures;
 pub mod version_info_parser;
 
@@ -28,13 +32,19 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     use coff_parser::parse_coff_header;
     use debug_parser::parse_debug_directory_entry;
     use dos_parser::parse_dos_header;
+    use export_parser::parse_exports;
+    use import_parser::{parse_dll_imports, parse_import_descriptor};
     use metadata_extractor::{
-        extract_coff_metadata, extract_dos_metadata, extract_nb10_metadata,
-        extract_optional_metadata, extract_rsds_metadata, extract_version_info_metadata,
+        extract_coff_metadata, extract_dos_metadata, extract_export_metadata,
+        extract_import_metadata, extract_nb10_metadata, extract_optional_metadata,
+        extract_rich_header_metadata, extract_rsds_metadata, extract_signature_metadata,
+        extract_version_info_metadata,
     };
     use optional_parser::{parse_optional_header_nt, parse_optional_header_standard};
     use resource_parser::find_resource_data;
+    use rich_header_parser::parse_rich_header;
     use section_parser::parse_section_table;
+    use signature_parser::{parse_signature_info, parse_win_certificate};
     use structures::{debug_types, resource_types};
     use version_info_parser::parse_version_info;
 
@@ -54,6 +64,20 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     extract_dos_metadata(&dos_header, &mut metadata);
 
+    // Step 1.5: Parse Rich Header (between DOS stub and PE header)
+    // Rich Header typically starts after DOS header (0x80) and ends before PE signature
+    let pe_offset = dos_header.e_lfanew as u64;
+    if pe_offset > 0x80 {
+        // Read data between DOS stub and PE header for Rich Header parsing
+        let rich_region_size = (pe_offset - 0x80) as usize + 128;
+        if let Ok(rich_data) = reader.read(0, 0x80 + rich_region_size) {
+            if let Some(rich_header) = parse_rich_header(&rich_data, 0x80, pe_offset as usize) {
+                extract_rich_header_metadata(&rich_header, &mut metadata);
+            }
+        }
+        // Note: If Rich Header parsing fails, we silently continue (not all PE files have it)
+    }
+
     // Step 2: Parse COFF header at e_lfanew offset
     // We need to read PE signature (4) + COFF header (20) + Optional header (variable)
     // Read up to 512 bytes to cover typical optional headers
@@ -65,16 +89,17 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     extract_coff_metadata(&coff_header, &mut metadata);
 
     // Step 3: Parse Optional Header if present
-    // Store NT header for later use (debug directory parsing)
+    // Store NT header and format info for later use
     let resource_dir_rva: Option<u32>;
     let nt_header_opt: Option<structures::OptionalHeaderNT>;
+    let is_pe32_plus: bool;
     if coff_header.size_of_optional_header > 0 {
         let (opt_remaining, std_header) =
             parse_optional_header_standard(remaining).map_err(|e| {
                 ExifToolError::parse_error(format!("Failed to parse Optional Header: {:?}", e))
             })?;
 
-        let is_pe32_plus = std_header.magic == 0x020B;
+        is_pe32_plus = std_header.magic == 0x020B;
         let (_, nt_header) =
             parse_optional_header_nt(opt_remaining, is_pe32_plus).map_err(|e| {
                 ExifToolError::parse_error(format!(
@@ -93,6 +118,7 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     } else {
         resource_dir_rva = None;
         nt_header_opt = None;
+        is_pe32_plus = false;
     }
 
     // Step 4: Calculate section table offset
@@ -178,6 +204,92 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                             offset += 28;
                         } else {
                             break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Step 12: Parse export directory if present (data directory index 0)
+    if let Some(ref nt_header) = nt_header_opt {
+        if let Some(&(export_rva, export_size)) = nt_header.data_directories.get(0) {
+            if export_rva > 0 && export_size > 0 {
+                // Parse exports (pass sections for RVA resolution)
+                if let Ok(export_info) = parse_exports(reader, export_rva, export_size, &sections) {
+                    extract_export_metadata(&export_info, &mut metadata);
+                }
+            }
+        }
+    }
+
+    // Step 13: Parse import directory if present (data directory index 1)
+    if let Some(ref nt_header) = nt_header_opt {
+        if let Some(&(import_rva, _import_size)) = nt_header.data_directories.get(1) {
+            if import_rva > 0 {
+                // Find section containing import directory
+                if let Some(import_section) = sections.iter().find(|s| {
+                    import_rva >= s.virtual_address
+                        && import_rva < s.virtual_address + s.virtual_size
+                }) {
+                    let import_offset = import_section.pointer_to_raw_data as u64
+                        + (import_rva - import_section.virtual_address) as u64;
+
+                    // Read import directory (limit to 100 descriptors max)
+                    let max_descriptors = 100;
+                    let import_data_size = 20 * max_descriptors; // 20 bytes per descriptor
+                    if let Ok(import_data) = reader.read(import_offset, import_data_size) {
+                        let mut imports = Vec::new();
+                        let mut offset = 0;
+
+                        // Parse import descriptors until we hit a null descriptor
+                        while offset + 20 <= import_data.len() && imports.len() < max_descriptors {
+                            if let Ok((_, descriptor)) =
+                                parse_import_descriptor(&import_data[offset..])
+                            {
+                                if descriptor.is_null() {
+                                    break;
+                                }
+
+                                // Parse imports for this DLL (limit to 100 functions per DLL)
+                                if let Some(import_info) = parse_dll_imports(
+                                    reader,
+                                    &descriptor,
+                                    &sections,
+                                    is_pe32_plus,
+                                    100,
+                                ) {
+                                    imports.push(import_info);
+                                }
+
+                                offset += 20;
+                            } else {
+                                break;
+                            }
+                        }
+
+                        // Extract import metadata
+                        if !imports.is_empty() {
+                            extract_import_metadata(&imports, &mut metadata);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Step 14: Parse digital signature if present (data directory index 4 - Security)
+    // NOTE: This is a FILE offset, not an RVA (unlike other data directories)
+    if let Some(ref nt_header) = nt_header_opt {
+        if let Some(&(cert_offset, cert_size)) = nt_header.data_directories.get(4) {
+            if cert_offset > 0 && cert_size > 0 {
+                // Read certificate data from file offset
+                if let Ok(cert_data) = reader.read(cert_offset as u64, cert_size as usize) {
+                    // Parse WIN_CERTIFICATE structure
+                    if let Ok((_, win_cert)) = parse_win_certificate(cert_data) {
+                        // Extract signature information from PKCS#7 data
+                        if let Some(sig_info) = parse_signature_info(&win_cert.certificate_data) {
+                            extract_signature_metadata(&sig_info, &mut metadata);
                         }
                     }
                 }

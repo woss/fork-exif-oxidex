@@ -94,5 +94,8 @@ mod format_detection;
 #[path = "integration/pe_tests.rs"]
 mod pe_tests;
 
+#[path = "integration/pe_import_test.rs"]
+mod pe_import_test;
+
 #[path = "integration/makernote_integration.rs"]
 mod makernote_integration;

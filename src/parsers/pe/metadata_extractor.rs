@@ -3,9 +3,10 @@
 use std::collections::HashMap;
 
 use crate::core::{MetadataMap, TagValue};
+use crate::parsers::pe::signature_parser::SignatureInfo;
 use crate::parsers::pe::structures::{
-    machine_types, subsystem_types, CodeViewNB10, CodeViewRSDS, CoffHeader, DosHeader,
-    OptionalHeaderNT, OptionalHeaderStandard, VsFixedFileInfo,
+    machine_types, subsystem_types, CodeViewNB10, CodeViewRSDS, CoffHeader, DosHeader, ExportInfo,
+    ImportFunction, ImportInfo, OptionalHeaderNT, OptionalHeaderStandard, VsFixedFileInfo,
 };
 
 /// Extract metadata from DOS header
@@ -336,6 +337,328 @@ pub fn extract_nb10_metadata(nb10: &CodeViewNB10, metadata: &mut MetadataMap) {
     );
 }
 
+/// Extract metadata from Rich Header
+pub fn extract_rich_header_metadata(
+    rich: &crate::parsers::pe::rich_header_parser::RichHeader,
+    metadata: &mut MetadataMap,
+) {
+    // Indicate Rich Header presence
+    metadata.insert(
+        "PE:RichHeaderPresent".to_string(),
+        TagValue::String("Yes".to_string()),
+    );
+
+    // XOR key / checksum
+    metadata.insert(
+        "PE:RichHeaderChecksum".to_string(),
+        TagValue::String(format!("{:#010X}", rich.checksum)),
+    );
+
+    // Number of tool entries
+    metadata.insert(
+        "PE:RichHeaderEntries".to_string(),
+        TagValue::Integer(rich.entries.len() as i64),
+    );
+
+    // Compiler info string (formatted as "ProductID.BuildNumber xCount")
+    let compiler_info = rich.compiler_info_string();
+    if !compiler_info.is_empty() {
+        metadata.insert(
+            "PE:RichCompilerInfo".to_string(),
+            TagValue::String(compiler_info),
+        );
+    }
+
+    // Product IDs (comma-separated list)
+    let product_ids = rich.product_ids_string();
+    if !product_ids.is_empty() {
+        metadata.insert(
+            "PE:RichProductIDs".to_string(),
+            TagValue::String(product_ids),
+        );
+    }
+
+    // MD5 hash for forensic comparison
+    metadata.insert(
+        "PE:RichHeaderHash".to_string(),
+        TagValue::String(rich.hash_md5()),
+    );
+}
+
+/// Extract metadata from Export Directory
+pub fn extract_export_metadata(export_info: &ExportInfo, metadata: &mut MetadataMap) {
+    // Set HasExports flag
+    metadata.insert("PE:HasExports".to_string(), TagValue::Integer(1));
+
+    // Export DLL name
+    metadata.insert(
+        "PE:ExportDLLName".to_string(),
+        TagValue::String(export_info.dll_name.clone()),
+    );
+
+    // Export counts
+    metadata.insert(
+        "PE:ExportCount".to_string(),
+        TagValue::Integer(export_info.directory.number_of_functions as i64),
+    );
+    metadata.insert(
+        "PE:ExportNameCount".to_string(),
+        TagValue::Integer(export_info.directory.number_of_names as i64),
+    );
+
+    // Base ordinal
+    metadata.insert(
+        "PE:ExportBase".to_string(),
+        TagValue::Integer(export_info.directory.base as i64),
+    );
+
+    // Timestamp
+    if export_info.directory.time_date_stamp > 0 {
+        metadata.insert(
+            "PE:ExportTimestamp".to_string(),
+            TagValue::Integer(export_info.directory.time_date_stamp as i64),
+        );
+
+        // Convert to human-readable date if possible
+        use chrono::{TimeZone, Utc};
+        if let Some(dt) = Utc
+            .timestamp_opt(export_info.directory.time_date_stamp as i64, 0)
+            .single()
+        {
+            metadata.insert(
+                "PE:ExportCreateDate".to_string(),
+                TagValue::String(dt.format("%Y:%m:%d %H:%M:%S").to_string()),
+            );
+        }
+    }
+
+    // Export characteristics
+    metadata.insert(
+        "PE:ExportCharacteristics".to_string(),
+        TagValue::Integer(export_info.directory.characteristics as i64),
+    );
+
+    // Forwarded export count
+    if export_info.forwarded_count > 0 {
+        metadata.insert(
+            "PE:ForwardedExportCount".to_string(),
+            TagValue::Integer(export_info.forwarded_count as i64),
+        );
+    }
+
+    // Exported functions (comma-separated list, limited to first 30)
+    if !export_info.function_names.is_empty() {
+        let functions_str = export_info.function_names.join(", ");
+        metadata.insert(
+            "PE:ExportedFunctions".to_string(),
+            TagValue::String(functions_str),
+        );
+    }
+}
+
+/// Extract metadata from digital signature
+pub fn extract_signature_metadata(sig_info: &SignatureInfo, metadata: &mut MetadataMap) {
+    // Signature presence
+    metadata.insert(
+        "PE:SignaturePresent".to_string(),
+        TagValue::Integer(if sig_info.signature_present { 1 } else { 0 }),
+    );
+
+    if !sig_info.signature_present {
+        return;
+    }
+
+    // Signature type
+    metadata.insert(
+        "PE:SignatureType".to_string(),
+        TagValue::String(sig_info.signature_type.clone()),
+    );
+
+    // Certificate count
+    metadata.insert(
+        "PE:CertificateCount".to_string(),
+        TagValue::Integer(sig_info.certificate_count as i64),
+    );
+
+    // Signer information
+    if let Some(ref cn) = sig_info.signer_common_name {
+        metadata.insert(
+            "PE:SignerCommonName".to_string(),
+            TagValue::String(cn.clone()),
+        );
+    }
+
+    if let Some(ref org) = sig_info.signer_organization {
+        metadata.insert(
+            "PE:SignerOrganization".to_string(),
+            TagValue::String(org.clone()),
+        );
+    }
+
+    // Issuer information
+    if let Some(ref cn) = sig_info.issuer_common_name {
+        metadata.insert(
+            "PE:IssuerCommonName".to_string(),
+            TagValue::String(cn.clone()),
+        );
+    }
+
+    if let Some(ref org) = sig_info.issuer_organization {
+        metadata.insert(
+            "PE:IssuerOrganization".to_string(),
+            TagValue::String(org.clone()),
+        );
+    }
+
+    // Certificate details
+    if let Some(ref serial) = sig_info.certificate_serial_number {
+        metadata.insert(
+            "PE:CertificateSerialNumber".to_string(),
+            TagValue::String(serial.clone()),
+        );
+    }
+
+    if let Some(ref not_before) = sig_info.certificate_not_before {
+        metadata.insert(
+            "PE:CertificateNotBefore".to_string(),
+            TagValue::String(not_before.clone()),
+        );
+    }
+
+    if let Some(ref not_after) = sig_info.certificate_not_after {
+        metadata.insert(
+            "PE:CertificateNotAfter".to_string(),
+            TagValue::String(not_after.clone()),
+        );
+    }
+
+    if let Some(ref thumbprint) = sig_info.certificate_thumbprint {
+        metadata.insert(
+            "PE:CertificateThumbprint".to_string(),
+            TagValue::String(thumbprint.clone()),
+        );
+    }
+
+    // Counter-signature information
+    metadata.insert(
+        "PE:HasCounterSignature".to_string(),
+        TagValue::Integer(if sig_info.has_counter_signature { 1 } else { 0 }),
+    );
+
+    if let Some(ref counter_time) = sig_info.counter_signature_time {
+        metadata.insert(
+            "PE:CounterSignatureTime".to_string(),
+            TagValue::String(counter_time.clone()),
+        );
+    }
+
+    // Forensic indicators
+    metadata.insert(
+        "PE:SignatureValid".to_string(),
+        TagValue::Integer(if sig_info.signature_valid { 1 } else { 0 }),
+    );
+
+    metadata.insert(
+        "PE:CertificateExpired".to_string(),
+        TagValue::Integer(if sig_info.certificate_expired { 1 } else { 0 }),
+    );
+}
+
+/// List of suspicious imports that may indicate malicious behavior
+const SUSPICIOUS_IMPORTS: &[&str] = &[
+    "VirtualAlloc",
+    "VirtualAllocEx",
+    "VirtualProtect",
+    "VirtualProtectEx",
+    "WriteProcessMemory",
+    "CreateRemoteThread",
+    "CreateRemoteThreadEx",
+    "SetWindowsHookEx",
+    "GetProcAddress",
+    "LoadLibrary",
+    "LoadLibraryEx",
+    "OpenProcess",
+    "CreateToolhelp32Snapshot",
+    "NtCreateThread",
+    "NtCreateThreadEx",
+    "RtlCreateUserThread",
+    "QueueUserAPC",
+    "SetThreadContext",
+    "ResumeThread",
+    "SuspendThread",
+    "GetThreadContext",
+];
+
+/// Extract metadata from import information
+pub fn extract_import_metadata(imports: &[ImportInfo], metadata: &mut MetadataMap) {
+    if imports.is_empty() {
+        return;
+    }
+
+    // Extract DLL names
+    let dll_names: Vec<String> = imports.iter().map(|i| i.dll_name.clone()).collect();
+    metadata.insert(
+        "PE:ImportedDLLs".to_string(),
+        TagValue::String(dll_names.join(", ")),
+    );
+
+    // Count total imports
+    let total_imports: usize = imports.iter().map(|i| i.functions.len()).sum();
+    metadata.insert(
+        "PE:ImportCount".to_string(),
+        TagValue::Integer(total_imports as i64),
+    );
+
+    // Count DLLs
+    metadata.insert(
+        "PE:ImportedDLLCount".to_string(),
+        TagValue::Integer(imports.len() as i64),
+    );
+
+    // Extract imported functions (limit to first 50)
+    let mut function_list = Vec::new();
+    let mut has_suspicious = false;
+
+    for import in imports {
+        for func in &import.functions {
+            if function_list.len() >= 50 {
+                break;
+            }
+
+            match func {
+                ImportFunction::ByName { name, .. } => {
+                    function_list.push(format!("{}:{}", import.dll_name, name));
+
+                    // Check for suspicious imports
+                    if SUSPICIOUS_IMPORTS.contains(&name.as_str()) {
+                        has_suspicious = true;
+                    }
+                }
+                ImportFunction::ByOrdinal { ordinal } => {
+                    function_list.push(format!("{}:#{}", import.dll_name, ordinal));
+                }
+            }
+        }
+
+        if function_list.len() >= 50 {
+            break;
+        }
+    }
+
+    if !function_list.is_empty() {
+        metadata.insert(
+            "PE:ImportedFunctions".to_string(),
+            TagValue::String(function_list.join("; ")),
+        );
+    }
+
+    // Set suspicious imports flag
+    metadata.insert(
+        "PE:HasSuspiciousImports".to_string(),
+        TagValue::Integer(if has_suspicious { 1 } else { 0 }),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -454,5 +777,152 @@ mod tests {
             metadata.get_string("PE:PDBModifyDate").unwrap(),
             "(same as create)"
         );
+    }
+
+    #[test]
+    fn test_extract_export_metadata() {
+        use crate::parsers::pe::structures::ImageExportDirectory;
+
+        // Create test export directory
+        let directory = ImageExportDirectory {
+            characteristics: 0,
+            time_date_stamp: 1609459200, // 2021-01-01 00:00:00 UTC
+            major_version: 0,
+            minor_version: 0,
+            name: 0x1000,
+            base: 1,
+            number_of_functions: 5,
+            number_of_names: 3,
+            address_of_functions: 0x2000,
+            address_of_names: 0x3000,
+            address_of_name_ordinals: 0x4000,
+        };
+
+        let export_info = ExportInfo {
+            directory,
+            dll_name: "test.dll".to_string(),
+            function_names: vec!["Function1".to_string(), "Function2".to_string()],
+            forwarded_count: 1,
+        };
+
+        let mut metadata = MetadataMap::new();
+        extract_export_metadata(&export_info, &mut metadata);
+
+        // Verify HasExports flag
+        assert_eq!(metadata.get_integer("PE:HasExports").unwrap(), 1);
+
+        // Verify DLL name
+        assert_eq!(metadata.get_string("PE:ExportDLLName").unwrap(), "test.dll");
+
+        // Verify counts
+        assert_eq!(metadata.get_integer("PE:ExportCount").unwrap(), 5);
+        assert_eq!(metadata.get_integer("PE:ExportNameCount").unwrap(), 3);
+        assert_eq!(metadata.get_integer("PE:ExportBase").unwrap(), 1);
+
+        // Verify timestamp
+        assert_eq!(
+            metadata.get_integer("PE:ExportTimestamp").unwrap(),
+            1609459200
+        );
+        assert!(metadata.contains_key("PE:ExportCreateDate"));
+        let create_date = metadata.get_string("PE:ExportCreateDate").unwrap();
+        assert!(create_date.starts_with("2021:01:01"));
+
+        // Verify characteristics
+        assert_eq!(metadata.get_integer("PE:ExportCharacteristics").unwrap(), 0);
+
+        // Verify forwarded count
+        assert_eq!(metadata.get_integer("PE:ForwardedExportCount").unwrap(), 1);
+
+        // Verify exported functions
+        let exported_functions = metadata.get_string("PE:ExportedFunctions").unwrap();
+        assert!(exported_functions.contains("Function1"));
+        assert!(exported_functions.contains("Function2"));
+    }
+
+    #[test]
+    fn test_extract_import_metadata() {
+        // Create test import info
+        let imports = vec![
+            ImportInfo {
+                dll_name: "kernel32.dll".to_string(),
+                functions: vec![
+                    ImportFunction::ByName {
+                        hint: 0,
+                        name: "CreateFileW".to_string(),
+                    },
+                    ImportFunction::ByName {
+                        hint: 1,
+                        name: "VirtualAlloc".to_string(),
+                    },
+                    ImportFunction::ByOrdinal { ordinal: 123 },
+                ],
+            },
+            ImportInfo {
+                dll_name: "user32.dll".to_string(),
+                functions: vec![ImportFunction::ByName {
+                    hint: 0,
+                    name: "MessageBoxW".to_string(),
+                }],
+            },
+        ];
+
+        let mut metadata = MetadataMap::new();
+        extract_import_metadata(&imports, &mut metadata);
+
+        // Verify imported DLLs
+        let imported_dlls = metadata.get_string("PE:ImportedDLLs").unwrap();
+        assert!(imported_dlls.contains("kernel32.dll"));
+        assert!(imported_dlls.contains("user32.dll"));
+
+        // Verify import count
+        assert_eq!(metadata.get_integer("PE:ImportCount").unwrap(), 4);
+
+        // Verify DLL count
+        assert_eq!(metadata.get_integer("PE:ImportedDLLCount").unwrap(), 2);
+
+        // Verify imported functions
+        let imported_functions = metadata.get_string("PE:ImportedFunctions").unwrap();
+        assert!(imported_functions.contains("kernel32.dll:CreateFileW"));
+        assert!(imported_functions.contains("kernel32.dll:VirtualAlloc"));
+        assert!(imported_functions.contains("kernel32.dll:#123"));
+        assert!(imported_functions.contains("user32.dll:MessageBoxW"));
+
+        // Verify suspicious imports flag (VirtualAlloc is suspicious)
+        assert_eq!(metadata.get_integer("PE:HasSuspiciousImports").unwrap(), 1);
+    }
+
+    #[test]
+    fn test_extract_import_metadata_no_suspicious() {
+        // Create test import info without suspicious imports
+        let imports = vec![ImportInfo {
+            dll_name: "user32.dll".to_string(),
+            functions: vec![
+                ImportFunction::ByName {
+                    hint: 0,
+                    name: "MessageBoxW".to_string(),
+                },
+                ImportFunction::ByName {
+                    hint: 1,
+                    name: "DefWindowProcW".to_string(),
+                },
+            ],
+        }];
+
+        let mut metadata = MetadataMap::new();
+        extract_import_metadata(&imports, &mut metadata);
+
+        // Verify no suspicious imports
+        assert_eq!(metadata.get_integer("PE:HasSuspiciousImports").unwrap(), 0);
+    }
+
+    #[test]
+    fn test_extract_import_metadata_empty() {
+        let imports = vec![];
+        let mut metadata = MetadataMap::new();
+        extract_import_metadata(&imports, &mut metadata);
+
+        // Should not add any metadata for empty imports
+        assert!(!metadata.contains_key("PE:ImportedDLLs"));
     }
 }

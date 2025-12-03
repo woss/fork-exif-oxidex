@@ -95,6 +95,22 @@ pub static SIMPLE_SIGNATURES: &[Signature] = &[
     signature!(b"BEGIN:VCARD", 0, FileFormat::VCF),
     signature!(b"\x4C\x00\x00\x00", 0, FileFormat::LNK),
     signature!(b"SQLite format 3\0", 0, FileFormat::SQLite),
+    // Windows forensic formats
+    signature!(b"MAM\x04", 0, FileFormat::Prefetch), // Compressed prefetch (Win10+)
+    signature!(b"SCCA", 4, FileFormat::Prefetch),    // Uncompressed prefetch
+    signature!(b"regf", 0, FileFormat::Registry),
+    signature!(b"ElfFile\0", 0, FileFormat::EVTX),
+    // macOS formats
+    signature!(b"bplist00", 0, FileFormat::Plist), // Binary plist v0
+    signature!(b"bplist01", 0, FileFormat::Plist), // Binary plist v1
+    // Network packet capture formats
+    signature!(b"\x0a\x0d\x0d\x0a", 0, FileFormat::PCAPNG), // PCAP-NG Section Header Block
+    signature!(b"\xa1\xb2\xc3\xd4", 0, FileFormat::PCAP),   // PCAP big-endian
+    signature!(b"\xd4\xc3\xb2\xa1", 0, FileFormat::PCAP),   // PCAP little-endian
+    signature!(b"\xa1\xb2\x3c\x4d", 0, FileFormat::PCAP),   // PCAP nanosecond big-endian
+    signature!(b"\x4d\x3c\xb2\xa1", 0, FileFormat::PCAP),   // PCAP nanosecond little-endian
+    // X.509 Certificates
+    signature!(b"-----BEGIN CERTIFICATE-----", 0, FileFormat::X509),
     // Archive formats with offset signatures
     signature!(b"ustar", 257, FileFormat::TAR),
     signature!(b"CD001", 32769, FileFormat::ISO),

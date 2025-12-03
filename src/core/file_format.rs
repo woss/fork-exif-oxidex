@@ -243,6 +243,31 @@ pub enum FileFormat {
     /// SQLite database (.db, .sqlite, .sqlite3)
     SQLite,
 
+    /// Windows Prefetch file (.pf)
+    Prefetch,
+
+    /// Windows Registry Hive (.dat, hive files)
+    Registry,
+
+    /// Windows Event Log (.evtx)
+    EVTX,
+
+    /// macOS Property List (.plist)
+    Plist,
+
+    /// OLE (Object Linking and Embedding) / Compound File Binary Format (.doc, .xls, .ppt, .msg)
+    OLE,
+
+    // Phase 8: Network formats
+    /// PCAP (libpcap) packet capture (.pcap, .cap)
+    PCAP,
+
+    /// PCAP-NG (next generation) packet capture (.pcapng)
+    PCAPNG,
+
+    /// X.509 Certificate (.crt, .cer, .pem, .der)
+    X509,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -324,6 +349,14 @@ impl FileFormat {
             FileFormat::EML => "EML",
             FileFormat::LNK => "Windows Shortcut",
             FileFormat::SQLite => "SQLite",
+            FileFormat::Prefetch => "Windows Prefetch",
+            FileFormat::Registry => "Windows Registry Hive",
+            FileFormat::EVTX => "EVTX",
+            FileFormat::Plist => "Plist",
+            FileFormat::OLE => "OLE",
+            FileFormat::PCAP => "PCAP",
+            FileFormat::PCAPNG => "PCAP-NG",
+            FileFormat::X509 => "X.509",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -407,6 +440,14 @@ impl FileFormat {
             FileFormat::EML => &["eml", "email"],
             FileFormat::LNK => &["lnk"],
             FileFormat::SQLite => &["db", "sqlite", "sqlite3"],
+            FileFormat::Prefetch => &["pf"],
+            FileFormat::Registry => &["dat"],
+            FileFormat::EVTX => &["evtx"],
+            FileFormat::Plist => &["plist"],
+            FileFormat::OLE => &["doc", "xls", "ppt", "msg", "vsd", "pub"],
+            FileFormat::PCAP => &["pcap", "cap"],
+            FileFormat::PCAPNG => &["pcapng"],
+            FileFormat::X509 => &["crt", "cer", "pem", "der"],
             FileFormat::Unknown => &[],
         }
     }
