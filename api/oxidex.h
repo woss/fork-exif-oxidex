@@ -49,6 +49,36 @@
 #define EXIFTOOL_ERR_INTERNAL 99
 
 /*
+ Certificate revision 1.0
+ */
+#define WIN_CERT_REVISION_1_0 256
+
+/*
+ Certificate revision 2.0
+ */
+#define WIN_CERT_REVISION_2_0 512
+
+/*
+ X.509 certificate format
+ */
+#define WIN_CERT_TYPE_X509 1
+
+/*
+ PKCS#7 SignedData format
+ */
+#define WIN_CERT_TYPE_PKCS_SIGNED_DATA 2
+
+/*
+ Reserved certificate type
+ */
+#define WIN_CERT_TYPE_RESERVED_1 3
+
+/*
+ Timestamp signed certificate
+ */
+#define WIN_CERT_TYPE_TS_STACK_SIGNED 4
+
+/*
  Unknown machine type
  */
 #define IMAGE_FILE_MACHINE_UNKNOWN 0
