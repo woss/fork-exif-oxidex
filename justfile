@@ -63,7 +63,7 @@ build:
     cargo build --workspace
 
 # Build the project in release mode (matches CI configuration)
-build-release:
+build-release: cbindgen-check
     @echo "Building project (release, matching CI)..."
     cargo build --release --all-features
 
