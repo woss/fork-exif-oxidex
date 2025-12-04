@@ -93,8 +93,20 @@ def count_tag_patterns(content: str) -> int:
     count += len(re.findall(r'\.push\s*\(\s*\(\s*tag_name', content))  # .push((tag_name, value))
     count += len(re.findall(r'_tags\.extend\s*\(', content))  # all_xmp_tags.extend()
 
+    # Issue 1.1: XMP/IPTC return Vec instead of insert - detect tuple pushes and Vec return signatures
+    count += len(re.findall(r'\.push\s*\(\s*\([^,]+,', content))  # Generic .push((x, y))
+    # Count functions that return Vec<(String, String)> as contributing 1 insertion point
+    # (actual tags are counted via the .push patterns above)
+    vec_return_pattern = r'fn\s+\w+.*->\s*Result<Vec<\(String,\s*String\)>>'
+    if re.search(vec_return_pattern, content):
+        count += 1  # Add 1 for having a Vec-returning function (actual tags counted via push)
+
     # Direct tuple creation with string keys
     count += len(re.findall(r'\(\s*["\']\w+["\']\.to_string\(\)\s*,', content))
+
+    # ICC parser patterns (header.rs uses metadata.insert extensively)
+    # ICC uses registry-based insertion via metadata.insert(), already counted above
+    # No additional patterns needed - ICC is well-covered by existing insert() detection
 
     return count
 
@@ -138,31 +150,50 @@ def analyze_parsers(project_root: Path) -> dict:
         "font": ["TTF", "OTF"],
         "raw": ["DNG", "CR2", "NEF"],
         "icc": ["ICC"],
+        "xmp": ["XMP"],  # XMP parser is standalone and used by JPEG/TIFF/etc
+        "iptc": ["IPTC"],  # IPTC parser (if exists as standalone)
     }
 
-    # Note: IPTC and XMP are embedded formats parsed within JPEG/TIFF, not standalone parsers
-    # Check if IPTC/XMP parsing exists in jpeg parser
+    # Note: IPTC and XMP are embedded formats parsed within JPEG/TIFF, but may have dedicated parsers
+    # Check if IPTC/XMP parsing exists in jpeg parser (these call out to shared parsers)
     jpeg_parser_dir = parsers_dir / "jpeg"
     if jpeg_parser_dir.exists():
         iptc_file = jpeg_parser_dir / "iptc_parser.rs"
         xmp_file = jpeg_parser_dir / "xmp_parser.rs"
+
+        # Count IPTC tags from jpeg/iptc_parser.rs
         if iptc_file.exists():
             content = iptc_file.read_text()
             insertions = count_tag_patterns(content)
             if insertions > 0:
                 parser_coverage["IPTC"] = {"directory": "jpeg/iptc", "tag_insertions": insertions, "has_parser": True}
+
+        # For XMP, count both the jpeg wrapper and the shared XMP parser directory
+        xmp_insertions = 0
         if xmp_file.exists():
             content = xmp_file.read_text()
-            insertions = count_tag_patterns(content)
-            if insertions > 0:
-                parser_coverage["XMP"] = {"directory": "jpeg/xmp", "tag_insertions": insertions, "has_parser": True}
+            xmp_insertions = count_tag_patterns(content)
+
+        # Also count tags from the shared XMP parser directory
+        xmp_parser_dir = parsers_dir / "xmp"
+        if xmp_parser_dir.exists():
+            for rs_file in xmp_parser_dir.rglob("*.rs"):
+                try:
+                    content = rs_file.read_text()
+                    xmp_insertions += count_tag_patterns(content)
+                except Exception:
+                    continue
+
+        if xmp_insertions > 0:
+            parser_coverage["XMP"] = {"directory": "xmp", "tag_insertions": xmp_insertions, "has_parser": True}
 
     for parser_dir in parsers_dir.iterdir():
         if not parser_dir.is_dir():
             continue
 
         dir_name = parser_dir.name
-        if dir_name in ["common", "detection", "mod.rs"]:
+        # Skip directories handled specially or support directories
+        if dir_name in ["common", "detection", "mod.rs", "xmp"]:
             continue
 
         # Count tag insertions

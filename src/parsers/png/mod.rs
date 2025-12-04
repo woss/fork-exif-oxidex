@@ -43,8 +43,9 @@ mod value_conversion;
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use chunk_parser::{
-    parse_bkgd_chunk, parse_chrm_chunk, parse_chunk, parse_ihdr_chunk, parse_itxt_chunk,
-    parse_phys_chunk, parse_png_signature, parse_text_chunk, parse_time_chunk, PNG_SIGNATURE,
+    parse_bkgd_chunk, parse_chrm_chunk, parse_chunk, parse_gama_chunk, parse_ihdr_chunk,
+    parse_itxt_chunk, parse_phys_chunk, parse_png_signature, parse_text_chunk, parse_time_chunk,
+    PNG_SIGNATURE,
 };
 
 /// Parses PNG file and extracts all metadata.
@@ -194,6 +195,13 @@ pub fn parse_png_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 }
             }
 
+            b"gAMA" => {
+                // Parse gAMA chunk (gamma)
+                if let Ok(gamma) = parse_gama_chunk(&chunk.data) {
+                    metadata.insert("PNG:Gamma".to_string(), TagValue::new_float(gamma));
+                }
+            }
+
             b"pHYs" => {
                 // Parse pHYs chunk (physical pixel dimensions)
                 if let Ok((pixels_x, pixels_y, unit)) = parse_phys_chunk(&chunk.data) {
@@ -259,9 +267,29 @@ pub fn parse_png_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
             b"iTXt" => {
                 // Parse iTXt chunk
                 if let Ok((keyword, text)) = parse_itxt_chunk(&chunk.data) {
-                    // Use PNG:iTXt: prefix for iTXt chunks
-                    let tag_name = format!("PNG:iTXt:{}", keyword);
-                    metadata.insert(tag_name, TagValue::new_string(text));
+                    // Check if this iTXt chunk contains XMP metadata
+                    // XMP is stored with keyword "XML:com.adobe.xmp"
+                    if keyword == "XML:com.adobe.xmp" {
+                        // Parse XMP content and insert tags
+                        // Note: XMP parser already returns tags with "XMP-" prefix (e.g., "XMP-xmp:Creator")
+                        match crate::parsers::xmp::parse_xmp(text.as_bytes()) {
+                            Ok(xmp_tags) => {
+                                for (tag_name, value) in xmp_tags {
+                                    metadata.insert(tag_name, TagValue::new_string(value));
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Warning: Failed to parse XMP in iTXt chunk: {}", e);
+                                // Fall back to storing as regular iTXt
+                                let tag_name = format!("PNG:iTXt:{}", keyword);
+                                metadata.insert(tag_name, TagValue::new_string(text));
+                            }
+                        }
+                    } else {
+                        // Regular iTXt metadata - use PNG:iTXt: prefix
+                        let tag_name = format!("PNG:iTXt:{}", keyword);
+                        metadata.insert(tag_name, TagValue::new_string(text));
+                    }
                 }
                 // Silently skip malformed or compressed iTXt chunks
             }
@@ -555,5 +583,95 @@ mod tests {
 
         let result = parse_png_metadata(&reader);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_png_with_itxt_xmp_chunk() {
+        let mut data = create_minimal_png();
+
+        // Create iTXt chunk data with XMP content
+        let mut itxt_data = Vec::new();
+        itxt_data.extend_from_slice(b"XML:com.adobe.xmp"); // keyword for XMP
+        itxt_data.push(0); // null
+        itxt_data.push(0); // compression flag = 0
+        itxt_data.push(0); // compression method
+        itxt_data.extend_from_slice(b""); // language (empty)
+        itxt_data.push(0); // null
+        itxt_data.extend_from_slice(b""); // translated keyword (empty)
+        itxt_data.push(0); // null
+
+        // XMP content
+        let xmp_content = br#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+              <rdf:Description>
+                <xmp:Creator>Test Creator</xmp:Creator>
+              </rdf:Description>
+            </rdf:RDF>"#;
+        itxt_data.extend_from_slice(xmp_content);
+
+        // Insert iTXt chunk before IEND
+        let iend_pos = data.len() - 12;
+        let mut itxt_chunk = Vec::new();
+        itxt_chunk.extend_from_slice(&(itxt_data.len() as u32).to_be_bytes());
+        itxt_chunk.extend_from_slice(b"iTXt");
+        itxt_chunk.extend_from_slice(&itxt_data);
+        itxt_chunk.extend_from_slice(&0u32.to_be_bytes());
+
+        data.splice(iend_pos..iend_pos, itxt_chunk);
+
+        let reader = TestReader::new(data);
+        let result = parse_png_metadata(&reader);
+        assert!(result.is_ok());
+
+        let metadata = result.unwrap();
+        // Should have parsed XMP and extracted Creator tag
+        // Check for XMP-xmp:Creator (the format from parse_xmp)
+        let has_creator = metadata.contains_key("XMP-xmp:Creator")
+            || metadata.keys().any(|k| k.contains("Creator"));
+        assert!(
+            has_creator,
+            "Expected Creator tag, got keys: {:?}",
+            metadata.keys().collect::<Vec<_>>()
+        );
+        // Get the creator value from whichever key format is present
+        let creator_value = metadata.get_string("XMP-xmp:Creator").or_else(|| {
+            metadata
+                .iter()
+                .find(|(k, _)| k.contains("Creator"))
+                .and_then(|(_, v)| v.as_string())
+        });
+        assert_eq!(creator_value, Some("Test Creator"));
+    }
+
+    #[test]
+    fn test_parse_png_with_gama_chunk() {
+        let mut data = create_minimal_png();
+
+        // Create gAMA chunk data (gamma = 2.2, stored as 220000)
+        let gama_data = 220000u32.to_be_bytes();
+
+        // Insert gAMA chunk before IEND
+        let iend_pos = data.len() - 12;
+        let mut gama_chunk = Vec::new();
+        gama_chunk.extend_from_slice(&(gama_data.len() as u32).to_be_bytes());
+        gama_chunk.extend_from_slice(b"gAMA");
+        gama_chunk.extend_from_slice(&gama_data);
+        gama_chunk.extend_from_slice(&0u32.to_be_bytes());
+
+        data.splice(iend_pos..iend_pos, gama_chunk);
+
+        let reader = TestReader::new(data);
+        let result = parse_png_metadata(&reader);
+        assert!(result.is_ok());
+
+        let metadata = result.unwrap();
+        // 7 IHDR tags + 1 gAMA tag = 8 total
+        assert_eq!(metadata.len(), 8);
+
+        // Check gamma value
+        let gamma = metadata.get_float("PNG:Gamma");
+        assert!(gamma.is_some());
+        let gamma_val = gamma.unwrap();
+        assert!((gamma_val - 2.2).abs() < 0.0001);
     }
 }

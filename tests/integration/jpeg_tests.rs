@@ -961,3 +961,113 @@ fn test_jpeg_with_icc_profile() {
 
     println!("\nICC profile extraction test passed!");
 }
+
+#[test]
+fn test_xmp_flows_to_metadata_map_via_read_metadata() {
+    use oxidex::core::read_metadata;
+
+    // === Setup ===
+    ensure_test_fixtures().expect("Failed to create test fixtures");
+    let path = Path::new("tests/fixtures/jpeg/sample_with_exif_xmp.jpg");
+
+    println!("\n=== XMP Flow to MetadataMap Test ===\n");
+    println!("Testing that XMP tags flow through read_metadata() API to final MetadataMap");
+
+    // === Execute ===
+    println!("\nStep 1: Calling read_metadata()...");
+    let metadata = read_metadata(path).expect("Failed to read metadata");
+    println!("  ✓ Successfully read metadata");
+    println!("  Total tags: {}", metadata.len());
+
+    // === Analyze ===
+    println!("\nStep 2: Analyzing MetadataMap contents...");
+
+    let mut xmp_tags = Vec::new();
+    let mut exif_tags = Vec::new();
+    let mut file_tags = Vec::new();
+    let mut other_tags = Vec::new();
+
+    for (key, value) in metadata.iter() {
+        if key.starts_with("XMP-") {
+            xmp_tags.push((key, value));
+        } else if key.starts_with("IFD0:") || key.starts_with("EXIF:") {
+            exif_tags.push((key, value));
+        } else if key.starts_with("File:") {
+            file_tags.push((key, value));
+        } else {
+            other_tags.push((key, value));
+        }
+    }
+
+    println!("  - File tags: {}", file_tags.len());
+    println!("  - EXIF tags: {}", exif_tags.len());
+    println!("  - XMP tags:  {}", xmp_tags.len());
+    println!("  - Other tags: {}", other_tags.len());
+
+    // === Verify XMP tags present ===
+    println!("\nStep 3: Verifying XMP tags are present...");
+
+    assert!(
+        !xmp_tags.is_empty(),
+        "❌ CRITICAL FAILURE: No XMP tags found in MetadataMap!\n\
+         This indicates XMP data is extracted but NOT flowing to final output.\n\
+         Check process_xmp_segments() integration in parse_jpeg_metadata()."
+    );
+
+    println!("  ✓ Found {} XMP tags", xmp_tags.len());
+
+    // === Display XMP tags ===
+    println!("\nStep 4: XMP tags found in MetadataMap:");
+    for (key, value) in &xmp_tags {
+        println!("  {}: {:?}", key, value);
+    }
+
+    // === Verify specific expected XMP tags ===
+    println!("\nStep 5: Verifying specific XMP tag values...");
+
+    assert!(
+        metadata.contains_key("XMP-xmp:Creator"),
+        "Missing XMP-xmp:Creator tag"
+    );
+    let creator = metadata.get("XMP-xmp:Creator").unwrap();
+    assert!(
+        format!("{:?}", creator).contains("John Doe"),
+        "XMP-xmp:Creator should be 'John Doe', got {:?}",
+        creator
+    );
+    println!("  ✓ XMP-xmp:Creator: {:?}", creator);
+
+    assert!(
+        metadata.contains_key("XMP-xmp:Rating"),
+        "Missing XMP-xmp:Rating tag"
+    );
+    let rating = metadata.get("XMP-xmp:Rating").unwrap();
+    println!("  ✓ XMP-xmp:Rating: {:?}", rating);
+
+    assert!(
+        metadata.contains_key("XMP-dc:Title"),
+        "Missing XMP-dc:Title tag"
+    );
+    let title = metadata.get("XMP-dc:Title").unwrap();
+    assert!(
+        format!("{:?}", title).contains("Sample Photo"),
+        "XMP-dc:Title should be 'Sample Photo', got {:?}",
+        title
+    );
+    println!("  ✓ XMP-dc:Title: {:?}", title);
+
+    assert!(
+        metadata.contains_key("XMP-dc:Rights"),
+        "Missing XMP-dc:Rights tag"
+    );
+    let rights = metadata.get("XMP-dc:Rights").unwrap();
+    println!("  ✓ XMP-dc:Rights: {:?}", rights);
+
+    // === Final verification ===
+    println!("\n=== Test Summary ===");
+    println!("✅ SUCCESS: XMP tags are flowing correctly through read_metadata() API!");
+    println!("   XMP tags found: {}", xmp_tags.len());
+    println!("   EXIF tags found: {}", exif_tags.len());
+    println!("   Total tags: {}", metadata.len());
+    println!("\n✅ Data flow verified: JPEG → Segments → XMP Parser → MetadataMap");
+}

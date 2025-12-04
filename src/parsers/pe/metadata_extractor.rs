@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use crate::core::{MetadataMap, TagValue};
+use crate::parsers::pe::clr_parser::DotNetInfo;
 use crate::parsers::pe::signature_parser::SignatureInfo;
 use crate::parsers::pe::structures::{
     machine_types, subsystem_types, CodeViewNB10, CodeViewRSDS, CoffHeader, DosHeader, ExportInfo,
@@ -656,6 +657,88 @@ pub fn extract_import_metadata(imports: &[ImportInfo], metadata: &mut MetadataMa
     metadata.insert(
         "PE:HasSuspiciousImports".to_string(),
         TagValue::Integer(if has_suspicious { 1 } else { 0 }),
+    );
+}
+
+/// Extract metadata from .NET CLR information
+pub fn extract_dotnet_metadata(dotnet_info: &DotNetInfo, metadata: &mut MetadataMap) {
+    // Indicate .NET presence
+    metadata.insert(
+        "PE:DotNet".to_string(),
+        TagValue::Integer(if dotnet_info.is_dotnet { 1 } else { 0 }),
+    );
+
+    if !dotnet_info.is_dotnet {
+        return;
+    }
+
+    // CLR version
+    if let Some(ref clr_version) = dotnet_info.clr_version {
+        metadata.insert(
+            "PE:CLRVersion".to_string(),
+            TagValue::String(clr_version.clone()),
+        );
+    }
+
+    // Assembly name
+    if let Some(ref assembly_name) = dotnet_info.assembly_name {
+        metadata.insert(
+            "PE:AssemblyName".to_string(),
+            TagValue::String(assembly_name.clone()),
+        );
+    }
+
+    // Assembly version
+    if let Some(ref assembly_version) = dotnet_info.assembly_version {
+        metadata.insert(
+            "PE:AssemblyVersion".to_string(),
+            TagValue::String(assembly_version.clone()),
+        );
+    }
+
+    // Assembly culture
+    if let Some(ref culture) = dotnet_info.assembly_culture {
+        metadata.insert(
+            "PE:AssemblyCulture".to_string(),
+            TagValue::String(culture.clone()),
+        );
+    }
+
+    // Public key token
+    if let Some(ref token) = dotnet_info.public_key_token {
+        metadata.insert(
+            "PE:PublicKeyToken".to_string(),
+            TagValue::String(token.clone()),
+        );
+    }
+
+    // Target framework
+    if let Some(ref framework) = dotnet_info.target_framework {
+        metadata.insert(
+            "PE:TargetFramework".to_string(),
+            TagValue::String(framework.clone()),
+        );
+    }
+
+    // Runtime flags
+    metadata.insert(
+        "PE:ILOnly".to_string(),
+        TagValue::Integer(if dotnet_info.il_only { 1 } else { 0 }),
+    );
+
+    metadata.insert(
+        "PE:StrongNameSigned".to_string(),
+        TagValue::Integer(if dotnet_info.strong_name_signed { 1 } else { 0 }),
+    );
+
+    metadata.insert(
+        "PE:Requires32Bit".to_string(),
+        TagValue::Integer(if dotnet_info.requires_32bit { 1 } else { 0 }),
+    );
+
+    metadata.insert(
+        "PE:Prefers32Bit".to_string(),
+        TagValue::Integer(if dotnet_info.prefers_32bit { 1 } else { 0 }),
     );
 }
 

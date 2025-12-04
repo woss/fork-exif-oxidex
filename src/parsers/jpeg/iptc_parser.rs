@@ -31,13 +31,13 @@ struct ImageResourceBlock<'a> {
 
 /// Represents a single IPTC IIM record
 #[derive(Debug, Clone, PartialEq)]
-struct IptcRecord {
+pub struct IptcRecord {
     /// Record number (usually 2 for Application Record)
-    record_number: u8,
+    pub record_number: u8,
     /// Dataset number (identifies the specific tag)
-    dataset_number: u8,
+    pub dataset_number: u8,
     /// Record data
-    data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 /// Parses a single Adobe Photoshop Image Resource Block (8BIM).
@@ -120,7 +120,7 @@ fn parse_iptc_record(input: &[u8]) -> IResult<&[u8], IptcRecord> {
 ///
 /// Returns a vector of all successfully parsed records.
 /// Stops at first parse error or end of data.
-fn parse_all_iptc_records(input: &[u8]) -> Result<Vec<IptcRecord>> {
+pub fn parse_all_iptc_records(input: &[u8]) -> Result<Vec<IptcRecord>> {
     let mut records = Vec::new();
     let mut current = input;
 
@@ -199,7 +199,7 @@ pub fn dataset_to_tag_name(record_number: u8, dataset_number: u8) -> String {
 ///
 /// IPTC strings are typically Latin-1 encoded, but may also be UTF-8.
 /// This function attempts UTF-8 first, falls back to Latin-1, and trims whitespace.
-fn decode_iptc_string(data: &[u8]) -> String {
+pub fn decode_iptc_string(data: &[u8]) -> String {
     // Try UTF-8 first
     if let Ok(s) = std::str::from_utf8(data) {
         return s.trim().to_string();

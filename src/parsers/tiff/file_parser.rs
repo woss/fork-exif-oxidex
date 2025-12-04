@@ -84,6 +84,11 @@ const INTEROPERABILITY_IFD_POINTER: u16 = 0xA005;
 const SUB_IFDS: u16 = 0x014A;
 const MAKERNOTE: u16 = 0x927C; // MakerNote tag
 
+// Embedded metadata tag IDs
+const XMP_TAG: u16 = 0x02BC; // Tag 700: XMP metadata (ApplicationNotes)
+const IPTC_TAG: u16 = 0x83BB; // Tag 33723: IPTC-NAA metadata
+const PHOTOSHOP_TAG: u16 = 0x8649; // Tag 34377: Photoshop IRB metadata
+
 // Tag IDs for camera detection
 const MAKE: u16 = 0x010F; // Camera manufacturer (e.g., "Canon", "Nikon")
 
@@ -457,6 +462,76 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
                             }
                         }
                     }
+                }
+                XMP_TAG => {
+                    // Tag 700: XMP metadata
+                    // Extract XMP metadata using the XMP parser
+                    use crate::parsers::xmp::parse_xmp;
+
+                    let xmp_data = value.as_ref();
+                    match parse_xmp(xmp_data) {
+                        Ok(xmp_tags) => {
+                            // Convert XMP tags to IfdEntries format
+                            // Store as synthetic entries with XMP_TAG ID
+                            for (key, val) in xmp_tags {
+                                let synthetic_value = format!("{}: {}", key, val);
+                                all_tags.push((
+                                    XMP_TAG,
+                                    7, // Type UNDEFINED
+                                    synthetic_value.len() as u32,
+                                    std::borrow::Cow::Owned(synthetic_value.into_bytes()),
+                                ));
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Warning: Failed to parse XMP metadata from tag 700: {}", e);
+                        }
+                    }
+                }
+                IPTC_TAG => {
+                    // Tag 33723: IPTC-NAA metadata
+                    // Extract IPTC metadata using the IPTC parser
+                    use crate::parsers::jpeg::iptc_parser::dataset_to_tag_name;
+                    use crate::parsers::jpeg::iptc_parser::decode_iptc_string;
+                    use crate::parsers::jpeg::iptc_parser::parse_all_iptc_records;
+
+                    let iptc_data = value.as_ref();
+                    match parse_all_iptc_records(iptc_data) {
+                        Ok(records) => {
+                            // Convert IPTC records to IfdEntries format
+                            for record in records {
+                                let tag_name = dataset_to_tag_name(
+                                    record.record_number,
+                                    record.dataset_number,
+                                );
+                                let tag_value = decode_iptc_string(&record.data);
+                                let synthetic_value = format!("{}: {}", tag_name, tag_value);
+                                all_tags.push((
+                                    IPTC_TAG,
+                                    7, // Type UNDEFINED
+                                    synthetic_value.len() as u32,
+                                    std::borrow::Cow::Owned(synthetic_value.into_bytes()),
+                                ));
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Warning: Failed to parse IPTC metadata from tag 33723: {}",
+                                e
+                            );
+                        }
+                    }
+                }
+                PHOTOSHOP_TAG => {
+                    // Tag 34377: Photoshop IRB metadata
+                    // Note: Photoshop IRB is complex and may contain IPTC and other data
+                    // For now, we'll log that we found it but skip detailed parsing
+                    // A full implementation would parse Image Resource Blocks (8BIM)
+                    eprintln!(
+                        "Info: Found Photoshop IRB metadata in tag 34377 ({} bytes). \
+                        Detailed parsing not yet implemented.",
+                        value.as_ref().len()
+                    );
                 }
                 _ => {}
             }

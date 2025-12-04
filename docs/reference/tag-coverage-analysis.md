@@ -3,7 +3,7 @@
 This document details OxiDex's coverage of ExifTool's tag database and analyzes parser implementation status.
 
 ::: info Auto-Generated
-This document is automatically updated on each push to `main`. Last updated: **2025-12-04**
+This document is automatically updated on each push to `main`. Last updated: **2025-12-03**
 :::
 
 ## Summary
@@ -80,28 +80,28 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | Opus | 100% | ✅ Complete |
 | OGG | 100% | ✅ Complete |
 | WAV | 100% | ✅ Complete |
-| TTF | 90% | ✅ Good |
-| OTF | 90% | ✅ Good |
 | ZIP | 90% | ✅ Good |
+| SPECIALIZED | 90% | ✅ Good |
 | ICC | 90% | ✅ Good |
-| TIFF | 90% | ✅ Good |
-| EXIF | 90% | ✅ Good |
 | BMP | 90% | ✅ Good |
 | GIF | 90% | ✅ Good |
 | WebP | 90% | ✅ Good |
-| SPECIALIZED | 90% | ✅ Good |
-| PDF | 75% | ✅ Good |
+| TTF | 90% | ✅ Good |
+| OTF | 90% | ✅ Good |
+| TIFF | 90% | ✅ Good |
+| EXIF | 90% | ✅ Good |
 | PE | 75% | ✅ Good |
-| ELF | 75% | ✅ Good |
 | Mach-O | 75% | ✅ Good |
+| PDF | 75% | ✅ Good |
+| ELF | 75% | ✅ Good |
 | IPTC | 60% | ✅ Good |
 | XMP | 60% | ✅ Good |
 | QuickTime | 60% | ✅ Good |
 | MP4 | 60% | ✅ Good |
 | MOV | 60% | ✅ Good |
-| PNG | 60% | ✅ Good |
 | DOCX | 60% | ✅ Good |
 | XLSX | 60% | ✅ Good |
+| PNG | 60% | ✅ Good |
 | JPEG | 60% | ✅ Good |
 
 ### ⚠️ Partial Coverage (10-50%)

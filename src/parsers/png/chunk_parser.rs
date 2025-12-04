@@ -448,6 +448,39 @@ pub fn parse_phys_chunk(data: &[u8]) -> Result<(u32, u32, u8)> {
     Ok((pixels_x, pixels_y, unit))
 }
 
+/// Parses a gAMA chunk (Image Gamma).
+///
+/// # Format
+///
+/// ```text
+/// Gamma: 4 bytes (u32, big-endian) - gamma × 100,000
+/// ```
+///
+/// The gamma value is stored as an unsigned integer representing gamma × 100,000.
+/// For example, a gamma of 1/2.2 (≈0.45455) is stored as 45455.
+///
+/// # Parameters
+///
+/// - `data`: gAMA chunk data (4 bytes)
+///
+/// # Returns
+///
+/// - `Ok(gamma)`: Gamma value as f64
+/// - `Err`: Parse error
+pub fn parse_gama_chunk(data: &[u8]) -> Result<f64> {
+    if data.len() != 4 {
+        return Err(ExifToolError::parse_error(format!(
+            "gAMA chunk must be 4 bytes, got {}",
+            data.len()
+        )));
+    }
+
+    let gamma_int = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    let gamma = gamma_int as f64 / 100000.0;
+
+    Ok(gamma)
+}
+
 /// Parses a bKGD chunk (Background Color).
 ///
 /// Format depends on color type:
@@ -858,5 +891,29 @@ mod tests {
             crc: 0,
         };
         assert!(!text_chunk.is_exif_chunk());
+    }
+
+    #[test]
+    fn test_parse_gama_chunk() {
+        // Test gamma value of 2.2 (stored as 220000)
+        let data = 220000u32.to_be_bytes();
+        let result = parse_gama_chunk(&data);
+        assert!(result.is_ok());
+        let gamma = result.unwrap();
+        assert!((gamma - 2.2).abs() < 0.0001);
+
+        // Test gamma value of 1/2.2 ≈ 0.45455 (stored as 45455)
+        let data = 45455u32.to_be_bytes();
+        let result = parse_gama_chunk(&data);
+        assert!(result.is_ok());
+        let gamma = result.unwrap();
+        assert!((gamma - 0.45455).abs() < 0.00001);
+    }
+
+    #[test]
+    fn test_parse_gama_chunk_invalid_length() {
+        let data = [0u8; 3]; // Wrong length
+        let result = parse_gama_chunk(&data);
+        assert!(result.is_err());
     }
 }

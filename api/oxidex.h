@@ -2404,6 +2404,31 @@
 #define N_COLD_FUNC 1024
 
 /*
+ IL-only image (contains only MSIL, no native code)
+ */
+#define COMIMAGE_FLAGS_ILONLY 1
+
+/*
+ Image requires 32-bit environment
+ */
+#define COMIMAGE_FLAGS_32BITREQUIRED 2
+
+/*
+ Image has strong name signature
+ */
+#define COMIMAGE_FLAGS_STRONGNAMESIGNED 8
+
+/*
+ Image should be tracked for debug information
+ */
+#define COMIMAGE_FLAGS_TRACKDEBUGDATA 65536
+
+/*
+ Image prefers 32-bit execution
+ */
+#define COMIMAGE_FLAGS_32BITPREFERRED 131072
+
+/*
  Certificate revision 1.0
  */
 #define WIN_CERT_REVISION_1_0 256

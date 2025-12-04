@@ -7,6 +7,7 @@
 #![allow(dead_code)]
 
 pub mod anomaly_detector;
+pub mod clr_parser;
 pub mod coff_parser;
 pub mod debug_parser;
 pub mod dos_parser;
@@ -30,16 +31,17 @@ const DOS_SIGNATURE: &[u8] = b"MZ";
 
 /// Parses PE file and extracts all metadata.
 pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
+    use clr_parser::{parse_clr_header, parse_dotnet_metadata};
     use coff_parser::parse_coff_header;
     use debug_parser::parse_debug_directory_entry;
     use dos_parser::parse_dos_header;
     use export_parser::parse_exports;
     use import_parser::{parse_dll_imports, parse_import_descriptor};
     use metadata_extractor::{
-        extract_coff_metadata, extract_dos_metadata, extract_export_metadata,
-        extract_import_metadata, extract_nb10_metadata, extract_optional_metadata,
-        extract_rich_header_metadata, extract_rsds_metadata, extract_signature_metadata,
-        extract_version_info_metadata,
+        extract_coff_metadata, extract_dos_metadata, extract_dotnet_metadata,
+        extract_export_metadata, extract_import_metadata, extract_nb10_metadata,
+        extract_optional_metadata, extract_rich_header_metadata, extract_rsds_metadata,
+        extract_signature_metadata, extract_version_info_metadata,
     };
     use optional_parser::{parse_optional_header_nt, parse_optional_header_standard};
     use resource_parser::find_resource_data;
@@ -298,6 +300,53 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                         // Extract signature information from PKCS#7 data
                         if let Some(sig_info) = parse_signature_info(&win_cert.certificate_data) {
                             extract_signature_metadata(&sig_info, &mut metadata);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Step 15: Parse .NET CLR header if present (data directory index 14)
+    if let Some(ref nt_header) = nt_header_opt {
+        if let Some(&(clr_rva, clr_size)) = nt_header.data_directories.get(14) {
+            if clr_rva > 0 && clr_size > 0 {
+                // Find section containing CLR header
+                if let Some(clr_section) = sections.iter().find(|s| {
+                    clr_rva >= s.virtual_address && clr_rva < s.virtual_address + s.virtual_size
+                }) {
+                    let clr_offset = clr_section.pointer_to_raw_data as u64
+                        + (clr_rva - clr_section.virtual_address) as u64;
+
+                    // Read CLR header (72 bytes)
+                    if let Ok(clr_data) = reader.read(clr_offset, 72) {
+                        if let Ok((_, clr_header)) = parse_clr_header(clr_data) {
+                            // Parse .NET metadata if present
+                            let (metadata_rva, metadata_size) = clr_header.metadata;
+                            if metadata_rva > 0 && metadata_size > 0 {
+                                // Find section containing metadata
+                                if let Some(metadata_section) = sections.iter().find(|s| {
+                                    metadata_rva >= s.virtual_address
+                                        && metadata_rva < s.virtual_address + s.virtual_size
+                                }) {
+                                    let metadata_offset = metadata_section.pointer_to_raw_data
+                                        as u64
+                                        + (metadata_rva - metadata_section.virtual_address) as u64;
+
+                                    // Read metadata (limit to 64KB for safety)
+                                    let metadata_read_size =
+                                        std::cmp::min(metadata_size as usize, 65536);
+                                    if let Ok(metadata_data) =
+                                        reader.read(metadata_offset, metadata_read_size)
+                                    {
+                                        if let Some(dotnet_info) =
+                                            parse_dotnet_metadata(metadata_data, &clr_header)
+                                        {
+                                            extract_dotnet_metadata(&dotnet_info, &mut metadata);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

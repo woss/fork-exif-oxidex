@@ -45,7 +45,9 @@
 
 #![allow(dead_code)]
 
+pub mod embedded_files_parser;
 pub mod encryption_parser;
+pub mod font_parser;
 pub mod info_parser;
 pub mod permissions_parser;
 pub mod resources_parser;
@@ -243,6 +245,20 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     //         metadata.insert(key.clone(), value.clone());
     //     }
     // }
+
+    // Extract font metadata
+    if let Ok(font_meta) = font_parser::parse_font_metadata(reader) {
+        for (key, value) in font_meta.iter() {
+            metadata.insert(key.clone(), value.clone());
+        }
+    }
+
+    // Extract embedded file metadata
+    if let Ok(embedded_meta) = embedded_files_parser::parse_embedded_files_metadata(reader) {
+        for (key, value) in embedded_meta.iter() {
+            metadata.insert(key.clone(), value.clone());
+        }
+    }
 
     // Extract encryption metadata
     match parse_encryption_metadata(reader) {
