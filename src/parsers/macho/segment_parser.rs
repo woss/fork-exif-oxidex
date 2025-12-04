@@ -37,8 +37,10 @@ pub struct SegmentStats {
 impl SegmentStats {
     /// Compute statistics from a list of segments
     pub fn from_segments(segments: &[SegmentCommand]) -> Self {
-        let mut stats = SegmentStats::default();
-        stats.segment_count = segments.len();
+        let mut stats = SegmentStats {
+            segment_count: segments.len(),
+            ..Default::default()
+        };
 
         for seg in segments {
             stats.section_count += seg.sections.len();
@@ -165,9 +167,7 @@ pub fn section_type_name(section_type: u32) -> &'static str {
         section_type::S_THREAD_LOCAL_ZEROFILL => "Thread Local Zerofill",
         section_type::S_THREAD_LOCAL_VARIABLES => "Thread Local Variables",
         section_type::S_THREAD_LOCAL_VARIABLE_POINTERS => "Thread Local Variable Pointers",
-        section_type::S_THREAD_LOCAL_INIT_FUNCTION_POINTERS => {
-            "Thread Local Init Func Pointers"
-        }
+        section_type::S_THREAD_LOCAL_INIT_FUNCTION_POINTERS => "Thread Local Init Func Pointers",
         section_type::S_INIT_FUNC_OFFSETS => "Init Func Offsets",
         _ => "Unknown",
     }
@@ -212,7 +212,11 @@ pub fn decode_section_attrs(flags: u32) -> Vec<&'static str> {
 }
 
 /// Find a section by name within segments
-pub fn find_section<'a>(segments: &'a [SegmentCommand], segname: &str, sectname: &str) -> Option<&'a Section> {
+pub fn find_section<'a>(
+    segments: &'a [SegmentCommand],
+    segname: &str,
+    sectname: &str,
+) -> Option<&'a Section> {
     for seg in segments {
         if seg.segname == segname {
             for sect in &seg.sections {
@@ -319,7 +323,8 @@ mod tests {
 
     #[test]
     fn test_decode_section_attrs() {
-        let flags = section_attrs::S_ATTR_PURE_INSTRUCTIONS | section_attrs::S_ATTR_SOME_INSTRUCTIONS;
+        let flags =
+            section_attrs::S_ATTR_PURE_INSTRUCTIONS | section_attrs::S_ATTR_SOME_INSTRUCTIONS;
         let attrs = decode_section_attrs(flags);
         assert!(attrs.contains(&"PURE_INSTRUCTIONS"));
         assert!(attrs.contains(&"SOME_INSTRUCTIONS"));

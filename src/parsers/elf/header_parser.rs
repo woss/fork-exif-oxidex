@@ -374,7 +374,7 @@ mod tests {
         let data = create_elf64_le_header();
         let (_, header) = parse_elf_header(&data).unwrap();
 
-        assert_eq!(header.class_str(), "ELF64");
+        assert_eq!(header.class_str(), "64-bit");
         assert_eq!(header.endian_str(), "Little-endian");
         assert_eq!(header.type_str(), "Executable");
         assert_eq!(header.machine_str(), "AMD x86-64");

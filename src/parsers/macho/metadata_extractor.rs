@@ -5,13 +5,13 @@
 
 use crate::core::{MetadataMap, TagValue};
 
-use super::dylib_parser::{DylibStats, get_dylib_names, get_dylib_paths};
+use super::dylib_parser::{get_dylib_names, get_dylib_paths, DylibStats};
 use super::load_command_parser::LoadCommand;
 use super::segment_parser::SegmentStats;
 use super::signature_parser::{has_developer_id, is_adhoc_signed};
 use super::structures::{
-    BuildVersionCommand, DylibCommand, EntryPointCommand, MachHeader,
-    MachOInfo, RpathCommand, SymtabCommand, UuidCommand, VersionMinCommand,
+    BuildVersionCommand, DylibCommand, EntryPointCommand, MachHeader, MachOInfo, RpathCommand,
+    SymtabCommand, UuidCommand, VersionMinCommand,
 };
 use super::symbol_parser::SymbolStats;
 use super::version_parser::format_version_with_name;
@@ -179,13 +179,11 @@ fn extract_header_metadata(header: &MachHeader, metadata: &mut MetadataMap) {
     // Specific flag indicators
     metadata.insert(
         "MachO:IsPIE".to_string(),
-        TagValue::Integer(
-            if header.flags & super::structures::flags::MH_PIE != 0 {
-                1
-            } else {
-                0
-            },
-        ),
+        TagValue::Integer(if header.flags & super::structures::flags::MH_PIE != 0 {
+            1
+        } else {
+            0
+        }),
     );
 
     metadata.insert(
@@ -272,8 +270,11 @@ fn extract_dylib_metadata(dylibs: &[DylibCommand], metadata: &mut MetadataMap) {
     let stats = DylibStats::from_dylibs(dylibs);
 
     // Total dylib count (excluding ID_DYLIB)
-    let load_count = stats.regular_count + stats.weak_count + stats.reexport_count
-        + stats.lazy_count + stats.upward_count;
+    let load_count = stats.regular_count
+        + stats.weak_count
+        + stats.reexport_count
+        + stats.lazy_count
+        + stats.upward_count;
     metadata.insert(
         "MachO:DylibCount".to_string(),
         TagValue::Integer(load_count as i64),
@@ -304,7 +305,11 @@ fn extract_dylib_metadata(dylibs: &[DylibCommand], metadata: &mut MetadataMap) {
         let paths_str = if paths.len() <= 20 {
             paths.join(", ")
         } else {
-            format!("{}, ... ({} more)", paths[..20].join(", "), paths.len() - 20)
+            format!(
+                "{}, ... ({} more)",
+                paths[..20].join(", "),
+                paths.len() - 20
+            )
         };
         metadata.insert("MachO:DylibPaths".to_string(), TagValue::String(paths_str));
     }
@@ -315,15 +320,20 @@ fn extract_dylib_metadata(dylibs: &[DylibCommand], metadata: &mut MetadataMap) {
         let names_str = if names.len() <= 30 {
             names.join(", ")
         } else {
-            format!("{}, ... ({} more)", names[..30].join(", "), names.len() - 30)
+            format!(
+                "{}, ... ({} more)",
+                names[..30].join(", "),
+                names.len() - 30
+            )
         };
         metadata.insert("MachO:DylibNames".to_string(), TagValue::String(names_str));
     }
 
     // Extract version info from first dylib (if this is a dylib)
-    if let Some(dylib) = dylibs.iter().find(|d| {
-        d.cmd == super::structures::load_command::LC_ID_DYLIB
-    }) {
+    if let Some(dylib) = dylibs
+        .iter()
+        .find(|d| d.cmd == super::structures::load_command::LC_ID_DYLIB)
+    {
         metadata.insert(
             "MachO:DylibCurrentVersion".to_string(),
             TagValue::String(dylib.current_version_string()),
@@ -410,10 +420,7 @@ fn extract_build_version_metadata(bv: &BuildVersionCommand, metadata: &mut Metad
             .map(|t| format!("{} {}", t.tool_name(), t.version_string()))
             .collect::<Vec<_>>()
             .join(", ");
-        metadata.insert(
-            "MachO:BuildTools".to_string(),
-            TagValue::String(tools_str),
-        );
+        metadata.insert("MachO:BuildTools".to_string(), TagValue::String(tools_str));
     }
 }
 
@@ -645,24 +652,22 @@ pub fn populate_macho_info(info: &mut MachOInfo, commands: &[LoadCommand]) {
             LoadCommand::Dysymtab(dst) => {
                 info.dysymtab = Some(dst.clone());
             }
-            LoadCommand::LinkeditData(ld) => {
-                match ld.cmd {
-                    super::structures::load_command::LC_CODE_SIGNATURE => {
-                        info.code_signature = Some(ld.clone());
-                    }
-                    super::structures::load_command::LC_FUNCTION_STARTS => {
-                        info.function_starts = Some(ld.clone());
-                    }
-                    super::structures::load_command::LC_DATA_IN_CODE => {
-                        info.data_in_code = Some(ld.clone());
-                    }
-                    super::structures::load_command::LC_DYLD_INFO
-                    | super::structures::load_command::LC_DYLD_INFO_ONLY => {
-                        info.dyld_info = Some(ld.clone());
-                    }
-                    _ => {}
+            LoadCommand::LinkeditData(ld) => match ld.cmd {
+                super::structures::load_command::LC_CODE_SIGNATURE => {
+                    info.code_signature = Some(ld.clone());
                 }
-            }
+                super::structures::load_command::LC_FUNCTION_STARTS => {
+                    info.function_starts = Some(ld.clone());
+                }
+                super::structures::load_command::LC_DATA_IN_CODE => {
+                    info.data_in_code = Some(ld.clone());
+                }
+                super::structures::load_command::LC_DYLD_INFO
+                | super::structures::load_command::LC_DYLD_INFO_ONLY => {
+                    info.dyld_info = Some(ld.clone());
+                }
+                _ => {}
+            },
             LoadCommand::Rpath(rp) => {
                 info.rpaths.push(rp.clone());
             }
@@ -707,7 +712,10 @@ mod tests {
         assert_eq!(metadata.get_string("MachO:FileType").unwrap(), "Executable");
         assert_eq!(metadata.get_integer("MachO:Is64Bit").unwrap(), 1);
         assert_eq!(metadata.get_integer("MachO:IsPIE").unwrap(), 1);
-        assert_eq!(metadata.get_integer("MachO:HasTwoLevelNamespace").unwrap(), 1);
+        assert_eq!(
+            metadata.get_integer("MachO:HasTwoLevelNamespace").unwrap(),
+            1
+        );
     }
 
     #[test]

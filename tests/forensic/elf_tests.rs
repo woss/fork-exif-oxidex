@@ -376,45 +376,30 @@ fn test_elf_invalid_signature() {
 
 #[test]
 fn test_elf_truncated_header() {
-    // Create a truncated ELF file (only magic number, no class byte)
+    // Create a truncated ELF file (only magic number, no full header)
+    // The comprehensive parser requires a full ELF header (at least 52/64 bytes)
     let data = vec![0x7F, b'E', b'L', b'F'];
     let reader = TestReader::new(data);
     let parser = ELFParser;
 
     let result = parser.parse(&reader);
-    // Parser should handle this gracefully
-    assert!(result.is_ok(), "Should handle truncated ELF file");
-
-    let metadata = result.unwrap();
-    assert_eq!(
-        metadata.get("FileType"),
-        Some(&TagValue::String("ELF".to_string()))
-    );
-    // Class should be "Unknown" for truncated file
-    assert_eq!(
-        metadata.get("ELF:Class"),
-        Some(&TagValue::String("Unknown".to_string()))
-    );
+    // Parser correctly returns an error for truncated files
+    assert!(result.is_err(), "Should fail on truncated ELF file");
 }
 
 #[test]
 fn test_elf_minimal_size() {
-    // Test minimum valid ELF file (magic + class byte)
+    // Test file with just magic + class byte (5 bytes)
+    // The comprehensive parser requires a full ELF header (at least 52/64 bytes)
     let data = vec![0x7F, b'E', b'L', b'F', ELFCLASS64];
     let reader = TestReader::new(data);
     let parser = ELFParser;
 
     let result = parser.parse(&reader);
-    assert!(result.is_ok(), "Should parse minimal ELF file");
-
-    let metadata = result.unwrap();
-    assert_eq!(
-        metadata.get("FileType"),
-        Some(&TagValue::String("ELF".to_string()))
-    );
-    assert_eq!(
-        metadata.get("ELF:Class"),
-        Some(&TagValue::String("64-bit".to_string()))
+    // Parser correctly returns an error for truncated files
+    assert!(
+        result.is_err(),
+        "Should fail on minimal ELF file without full header"
     );
 }
 
@@ -432,23 +417,20 @@ fn test_elf_too_small() {
 #[test]
 fn test_elf_unknown_class() {
     // Create an ELF file with unknown class value
+    // Build a full header with invalid class value
     let mut data = vec![0x7F, b'E', b'L', b'F'];
     data.push(99); // Invalid class value
+    data.push(1); // Little-endian
+    data.extend_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // Rest of e_ident
+                                                             // Pad to minimum header size
+    data.extend_from_slice(&[0; 48]); // Remaining bytes for ELF32/64 header
+
     let reader = TestReader::new(data);
     let parser = ELFParser;
 
     let result = parser.parse(&reader);
-    assert!(result.is_ok(), "Should parse ELF with unknown class");
-
-    let metadata = result.unwrap();
-    assert_eq!(
-        metadata.get("FileType"),
-        Some(&TagValue::String("ELF".to_string()))
-    );
-    assert_eq!(
-        metadata.get("ELF:Class"),
-        Some(&TagValue::String("Unknown".to_string()))
-    );
+    // Parser correctly returns an error for unknown class values
+    assert!(result.is_err(), "Should fail on ELF with invalid class");
 }
 
 #[test]
@@ -483,6 +465,6 @@ fn test_elf_file_size_tracking() {
     let metadata = result.unwrap();
     assert_eq!(
         metadata.get("FileSize"),
-        Some(&TagValue::String(expected_size.to_string()))
+        Some(&TagValue::Integer(expected_size as i64))
     );
 }

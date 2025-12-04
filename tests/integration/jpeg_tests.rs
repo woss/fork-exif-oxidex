@@ -900,7 +900,11 @@ fn test_jpeg_with_icc_profile() {
 
     // Verify we found the APP2 segment
     let app2_segments: Vec<_> = segments.iter().filter(|s| s.marker == 0xFFE2).collect();
-    assert_eq!(app2_segments.len(), 1, "Should have exactly one APP2 segment");
+    assert_eq!(
+        app2_segments.len(),
+        1,
+        "Should have exactly one APP2 segment"
+    );
 
     // Verify segment has ICC_PROFILE identifier
     assert!(

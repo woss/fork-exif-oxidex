@@ -31,8 +31,10 @@ pub struct DylibStats {
 impl DylibStats {
     /// Compute statistics from a list of dylib commands
     pub fn from_dylibs(dylibs: &[DylibCommand]) -> Self {
-        let mut stats = DylibStats::default();
-        stats.dylib_count = dylibs.len();
+        let mut stats = DylibStats {
+            dylib_count: dylibs.len(),
+            ..Default::default()
+        };
 
         for dylib in dylibs {
             match dylib.cmd {
@@ -230,12 +232,16 @@ pub fn get_dylib_names(dylibs: &[DylibCommand]) -> Vec<String> {
 pub fn is_system_dylib(path: &str) -> bool {
     matches!(
         DylibCategory::from_path(path),
-        DylibCategory::SystemLibrary | DylibCategory::SystemFramework | DylibCategory::PrivateFramework
+        DylibCategory::SystemLibrary
+            | DylibCategory::SystemFramework
+            | DylibCategory::PrivateFramework
     )
 }
 
 /// Categorize dylibs by their load type
-pub fn categorize_dylibs(dylibs: &[DylibCommand]) -> std::collections::HashMap<DylibType, Vec<String>> {
+pub fn categorize_dylibs(
+    dylibs: &[DylibCommand],
+) -> std::collections::HashMap<DylibType, Vec<String>> {
     use std::collections::HashMap;
     let mut categories: HashMap<DylibType, Vec<String>> = HashMap::new();
 
@@ -269,7 +275,10 @@ mod tests {
         let dylibs = vec![
             create_test_dylib(load_command::LC_LOAD_DYLIB, "/usr/lib/libSystem.B.dylib"),
             create_test_dylib(load_command::LC_LOAD_DYLIB, "/usr/lib/libc++.1.dylib"),
-            create_test_dylib(load_command::LC_LOAD_WEAK_DYLIB, "/usr/lib/libOptional.dylib"),
+            create_test_dylib(
+                load_command::LC_LOAD_WEAK_DYLIB,
+                "/usr/lib/libOptional.dylib",
+            ),
             create_test_dylib(
                 load_command::LC_REEXPORT_DYLIB,
                 "/usr/lib/libReexport.dylib",

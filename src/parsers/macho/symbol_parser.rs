@@ -285,9 +285,7 @@ pub fn detect_language(name: &str) -> &'static str {
         "Swift"
     } else if name.starts_with("_Z") || name.starts_with("__Z") {
         "C++"
-    } else if name.starts_with("+[") || name.starts_with("-[") {
-        "Objective-C"
-    } else if name.starts_with("_OBJC_") {
+    } else if name.starts_with("+[") || name.starts_with("-[") || name.starts_with("_OBJC_") {
         "Objective-C"
     } else {
         "C"
@@ -353,8 +351,14 @@ mod tests {
 
     #[test]
     fn test_symbol_type_name() {
-        assert_eq!(symbol_type_name(n_type::N_SECT | n_type_mask::N_EXT), "Defined External");
-        assert_eq!(symbol_type_name(n_type::N_UNDF | n_type_mask::N_EXT), "Undefined External");
+        assert_eq!(
+            symbol_type_name(n_type::N_SECT | n_type_mask::N_EXT),
+            "Defined External"
+        );
+        assert_eq!(
+            symbol_type_name(n_type::N_UNDF | n_type_mask::N_EXT),
+            "Undefined External"
+        );
         assert_eq!(symbol_type_name(n_type::N_SECT), "Defined");
         assert_eq!(symbol_type_name(0xE0), "Debug (STAB)");
     }

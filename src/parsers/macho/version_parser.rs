@@ -122,11 +122,8 @@ pub fn parse_source_version(version: u64) -> (u64, u64, u64, u64, u64) {
 pub fn compare_versions(v1: &str, v2: &str) -> std::cmp::Ordering {
     use std::cmp::Ordering;
 
-    let parse_parts = |v: &str| -> Vec<u32> {
-        v.split('.')
-            .filter_map(|s| s.parse::<u32>().ok())
-            .collect()
-    };
+    let parse_parts =
+        |v: &str| -> Vec<u32> { v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect() };
 
     let parts1 = parse_parts(v1);
     let parts2 = parse_parts(v2);
@@ -153,11 +150,7 @@ pub fn meets_min_version(version: &str, min_version: &str) -> bool {
 
 /// Known macOS version names
 pub fn macos_version_name(version: &str) -> Option<&'static str> {
-    let major_minor = version
-        .split('.')
-        .take(2)
-        .collect::<Vec<_>>()
-        .join(".");
+    let major_minor = version.split('.').take(2).collect::<Vec<_>>().join(".");
 
     match major_minor.as_str() {
         "10.0" => Some("Cheetah"),
@@ -283,10 +276,7 @@ mod tests {
             format_version_with_name("macOS", "14.0.0"),
             "14.0.0 (Sonoma)"
         );
-        assert_eq!(
-            format_version_with_name("iOS", "17.0.0"),
-            "17.0.0 (iOS 17)"
-        );
+        assert_eq!(format_version_with_name("iOS", "17.0.0"), "17.0.0 (iOS 17)");
         assert_eq!(format_version_with_name("tvOS", "15.0.0"), "15.0.0");
     }
 
@@ -306,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_version_info_from_build_version() {
-        use crate::parsers::macho::structures::{platform, BuildToolVersion, build_tool};
+        use crate::parsers::macho::structures::{build_tool, platform, BuildToolVersion};
 
         let cmd = BuildVersionCommand {
             platform: platform::PLATFORM_MACOS,

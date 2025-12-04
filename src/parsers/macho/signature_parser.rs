@@ -210,9 +210,15 @@ fn extract_signer_from_cms(data: &[u8]) -> Option<String> {
             // Try to extract the string value after the OID
             if let Some(name) = extract_der_string(&cms_data[i + 3..]) {
                 // Filter for reasonable signer names
-                if name.len() >= 3 && name.len() <= 200 && name.chars().all(|c| c.is_ascii_graphic() || c == ' ') {
+                if name.len() >= 3
+                    && name.len() <= 200
+                    && name.chars().all(|c| c.is_ascii_graphic() || c == ' ')
+                {
                     // Skip common non-signer CNs
-                    if !name.starts_with("Apple") || name.contains("Developer") || name.contains("Distribution") {
+                    if !name.starts_with("Apple")
+                        || name.contains("Developer")
+                        || name.contains("Distribution")
+                    {
                         return Some(name);
                     }
                 }
@@ -337,7 +343,7 @@ pub fn is_adhoc_signed(info: &CodeSignatureInfo) -> bool {
 
 /// Check if the signature has a valid team ID (Apple Developer)
 pub fn has_developer_id(info: &CodeSignatureInfo) -> bool {
-    info.team_id.as_ref().map_or(false, |t| !t.is_empty())
+    info.team_id.as_ref().is_some_and(|t| !t.is_empty())
 }
 
 #[cfg(test)]

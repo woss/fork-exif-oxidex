@@ -46,7 +46,9 @@ pub mod version_parser;
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
-use header_parser::{is_fat_magic, is_macho_magic, parse_fat_archs, parse_fat_header, parse_mach_header};
+use header_parser::{
+    is_fat_magic, is_macho_magic, parse_fat_archs, parse_fat_header, parse_mach_header,
+};
 use load_command_parser::parse_all_load_commands;
 use metadata_extractor::{extract_macho_metadata, populate_macho_info};
 use signature_parser::parse_code_signature_info;
@@ -111,8 +113,9 @@ impl MachOParser {
         let header_data = reader.read(offset, header_size)?;
 
         // Parse Mach-O header
-        let (_, header) = parse_mach_header(header_data)
-            .map_err(|e| ExifToolError::parse_error(format!("Failed to parse Mach-O header: {:?}", e)))?;
+        let (_, header) = parse_mach_header(header_data).map_err(|e| {
+            ExifToolError::parse_error(format!("Failed to parse Mach-O header: {:?}", e))
+        })?;
 
         let is_64bit = header.is_64bit;
         let actual_header_size = header.header_size();
@@ -122,14 +125,18 @@ impl MachOParser {
         let load_commands_size = header.sizeofcmds as usize;
 
         if load_commands_offset + load_commands_size as u64 > offset + size {
-            return Err(ExifToolError::parse_error("Load commands extend beyond file"));
+            return Err(ExifToolError::parse_error(
+                "Load commands extend beyond file",
+            ));
         }
 
         let load_commands_data = reader.read(load_commands_offset, load_commands_size)?;
 
         // Parse all load commands
         let (_, commands) = parse_all_load_commands(load_commands_data, header.ncmds, is_64bit)
-            .map_err(|e| ExifToolError::parse_error(format!("Failed to parse load commands: {:?}", e)))?;
+            .map_err(|e| {
+                ExifToolError::parse_error(format!("Failed to parse load commands: {:?}", e))
+            })?;
 
         info.header = Some(header);
         populate_macho_info(&mut info, &commands);
@@ -153,8 +160,9 @@ impl MachOParser {
     fn parse_fat_binary(&self, reader: &dyn FileReader) -> Result<MachOInfo> {
         let header_data = reader.read(0, 8)?;
 
-        let (_, fat_header) = parse_fat_header(header_data)
-            .map_err(|e| ExifToolError::parse_error(format!("Failed to parse FAT header: {:?}", e)))?;
+        let (_, fat_header) = parse_fat_header(header_data).map_err(|e| {
+            ExifToolError::parse_error(format!("Failed to parse FAT header: {:?}", e))
+        })?;
 
         // Read FAT arch entries
         let arch_entry_size = if fat_header.is_64bit { 32 } else { 20 };
@@ -170,7 +178,9 @@ impl MachOParser {
         .map_err(|e| ExifToolError::parse_error(format!("Failed to parse FAT archs: {:?}", e)))?;
 
         if fat_archs.is_empty() {
-            return Err(ExifToolError::parse_error("FAT binary contains no architectures"));
+            return Err(ExifToolError::parse_error(
+                "FAT binary contains no architectures",
+            ));
         }
 
         // Find preferred architecture (ARM64 > x86_64 > others)
@@ -249,12 +259,18 @@ fn find_preferred_architecture(archs: &[structures::FatArch]) -> usize {
     }
 
     // Then ARM64 (any subtype)
-    if let Some(idx) = archs.iter().position(|a| a.cputype == cpu_type::CPU_TYPE_ARM64) {
+    if let Some(idx) = archs
+        .iter()
+        .position(|a| a.cputype == cpu_type::CPU_TYPE_ARM64)
+    {
         return idx;
     }
 
     // Then x86_64
-    if let Some(idx) = archs.iter().position(|a| a.cputype == cpu_type::CPU_TYPE_X86_64) {
+    if let Some(idx) = archs
+        .iter()
+        .position(|a| a.cputype == cpu_type::CPU_TYPE_X86_64)
+    {
         return idx;
     }
 
@@ -322,7 +338,7 @@ mod tests {
         // LC_UUID command (24 bytes)
         data.extend_from_slice(&structures::load_command::LC_UUID.to_le_bytes());
         data.extend_from_slice(&24u32.to_le_bytes()); // cmdsize
-        // UUID bytes
+                                                      // UUID bytes
         data.extend_from_slice(&[
             0x55, 0x0E, 0x84, 0x00, 0xE2, 0x9B, 0x41, 0xD4, 0xA7, 0x16, 0x44, 0x66, 0x55, 0x44,
             0x00, 0x00,

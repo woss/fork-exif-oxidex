@@ -338,7 +338,14 @@ mod tests {
 
         // printf (global, undefined - import)
         let st_info = make_st_info(stb_binding::STB_GLOBAL, stt_type::STT_FUNC);
-        data.extend(create_elf64_sym_le(6, st_info, 0, shn_index::SHN_UNDEF, 0, 0));
+        data.extend(create_elf64_sym_le(
+            6,
+            st_info,
+            0,
+            shn_index::SHN_UNDEF,
+            0,
+            0,
+        ));
 
         let symbols = parse_symbol_table(&data, true, true);
         assert_eq!(symbols.len(), 3);
@@ -534,17 +541,15 @@ mod tests {
 
     #[test]
     fn test_detect_security_features_none() {
-        let symbols = vec![
-            Symbol {
-                st_name: 0,
-                name: Some("printf".to_string()),
-                st_info: make_st_info(stb_binding::STB_GLOBAL, stt_type::STT_FUNC),
-                st_other: 0,
-                st_shndx: shn_index::SHN_UNDEF,
-                st_value: 0,
-                st_size: 0,
-            },
-        ];
+        let symbols = vec![Symbol {
+            st_name: 0,
+            name: Some("printf".to_string()),
+            st_info: make_st_info(stb_binding::STB_GLOBAL, stt_type::STT_FUNC),
+            st_other: 0,
+            st_shndx: shn_index::SHN_UNDEF,
+            st_value: 0,
+            st_size: 0,
+        }];
 
         let (has_canary, has_fortify) = detect_security_features(&symbols);
         assert!(!has_canary);

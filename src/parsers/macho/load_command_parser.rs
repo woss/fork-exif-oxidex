@@ -12,9 +12,8 @@ use nom::{
 
 use super::structures::{
     load_command, BuildToolVersion, BuildVersionCommand, DylibCommand, DysymtabCommand,
-    EncryptionInfoCommand, EntryPointCommand, LinkeditDataCommand, LoadCommandHeader,
-    RpathCommand, Section, SegmentCommand, SourceVersionCommand, SymtabCommand, UuidCommand,
-    VersionMinCommand,
+    EncryptionInfoCommand, EntryPointCommand, LinkeditDataCommand, LoadCommandHeader, RpathCommand,
+    Section, SegmentCommand, SourceVersionCommand, SymtabCommand, UuidCommand, VersionMinCommand,
 };
 
 // =============================================================================
@@ -318,7 +317,13 @@ pub fn parse_entry_point_command(input: &[u8]) -> IResult<&[u8], EntryPointComma
     let (input, entryoff) = le_u64(input)?;
     let (input, stacksize) = le_u64(input)?;
 
-    Ok((input, EntryPointCommand { entryoff, stacksize }))
+    Ok((
+        input,
+        EntryPointCommand {
+            entryoff,
+            stacksize,
+        },
+    ))
 }
 
 // =============================================================================
@@ -447,7 +452,10 @@ pub fn parse_rpath_command(input: &[u8]) -> IResult<&[u8], RpathCommand> {
 // =============================================================================
 
 /// Parse an encryption info command (LC_ENCRYPTION_INFO or LC_ENCRYPTION_INFO_64)
-pub fn parse_encryption_info_command(input: &[u8], is_64bit: bool) -> IResult<&[u8], EncryptionInfoCommand> {
+pub fn parse_encryption_info_command(
+    input: &[u8],
+    is_64bit: bool,
+) -> IResult<&[u8], EncryptionInfoCommand> {
     let (input, _cmd) = le_u32(input)?;
     let (input, _cmdsize) = le_u32(input)?;
     let (input, cryptoff) = le_u32(input)?;
@@ -717,7 +725,7 @@ mod tests {
         let mut data = Vec::new();
         data.extend_from_slice(&load_command::LC_SOURCE_VERSION.to_le_bytes());
         data.extend_from_slice(&16u32.to_le_bytes()); // cmdsize
-        // Version 1.2.3.4.5 encoded
+                                                      // Version 1.2.3.4.5 encoded
         let version: u64 = (1 << 40) | (2 << 30) | (3 << 20) | (4 << 10) | 5;
         data.extend_from_slice(&version.to_le_bytes());
 

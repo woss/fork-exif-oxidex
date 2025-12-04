@@ -560,7 +560,11 @@ pub struct MachHeader {
 impl MachHeader {
     /// Returns the size of the header in bytes (28 for 32-bit, 32 for 64-bit)
     pub fn header_size(&self) -> usize {
-        if self.is_64bit { 32 } else { 28 }
+        if self.is_64bit {
+            32
+        } else {
+            28
+        }
     }
 
     /// Returns human-readable CPU type name

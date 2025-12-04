@@ -352,8 +352,8 @@ fn test_macho64_with_load_commands() {
         CPU_TYPE_X86_64,
         3,
         MH_EXECUTE,
-        2,   // 2 load commands
-        96,  // Size of load commands (72 + 24)
+        2,  // 2 load commands
+        96, // Size of load commands (72 + 24)
         0,
     );
 
@@ -467,7 +467,10 @@ fn test_macho_file_size() {
     let parser = MachOParser;
     let metadata = parser.parse(&reader).expect("Failed to parse Mach-O");
 
-    assert_eq!(metadata.get_integer("MachO:FileSize").unwrap(), expected_size);
+    assert_eq!(
+        metadata.get_integer("MachO:FileSize").unwrap(),
+        expected_size
+    );
 }
 
 #[test]
@@ -496,12 +499,16 @@ fn test_macho_architecture_detection() {
     // Test 32-bit detection
     let data_32 = create_macho32_header(MH_MAGIC, CPU_TYPE_X86, 3, MH_EXECUTE, 0, 0, 0);
     let reader_32 = TestReader::new(data_32);
-    let metadata_32 = parser.parse(&reader_32).expect("Failed to parse 32-bit Mach-O");
+    let metadata_32 = parser
+        .parse(&reader_32)
+        .expect("Failed to parse 32-bit Mach-O");
     assert_eq!(metadata_32.get_integer("MachO:Is64Bit").unwrap(), 0);
 
     // Test 64-bit detection
     let data_64 = create_macho64_header(MH_MAGIC_64, CPU_TYPE_X86_64, 3, MH_EXECUTE, 0, 0, 0);
     let reader_64 = TestReader::new(data_64);
-    let metadata_64 = parser.parse(&reader_64).expect("Failed to parse 64-bit Mach-O");
+    let metadata_64 = parser
+        .parse(&reader_64)
+        .expect("Failed to parse 64-bit Mach-O");
     assert_eq!(metadata_64.get_integer("MachO:Is64Bit").unwrap(), 1);
 }

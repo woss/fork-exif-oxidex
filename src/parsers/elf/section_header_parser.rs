@@ -257,11 +257,11 @@ mod tests {
     #[test]
     fn test_parse_single_elf64_shdr_le() {
         let data = create_elf64_shdr_le(
-            1,                                                // name offset
-            sh_type::SHT_PROGBITS,                            // type
-            sh_flags::SHF_ALLOC | sh_flags::SHF_EXECINSTR,    // flags
-            0x1000,                                           // offset
-            0x500,                                            // size
+            1,                                             // name offset
+            sh_type::SHT_PROGBITS,                         // type
+            sh_flags::SHF_ALLOC | sh_flags::SHF_EXECINSTR, // flags
+            0x1000,                                        // offset
+            0x500,                                         // size
         );
 
         let result = parse_section_headers(&data, 1, true, true);
@@ -284,13 +284,7 @@ mod tests {
 
     #[test]
     fn test_parse_single_elf32_shdr_le() {
-        let data = create_elf32_shdr_le(
-            10,
-            sh_type::SHT_SYMTAB,
-            0,
-            0x2000,
-            0x1000,
-        );
+        let data = create_elf32_shdr_le(10, sh_type::SHT_SYMTAB, 0, 0x2000, 0x1000);
 
         let result = parse_section_headers(&data, 1, false, true);
         assert!(result.is_ok());
@@ -352,7 +346,10 @@ mod tests {
         assert_eq!(get_string_from_strtab(strtab, 1), Some(".text".to_string()));
         assert_eq!(get_string_from_strtab(strtab, 7), Some(".data".to_string()));
         assert_eq!(get_string_from_strtab(strtab, 13), Some(".bss".to_string()));
-        assert_eq!(get_string_from_strtab(strtab, 18), Some(".symtab".to_string()));
+        assert_eq!(
+            get_string_from_strtab(strtab, 18),
+            Some(".symtab".to_string())
+        );
 
         // Out of bounds
         assert_eq!(get_string_from_strtab(strtab, 100), None);

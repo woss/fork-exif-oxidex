@@ -158,12 +158,7 @@ mod tests {
     use crate::parsers::elf::structures::{pf_flags, pt_type};
 
     /// Creates a test ELF64 program header (little-endian)
-    fn create_elf64_phdr_le(
-        p_type: u32,
-        p_flags: u32,
-        p_offset: u64,
-        p_filesz: u64,
-    ) -> Vec<u8> {
+    fn create_elf64_phdr_le(p_type: u32, p_flags: u32, p_offset: u64, p_filesz: u64) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(&p_type.to_le_bytes());
         data.extend_from_slice(&p_flags.to_le_bytes());
@@ -177,12 +172,7 @@ mod tests {
     }
 
     /// Creates a test ELF32 program header (little-endian)
-    fn create_elf32_phdr_le(
-        p_type: u32,
-        p_flags: u32,
-        p_offset: u32,
-        p_filesz: u32,
-    ) -> Vec<u8> {
+    fn create_elf32_phdr_le(p_type: u32, p_flags: u32, p_offset: u32, p_filesz: u32) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(&p_type.to_le_bytes());
         data.extend_from_slice(&p_offset.to_le_bytes());
@@ -197,12 +187,8 @@ mod tests {
 
     #[test]
     fn test_parse_single_elf64_phdr_le() {
-        let data = create_elf64_phdr_le(
-            pt_type::PT_LOAD,
-            pf_flags::PF_R | pf_flags::PF_X,
-            0,
-            0x1000,
-        );
+        let data =
+            create_elf64_phdr_le(pt_type::PT_LOAD, pf_flags::PF_R | pf_flags::PF_X, 0, 0x1000);
 
         let result = parse_program_headers(&data, 1, true, true);
         assert!(result.is_ok());

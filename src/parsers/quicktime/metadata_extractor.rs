@@ -15,6 +15,134 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io;
 
+/// Helper for reading big-endian integers from byte slices
+struct BigEndianReader<'a>(&'a [u8]);
+
+impl<'a> BigEndianReader<'a> {
+    fn u16_at(&self, offset: usize) -> Option<u16> {
+        self.0
+            .get(offset..offset + 2)
+            .map(|b| u16::from_be_bytes([b[0], b[1]]))
+    }
+
+    fn u32_at(&self, offset: usize) -> Option<u32> {
+        self.0
+            .get(offset..offset + 4)
+            .map(|b| u32::from_be_bytes([b[0], b[1], b[2], b[3]]))
+    }
+
+    fn u64_at(&self, offset: usize) -> Option<u64> {
+        self.0
+            .get(offset..offset + 8)
+            .map(|b| u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
+    }
+
+    fn i32_at(&self, offset: usize) -> Option<i32> {
+        self.0
+            .get(offset..offset + 4)
+            .map(|b| i32::from_be_bytes([b[0], b[1], b[2], b[3]]))
+    }
+
+    fn i16_at(&self, offset: usize) -> Option<i16> {
+        self.0
+            .get(offset..offset + 2)
+            .map(|b| i16::from_be_bytes([b[0], b[1]]))
+    }
+
+    fn str_at(&self, offset: usize, len: usize) -> Option<&'a str> {
+        self.0
+            .get(offset..offset + len)
+            .and_then(|b| std::str::from_utf8(b).ok())
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+/// Helper for reading integers with configurable byte order (for EXIF parsing)
+struct EndianReader<'a> {
+    data: &'a [u8],
+    order: ByteOrder,
+}
+
+impl<'a> EndianReader<'a> {
+    fn new(data: &'a [u8], order: ByteOrder) -> Self {
+        Self { data, order }
+    }
+
+    fn u16_at(&self, offset: usize) -> Option<u16> {
+        self.data.get(offset..offset + 2).map(|b| match self.order {
+            ByteOrder::LittleEndian => u16::from_le_bytes([b[0], b[1]]),
+            ByteOrder::BigEndian => u16::from_be_bytes([b[0], b[1]]),
+        })
+    }
+
+    fn u32_at(&self, offset: usize) -> Option<u32> {
+        self.data.get(offset..offset + 4).map(|b| match self.order {
+            ByteOrder::LittleEndian => u32::from_le_bytes([b[0], b[1], b[2], b[3]]),
+            ByteOrder::BigEndian => u32::from_be_bytes([b[0], b[1], b[2], b[3]]),
+        })
+    }
+
+    fn u64_at(&self, offset: usize) -> Option<u64> {
+        self.data.get(offset..offset + 8).map(|b| match self.order {
+            ByteOrder::LittleEndian => {
+                u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
+            }
+            ByteOrder::BigEndian => {
+                u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
+            }
+        })
+    }
+
+    fn i16_at(&self, offset: usize) -> Option<i16> {
+        self.data.get(offset..offset + 2).map(|b| match self.order {
+            ByteOrder::LittleEndian => i16::from_le_bytes([b[0], b[1]]),
+            ByteOrder::BigEndian => i16::from_be_bytes([b[0], b[1]]),
+        })
+    }
+
+    fn i32_at(&self, offset: usize) -> Option<i32> {
+        self.data.get(offset..offset + 4).map(|b| match self.order {
+            ByteOrder::LittleEndian => i32::from_le_bytes([b[0], b[1], b[2], b[3]]),
+            ByteOrder::BigEndian => i32::from_be_bytes([b[0], b[1], b[2], b[3]]),
+        })
+    }
+
+    fn f32_at(&self, offset: usize) -> Option<f32> {
+        self.u32_at(offset).map(f32::from_bits)
+    }
+
+    fn f64_at(&self, offset: usize) -> Option<f64> {
+        self.u64_at(offset).map(f64::from_bits)
+    }
+
+    fn rational_at(&self, offset: usize) -> Option<f64> {
+        let num = self.u32_at(offset)?;
+        let den = self.u32_at(offset + 4)?;
+        if den != 0 {
+            Some(num as f64 / den as f64)
+        } else {
+            None
+        }
+    }
+
+    fn srational_at(&self, offset: usize) -> Option<f64> {
+        let num = self.i32_at(offset)?;
+        let den = self.i32_at(offset + 4)?;
+        if den != 0 {
+            Some(num as f64 / den as f64)
+        } else {
+            None
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.data.len()
+    }
+}
+
 /// Extract all metadata from QuickTime/MP4 atoms
 pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
     let mut metadata = MetadataMap::with_capacity(50);
@@ -191,60 +319,35 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
         return Ok(());
     }
 
-    let data = mvhd.data;
+    let r = BigEndianReader(mvhd.data);
+    let version = mvhd.data[0];
 
-    // Version (1 byte) + flags (3 bytes)
-    let version = data[0];
-
-    // mvhd structure (version 0):
-    // 0-3: version/flags (4 bytes)
-    // 4-7: creation time (4 bytes)
-    // 8-11: modification time (4 bytes)
-    // 12-15: timescale (4 bytes)
-    // 16-19: duration (4 bytes)
-    // 20-23: preferred rate (4 bytes)
-    // 24-25: preferred volume (2 bytes)
-    // 26-35: reserved (10 bytes)
-    // 36-71: matrix (36 bytes)
-    // 72-75: preview time (4 bytes)
-    // 76-79: preview duration (4 bytes)
-    // 80-83: poster time (4 bytes)
-    // 84-87: selection time (4 bytes)
-    // 88-91: selection duration (4 bytes)
-    // 92-95: current time (4 bytes)
-    // 96-99: next track ID (4 bytes)
-
+    // Parse time fields based on version (v0: 32-bit, v1: 64-bit)
     let (creation_time, modification_time, timescale, duration, rate_offset) = if version == 1 {
-        // Version 1: 64-bit times
-        if data.len() < 28 {
+        if r.len() < 32 {
             return Ok(());
         }
-        let creation = u64::from_be_bytes([
-            data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11],
-        ]);
-        let modification = u64::from_be_bytes([
-            data[12], data[13], data[14], data[15], data[16], data[17], data[18], data[19],
-        ]);
-        let timescale = u32::from_be_bytes([data[20], data[21], data[22], data[23]]);
-        let duration = u64::from_be_bytes([
-            data[24], data[25], data[26], data[27], data[28], data[29], data[30], data[31],
-        ]);
-        (creation, modification, timescale, duration, 32)
+        (
+            r.u64_at(4).unwrap_or(0),
+            r.u64_at(12).unwrap_or(0),
+            r.u32_at(20).unwrap_or(0),
+            r.u64_at(24).unwrap_or(0),
+            32usize,
+        )
     } else {
-        // Version 0: 32-bit times
-        let creation = u32::from_be_bytes([data[4], data[5], data[6], data[7]]) as u64;
-        let modification = u32::from_be_bytes([data[8], data[9], data[10], data[11]]) as u64;
-        let timescale = u32::from_be_bytes([data[12], data[13], data[14], data[15]]);
-        let duration = u32::from_be_bytes([data[16], data[17], data[18], data[19]]) as u64;
-        (creation, modification, timescale, duration, 20)
+        (
+            r.u32_at(4).unwrap_or(0) as u64,
+            r.u32_at(8).unwrap_or(0) as u64,
+            r.u32_at(12).unwrap_or(0),
+            r.u32_at(16).unwrap_or(0) as u64,
+            20usize,
+        )
     };
 
     metadata.insert(
         "QuickTime:MovieHeaderVersion".to_string(),
         TagValue::Integer(version as i64),
     );
-
-    // Convert Mac epoch (1904-01-01) to standard date format
     metadata.insert(
         "QuickTime:CreateDate".to_string(),
         TagValue::String(mac_time_to_string(creation_time)),
@@ -253,13 +356,11 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
         "QuickTime:ModifyDate".to_string(),
         TagValue::String(mac_time_to_string(modification_time)),
     );
-
     metadata.insert(
         "QuickTime:TimeScale".to_string(),
         TagValue::Integer(timescale as i64),
     );
 
-    // Duration in seconds
     let duration_sec = if timescale > 0 {
         duration as f64 / timescale as f64
     } else {
@@ -270,160 +371,71 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
         TagValue::String(format!("{:.2} s", duration_sec)),
     );
 
-    // Preferred rate (fixed-point 16.16) - at offset 20 for version 0
-    if data.len() > rate_offset + 3 {
-        let rate = i32::from_be_bytes([
-            data[rate_offset],
-            data[rate_offset + 1],
-            data[rate_offset + 2],
-            data[rate_offset + 3],
-        ]);
-        let rate_value = rate as f64 / 65536.0;
+    // Preferred rate (fixed-point 16.16)
+    if let Some(rate) = r.i32_at(rate_offset) {
         metadata.insert(
             "QuickTime:PreferredRate".to_string(),
-            TagValue::Integer(rate_value as i64),
+            TagValue::Integer((rate as f64 / 65536.0) as i64),
         );
     }
 
-    // Preferred volume (fixed-point 8.8) - at offset 24 for version 0
-    if data.len() > rate_offset + 4 + 1 {
-        let volume = i16::from_be_bytes([data[rate_offset + 4], data[rate_offset + 5]]);
-        let volume_percent = (volume as f64 / 256.0) * 100.0;
+    // Preferred volume (fixed-point 8.8)
+    if let Some(volume) = r.i16_at(rate_offset + 4) {
         metadata.insert(
             "QuickTime:PreferredVolume".to_string(),
-            TagValue::String(format!("{:.2}%", volume_percent)),
+            TagValue::String(format!("{:.2}%", (volume as f64 / 256.0) * 100.0)),
         );
     }
 
-    // Matrix structure (9 x 4 bytes = 36 bytes) - at offset 36 for version 0
-    // Reserved 10 bytes at offsets 26-35, then matrix at 36-71
-    let matrix_offset = if version == 1 {
-        rate_offset + 16 // version 1 has different offsets
-    } else {
-        36 // version 0: matrix starts at offset 36
-    };
-
-    if data.len() >= matrix_offset + 36 {
+    // Matrix structure (9 x 4 bytes)
+    let matrix_offset = if version == 1 { rate_offset + 16 } else { 36 };
+    if r.len() >= matrix_offset + 36 {
         let matrix: Vec<i32> = (0..9)
-            .map(|i| {
-                let offset = matrix_offset + i * 4;
-                i32::from_be_bytes([
-                    data[offset],
-                    data[offset + 1],
-                    data[offset + 2],
-                    data[offset + 3],
-                ])
-            })
+            .filter_map(|i| r.i32_at(matrix_offset + i * 4))
             .collect();
-
-        // QuickTime matrix is:
-        // [0-2] rotation/scale (fixed 16.16)
-        // [3-5] rotation/scale (fixed 16.16)
-        // [6-8] translation (fixed 2.30)
-        // For identity matrix, values are: 1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0
-        // In fixed point: 0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000
-        let matrix_str = format!(
-            "{} {} {} {} {} {} {} {} {}",
-            matrix[0] / 65536,
-            matrix[1] / 65536,
-            matrix[2] / 65536,
-            matrix[3] / 65536,
-            matrix[4] / 65536,
-            matrix[5] / 65536,
-            matrix[6] / 1073741824,
-            matrix[7] / 1073741824,
-            matrix[8] / 1073741824
-        );
-        metadata.insert(
-            "QuickTime:MatrixStructure".to_string(),
-            TagValue::String(matrix_str),
-        );
+        if matrix.len() == 9 {
+            let matrix_str = format!(
+                "{} {} {} {} {} {} {} {} {}",
+                matrix[0] / 65536,
+                matrix[1] / 65536,
+                matrix[2] / 65536,
+                matrix[3] / 65536,
+                matrix[4] / 65536,
+                matrix[5] / 65536,
+                matrix[6] / 1073741824,
+                matrix[7] / 1073741824,
+                matrix[8] / 1073741824
+            );
+            metadata.insert(
+                "QuickTime:MatrixStructure".to_string(),
+                TagValue::String(matrix_str),
+            );
+        }
     }
 
-    // Preview time and duration - at offset 72 for version 0
-    let time_offset = if version == 1 {
-        rate_offset + 52 // version 1 has different offsets
-    } else {
-        72 // version 0: preview time starts at offset 72
-    };
-    if data.len() >= time_offset + 24 {
-        let preview_time = u32::from_be_bytes([
-            data[time_offset],
-            data[time_offset + 1],
-            data[time_offset + 2],
-            data[time_offset + 3],
-        ]);
-        let preview_duration = u32::from_be_bytes([
-            data[time_offset + 4],
-            data[time_offset + 5],
-            data[time_offset + 6],
-            data[time_offset + 7],
-        ]);
-        let poster_time = u32::from_be_bytes([
-            data[time_offset + 8],
-            data[time_offset + 9],
-            data[time_offset + 10],
-            data[time_offset + 11],
-        ]);
-        let selection_time = u32::from_be_bytes([
-            data[time_offset + 12],
-            data[time_offset + 13],
-            data[time_offset + 14],
-            data[time_offset + 15],
-        ]);
-        let selection_duration = u32::from_be_bytes([
-            data[time_offset + 16],
-            data[time_offset + 17],
-            data[time_offset + 18],
-            data[time_offset + 19],
-        ]);
-        let current_time = u32::from_be_bytes([
-            data[time_offset + 20],
-            data[time_offset + 21],
-            data[time_offset + 22],
-            data[time_offset + 23],
-        ]);
-
-        metadata.insert(
-            "QuickTime:PreviewTime".to_string(),
-            TagValue::String(format!("{} s", preview_time / timescale.max(1))),
-        );
-        metadata.insert(
-            "QuickTime:PreviewDuration".to_string(),
-            TagValue::String(format!("{} s", preview_duration / timescale.max(1))),
-        );
-        metadata.insert(
-            "QuickTime:PosterTime".to_string(),
-            TagValue::String(format!("{} s", poster_time / timescale.max(1))),
-        );
-        metadata.insert(
-            "QuickTime:SelectionTime".to_string(),
-            TagValue::String(format!("{} s", selection_time / timescale.max(1))),
-        );
-        metadata.insert(
-            "QuickTime:SelectionDuration".to_string(),
-            TagValue::String(format!("{} s", selection_duration / timescale.max(1))),
-        );
-        metadata.insert(
-            "QuickTime:CurrentTime".to_string(),
-            TagValue::String(format!("{} s", current_time / timescale.max(1))),
-        );
+    // Time fields (preview, poster, selection, current)
+    let time_offset = if version == 1 { rate_offset + 52 } else { 72 };
+    let ts = timescale.max(1);
+    let time_fields = [
+        ("PreviewTime", 0),
+        ("PreviewDuration", 4),
+        ("PosterTime", 8),
+        ("SelectionTime", 12),
+        ("SelectionDuration", 16),
+        ("CurrentTime", 20),
+    ];
+    for (name, offset) in time_fields {
+        if let Some(val) = r.u32_at(time_offset + offset) {
+            metadata.insert(
+                format!("QuickTime:{}", name),
+                TagValue::String(format!("{} s", val / ts)),
+            );
+        }
     }
 
-    // Next track ID - at offset 96 for version 0 (after 6 x 4-byte time fields)
-    let next_track_offset = if version == 1 {
-        time_offset + 24
-    } else {
-        96 // version 0: next track ID at offset 96
-    };
-
-    if data.len() >= next_track_offset + 4 {
-        let next_track_id = u32::from_be_bytes([
-            data[next_track_offset],
-            data[next_track_offset + 1],
-            data[next_track_offset + 2],
-            data[next_track_offset + 3],
-        ]);
+    // Next track ID
+    let next_track_offset = if version == 1 { time_offset + 24 } else { 96 };
+    if let Some(next_track_id) = r.u32_at(next_track_offset) {
         metadata.insert(
             "QuickTime:NextTrackID".to_string(),
             TagValue::Integer(next_track_id as i64),
@@ -725,17 +737,6 @@ fn extract_string_value(data: &[u8]) -> Option<String> {
     String::from_utf8(text_data.to_vec()).ok()
 }
 
-/// Extract text from UserData atoms (simpler format without size/lang header)
-fn extract_userdata_text(data: &[u8]) -> Option<String> {
-    // Some UserData atoms store plain text directly
-    if data.is_empty() {
-        return None;
-    }
-
-    // Try to parse as UTF-8 text
-    String::from_utf8(data.to_vec()).ok()
-}
-
 /// Extract value from iTunes data atom
 fn extract_itunes_data_value(data: &[u8]) -> Option<TagValue> {
     // iTunes data atom format:
@@ -810,274 +811,216 @@ fn extract_heif_metadata(
     root_atoms: &[Atom],
     metadata: &mut MetadataMap,
 ) -> Result<(), String> {
-    // Parse meta children (skip version/flags if present)
-    let meta_data = if meta.data.len() >= 4 && meta.data[0..4] == [0, 0, 0, 0] {
-        &meta.data[4..]
-    } else {
-        meta.data
-    };
-
+    let meta_data = skip_version_flags(meta.data);
     let children = match super::atom_parser::parse_atoms(meta_data) {
         Ok((_, atoms)) => atoms,
-        Err(_) => return Ok(()), // Gracefully handle parsing errors
+        Err(_) => return Ok(()),
     };
 
-    // Find the Exif item ID from iinf (item information) atom
-    let mut exif_item_id: Option<u16> = None;
+    // Find Exif item ID from iinf atom
+    let exif_item_id = find_exif_item_id(&children, metadata);
 
-    if let Some(iinf) = children.iter().find(|a| a.atom_type.matches("iinf")) {
-        if iinf.data.len() >= 6 {
-            let version = iinf.data[0];
-            // Skip version/flags (4 bytes), then entry count
-            let (entry_count, entries_offset) = if version == 0 {
-                // Version 0: 2-byte entry count
-                let count = u16::from_be_bytes([iinf.data[4], iinf.data[5]]) as u32;
-                (count, 6usize)
-            } else {
-                // Version 1+: 4-byte entry count
-                if iinf.data.len() >= 8 {
-                    let count = u32::from_be_bytes([
-                        iinf.data[4],
-                        iinf.data[5],
-                        iinf.data[6],
-                        iinf.data[7],
-                    ]);
-                    (count, 8usize)
-                } else {
-                    (0, 6usize)
-                }
-            };
+    // Parse iloc to build item locations
+    let item_locations = parse_iloc_locations(&children);
 
-            metadata.insert(
-                "HEIF:ItemCount".to_string(),
-                TagValue::Integer(entry_count as i64),
-            );
+    // Extract image dimensions from ispe atoms
+    extract_ispe_dimensions(&children, metadata);
 
-            // Parse infe (item info entry) atoms to find Exif item
-            if let Ok((_, infe_atoms)) =
-                super::atom_parser::parse_atoms(&iinf.data[entries_offset..])
-            {
-                for infe in infe_atoms.iter().filter(|a| a.atom_type.matches("infe")) {
-                    // infe format: version(1) + flags(3) + item_id(2) + protection_index(2) + item_type(4) + name(null-terminated)
-                    if infe.data.len() >= 12 {
-                        let item_id = u16::from_be_bytes([infe.data[4], infe.data[5]]);
-                        let item_type = &infe.data[8..12];
-
-                        // Check if this is the Exif item
-                        if item_type == b"Exif" {
-                            exif_item_id = Some(item_id);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Parse iloc (item location) atom to find Exif data location
-    let mut item_locations: HashMap<u16, (u64, u64)> = HashMap::new(); // item_id -> (offset, length)
-
-    if let Some(iloc) = children.iter().find(|a| a.atom_type.matches("iloc")) {
-        if iloc.data.len() >= 8 {
-            let version = iloc.data[0];
-            // Byte 4 contains offset_size(4 bits) | length_size(4 bits)
-            // Byte 5 contains base_offset_size(4 bits) | (version>=1: index_size(4 bits) | reserved)
-            let offset_size = ((iloc.data[4] >> 4) & 0x0F) as usize;
-            let length_size = (iloc.data[4] & 0x0F) as usize;
-            let base_offset_size = ((iloc.data[5] >> 4) & 0x0F) as usize;
-
-            // Item count position depends on version
-            let (item_count, mut pos) = if version < 2 {
-                // Version 0 or 1: 2-byte item count
-                if iloc.data.len() >= 8 {
-                    let count = u16::from_be_bytes([iloc.data[6], iloc.data[7]]) as u32;
-                    (count, 8usize)
-                } else {
-                    (0, 8usize)
-                }
-            } else {
-                // Version 2: 4-byte item count
-                if iloc.data.len() >= 10 {
-                    let count = u32::from_be_bytes([
-                        iloc.data[6],
-                        iloc.data[7],
-                        iloc.data[8],
-                        iloc.data[9],
-                    ]);
-                    (count, 10usize)
-                } else {
-                    (0, 10usize)
-                }
-            };
-
-            // Parse each item entry
-            for _ in 0..item_count {
-                if pos + 2 > iloc.data.len() {
-                    break;
-                }
-
-                // item_id: 2 bytes (version < 2) or 4 bytes (version >= 2)
-                let item_id = if version < 2 {
-                    let id = u16::from_be_bytes([iloc.data[pos], iloc.data[pos + 1]]);
-                    pos += 2;
-                    id
-                } else {
-                    let id = u32::from_be_bytes([
-                        iloc.data[pos],
-                        iloc.data[pos + 1],
-                        iloc.data[pos + 2],
-                        iloc.data[pos + 3],
-                    ]) as u16;
-                    pos += 4;
-                    id
-                };
-
-                // version >= 1: construction_method (2 bytes, but we only use first byte's low 4 bits)
-                if version >= 1 {
-                    pos += 2;
-                }
-
-                // data_reference_index: 2 bytes
-                pos += 2;
-
-                // base_offset: variable size
-                let base_offset = read_variable_size(iloc.data, &mut pos, base_offset_size);
-
-                // extent_count: 2 bytes
-                if pos + 2 > iloc.data.len() {
-                    break;
-                }
-                let extent_count = u16::from_be_bytes([iloc.data[pos], iloc.data[pos + 1]]);
-                pos += 2;
-
-                // We only handle single-extent items for simplicity
-                if extent_count >= 1 {
-                    // version >= 1 and index_size > 0: extent_index (variable)
-                    // For simplicity, we skip extent_index if present (most HEIF files don't use it)
-
-                    // extent_offset: variable size
-                    let extent_offset = read_variable_size(iloc.data, &mut pos, offset_size);
-                    // extent_length: variable size
-                    let extent_length = read_variable_size(iloc.data, &mut pos, length_size);
-
-                    let total_offset = base_offset + extent_offset;
-                    item_locations.insert(item_id, (total_offset, extent_length));
-
-                    // Skip remaining extents
-                    for _ in 1..extent_count {
-                        pos += offset_size + length_size;
-                    }
-                }
-            }
-        }
-    }
-
-    // Extract image properties from ispe (image spatial extents) atoms
-    // HEIF files may have multiple ispe atoms for different items
-    for atom in &children {
-        if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
-            // ispe format: version(1) + flags(3) + width(4) + height(4)
-            let width =
-                u32::from_be_bytes([atom.data[4], atom.data[5], atom.data[6], atom.data[7]]);
-            let height =
-                u32::from_be_bytes([atom.data[8], atom.data[9], atom.data[10], atom.data[11]]);
-
-            // Only set if not already set (use first/primary image)
-            if !metadata.contains_key("HEIF:ImageWidth") {
-                metadata.insert(
-                    "HEIF:ImageWidth".to_string(),
-                    TagValue::Integer(width as i64),
-                );
-                metadata.insert(
-                    "HEIF:ImageHeight".to_string(),
-                    TagValue::Integer(height as i64),
-                );
-            }
-        }
-    }
-
-    // If we found an Exif item and its location, extract EXIF data from mdat
-    if let (Some(_item_id), Some(&(offset, length))) = (
-        exif_item_id,
-        exif_item_id.and_then(|id| item_locations.get(&id)),
-    ) {
-        // Find mdat atom
-        if let Some(mdat) = root_atoms.iter().find(|a| a.atom_type.matches("mdat")) {
-            // The offset in iloc is absolute file offset, but mdat.data is already the content
-            // We need to calculate the relative offset within mdat
-            // mdat header is 8 bytes (size + type), so mdat data starts at file offset = mdat_start + 8
-
-            // For HEIF files, the iloc offset is typically relative to the start of the file
-            // The mdat atom's data is the raw media data, and iloc offset points into it
-            // We need to find where mdat starts in the file
-
-            // Since we don't have absolute file positions in the atom structure,
-            // we'll use a heuristic: check if the offset makes sense relative to mdat size
-            // The Exif item data format is: 4-byte size + "Exif" + 2-byte padding + TIFF data
-
-            // Calculate the expected position within mdat
-            // The iloc offset is from the start of the file, but we need to find the
-            // position of mdat in the file. For HEIF, typically:
-            // ftyp (varies) + meta (varies) + mdat starts
-            // We'll estimate based on the root atoms
-
-            // HEIF iloc offsets are absolute file positions
-            // mdat.data[0] corresponds to some file position mdat_data_start
-            // We need to find mdat_data_start to calculate: mdat_offset = iloc_offset - mdat_data_start
-            //
-            // Key insight: The Exif item data starts with "Exif" header.
-            // We can validate by checking if mdat.data[calculated_offset+4..+8] == "Exif"
-            //
-            // Strategy: Try different possible mdat header sizes (8, 16) and validate
-
-            let exif_length = length as usize;
-            let mut final_tiff_data: Option<&[u8]> = None;
-
-            // Try different header sizes: 8 (normal) or 16 (extended size)
-            for header_size in [8u64, 16u64] {
-                // Calculate where mdat data would start in file
-                let mut file_offset = 0u64;
-                for atom in root_atoms {
-                    if atom.atom_type.matches("mdat") {
-                        break;
-                    }
-                    file_offset += 8 + atom.data.len() as u64;
-                }
-                let mdat_start = file_offset + header_size;
-
-                if offset >= mdat_start {
-                    let mdat_offset = (offset - mdat_start) as usize;
-
-                    if mdat_offset + exif_length <= mdat.data.len() {
-                        let exif_item_data = &mdat.data[mdat_offset..mdat_offset + exif_length];
-
-                        // HEIF Exif item format: 4-byte size + "Exif" + 2-byte padding + TIFF
-                        if exif_item_data.len() >= 10 && &exif_item_data[4..8] == b"Exif" {
-                            let tiff_data = &exif_item_data[10..];
-                            final_tiff_data = Some(tiff_data);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // If standard detection failed, try direct offset (iloc offset as mdat data position)
-            if final_tiff_data.is_none() && offset as usize + exif_length <= mdat.data.len() {
-                let exif_item_data = &mdat.data[offset as usize..offset as usize + exif_length];
-                if exif_item_data.len() >= 10 && &exif_item_data[4..8] == b"Exif" {
-                    final_tiff_data = Some(&exif_item_data[10..]);
-                }
-            }
-
-            if let Some(tiff_data) = final_tiff_data {
-                if let Err(_e) = parse_heif_exif_data(tiff_data, metadata) {
-                    // Silently ignore EXIF parsing errors - other metadata may still be valid
-                }
-            }
+    // Extract EXIF data from mdat if we found an Exif item
+    if let Some(id) = exif_item_id {
+        if let Some(&(offset, length)) = item_locations.get(&id) {
+            extract_exif_from_mdat(root_atoms, offset, length, metadata);
         }
     }
 
     Ok(())
+}
+
+/// Skip version/flags header if present in atom data
+fn skip_version_flags(data: &[u8]) -> &[u8] {
+    if data.len() >= 4 && data[0..4] == [0, 0, 0, 0] {
+        &data[4..]
+    } else {
+        data
+    }
+}
+
+/// Find the Exif item ID from iinf (item information) atom
+fn find_exif_item_id(children: &[Atom], metadata: &mut MetadataMap) -> Option<u16> {
+    let iinf = children.iter().find(|a| a.atom_type.matches("iinf"))?;
+    if iinf.data.len() < 6 {
+        return None;
+    }
+
+    let r = BigEndianReader(iinf.data);
+    let version = iinf.data[0];
+
+    let (entry_count, entries_offset) = if version == 0 {
+        (r.u16_at(4)? as u32, 6usize)
+    } else if iinf.data.len() >= 8 {
+        (r.u32_at(4)?, 8usize)
+    } else {
+        return None;
+    };
+
+    metadata.insert(
+        "HEIF:ItemCount".to_string(),
+        TagValue::Integer(entry_count as i64),
+    );
+
+    // Parse infe atoms to find Exif item
+    let (_, infe_atoms) = super::atom_parser::parse_atoms(&iinf.data[entries_offset..]).ok()?;
+    for infe in infe_atoms.iter().filter(|a| a.atom_type.matches("infe")) {
+        if infe.data.len() >= 12 {
+            let item_id = u16::from_be_bytes([infe.data[4], infe.data[5]]);
+            if &infe.data[8..12] == b"Exif" {
+                return Some(item_id);
+            }
+        }
+    }
+    None
+}
+
+/// Parse iloc (item location) atom to build item locations map
+fn parse_iloc_locations(children: &[Atom]) -> HashMap<u16, (u64, u64)> {
+    let mut locations = HashMap::new();
+
+    let Some(iloc) = children.iter().find(|a| a.atom_type.matches("iloc")) else {
+        return locations;
+    };
+
+    if iloc.data.len() < 8 {
+        return locations;
+    }
+
+    let r = BigEndianReader(iloc.data);
+    let version = iloc.data[0];
+    let offset_size = ((iloc.data[4] >> 4) & 0x0F) as usize;
+    let length_size = (iloc.data[4] & 0x0F) as usize;
+    let base_offset_size = ((iloc.data[5] >> 4) & 0x0F) as usize;
+
+    let (item_count, mut pos) = if version < 2 {
+        (r.u16_at(6).unwrap_or(0) as u32, 8usize)
+    } else if iloc.data.len() >= 10 {
+        (r.u32_at(6).unwrap_or(0), 10usize)
+    } else {
+        return locations;
+    };
+
+    for _ in 0..item_count {
+        if pos + 2 > iloc.data.len() {
+            break;
+        }
+
+        // Read item_id based on version
+        let item_id = if version < 2 {
+            let id = r.u16_at(pos).unwrap_or(0);
+            pos += 2;
+            id
+        } else {
+            let id = r.u32_at(pos).unwrap_or(0) as u16;
+            pos += 4;
+            id
+        };
+
+        if version >= 1 {
+            pos += 2; // construction_method
+        }
+        pos += 2; // data_reference_index
+
+        let base_offset = read_variable_size(iloc.data, &mut pos, base_offset_size);
+
+        if pos + 2 > iloc.data.len() {
+            break;
+        }
+        let extent_count = r.u16_at(pos).unwrap_or(0);
+        pos += 2;
+
+        if extent_count >= 1 {
+            let extent_offset = read_variable_size(iloc.data, &mut pos, offset_size);
+            let extent_length = read_variable_size(iloc.data, &mut pos, length_size);
+            locations.insert(item_id, (base_offset + extent_offset, extent_length));
+
+            // Skip remaining extents
+            for _ in 1..extent_count {
+                pos += offset_size + length_size;
+            }
+        }
+    }
+
+    locations
+}
+
+/// Extract image dimensions from ispe (image spatial extents) atoms
+fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
+    for atom in children {
+        if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
+            let r = BigEndianReader(atom.data);
+            if let (Some(width), Some(height)) = (r.u32_at(4), r.u32_at(8)) {
+                if !metadata.contains_key("HEIF:ImageWidth") {
+                    metadata.insert(
+                        "HEIF:ImageWidth".to_string(),
+                        TagValue::Integer(width as i64),
+                    );
+                    metadata.insert(
+                        "HEIF:ImageHeight".to_string(),
+                        TagValue::Integer(height as i64),
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// Extract EXIF data from mdat atom using iloc offset/length
+fn extract_exif_from_mdat(
+    root_atoms: &[Atom],
+    offset: u64,
+    length: u64,
+    metadata: &mut MetadataMap,
+) {
+    let Some(mdat) = root_atoms.iter().find(|a| a.atom_type.matches("mdat")) else {
+        return;
+    };
+
+    let exif_length = length as usize;
+
+    // Try to find EXIF data with different header size assumptions
+    let tiff_data = [8u64, 16u64].iter().find_map(|&header_size| {
+        let file_offset: u64 = root_atoms
+            .iter()
+            .take_while(|a| !a.atom_type.matches("mdat"))
+            .map(|a| 8 + a.data.len() as u64)
+            .sum();
+        let mdat_start = file_offset + header_size;
+
+        if offset >= mdat_start {
+            let mdat_offset = (offset - mdat_start) as usize;
+            if mdat_offset + exif_length <= mdat.data.len() {
+                let exif_data = &mdat.data[mdat_offset..mdat_offset + exif_length];
+                if exif_data.len() >= 10 && &exif_data[4..8] == b"Exif" {
+                    return Some(&exif_data[10..]);
+                }
+            }
+        }
+        None
+    });
+
+    // Fallback: try direct offset
+    let tiff_data = tiff_data.or_else(|| {
+        let off = offset as usize;
+        if off + exif_length <= mdat.data.len() {
+            let exif_data = &mdat.data[off..off + exif_length];
+            if exif_data.len() >= 10 && &exif_data[4..8] == b"Exif" {
+                return Some(&exif_data[10..]);
+            }
+        }
+        None
+    });
+
+    if let Some(data) = tiff_data {
+        let _ = parse_heif_exif_data(data, metadata);
+    }
 }
 
 /// Helper function to read variable-size integers from iloc data
@@ -1255,222 +1198,88 @@ fn raw_bytes_to_tag_value(
 ) -> TagValue {
     use crate::parsers::common::exif_types::ExifType;
 
-    if let Some(exif_type) = ExifType::from_u16(field_type) {
-        match exif_type {
-            // BYTE (type 1): 8-bit unsigned integer
-            ExifType::Byte if !bytes.is_empty() => {
-                if value_count == 1 {
-                    return TagValue::Integer(bytes[0] as i64);
-                } else {
-                    // Multiple bytes - return as binary or formatted
-                    return TagValue::Binary(bytes.to_vec());
-                }
-            }
+    let r = EndianReader::new(bytes, byte_order);
 
-            // ASCII (type 2): null-terminated string
-            ExifType::Ascii => {
+    let Some(exif_type) = ExifType::from_u16(field_type) else {
+        return TagValue::Binary(bytes.to_vec());
+    };
+
+    match exif_type {
+        ExifType::Byte if !bytes.is_empty() => {
+            if value_count == 1 {
+                TagValue::Integer(bytes[0] as i64)
+            } else {
+                TagValue::Binary(bytes.to_vec())
+            }
+        }
+        ExifType::Ascii => {
+            let text = String::from_utf8_lossy(bytes);
+            TagValue::String(text.trim_end_matches('\0').to_string())
+        }
+        ExifType::Short if r.len() >= 2 => {
+            if value_count == 1 {
+                r.u16_at(0)
+                    .map(|v| TagValue::Integer(v as i64))
+                    .unwrap_or_else(|| TagValue::Binary(bytes.to_vec()))
+            } else {
+                let values: Vec<_> = (0..value_count as usize)
+                    .filter_map(|i| r.u16_at(i * 2).map(|v| v.to_string()))
+                    .collect();
+                TagValue::String(values.join(" "))
+            }
+        }
+        ExifType::Long if r.len() >= 4 => r
+            .u32_at(0)
+            .map(|v| TagValue::Integer(v as i64))
+            .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
+        ExifType::Rational if r.len() >= 8 => {
+            if value_count == 1 {
+                r.rational_at(0)
+                    .map(TagValue::Float)
+                    .unwrap_or_else(|| TagValue::Binary(bytes.to_vec()))
+            } else {
+                let values: Vec<_> = (0..value_count as usize)
+                    .filter_map(|i| r.rational_at(i * 8).map(|v| format!("{}", v)))
+                    .collect();
+                TagValue::String(values.join(" "))
+            }
+        }
+        ExifType::SByte if !bytes.is_empty() => TagValue::Integer(bytes[0] as i8 as i64),
+        ExifType::Undefined => {
+            if bytes
+                .iter()
+                .all(|&b| b.is_ascii_graphic() || b.is_ascii_whitespace() || b == 0)
+            {
                 let text = String::from_utf8_lossy(bytes);
                 let trimmed = text.trim_end_matches('\0');
-                return TagValue::String(trimmed.to_string());
-            }
-
-            // SHORT (type 3): 16-bit unsigned integer
-            ExifType::Short if bytes.len() >= 2 => {
-                if value_count == 1 {
-                    let value = match byte_order {
-                        ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-                        ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-                    };
-                    return TagValue::Integer(value as i64);
-                } else {
-                    // Multiple shorts - format as space-separated
-                    let mut values = Vec::new();
-                    for i in 0..value_count as usize {
-                        let offset = i * 2;
-                        if offset + 2 <= bytes.len() {
-                            let value = match byte_order {
-                                ByteOrder::LittleEndian => {
-                                    u16::from_le_bytes([bytes[offset], bytes[offset + 1]])
-                                }
-                                ByteOrder::BigEndian => {
-                                    u16::from_be_bytes([bytes[offset], bytes[offset + 1]])
-                                }
-                            };
-                            values.push(value.to_string());
-                        }
-                    }
-                    return TagValue::String(values.join(" "));
+                if !trimmed.is_empty() {
+                    return TagValue::String(trimmed.to_string());
                 }
             }
-
-            // LONG (type 4): 32-bit unsigned integer
-            ExifType::Long if bytes.len() >= 4 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
-                return TagValue::Integer(value as i64);
-            }
-
-            // RATIONAL (type 5): Two LONGs (numerator/denominator)
-            ExifType::Rational if bytes.len() >= 8 => {
-                if value_count == 1 {
-                    let (num, den) = match byte_order {
-                        ByteOrder::LittleEndian => (
-                            u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-                            u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
-                        ),
-                        ByteOrder::BigEndian => (
-                            u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-                            u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
-                        ),
-                    };
-                    if den != 0 {
-                        return TagValue::Float(num as f64 / den as f64);
-                    }
-                } else {
-                    // Multiple rationals - format as space-separated
-                    let mut values = Vec::new();
-                    for i in 0..value_count as usize {
-                        let offset = i * 8;
-                        if offset + 8 <= bytes.len() {
-                            let (num, den) = match byte_order {
-                                ByteOrder::LittleEndian => (
-                                    u32::from_le_bytes([
-                                        bytes[offset],
-                                        bytes[offset + 1],
-                                        bytes[offset + 2],
-                                        bytes[offset + 3],
-                                    ]),
-                                    u32::from_le_bytes([
-                                        bytes[offset + 4],
-                                        bytes[offset + 5],
-                                        bytes[offset + 6],
-                                        bytes[offset + 7],
-                                    ]),
-                                ),
-                                ByteOrder::BigEndian => (
-                                    u32::from_be_bytes([
-                                        bytes[offset],
-                                        bytes[offset + 1],
-                                        bytes[offset + 2],
-                                        bytes[offset + 3],
-                                    ]),
-                                    u32::from_be_bytes([
-                                        bytes[offset + 4],
-                                        bytes[offset + 5],
-                                        bytes[offset + 6],
-                                        bytes[offset + 7],
-                                    ]),
-                                ),
-                            };
-                            if den != 0 {
-                                values.push(format!("{}", num as f64 / den as f64));
-                            }
-                        }
-                    }
-                    return TagValue::String(values.join(" "));
-                }
-            }
-
-            // SBYTE (type 6): 8-bit signed integer
-            ExifType::SByte if !bytes.is_empty() => {
-                return TagValue::Integer(bytes[0] as i8 as i64);
-            }
-
-            // UNDEFINED (type 7): arbitrary bytes
-            ExifType::Undefined => {
-                // Try to interpret as string if printable
-                if bytes
-                    .iter()
-                    .all(|&b| b.is_ascii_graphic() || b.is_ascii_whitespace() || b == 0)
-                {
-                    let text = String::from_utf8_lossy(bytes);
-                    let trimmed = text.trim_end_matches('\0');
-                    if !trimmed.is_empty() {
-                        return TagValue::String(trimmed.to_string());
-                    }
-                }
-                return TagValue::Binary(bytes.to_vec());
-            }
-
-            // SSHORT (type 8): 16-bit signed integer
-            ExifType::SShort if bytes.len() >= 2 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => i16::from_le_bytes([bytes[0], bytes[1]]),
-                    ByteOrder::BigEndian => i16::from_be_bytes([bytes[0], bytes[1]]),
-                };
-                return TagValue::Integer(value as i64);
-            }
-
-            // SLONG (type 9): 32-bit signed integer
-            ExifType::SLong if bytes.len() >= 4 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
-                return TagValue::Integer(value as i64);
-            }
-
-            // SRATIONAL (type 10): Two SLONGs
-            ExifType::SRational if bytes.len() >= 8 => {
-                let (num, den) = match byte_order {
-                    ByteOrder::LittleEndian => (
-                        i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-                        i32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
-                    ),
-                    ByteOrder::BigEndian => (
-                        i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-                        i32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
-                    ),
-                };
-                if den != 0 {
-                    return TagValue::Float(num as f64 / den as f64);
-                }
-            }
-
-            // FLOAT (type 11): 32-bit IEEE float
-            ExifType::Float if bytes.len() >= 4 => {
-                let bits = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
-                return TagValue::Float(f32::from_bits(bits) as f64);
-            }
-
-            // DOUBLE (type 12): 64-bit IEEE float
-            ExifType::Double if bytes.len() >= 8 => {
-                let bits = match byte_order {
-                    ByteOrder::LittleEndian => u64::from_le_bytes([
-                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
-                        bytes[7],
-                    ]),
-                    ByteOrder::BigEndian => u64::from_be_bytes([
-                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
-                        bytes[7],
-                    ]),
-                };
-                return TagValue::Float(f64::from_bits(bits));
-            }
-
-            _ => {}
+            TagValue::Binary(bytes.to_vec())
         }
+        ExifType::SShort if r.len() >= 2 => r
+            .i16_at(0)
+            .map(|v| TagValue::Integer(v as i64))
+            .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
+        ExifType::SLong if r.len() >= 4 => r
+            .i32_at(0)
+            .map(|v| TagValue::Integer(v as i64))
+            .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
+        ExifType::SRational if r.len() >= 8 => r
+            .srational_at(0)
+            .map(TagValue::Float)
+            .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
+        ExifType::Float if r.len() >= 4 => r
+            .f32_at(0)
+            .map(|v| TagValue::Float(v as f64))
+            .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
+        ExifType::Double if r.len() >= 8 => r
+            .f64_at(0)
+            .map(TagValue::Float)
+            .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
+        _ => TagValue::Binary(bytes.to_vec()),
     }
-
-    // Fallback: store as binary
-    TagValue::Binary(bytes.to_vec())
 }
 
 #[cfg(test)]

@@ -742,9 +742,9 @@ impl ElfHeader {
     /// Returns the ELF class as a human-readable string
     pub fn class_str(&self) -> &'static str {
         if self.is_64bit {
-            "ELF64"
+            "64-bit"
         } else {
-            "ELF32"
+            "32-bit"
         }
     }
 
@@ -1464,9 +1464,9 @@ mod tests {
             is_little_endian: true,
         };
 
-        assert_eq!(header.class_str(), "ELF64");
+        assert_eq!(header.class_str(), "64-bit");
         header.is_64bit = false;
-        assert_eq!(header.class_str(), "ELF32");
+        assert_eq!(header.class_str(), "32-bit");
     }
 
     #[test]

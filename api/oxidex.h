@@ -49,6 +49,2361 @@
 #define EXIFTOOL_ERR_INTERNAL 99
 
 /*
+ Magic number byte 0 (0x7F)
+ */
+#define EI_MAG0 0
+
+/*
+ Magic number byte 1 ('E')
+ */
+#define EI_MAG1 1
+
+/*
+ Magic number byte 2 ('L')
+ */
+#define EI_MAG2 2
+
+/*
+ Magic number byte 3 ('F')
+ */
+#define EI_MAG3 3
+
+/*
+ File class (32-bit or 64-bit)
+ */
+#define EI_CLASS 4
+
+/*
+ Data encoding (endianness)
+ */
+#define EI_DATA 5
+
+/*
+ ELF version
+ */
+#define EI_VERSION 6
+
+/*
+ OS/ABI identification
+ */
+#define EI_OSABI 7
+
+/*
+ ABI version
+ */
+#define EI_ABIVERSION 8
+
+/*
+ Start of padding bytes
+ */
+#define EI_PAD 9
+
+/*
+ Size of e_ident array
+ */
+#define EI_NIDENT 16
+
+/*
+ Invalid class
+ */
+#define ELFCLASSNONE 0
+
+/*
+ 32-bit objects
+ */
+#define ELFCLASS32 1
+
+/*
+ 64-bit objects
+ */
+#define ELFCLASS64 2
+
+/*
+ Invalid encoding
+ */
+#define ELFDATANONE 0
+
+/*
+ Little-endian (2's complement, LSB first)
+ */
+#define ELFDATA2LSB 1
+
+/*
+ Big-endian (2's complement, MSB first)
+ */
+#define ELFDATA2MSB 2
+
+/*
+ UNIX System V ABI
+ */
+#define ELFOSABI_NONE 0
+
+/*
+ Alias for ELFOSABI_NONE
+ */
+#define ELFOSABI_SYSV 0
+
+/*
+ HP-UX
+ */
+#define ELFOSABI_HPUX 1
+
+/*
+ NetBSD
+ */
+#define ELFOSABI_NETBSD 2
+
+/*
+ GNU/Linux (historically called ELFOSABI_LINUX)
+ */
+#define ELFOSABI_GNU 3
+
+/*
+ Alias for ELFOSABI_GNU
+ */
+#define ELFOSABI_LINUX 3
+
+/*
+ Sun Solaris
+ */
+#define ELFOSABI_SOLARIS 6
+
+/*
+ IBM AIX
+ */
+#define ELFOSABI_AIX 7
+
+/*
+ SGI IRIX
+ */
+#define ELFOSABI_IRIX 8
+
+/*
+ FreeBSD
+ */
+#define ELFOSABI_FREEBSD 9
+
+/*
+ Compaq TRU64 UNIX
+ */
+#define ELFOSABI_TRU64 10
+
+/*
+ Novell Modesto
+ */
+#define ELFOSABI_MODESTO 11
+
+/*
+ OpenBSD
+ */
+#define ELFOSABI_OPENBSD 12
+
+/*
+ ARM EABI
+ */
+#define ELFOSABI_ARM_AEABI 64
+
+/*
+ ARM
+ */
+#define ELFOSABI_ARM 97
+
+/*
+ Standalone (embedded) application
+ */
+#define ELFOSABI_STANDALONE 255
+
+/*
+ No file type
+ */
+#define ET_NONE 0
+
+/*
+ Relocatable file
+ */
+#define ET_REL 1
+
+/*
+ Executable file
+ */
+#define ET_EXEC 2
+
+/*
+ Shared object file
+ */
+#define ET_DYN 3
+
+/*
+ Core file
+ */
+#define ET_CORE 4
+
+/*
+ OS-specific range start
+ */
+#define ET_LOOS 65024
+
+/*
+ OS-specific range end
+ */
+#define ET_HIOS 65279
+
+/*
+ Processor-specific range start
+ */
+#define ET_LOPROC 65280
+
+/*
+ Processor-specific range end
+ */
+#define ET_HIPROC 65535
+
+/*
+ No machine
+ */
+#define EM_NONE 0
+
+/*
+ AT&T WE 32100
+ */
+#define EM_M32 1
+
+/*
+ SPARC
+ */
+#define EM_SPARC 2
+
+/*
+ Intel 80386
+ */
+#define EM_386 3
+
+/*
+ Motorola 68000
+ */
+#define EM_68K 4
+
+/*
+ Motorola 88000
+ */
+#define EM_88K 5
+
+/*
+ Intel MCU
+ */
+#define EM_IAMCU 6
+
+/*
+ Intel 80860
+ */
+#define EM_860 7
+
+/*
+ MIPS I Architecture
+ */
+#define EM_MIPS 8
+
+/*
+ IBM System/370
+ */
+#define EM_S370 9
+
+/*
+ MIPS RS3000 Little-endian
+ */
+#define EM_MIPS_RS3_LE 10
+
+/*
+ Hewlett-Packard PA-RISC
+ */
+#define EM_PARISC 15
+
+/*
+ Fujitsu VPP500
+ */
+#define EM_VPP500 17
+
+/*
+ Enhanced SPARC (SPARC32PLUS)
+ */
+#define EM_SPARC32PLUS 18
+
+/*
+ Intel 80960
+ */
+#define EM_960 19
+
+/*
+ PowerPC
+ */
+#define EM_PPC 20
+
+/*
+ 64-bit PowerPC
+ */
+#define EM_PPC64 21
+
+/*
+ IBM System/390
+ */
+#define EM_S390 22
+
+/*
+ IBM SPU/SPC
+ */
+#define EM_SPU 23
+
+/*
+ NEC V800
+ */
+#define EM_V800 36
+
+/*
+ Fujitsu FR20
+ */
+#define EM_FR20 37
+
+/*
+ TRW RH-32
+ */
+#define EM_RH32 38
+
+/*
+ Motorola RCE
+ */
+#define EM_RCE 39
+
+/*
+ ARM 32-bit
+ */
+#define EM_ARM 40
+
+/*
+ Digital Alpha
+ */
+#define EM_ALPHA 41
+
+/*
+ Hitachi SH
+ */
+#define EM_SH 42
+
+/*
+ SPARC V9 (64-bit)
+ */
+#define EM_SPARCV9 43
+
+/*
+ Siemens TriCore
+ */
+#define EM_TRICORE 44
+
+/*
+ Argonaut RISC Core
+ */
+#define EM_ARC 45
+
+/*
+ Hitachi H8/300
+ */
+#define EM_H8_300 46
+
+/*
+ Hitachi H8/300H
+ */
+#define EM_H8_300H 47
+
+/*
+ Hitachi H8S
+ */
+#define EM_H8S 48
+
+/*
+ Hitachi H8/500
+ */
+#define EM_H8_500 49
+
+/*
+ Intel Itanium
+ */
+#define EM_IA_64 50
+
+/*
+ Stanford MIPS-X
+ */
+#define EM_MIPS_X 51
+
+/*
+ Motorola ColdFire
+ */
+#define EM_COLDFIRE 52
+
+/*
+ Motorola 68HC12
+ */
+#define EM_68HC12 53
+
+/*
+ AMD x86-64
+ */
+#define EM_X86_64 62
+
+/*
+ Sony/Toshiba/IBM Cell BE SPU
+ */
+#define EM_SPU_2 23
+
+/*
+ ARM 64-bit (AArch64)
+ */
+#define EM_AARCH64 183
+
+/*
+ RISC-V
+ */
+#define EM_RISCV 243
+
+/*
+ Berkeley Packet Filter
+ */
+#define EM_BPF 247
+
+/*
+ WDC 65C816
+ */
+#define EM_65816 257
+
+/*
+ LoongArch
+ */
+#define EM_LOONGARCH 258
+
+/*
+ Unused entry
+ */
+#define PT_NULL 0
+
+/*
+ Loadable segment
+ */
+#define PT_LOAD 1
+
+/*
+ Dynamic linking information
+ */
+#define PT_DYNAMIC 2
+
+/*
+ Interpreter pathname
+ */
+#define PT_INTERP 3
+
+/*
+ Auxiliary information
+ */
+#define PT_NOTE 4
+
+/*
+ Reserved (unused)
+ */
+#define PT_SHLIB 5
+
+/*
+ Program header table
+ */
+#define PT_PHDR 6
+
+/*
+ Thread-local storage
+ */
+#define PT_TLS 7
+
+/*
+ OS-specific range start
+ */
+#define PT_LOOS 1610612736
+
+/*
+ GNU exception handling frame
+ */
+#define PT_GNU_EH_FRAME 1685382480
+
+/*
+ GNU stack executability
+ */
+#define PT_GNU_STACK 1685382481
+
+/*
+ GNU read-only after relocation
+ */
+#define PT_GNU_RELRO 1685382482
+
+/*
+ GNU property
+ */
+#define PT_GNU_PROPERTY 1685382483
+
+/*
+ OS-specific range end
+ */
+#define PT_HIOS 1879048191
+
+/*
+ Processor-specific range start
+ */
+#define PT_LOPROC 1879048192
+
+/*
+ Processor-specific range end
+ */
+#define PT_HIPROC 2147483647
+
+/*
+ Execute permission
+ */
+#define PF_X 1
+
+/*
+ Write permission
+ */
+#define PF_W 2
+
+/*
+ Read permission
+ */
+#define PF_R 4
+
+/*
+ OS-specific mask
+ */
+#define PF_MASKOS 267386880
+
+/*
+ Processor-specific mask
+ */
+#define PF_MASKPROC 4026531840
+
+/*
+ Inactive section
+ */
+#define SHT_NULL 0
+
+/*
+ Program data
+ */
+#define SHT_PROGBITS 1
+
+/*
+ Symbol table
+ */
+#define SHT_SYMTAB 2
+
+/*
+ String table
+ */
+#define SHT_STRTAB 3
+
+/*
+ Relocation entries with addends
+ */
+#define SHT_RELA 4
+
+/*
+ Symbol hash table
+ */
+#define SHT_HASH 5
+
+/*
+ Dynamic linking information
+ */
+#define SHT_DYNAMIC 6
+
+/*
+ Notes
+ */
+#define SHT_NOTE 7
+
+/*
+ BSS (uninitialized data)
+ */
+#define SHT_NOBITS 8
+
+/*
+ Relocation entries without addends
+ */
+#define SHT_REL 9
+
+/*
+ Reserved
+ */
+#define SHT_SHLIB 10
+
+/*
+ Dynamic linker symbol table
+ */
+#define SHT_DYNSYM 11
+
+/*
+ Array of constructors
+ */
+#define SHT_INIT_ARRAY 14
+
+/*
+ Array of destructors
+ */
+#define SHT_FINI_ARRAY 15
+
+/*
+ Array of pre-constructors
+ */
+#define SHT_PREINIT_ARRAY 16
+
+/*
+ Section group
+ */
+#define SHT_GROUP 17
+
+/*
+ Extended section indices
+ */
+#define SHT_SYMTAB_SHNDX 18
+
+/*
+ OS-specific range start
+ */
+#define SHT_LOOS 1610612736
+
+/*
+ GNU attributes
+ */
+#define SHT_GNU_ATTRIBUTES 1879048181
+
+/*
+ GNU symbol hash table
+ */
+#define SHT_GNU_HASH 1879048182
+
+/*
+ GNU library list
+ */
+#define SHT_GNU_LIBLIST 1879048183
+
+/*
+ GNU version definition
+ */
+#define SHT_GNU_VERDEF 1879048189
+
+/*
+ GNU version requirements
+ */
+#define SHT_GNU_VERNEED 1879048190
+
+/*
+ GNU version symbol table
+ */
+#define SHT_GNU_VERSYM 1879048191
+
+/*
+ OS-specific range end
+ */
+#define SHT_HIOS 1879048191
+
+/*
+ Processor-specific range start
+ */
+#define SHT_LOPROC 1879048192
+
+/*
+ Processor-specific range end
+ */
+#define SHT_HIPROC 2147483647
+
+/*
+ Application-specific range start
+ */
+#define SHT_LOUSER 2147483648
+
+/*
+ Application-specific range end
+ */
+#define SHT_HIUSER 2415919103
+
+/*
+ Writable data
+ */
+#define SHF_WRITE 1
+
+/*
+ Occupies memory during execution
+ */
+#define SHF_ALLOC 2
+
+/*
+ Executable instructions
+ */
+#define SHF_EXECINSTR 4
+
+/*
+ Might be merged
+ */
+#define SHF_MERGE 16
+
+/*
+ Contains null-terminated strings
+ */
+#define SHF_STRINGS 32
+
+/*
+ sh_info contains SHT index
+ */
+#define SHF_INFO_LINK 64
+
+/*
+ Preserve order after combining
+ */
+#define SHF_LINK_ORDER 128
+
+/*
+ Non-standard OS-specific handling required
+ */
+#define SHF_OS_NONCONFORMING 256
+
+/*
+ Section is member of a group
+ */
+#define SHF_GROUP 512
+
+/*
+ Section holds thread-local data
+ */
+#define SHF_TLS 1024
+
+/*
+ Section is compressed
+ */
+#define SHF_COMPRESSED 2048
+
+/*
+ OS-specific mask
+ */
+#define SHF_MASKOS 267386880
+
+/*
+ Processor-specific mask
+ */
+#define SHF_MASKPROC 4026531840
+
+/*
+ Marks end of dynamic section
+ */
+#define DT_NULL 0
+
+/*
+ Name of needed library
+ */
+#define DT_NEEDED 1
+
+/*
+ Size in bytes of PLT relocs
+ */
+#define DT_PLTRELSZ 2
+
+/*
+ Processor-defined value
+ */
+#define DT_PLTGOT 3
+
+/*
+ Address of symbol hash table
+ */
+#define DT_HASH 4
+
+/*
+ Address of string table
+ */
+#define DT_STRTAB 5
+
+/*
+ Address of symbol table
+ */
+#define DT_SYMTAB 6
+
+/*
+ Address of RELA relocs
+ */
+#define DT_RELA 7
+
+/*
+ Total size of RELA relocs
+ */
+#define DT_RELASZ 8
+
+/*
+ Size of one RELA reloc
+ */
+#define DT_RELAENT 9
+
+/*
+ Size of string table
+ */
+#define DT_STRSZ 10
+
+/*
+ Size of one symbol table entry
+ */
+#define DT_SYMENT 11
+
+/*
+ Address of init function
+ */
+#define DT_INIT 12
+
+/*
+ Address of fini function
+ */
+#define DT_FINI 13
+
+/*
+ Name of shared object
+ */
+#define DT_SONAME 14
+
+/*
+ Library search path (deprecated)
+ */
+#define DT_RPATH 15
+
+/*
+ Start symbol search here
+ */
+#define DT_SYMBOLIC 16
+
+/*
+ Address of REL relocs
+ */
+#define DT_REL 17
+
+/*
+ Total size of REL relocs
+ */
+#define DT_RELSZ 18
+
+/*
+ Size of one REL reloc
+ */
+#define DT_RELENT 19
+
+/*
+ Type of reloc in PLT
+ */
+#define DT_PLTREL 20
+
+/*
+ For debugging; unspecified
+ */
+#define DT_DEBUG 21
+
+/*
+ Reloc might modify .text
+ */
+#define DT_TEXTREL 22
+
+/*
+ Address of PLT relocs
+ */
+#define DT_JMPREL 23
+
+/*
+ Process relocations of object
+ */
+#define DT_BIND_NOW 24
+
+/*
+ Array with addresses of init functions
+ */
+#define DT_INIT_ARRAY 25
+
+/*
+ Array with addresses of fini functions
+ */
+#define DT_FINI_ARRAY 26
+
+/*
+ Size in bytes of DT_INIT_ARRAY
+ */
+#define DT_INIT_ARRAYSZ 27
+
+/*
+ Size in bytes of DT_FINI_ARRAY
+ */
+#define DT_FINI_ARRAYSZ 28
+
+/*
+ Library search path
+ */
+#define DT_RUNPATH 29
+
+/*
+ Flags for the object
+ */
+#define DT_FLAGS 30
+
+/*
+ Start of encoded range
+ */
+#define DT_ENCODING 32
+
+/*
+ Array with addresses of preinit functions
+ */
+#define DT_PREINIT_ARRAY 32
+
+/*
+ Size in bytes of DT_PREINIT_ARRAY
+ */
+#define DT_PREINIT_ARRAYSZ 33
+
+/*
+ Address of SYMTAB_SHNDX section
+ */
+#define DT_SYMTAB_SHNDX 34
+
+/*
+ GNU hash table
+ */
+#define DT_GNU_HASH 1879047925
+
+/*
+ Relocation count
+ */
+#define DT_RELACOUNT 1879048185
+
+/*
+ Relocation count
+ */
+#define DT_RELCOUNT 1879048186
+
+/*
+ State flags
+ */
+#define DT_FLAGS_1 1879048187
+
+/*
+ Version definition table
+ */
+#define DT_VERDEF 1879048188
+
+/*
+ Number of version definitions
+ */
+#define DT_VERDEFNUM 1879048189
+
+/*
+ Version requirements table
+ */
+#define DT_VERNEED 1879048190
+
+/*
+ Number of version requirements
+ */
+#define DT_VERNEEDNUM 1879048191
+
+/*
+ Object may use DF_ORIGIN
+ */
+#define DF_ORIGIN 1
+
+/*
+ Symbol resolutions start here
+ */
+#define DF_SYMBOLIC 2
+
+/*
+ Object contains text relocations
+ */
+#define DF_TEXTREL 4
+
+/*
+ No lazy binding for this object
+ */
+#define DF_BIND_NOW 8
+
+/*
+ Module uses the static TLS model
+ */
+#define DF_STATIC_TLS 16
+
+/*
+ Set RTLD_NOW for this object
+ */
+#define DF_1_NOW 1
+
+/*
+ Set RTLD_GLOBAL for this object
+ */
+#define DF_1_GLOBAL 2
+
+/*
+ Set RTLD_GROUP for this object
+ */
+#define DF_1_GROUP 4
+
+/*
+ Set RTLD_NODELETE for this object
+ */
+#define DF_1_NODELETE 8
+
+/*
+ Trigger filtee loading at runtime
+ */
+#define DF_1_LOADFLTR 16
+
+/*
+ Set RTLD_INITFIRST for this object
+ */
+#define DF_1_INITFIRST 32
+
+/*
+ Set RTLD_NOOPEN for this object
+ */
+#define DF_1_NOOPEN 64
+
+/*
+ $ORIGIN must be handled
+ */
+#define DF_1_ORIGIN 128
+
+/*
+ Direct binding enabled
+ */
+#define DF_1_DIRECT 256
+
+/*
+ Object is used to interpose
+ */
+#define DF_1_INTERPOSE 1024
+
+/*
+ Ignore default library search path
+ */
+#define DF_1_NODEFLIB 2048
+
+/*
+ Object cannot be dlopen()'d
+ */
+#define DF_1_NODUMP 4096
+
+/*
+ Configuration alternative created
+ */
+#define DF_1_CONFALT 8192
+
+/*
+ Filtee terminates filters search
+ */
+#define DF_1_ENDFILTEE 16384
+
+/*
+ Disp reloc applied at build time
+ */
+#define DF_1_DISPRELDNE 32768
+
+/*
+ Disp reloc applied at run-time
+ */
+#define DF_1_DISPRELPND 65536
+
+/*
+ Object has no-direct binding
+ */
+#define DF_1_NODIRECT 131072
+
+/*
+ Internal use
+ */
+#define DF_1_IGNMULDEF 262144
+
+/*
+ Internal use
+ */
+#define DF_1_NOKSYMS 524288
+
+/*
+ Internal use
+ */
+#define DF_1_NOHDR 1048576
+
+/*
+ Object is modified after built
+ */
+#define DF_1_EDITED 2097152
+
+/*
+ Internal use
+ */
+#define DF_1_NORELOC 4194304
+
+/*
+ Object has individual interposers
+ */
+#define DF_1_SYMINTPOSE 8388608
+
+/*
+ Global auditing required
+ */
+#define DF_1_GLOBAUDIT 16777216
+
+/*
+ Singleton symbols are used
+ */
+#define DF_1_SINGLETON 33554432
+
+/*
+ Stub
+ */
+#define DF_1_STUB 67108864
+
+/*
+ Object is a Position-Independent Executable
+ */
+#define DF_1_PIE 134217728
+
+/*
+ Build ID (unique binary identifier)
+ */
+#define NT_GNU_BUILD_ID 3
+
+/*
+ Gold version note
+ */
+#define NT_GNU_GOLD_VERSION 4
+
+/*
+ GNU property note
+ */
+#define NT_GNU_PROPERTY_TYPE_0 5
+
+/*
+ OS ABI tag (GNU)
+ */
+#define NT_GNU_ABI_TAG 1
+
+/*
+ Local symbol
+ */
+#define STB_LOCAL 0
+
+/*
+ Global symbol
+ */
+#define STB_GLOBAL 1
+
+/*
+ Weak symbol
+ */
+#define STB_WEAK 2
+
+/*
+ OS-specific range start
+ */
+#define STB_LOOS 10
+
+/*
+ GNU unique symbol
+ */
+#define STB_GNU_UNIQUE 10
+
+/*
+ OS-specific range end
+ */
+#define STB_HIOS 12
+
+/*
+ Processor-specific range start
+ */
+#define STB_LOPROC 13
+
+/*
+ Processor-specific range end
+ */
+#define STB_HIPROC 15
+
+/*
+ Symbol type is unspecified
+ */
+#define STT_NOTYPE 0
+
+/*
+ Symbol is a data object
+ */
+#define STT_OBJECT 1
+
+/*
+ Symbol is a code object (function)
+ */
+#define STT_FUNC 2
+
+/*
+ Symbol is a section
+ */
+#define STT_SECTION 3
+
+/*
+ Symbol's name is file name
+ */
+#define STT_FILE 4
+
+/*
+ Symbol is a common data object
+ */
+#define STT_COMMON 5
+
+/*
+ Symbol is thread-local storage object
+ */
+#define STT_TLS 6
+
+/*
+ OS-specific range start
+ */
+#define STT_LOOS 10
+
+/*
+ Symbol is an indirect function (GNU extension)
+ */
+#define STT_GNU_IFUNC 10
+
+/*
+ OS-specific range end
+ */
+#define STT_HIOS 12
+
+/*
+ Processor-specific range start
+ */
+#define STT_LOPROC 13
+
+/*
+ Processor-specific range end
+ */
+#define STT_HIPROC 15
+
+/*
+ Undefined section
+ */
+#define SHN_UNDEF 0
+
+/*
+ Start of processor-specific
+ */
+#define SHN_LOPROC 65280
+
+/*
+ End of processor-specific
+ */
+#define SHN_HIPROC 65311
+
+/*
+ Start of OS-specific
+ */
+#define SHN_LOOS 65312
+
+/*
+ End of OS-specific
+ */
+#define SHN_HIOS 65343
+
+/*
+ Associated symbol is absolute
+ */
+#define SHN_ABS 65521
+
+/*
+ Associated symbol is common
+ */
+#define SHN_COMMON 65522
+
+/*
+ Index is in extra table
+ */
+#define SHN_XINDEX 65535
+
+/*
+ Regular section
+ */
+#define S_REGULAR 0
+
+/*
+ Zero-fill on demand section
+ */
+#define S_ZEROFILL 1
+
+/*
+ Section with only literal C strings
+ */
+#define S_CSTRING_LITERALS 2
+
+/*
+ Section with only 4-byte literals
+ */
+#define S_4BYTE_LITERALS 3
+
+/*
+ Section with only 8-byte literals
+ */
+#define S_8BYTE_LITERALS 4
+
+/*
+ Section with only literal pointers
+ */
+#define S_LITERAL_POINTERS 5
+
+/*
+ Non-lazy symbol pointers section
+ */
+#define S_NON_LAZY_SYMBOL_POINTERS 6
+
+/*
+ Lazy symbol pointers section
+ */
+#define S_LAZY_SYMBOL_POINTERS 7
+
+/*
+ Symbol stubs section
+ */
+#define S_SYMBOL_STUBS 8
+
+/*
+ Mod init function pointers
+ */
+#define S_MOD_INIT_FUNC_POINTERS 9
+
+/*
+ Mod term function pointers
+ */
+#define S_MOD_TERM_FUNC_POINTERS 10
+
+/*
+ Section contains symbols to be coalesced
+ */
+#define S_COALESCED 11
+
+/*
+ Zero-fill on demand section (larger)
+ */
+#define S_GB_ZEROFILL 12
+
+/*
+ Section with only pairs of function pointers for interposing
+ */
+#define S_INTERPOSING 13
+
+/*
+ Section with only 16-byte literals
+ */
+#define S_16BYTE_LITERALS 14
+
+/*
+ Section containing DTrace Object Format
+ */
+#define S_DTRACE_DOF 15
+
+/*
+ Section with lazy symbol pointers to lazy loaded dylibs
+ */
+#define S_LAZY_DYLIB_SYMBOL_POINTERS 16
+
+/*
+ Thread local variable section
+ */
+#define S_THREAD_LOCAL_REGULAR 17
+
+/*
+ Thread local zerofill section
+ */
+#define S_THREAD_LOCAL_ZEROFILL 18
+
+/*
+ Thread local variable descriptors
+ */
+#define S_THREAD_LOCAL_VARIABLES 19
+
+/*
+ Pointers to TLV descriptors
+ */
+#define S_THREAD_LOCAL_VARIABLE_POINTERS 20
+
+/*
+ Functions to call to initialize TLV values
+ */
+#define S_THREAD_LOCAL_INIT_FUNCTION_POINTERS 21
+
+/*
+ 32-bit offsets for initializers
+ */
+#define S_INIT_FUNC_OFFSETS 22
+
+/*
+ Section contains only true machine instructions
+ */
+#define S_ATTR_PURE_INSTRUCTIONS 2147483648
+
+/*
+ Section contains coalesced symbols
+ */
+#define S_ATTR_NO_TOC 1073741824
+
+/*
+ Ok to strip static symbols in this section
+ */
+#define S_ATTR_STRIP_STATIC_SYMS 536870912
+
+/*
+ No dead stripping
+ */
+#define S_ATTR_NO_DEAD_STRIP 268435456
+
+/*
+ Blocks are live if they reference live blocks
+ */
+#define S_ATTR_LIVE_SUPPORT 134217728
+
+/*
+ Used with i386 code stubs
+ */
+#define S_ATTR_SELF_MODIFYING_CODE 67108864
+
+/*
+ A debug section
+ */
+#define S_ATTR_DEBUG 33554432
+
+/*
+ Section contains some machine instructions
+ */
+#define S_ATTR_SOME_INSTRUCTIONS 1024
+
+/*
+ Section has external relocation entries
+ */
+#define S_ATTR_EXT_RELOC 512
+
+/*
+ Section has local relocation entries
+ */
+#define S_ATTR_LOC_RELOC 256
+
+/*
+ If set, the code has been validated by the kernel
+ */
+#define CS_VALID 1
+
+/*
+ Dynamically valid
+ */
+#define CS_ADHOC 2
+
+/*
+ Has a code signature
+ */
+#define CS_GET_TASK_ALLOW 4
+
+/*
+ Has an entitlements blob
+ */
+#define CS_INSTALLER 8
+
+/*
+ Force hard protection
+ */
+#define CS_FORCED_LV 16
+
+/*
+ Invalid page found
+ */
+#define CS_INVALID_ALLOWED 32
+
+/*
+ Code is hard-signed
+ */
+#define CS_HARD 256
+
+/*
+ Code must be killed on failure
+ */
+#define CS_KILL 512
+
+/*
+ Dyld must verify
+ */
+#define CS_CHECK_EXPIRATION 1024
+
+/*
+ Restrict privileges
+ */
+#define CS_RESTRICT 2048
+
+/*
+ Enforcement of code signing
+ */
+#define CS_ENFORCEMENT 4096
+
+/*
+ Library validation required
+ */
+#define CS_REQUIRE_LV 8192
+
+/*
+ Code signature entitlements validated
+ */
+#define CS_ENTITLEMENTS_VALIDATED 16384
+
+/*
+ NVRAM (platform code)
+ */
+#define CS_NVRAM_UNRESTRICTED 32768
+
+/*
+ Code is runtime signed
+ */
+#define CS_RUNTIME 65536
+
+/*
+ Linker signed
+ */
+#define CS_LINKER_SIGNED 131072
+
+/*
+ 32-bit Mach-O file, native byte order (0xFEEDFACE)
+ */
+#define MH_MAGIC 4277009102
+
+/*
+ 64-bit Mach-O file, native byte order (0xFEEDFACF)
+ */
+#define MH_MAGIC_64 4277009103
+
+/*
+ 32-bit Mach-O file, swapped byte order (0xCEFAEDFE)
+ */
+#define MH_CIGAM 3472551422
+
+/*
+ 64-bit Mach-O file, swapped byte order (0xCFFAEDFE)
+ */
+#define MH_CIGAM_64 3489328638
+
+/*
+ FAT binary magic (0xCAFEBABE)
+ */
+#define FAT_MAGIC 3405691582
+
+/*
+ FAT binary magic, swapped (0xBEBAFECA)
+ */
+#define FAT_CIGAM 3199925962
+
+/*
+ FAT binary 64-bit magic (0xCAFEBABF)
+ */
+#define FAT_MAGIC_64 3405691583
+
+/*
+ FAT binary 64-bit magic, swapped (0xBFBAFECA)
+ */
+#define FAT_CIGAM_64 3216703178
+
+/*
+ Any CPU type
+ */
+#define CPU_TYPE_ANY -1
+
+/*
+ x86 (i386)
+ */
+#define CPU_TYPE_I386 7
+
+/*
+ x86_64
+ */
+#define CPU_TYPE_X86_64 16777223
+
+/*
+ ARM 32-bit
+ */
+#define CPU_TYPE_ARM 12
+
+/*
+ ARM 64-bit
+ */
+#define CPU_TYPE_ARM64 16777228
+
+/*
+ ARM 64-bit (32-bit pointers)
+ */
+#define CPU_TYPE_ARM64_32 33554444
+
+/*
+ PowerPC
+ */
+#define CPU_TYPE_POWERPC 18
+
+/*
+ PowerPC 64-bit
+ */
+#define CPU_TYPE_POWERPC64 16777234
+
+/*
+ All ARM64 subtypes
+ */
+#define CPU_SUBTYPE_ARM64_ALL 0
+
+/*
+ ARM64e (Apple Silicon with pointer authentication)
+ */
+#define CPU_SUBTYPE_ARM64E 2
+
+/*
+ ARM64 v8
+ */
+#define CPU_SUBTYPE_ARM64_V8 1
+
+/*
+ All x86_64 subtypes
+ */
+#define CPU_SUBTYPE_X86_64_ALL 3
+
+/*
+ Haswell and later
+ */
+#define CPU_SUBTYPE_X86_64_H 8
+
+/*
+ Relocatable object file
+ */
+#define MH_OBJECT 1
+
+/*
+ Demand paged executable file
+ */
+#define MH_EXECUTE 2
+
+/*
+ Fixed VM shared library file
+ */
+#define MH_FVMLIB 3
+
+/*
+ Core file
+ */
+#define MH_CORE 4
+
+/*
+ Preloaded executable file
+ */
+#define MH_PRELOAD 5
+
+/*
+ Dynamically bound shared library
+ */
+#define MH_DYLIB 6
+
+/*
+ Dynamic link editor
+ */
+#define MH_DYLINKER 7
+
+/*
+ Dynamically bound bundle file
+ */
+#define MH_BUNDLE 8
+
+/*
+ Shared library stub for static linking only
+ */
+#define MH_DYLIB_STUB 9
+
+/*
+ Companion file with only debug sections
+ */
+#define MH_DSYM 10
+
+/*
+ Kext bundle
+ */
+#define MH_KEXT_BUNDLE 11
+
+/*
+ Set of Mach-Os to be run in same process space
+ */
+#define MH_FILESET 12
+
+/*
+ The object file has no undefined references
+ */
+#define MH_NOUNDEFS 1
+
+/*
+ The object file is the output of an incremental link
+ */
+#define MH_INCRLINK 2
+
+/*
+ The object file is input for the dynamic linker
+ */
+#define MH_DYLDLINK 4
+
+/*
+ The object file's undefined references are bound by the dynamic linker
+ */
+#define MH_BINDATLOAD 8
+
+/*
+ The file has its dynamic undefined references prebound
+ */
+#define MH_PREBOUND 16
+
+/*
+ The file has its read-only and read-write segments split
+ */
+#define MH_SPLIT_SEGS 32
+
+/*
+ The shared library init routine is to be run lazily
+ */
+#define MH_LAZY_INIT 64
+
+/*
+ The image is using two-level namespace bindings
+ */
+#define MH_TWOLEVEL 128
+
+/*
+ The executable is forcing flat namespace bindings
+ */
+#define MH_FORCE_FLAT 256
+
+/*
+ This umbrella guarantees no multiple definitions
+ */
+#define MH_NOMULTIDEFS 512
+
+/*
+ Do not have dyld notify the prebinding agent
+ */
+#define MH_NOFIXPREBINDING 1024
+
+/*
+ The binary is not prebound but can have its prebinding redone
+ */
+#define MH_PREBINDABLE 2048
+
+/*
+ Indicates that this binary binds to all two-level namespace modules
+ */
+#define MH_ALLMODSBOUND 4096
+
+/*
+ Safe to divide up sections into sub-sections
+ */
+#define MH_SUBSECTIONS_VIA_SYMBOLS 8192
+
+/*
+ The binary has been canonicalized
+ */
+#define MH_CANONICAL 16384
+
+/*
+ The final linked image contains external weak symbols
+ */
+#define MH_WEAK_DEFINES 32768
+
+/*
+ The final linked image uses weak symbols
+ */
+#define MH_BINDS_TO_WEAK 65536
+
+/*
+ Allow stack execution
+ */
+#define MH_ALLOW_STACK_EXECUTION 131072
+
+/*
+ The binary declares it is safe for use in processes with uid zero
+ */
+#define MH_ROOT_SAFE 262144
+
+/*
+ The binary declares it is safe for use in processes when issetugid() is true
+ */
+#define MH_SETUID_SAFE 524288
+
+/*
+ The static linker does not need to examine dependent dylibs
+ */
+#define MH_NO_REEXPORTED_DYLIBS 1048576
+
+/*
+ The OS will load the main executable at a random address (ASLR/PIE)
+ */
+#define MH_PIE 2097152
+
+/*
+ Only for use on dylibs. When linking against a dylib
+ */
+#define MH_DEAD_STRIPPABLE_DYLIB 4194304
+
+/*
+ Contains a section of type S_THREAD_LOCAL_VARIABLES
+ */
+#define MH_HAS_TLV_DESCRIPTORS 8388608
+
+/*
+ When this bit is set, the OS will run the main executable with a non-executable heap
+ */
+#define MH_NO_HEAP_EXECUTION 16777216
+
+/*
+ The code was linked for use in an application extension
+ */
+#define MH_APP_EXTENSION_SAFE 33554432
+
+/*
+ External symbols listed in nlist should not be considered
+ */
+#define MH_NLIST_OUTOFSYNC_WITH_DYLDINFO 67108864
+
+/*
+ Allow LC_MIN_VERSION_MACOS and LC_BUILD_VERSION load commands with the platforms macOS, macCatalyst, iOSSimulator, tvOSSimulator and watchOSSimulator
+ */
+#define MH_SIM_SUPPORT 134217728
+
+/*
+ Segment of this file to be mapped
+ */
+#define LC_SEGMENT 1
+
+/*
+ Link-edit stab symbol table info
+ */
+#define LC_SYMTAB 2
+
+/*
+ Link-edit gdb symbol table info (obsolete)
+ */
+#define LC_SYMSEG 3
+
+/*
+ Thread
+ */
+#define LC_THREAD 4
+
+/*
+ Unix thread (includes a stack)
+ */
+#define LC_UNIXTHREAD 5
+
+/*
+ Load a fixed VM shared library (obsolete)
+ */
+#define LC_LOADFVMLIB 6
+
+/*
+ Fixed VM shared library identification (obsolete)
+ */
+#define LC_IDFVMLIB 7
+
+/*
+ Object identification info (obsolete)
+ */
+#define LC_IDENT 8
+
+/*
+ Fixed VM file inclusion (internal use)
+ */
+#define LC_FVMFILE 9
+
+/*
+ Prepage command (internal use)
+ */
+#define LC_PREPAGE 10
+
+/*
+ Dynamic link-edit symbol table info
+ */
+#define LC_DYSYMTAB 11
+
+/*
+ Load a dynamically linked shared library
+ */
+#define LC_LOAD_DYLIB 12
+
+/*
+ Dynamically linked shared library identification
+ */
+#define LC_ID_DYLIB 13
+
+/*
+ Load a dynamic linker
+ */
+#define LC_LOAD_DYLINKER 14
+
+/*
+ Dynamic linker identification
+ */
+#define LC_ID_DYLINKER 15
+
+/*
+ Modules prebound for a dynamically linked shared library
+ */
+#define LC_PREBOUND_DYLIB 16
+
+/*
+ Image routines
+ */
+#define LC_ROUTINES 17
+
+/*
+ Sub framework
+ */
+#define LC_SUB_FRAMEWORK 18
+
+/*
+ Sub umbrella
+ */
+#define LC_SUB_UMBRELLA 19
+
+/*
+ Sub client
+ */
+#define LC_SUB_CLIENT 20
+
+/*
+ Sub library
+ */
+#define LC_SUB_LIBRARY 21
+
+/*
+ Two-level namespace lookup hints
+ */
+#define LC_TWOLEVEL_HINTS 22
+
+/*
+ Prebind checksum
+ */
+#define LC_PREBIND_CKSUM 23
+
+/*
+ Load weak dylib
+ */
+#define LC_LOAD_WEAK_DYLIB 2147483672
+
+/*
+ 64-bit segment of this file to be mapped
+ */
+#define LC_SEGMENT_64 25
+
+/*
+ 64-bit image routines
+ */
+#define LC_ROUTINES_64 26
+
+/*
+ The uuid
+ */
+#define LC_UUID 27
+
+/*
+ Runpath additions
+ */
+#define LC_RPATH 2147483676
+
+/*
+ Local of code signature
+ */
+#define LC_CODE_SIGNATURE 29
+
+/*
+ Local of info to split segments
+ */
+#define LC_SEGMENT_SPLIT_INFO 30
+
+/*
+ Load and re-export dylib
+ */
+#define LC_REEXPORT_DYLIB 2147483679
+
+/*
+ Delay load of dylib until first use
+ */
+#define LC_LAZY_LOAD_DYLIB 32
+
+/*
+ Encrypted segment information
+ */
+#define LC_ENCRYPTION_INFO 33
+
+/*
+ Compressed dyld info
+ */
+#define LC_DYLD_INFO 34
+
+/*
+ Compressed dyld info (only)
+ */
+#define LC_DYLD_INFO_ONLY 2147483682
+
+/*
+ Load upward dylib
+ */
+#define LC_LOAD_UPWARD_DYLIB 2147483683
+
+/*
+ Build for MacOSX min OS version
+ */
+#define LC_VERSION_MIN_MACOSX 36
+
+/*
+ Build for iPhoneOS min OS version
+ */
+#define LC_VERSION_MIN_IPHONEOS 37
+
+/*
+ Compressed table of function start addresses
+ */
+#define LC_FUNCTION_STARTS 38
+
+/*
+ String for dyld to treat like environment variable
+ */
+#define LC_DYLD_ENVIRONMENT 39
+
+/*
+ Replacement for LC_UNIXTHREAD
+ */
+#define LC_MAIN 2147483688
+
+/*
+ Table of non-instructions in __text
+ */
+#define LC_DATA_IN_CODE 41
+
+/*
+ Source version used to build binary
+ */
+#define LC_SOURCE_VERSION 42
+
+/*
+ Code signing DRs copied from linked dylibs
+ */
+#define LC_DYLIB_CODE_SIGN_DRS 43
+
+/*
+ 64-bit encrypted segment information
+ */
+#define LC_ENCRYPTION_INFO_64 44
+
+/*
+ Linker options in MH_OBJECT files
+ */
+#define LC_LINKER_OPTION 45
+
+/*
+ Optimization hints in MH_OBJECT files
+ */
+#define LC_LINKER_OPTIMIZATION_HINT 46
+
+/*
+ Build for watchOS min OS version
+ */
+#define LC_VERSION_MIN_WATCHOS 48
+
+/*
+ Build for tvOS min OS version
+ */
+#define LC_VERSION_MIN_TVOS 47
+
+/*
+ Arbitrary data included within a Mach-O file
+ */
+#define LC_NOTE 49
+
+/*
+ Build for platform min OS version
+ */
+#define LC_BUILD_VERSION 50
+
+/*
+ Dyld exports trie
+ */
+#define LC_DYLD_EXPORTS_TRIE 2147483699
+
+/*
+ Chained fixups
+ */
+#define LC_DYLD_CHAINED_FIXUPS 2147483700
+
+/*
+ Fileset entry
+ */
+#define LC_FILESET_ENTRY 2147483701
+
+/*
+ macOS
+ */
+#define PLATFORM_MACOS 1
+
+/*
+ iOS
+ */
+#define PLATFORM_IOS 2
+
+/*
+ tvOS
+ */
+#define PLATFORM_TVOS 3
+
+/*
+ watchOS
+ */
+#define PLATFORM_WATCHOS 4
+
+/*
+ bridgeOS
+ */
+#define PLATFORM_BRIDGEOS 5
+
+/*
+ Mac Catalyst
+ */
+#define PLATFORM_MACCATALYST 6
+
+/*
+ iOS Simulator
+ */
+#define PLATFORM_IOSSIMULATOR 7
+
+/*
+ tvOS Simulator
+ */
+#define PLATFORM_TVOSSIMULATOR 8
+
+/*
+ watchOS Simulator
+ */
+#define PLATFORM_WATCHOSSIMULATOR 9
+
+/*
+ DriverKit
+ */
+#define PLATFORM_DRIVERKIT 10
+
+/*
+ visionOS
+ */
+#define PLATFORM_VISIONOS 11
+
+/*
+ visionOS Simulator
+ */
+#define PLATFORM_VISIONOSSIMULATOR 12
+
+/*
+ Clang
+ */
+#define TOOL_CLANG 1
+
+/*
+ Swift
+ */
+#define TOOL_SWIFT 2
+
+/*
+ ld (linker)
+ */
+#define TOOL_LD 3
+
+/*
+ lld (LLVM linker)
+ */
+#define TOOL_LLD 4
+
+/*
+ Code directory
+ */
+#define CSSLOT_CODEDIRECTORY 0
+
+/*
+ CMS signature
+ */
+#define CSSLOT_SIGNATURESLOT 65536
+
+/*
+ Requirements
+ */
+#define CSSLOT_REQUIREMENTS 2
+
+/*
+ Entitlements
+ */
+#define CSSLOT_ENTITLEMENTS 5
+
+/*
+ DER entitlements
+ */
+#define CSSLOT_DER_ENTITLEMENTS 7
+
+/*
+ Launch constraints
+ */
+#define CSSLOT_LAUNCH_CONSTRAINT_SELF 8
+
+/*
+ Alternate code directories
+ */
+#define CSSLOT_ALTERNATE_CODEDIRECTORIES 4096
+
+/*
+ SuperBlob containing all code signature data
+ */
+#define CSMAGIC_EMBEDDED_SIGNATURE 4208856256
+
+/*
+ Code directory
+ */
+#define CSMAGIC_CODEDIRECTORY 4208856066
+
+/*
+ Requirements blob
+ */
+#define CSMAGIC_REQUIREMENTS 4208856065
+
+/*
+ Entitlements blob
+ */
+#define CSMAGIC_ENTITLEMENTS 4208882033
+
+/*
+ CMS signature blob
+ */
+#define CSMAGIC_BLOBWRAPPER 4208855809
+
+/*
+ Detached signature
+ */
+#define CSMAGIC_DETACHED_SIGNATURE 4208856257
+
+/*
+ No hash
+ */
+#define CS_HASHTYPE_SHA1 1
+
+/*
+ SHA-256
+ */
+#define CS_HASHTYPE_SHA256 2
+
+/*
+ SHA-256 truncated to 20 bytes
+ */
+#define CS_HASHTYPE_SHA256_TRUNCATED 3
+
+/*
+ SHA-384
+ */
+#define CS_HASHTYPE_SHA384 4
+
+/*
+ SHA-512
+ */
+#define CS_HASHTYPE_SHA512 5
+
+/*
+ Undefined symbol
+ */
+#define N_UNDF 0
+
+/*
+ Absolute symbol
+ */
+#define N_ABS 2
+
+/*
+ Section-relative symbol
+ */
+#define N_SECT 14
+
+/*
+ Prebound undefined (obsolete)
+ */
+#define N_PBUD 12
+
+/*
+ Indirect symbol
+ */
+#define N_INDR 10
+
+/*
+ Mask for symbol type
+ */
+#define N_TYPE 14
+
+/*
+ External symbol
+ */
+#define N_EXT 1
+
+/*
+ Private external symbol
+ */
+#define N_PEXT 16
+
+/*
+ Stab symbol (debug info)
+ */
+#define N_STAB 224
+
+/*
+ Referenced dynamically
+ */
+#define REFERENCED_DYNAMICALLY 16
+
+/*
+ No dead strip
+ */
+#define N_NO_DEAD_STRIP 32
+
+/*
+ Weak reference
+ */
+#define N_WEAK_REF 64
+
+/*
+ Weak definition
+ */
+#define N_WEAK_DEF 128
+
+/*
+ Symbol has thumb function (ARM)
+ */
+#define N_ARM_THUMB_DEF 8
+
+/*
+ Symbol is a resolver function
+ */
+#define N_SYMBOL_RESOLVER 256
+
+/*
+ Symbol has alternate entry point
+ */
+#define N_ALT_ENTRY 512
+
+/*
+ Symbol is cold (rarely executed)
+ */
+#define N_COLD_FUNC 1024
+
+/*
  Certificate revision 1.0
  */
 #define WIN_CERT_REVISION_1_0 256

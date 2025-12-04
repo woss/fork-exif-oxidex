@@ -104,11 +104,7 @@ fn parse_mach_header_le(input: &[u8], is_64bit: bool) -> IResult<&[u8], MachHead
     let (input, flags) = le_u32(input)?;
 
     // 64-bit has an additional reserved field
-    let (input, reserved) = if is_64bit {
-        le_u32(input)?
-    } else {
-        (input, 0)
-    };
+    let (input, reserved) = if is_64bit { le_u32(input)? } else { (input, 0) };
 
     Ok((
         input,
@@ -138,11 +134,7 @@ fn parse_mach_header_be(input: &[u8], is_64bit: bool) -> IResult<&[u8], MachHead
     let (input, flags) = be_u32(input)?;
 
     // 64-bit has an additional reserved field
-    let (input, reserved) = if is_64bit {
-        be_u32(input)?
-    } else {
-        (input, 0)
-    };
+    let (input, reserved) = if is_64bit { be_u32(input)? } else { (input, 0) };
 
     Ok((
         input,
@@ -325,12 +317,20 @@ pub fn parse_fat_archs(
 
 /// Returns the header size based on whether the file is 64-bit
 pub fn header_size(is_64bit: bool) -> usize {
-    if is_64bit { 32 } else { 28 }
+    if is_64bit {
+        32
+    } else {
+        28
+    }
 }
 
 /// Returns the FAT arch entry size based on whether the FAT is 64-bit
 pub fn fat_arch_size(is_64bit: bool) -> usize {
-    if is_64bit { 32 } else { 20 }
+    if is_64bit {
+        32
+    } else {
+        20
+    }
 }
 
 #[cfg(test)]

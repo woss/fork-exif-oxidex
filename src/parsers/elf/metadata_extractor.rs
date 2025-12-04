@@ -5,7 +5,9 @@
 
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
-use crate::parsers::elf::dynamic_parser::{extract_dynamic_info, find_dynstr_info, parse_dynamic_entries};
+use crate::parsers::elf::dynamic_parser::{
+    extract_dynamic_info, find_dynstr_info, parse_dynamic_entries,
+};
 use crate::parsers::elf::header_parser::parse_elf_header;
 use crate::parsers::elf::note_parser::{extract_build_id, extract_gnu_abi_tag, parse_notes};
 use crate::parsers::elf::program_header_parser::parse_program_headers;
@@ -45,10 +47,7 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     let mut metadata = MetadataMap::new();
 
     // Add basic file info
-    metadata.insert(
-        "FileType".to_string(),
-        TagValue::String("ELF".to_string()),
-    );
+    metadata.insert("FileType".to_string(), TagValue::String("ELF".to_string()));
     metadata.insert(
         "FileSize".to_string(),
         TagValue::Integer(reader.size() as i64),
@@ -76,10 +75,7 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     let mut elf_info = ElfInfo::new(header.clone());
 
     // Step 2: Parse program headers
-    if header.e_phnum > 0
-        && header.e_phoff > 0
-        && header.e_phnum <= MAX_PROGRAM_HEADERS
-    {
+    if header.e_phnum > 0 && header.e_phoff > 0 && header.e_phnum <= MAX_PROGRAM_HEADERS {
         let ph_size = header.e_phentsize as u64 * header.e_phnum as u64;
         if header.e_phoff + ph_size <= reader.size() {
             if let Ok(ph_data) = reader.read(header.e_phoff, ph_size as usize) {
@@ -109,10 +105,7 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     }
 
     // Step 3: Parse section headers
-    if header.e_shnum > 0
-        && header.e_shoff > 0
-        && header.e_shnum <= MAX_SECTION_HEADERS
-    {
+    if header.e_shnum > 0 && header.e_shoff > 0 && header.e_shnum <= MAX_SECTION_HEADERS {
         let sh_size = header.e_shentsize as u64 * header.e_shnum as u64;
         if header.e_shoff + sh_size <= reader.size() {
             if let Ok(sh_data) = reader.read(header.e_shoff, sh_size as usize) {
@@ -162,17 +155,26 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     }
 
     // Parse .dynamic section
-    if let Some(dynamic_section) = find_section_by_type(&elf_info.section_headers, sh_type::SHT_DYNAMIC) {
+    if let Some(dynamic_section) =
+        find_section_by_type(&elf_info.section_headers, sh_type::SHT_DYNAMIC)
+    {
         if dynamic_section.sh_offset + dynamic_section.sh_size <= reader.size() {
-            if let Ok(dyn_data) = reader.read(dynamic_section.sh_offset, dynamic_section.sh_size as usize) {
-                let entries = parse_dynamic_entries(dyn_data, header.is_64bit, header.is_little_endian);
+            if let Ok(dyn_data) =
+                reader.read(dynamic_section.sh_offset, dynamic_section.sh_size as usize)
+            {
+                let entries =
+                    parse_dynamic_entries(dyn_data, header.is_64bit, header.is_little_endian);
 
                 // Find and read the dynamic string table
                 if let Some((strtab_addr, strsz)) = find_dynstr_info(&entries) {
                     // Try to find .dynstr section by matching address
-                    if let Some(dynstr_section) = find_section_by_addr(&elf_info.section_headers, strtab_addr) {
+                    if let Some(dynstr_section) =
+                        find_section_by_addr(&elf_info.section_headers, strtab_addr)
+                    {
                         if dynstr_section.sh_offset + strsz <= reader.size() {
-                            if let Ok(dynstr_data) = reader.read(dynstr_section.sh_offset, strsz as usize) {
+                            if let Ok(dynstr_data) =
+                                reader.read(dynstr_section.sh_offset, strsz as usize)
+                            {
                                 elf_info.dynamic_info = extract_dynamic_info(&entries, dynstr_data);
                             }
                         }
@@ -187,17 +189,24 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     // Step 5: Parse symbol tables
     // Parse .dynsym (dynamic symbols)
-    if let Some(dynsym_section) = find_section_by_type(&elf_info.section_headers, sh_type::SHT_DYNSYM) {
+    if let Some(dynsym_section) =
+        find_section_by_type(&elf_info.section_headers, sh_type::SHT_DYNSYM)
+    {
         if dynsym_section.sh_offset + dynsym_section.sh_size <= reader.size() {
-            if let Ok(sym_data) = reader.read(dynsym_section.sh_offset, dynsym_section.sh_size as usize) {
-                let mut symbols = parse_symbol_table(sym_data, header.is_64bit, header.is_little_endian);
+            if let Ok(sym_data) =
+                reader.read(dynsym_section.sh_offset, dynsym_section.sh_size as usize)
+            {
+                let mut symbols =
+                    parse_symbol_table(sym_data, header.is_64bit, header.is_little_endian);
 
                 // Find and read the associated string table (.dynstr)
                 // sh_link points to the string table section
                 if (dynsym_section.sh_link as usize) < elf_info.section_headers.len() {
                     let strtab = &elf_info.section_headers[dynsym_section.sh_link as usize];
                     if strtab.sh_offset + strtab.sh_size <= reader.size() {
-                        if let Ok(strtab_data) = reader.read(strtab.sh_offset, strtab.sh_size as usize) {
+                        if let Ok(strtab_data) =
+                            reader.read(strtab.sh_offset, strtab.sh_size as usize)
+                        {
                             resolve_symbol_names(&mut symbols, strtab_data);
                         }
                     }
@@ -208,7 +217,8 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 elf_info.has_stack_canary = has_canary;
 
                 // Extract symbol info
-                let sym_info = extract_symbol_info(&symbols, MAX_EXPORTED_FUNCTIONS, MAX_IMPORTED_FUNCTIONS);
+                let sym_info =
+                    extract_symbol_info(&symbols, MAX_EXPORTED_FUNCTIONS, MAX_IMPORTED_FUNCTIONS);
                 elf_info.symbol_info.dynamic_symbol_count = sym_info.symbol_count;
                 elf_info.symbol_info.exported_functions = sym_info.exported_functions;
                 elf_info.symbol_info.imported_functions = sym_info.imported_functions;
@@ -217,10 +227,15 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     }
 
     // Parse .symtab (full symbol table) if present
-    if let Some(symtab_section) = find_section_by_type(&elf_info.section_headers, sh_type::SHT_SYMTAB) {
+    if let Some(symtab_section) =
+        find_section_by_type(&elf_info.section_headers, sh_type::SHT_SYMTAB)
+    {
         if symtab_section.sh_offset + symtab_section.sh_size <= reader.size() {
-            if let Ok(sym_data) = reader.read(symtab_section.sh_offset, symtab_section.sh_size as usize) {
-                let symbols = parse_symbol_table(sym_data, header.is_64bit, header.is_little_endian);
+            if let Ok(sym_data) =
+                reader.read(symtab_section.sh_offset, symtab_section.sh_size as usize)
+            {
+                let symbols =
+                    parse_symbol_table(sym_data, header.is_64bit, header.is_little_endian);
                 elf_info.symbol_info.symbol_count = symbols.len();
             }
         }
@@ -269,7 +284,12 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     elf_info.build_id = extract_build_id(&elf_info.notes);
 
     // Extract note metadata
-    extract_note_metadata(&elf_info.notes, &elf_info.build_id, header.is_little_endian, &mut metadata);
+    extract_note_metadata(
+        &elf_info.notes,
+        &elf_info.build_id,
+        header.is_little_endian,
+        &mut metadata,
+    );
 
     // Step 7: Extract security features metadata
     extract_security_metadata(&elf_info, &mut metadata);
@@ -379,17 +399,17 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
 /// Extracts metadata from program headers
 fn extract_program_header_metadata(phdrs: &[ProgramHeader], metadata: &mut MetadataMap) {
     // Count loadable segments
-    let loadable_count = phdrs.iter().filter(|p| p.p_type == pt_type::PT_LOAD).count();
+    let loadable_count = phdrs
+        .iter()
+        .filter(|p| p.p_type == pt_type::PT_LOAD)
+        .count();
     metadata.insert(
         "ELF:LoadableSegmentCount".to_string(),
         TagValue::Integer(loadable_count as i64),
     );
 
     // List segment types
-    let segment_types: Vec<String> = phdrs
-        .iter()
-        .map(|p| p.type_str().to_string())
-        .collect();
+    let segment_types: Vec<String> = phdrs.iter().map(|p| p.type_str().to_string()).collect();
     if !segment_types.is_empty() {
         metadata.insert(
             "ELF:SegmentTypes".to_string(),
@@ -493,10 +513,7 @@ fn extract_dynamic_metadata(
 
     // SONAME
     if let Some(ref soname) = dynamic_info.soname {
-        metadata.insert(
-            "ELF:SONAME".to_string(),
-            TagValue::String(soname.clone()),
-        );
+        metadata.insert("ELF:SONAME".to_string(), TagValue::String(soname.clone()));
     }
 
     // RPATH (deprecated)
@@ -517,16 +534,10 @@ fn extract_dynamic_metadata(
 
     // Flags
     if dynamic_info.has_textrel {
-        metadata.insert(
-            "ELF:HasTextRel".to_string(),
-            TagValue::Integer(1),
-        );
+        metadata.insert("ELF:HasTextRel".to_string(), TagValue::Integer(1));
     }
     if dynamic_info.bind_now {
-        metadata.insert(
-            "ELF:BindNow".to_string(),
-            TagValue::Integer(1),
-        );
+        metadata.insert("ELF:BindNow".to_string(), TagValue::Integer(1));
     }
 }
 
@@ -581,10 +592,7 @@ fn extract_note_metadata(
 ) {
     // Build ID
     if let Some(ref id) = build_id {
-        metadata.insert(
-            "ELF:BuildID".to_string(),
-            TagValue::String(id.clone()),
-        );
+        metadata.insert("ELF:BuildID".to_string(), TagValue::String(id.clone()));
     }
 
     // GNU ABI tag
@@ -704,21 +712,19 @@ mod tests {
 
     #[test]
     fn test_find_section_by_addr() {
-        let sections = vec![
-            SectionHeader {
-                sh_name: 0,
-                name: Some(".text".to_string()),
-                sh_type: sh_type::SHT_PROGBITS,
-                sh_flags: 0,
-                sh_addr: 0x400000,
-                sh_offset: 0x1000,
-                sh_size: 0x500,
-                sh_link: 0,
-                sh_info: 0,
-                sh_addralign: 0,
-                sh_entsize: 0,
-            },
-        ];
+        let sections = vec![SectionHeader {
+            sh_name: 0,
+            name: Some(".text".to_string()),
+            sh_type: sh_type::SHT_PROGBITS,
+            sh_flags: 0,
+            sh_addr: 0x400000,
+            sh_offset: 0x1000,
+            sh_size: 0x500,
+            sh_link: 0,
+            sh_info: 0,
+            sh_addralign: 0,
+            sh_entsize: 0,
+        }];
 
         let found = find_section_by_addr(&sections, 0x400000);
         assert!(found.is_some());
