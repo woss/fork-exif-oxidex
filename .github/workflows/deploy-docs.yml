@@ -23,14 +23,32 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if benchmarks changed
+        id: changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -qE '^benches/|^src/'; then
+            echo "benchmarks_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "benchmarks_changed=false" >> $GITHUB_OUTPUT
+          fi
+          # Always run benchmarks on workflow_dispatch or workflow file changes
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "benchmarks_changed=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Rust toolchain
+        if: steps.changes.outputs.benchmarks_changed == 'true'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run benchmarks
+        if: steps.changes.outputs.benchmarks_changed == 'true'
         run: cargo bench --bench integration_benchmarks --bench parse_benchmarks
 
       - name: Update benchmark metadata in docs
+        if: steps.changes.outputs.benchmarks_changed == 'true'
         run: |
           DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
           COMMIT=$(git rev-parse --short HEAD)
@@ -53,6 +71,7 @@ jobs:
         working-directory: docs
 
       - name: Copy benchmark reports to site
+        if: steps.changes.outputs.benchmarks_changed == 'true'
         run: |
           mkdir -p docs/.vitepress/dist/benchmarks
           cp -r target/criterion/* docs/.vitepress/dist/benchmarks/
