@@ -3,7 +3,7 @@
 This document details OxiDex's coverage of ExifTool's tag database and analyzes parser implementation status.
 
 ::: info Auto-Generated
-This document is automatically updated on each push to `main`. Last updated: **2025-12-04**
+This document is automatically updated on each push to `main`. Last updated: **2025-12-03**
 :::
 
 ## Summary
@@ -58,8 +58,8 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | Use Case | Coverage | Formats |
 |----------|----------|---------|
 | JPEG photos | ⚠️ 67% | EXIF, XMP, IPTC, MakerNotes |
-| RAW photos | ⚠️ 37% | DNG, CR2, NEF, ARW, etc. |
-| Video files | ⚠️ 44% | QuickTime, Matroska, RIFF |
+| RAW photos | ⚠️ 52% | DNG, CR2, NEF, ARW, etc. |
+| Video files | ⚠️ 66% | QuickTime, Matroska, RIFF |
 | Audio files | ✅ 100% | ID3, FLAC, Vorbis, AAC |
 | PDF documents | ✅ 75% | Info dict, XMP |
 | Office docs | ⚠️ 60% | OOXML, iWork |
@@ -80,41 +80,41 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | Opus | 100% | ✅ Complete |
 | OGG | 100% | ✅ Complete |
 | WAV | 100% | ✅ Complete |
-| TTF | 90% | ✅ Good |
-| OTF | 90% | ✅ Good |
 | ZIP | 90% | ✅ Good |
+| SPECIALIZED | 90% | ✅ Good |
 | ICC | 90% | ✅ Good |
-| TIFF | 90% | ✅ Good |
-| EXIF | 90% | ✅ Good |
 | BMP | 90% | ✅ Good |
 | GIF | 90% | ✅ Good |
 | WebP | 90% | ✅ Good |
-| SPECIALIZED | 90% | ✅ Good |
-| PDF | 75% | ✅ Good |
+| TTF | 90% | ✅ Good |
+| OTF | 90% | ✅ Good |
+| TIFF | 90% | ✅ Good |
+| EXIF | 90% | ✅ Good |
 | PE | 75% | ✅ Good |
-| ELF | 75% | ✅ Good |
+| MKV | 75% | ✅ Good |
+| AVI | 75% | ✅ Good |
+| RIFF | 75% | ✅ Good |
 | Mach-O | 75% | ✅ Good |
+| PDF | 75% | ✅ Good |
+| ELF | 75% | ✅ Good |
 | IPTC | 60% | ✅ Good |
 | XMP | 60% | ✅ Good |
 | QuickTime | 60% | ✅ Good |
 | MP4 | 60% | ✅ Good |
 | MOV | 60% | ✅ Good |
-| PNG | 60% | ✅ Good |
 | DOCX | 60% | ✅ Good |
 | XLSX | 60% | ✅ Good |
+| PNG | 60% | ✅ Good |
+| TEXT | 60% | ✅ Good |
 | JPEG | 60% | ✅ Good |
 
 ### ⚠️ Partial Coverage (10-50%)
 
 | Format | Coverage | Priority |
 |--------|----------|----------|
-| TEXT | 40% | High |
-| MKV | 20% | Medium |
-| AVI | 20% | Medium |
-| RIFF | 20% | Medium |
-| DNG | 20% | Medium |
-| CR2 | 20% | Medium |
-| NEF | 20% | Medium |
+| DNG | 40% | High |
+| CR2 | 40% | High |
+| NEF | 40% | High |
 
 ---
 
@@ -176,13 +176,9 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 
 ### Formats Needing Enhancement
 
-- **MKV** (20% coverage)
-- **AVI** (20% coverage)
-- **RIFF** (20% coverage)
-- **DNG** (20% coverage)
-- **CR2** (20% coverage)
-- **NEF** (20% coverage)
-- **TEXT** (40% coverage)
+- **DNG** (40% coverage)
+- **CR2** (40% coverage)
+- **NEF** (40% coverage)
 
 ---
 

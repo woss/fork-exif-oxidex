@@ -221,19 +221,70 @@ fn parse_info_chunk(
         let tag_value = tag_value.trim_end_matches('\0').trim();
 
         if !tag_value.is_empty() {
-            // Map INFO tag IDs to readable names
+            // Map INFO tag IDs to readable names (comprehensive RIFF INFO tags)
             let tag_name = match tag_id {
+                // Core metadata
                 b"INAM" => "RIFF:Title",
                 b"IART" => "RIFF:Artist",
-                b"ICRD" => "RIFF:DateCreated",
-                b"IGNR" => "RIFF:Genre",
+                b"IPRD" => "RIFF:Product",
+                b"ISBJ" => "RIFF:Subject",
                 b"ICMT" => "RIFF:Comment",
                 b"ICOP" => "RIFF:Copyright",
+                b"ICRD" => "RIFF:DateCreated",
+                b"IGNR" => "RIFF:Genre",
+                b"IKEY" => "RIFF:Keywords",
+                b"IMED" => "RIFF:Medium",
+
+                // Software and technical
                 b"ISFT" => "RIFF:Software",
-                b"ISBJ" => "RIFF:Subject",
+                b"ISRF" => "RIFF:Source",
+                b"ITCH" => "RIFF:Technician",
+                b"ISRC" => "RIFF:SourceSupplier",
+                b"ISMP" => "RIFF:TimeCode",
+
+                // Album and track info
+                b"IPRT" => "RIFF:TrackNumber",
+                b"IFRM" => "RIFF:FrameCount",
+                b"ILEN" => "RIFF:Length",
+
+                // People
+                b"IENG" => "RIFF:Engineer",
+                b"IMUS" => "RIFF:Musician",
+                b"IPRO" => "RIFF:Producer",
+                b"ICMS" => "RIFF:Commissioned",
+                b"IDIT" => "RIFF:DateTimeOriginal",
+
+                // Additional metadata
+                b"ICRP" => "RIFF:Cropped",
+                b"IDIM" => "RIFF:Dimensions",
+                b"IDPI" => "RIFF:DotsPerInch",
+                b"IPLT" => "RIFF:Palette",
+                b"ISHP" => "RIFF:Sharpness",
+                b"ILGT" => "RIFF:Lightness",
+                b"ICLR" => "RIFF:ColorSpace",
+                b"ARCH" => "RIFF:Archival",
+                b"RATE" => "RIFF:Rate",
+                b"STAR" => "RIFF:Starring",
+                b"CMNT" => "RIFF:Comment2",
+                b"DIRC" => "RIFF:Director",
+                b"PROD" => "RIFF:Producer2",
+                b"STUDIO" => "RIFF:Studio",
+                b"EDIT" => "RIFF:EditedBy",
+                b"ALBUM" => "RIFF:Album",
+                b"LABEL" => "RIFF:Label",
+                b"TRCK" => "RIFF:Track",
+                b"TITL" => "RIFF:Title2",
+
                 _ => {
-                    // Use raw tag ID for unknown tags
-                    let _id_str = String::from_utf8_lossy(tag_id);
+                    // For unknown tags, create a generic tag name
+                    let id_str = String::from_utf8_lossy(tag_id);
+                    let generic_name = format!("RIFF:{}", id_str.trim());
+
+                    // Only store if it's printable ASCII-ish
+                    if tag_id.iter().all(|&b| (0x20..0x7F).contains(&b)) {
+                        metadata.insert(generic_name, TagValue::new_string(tag_value.to_string()));
+                    }
+
                     offset += tag_size as u64;
                     if tag_size % 2 == 1 {
                         offset += 1;

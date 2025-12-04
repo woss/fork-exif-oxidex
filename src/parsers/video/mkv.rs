@@ -7,16 +7,28 @@
 //!
 //! - **Title, Artist, Album:** From Tags segment (SimpleTag elements)
 //! - **Duration:** From SegmentInfo (Duration element)
-//! - **Codec Information:** From Tracks segment
+//! - **Codec Information:** From Tracks segment (video/audio codec details)
 //! - **Creation Date:** From DateUTC element
 //! - **Muxing Application:** From MuxingApp element
+//! - **Track Information:** Track names, languages, codec IDs
+//! - **Video Details:** Width, height, frame rate, display dimensions
+//! - **Audio Details:** Sample rate, channels, bits per sample
 //!
 //! # ExifTool Compatibility
 //!
 //! Maps to ExifTool tags from `Matroska.pm` module:
-//! - `Matroska:Title` → Title from Tags
+//! - `Matroska:Title` → Title from Tags or Info
 //! - `Matroska:Duration` → Duration from SegmentInfo
 //! - `Matroska:MuxingApp` → MuxingApp from SegmentInfo
+//! - `Matroska:WritingApp` → WritingApp from SegmentInfo
+//! - `Matroska:DateTimeOriginal` → DateUTC from SegmentInfo
+//! - `Matroska:DocType` → DocType from EBML header
+//! - `Matroska:CodecID` → Codec IDs from Tracks
+//! - `Matroska:ImageWidth` → Video pixel width
+//! - `Matroska:ImageHeight` → Video pixel height
+//! - `Matroska:FrameRate` → Video frame rate
+//! - `Matroska:AudioSampleRate` → Audio sample rate
+//! - `Matroska:AudioChannels` → Audio channel count
 //!
 //! # File Structure
 //!
@@ -30,8 +42,19 @@
 //!   ├─ Info (duration, dates, muxing app)
 //!   ├─ Tracks (video/audio codec info)
 //!   ├─ Tags (metadata - PRIMARY METADATA SOURCE)
+//!   ├─ Chapters (chapter information)
+//!   ├─ Attachments (embedded files)
 //!   └─ Clusters (actual media data - SKIP)
 //! ```
+//!
+//! # EBML Variable-Length Integer Encoding
+//!
+//! EBML uses a variable-length integer format where the first byte indicates
+//! the total length by the position of the leading 1 bit:
+//! - 1xxxxxxx = 1 byte (value in lower 7 bits)
+//! - 01xxxxxx xxxxxxxx = 2 bytes
+//! - 001xxxxx xxxxxxxx xxxxxxxx = 3 bytes
+//! - etc.
 //!
 //! # References
 //!
@@ -41,11 +64,82 @@
 
 #![allow(dead_code)]
 
-use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap};
+use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 
 /// EBML header signature
 const EBML_SIGNATURE: &[u8] = b"\x1A\x45\xDF\xA3";
+
+// EBML Element IDs (as variable-length integers)
+const EBML_HEADER: u32 = 0x1A45DFA3;
+const EBML_VERSION: u32 = 0x4286;
+const EBML_READ_VERSION: u32 = 0x42F7;
+const EBML_MAX_ID_LENGTH: u32 = 0x42F2;
+const EBML_MAX_SIZE_LENGTH: u32 = 0x42F3;
+const EBML_DOC_TYPE: u32 = 0x4282;
+const EBML_DOC_TYPE_VERSION: u32 = 0x4287;
+const EBML_DOC_TYPE_READ_VERSION: u32 = 0x4285;
+
+// Matroska Segment Elements
+const SEGMENT: u32 = 0x18538067;
+const SEEK_HEAD: u32 = 0x114D9B74;
+const INFO: u32 = 0x1549A966;
+const TRACKS: u32 = 0x1654AE6B;
+const TAGS: u32 = 0x1254C367;
+const CHAPTERS: u32 = 0x1043A770;
+const ATTACHMENTS: u32 = 0x1941A469;
+
+// Info Elements
+const TIMECODE_SCALE: u32 = 0x2AD7B1;
+const DURATION: u32 = 0x4489;
+const DATE_UTC: u32 = 0x4461;
+const TITLE: u32 = 0x7BA9;
+const MUXING_APP: u32 = 0x4D80;
+const WRITING_APP: u32 = 0x5741;
+
+// Track Elements
+const TRACK_ENTRY: u32 = 0xAE;
+const TRACK_NUMBER: u32 = 0xD7;
+const TRACK_UID: u32 = 0x73C5;
+const TRACK_TYPE: u32 = 0x83;
+const CODEC_ID: u32 = 0x86;
+const CODEC_NAME: u32 = 0x258688;
+const TRACK_NAME: u32 = 0x536E;
+const TRACK_LANGUAGE: u32 = 0x22B59C;
+
+// Video Elements
+const VIDEO: u32 = 0xE0;
+const PIXEL_WIDTH: u32 = 0xB0;
+const PIXEL_HEIGHT: u32 = 0xBA;
+const DISPLAY_WIDTH: u32 = 0x54B0;
+const DISPLAY_HEIGHT: u32 = 0x54BA;
+const FRAME_RATE: u32 = 0x2383E3;
+
+// Audio Elements
+const AUDIO: u32 = 0xE1;
+const SAMPLING_FREQUENCY: u32 = 0xB5;
+const CHANNELS: u32 = 0x9F;
+const BIT_DEPTH: u32 = 0x6264;
+
+// Tag Elements
+const TAG: u32 = 0x7373;
+const SIMPLE_TAG: u32 = 0x67C8;
+const TAG_NAME: u32 = 0x45A3;
+const TAG_STRING: u32 = 0x4487;
+
+// Chapter Elements
+const EDITION_ENTRY: u32 = 0x45B9;
+const CHAPTER_ATOM: u32 = 0xB6;
+const CHAPTER_TIME_START: u32 = 0x91;
+const CHAPTER_TIME_END: u32 = 0x92;
+const CHAPTER_DISPLAY: u32 = 0x80;
+const CHAP_STRING: u32 = 0x85;
+
+// Attachment Elements
+const ATTACHED_FILE: u32 = 0x61A7;
+const FILE_NAME: u32 = 0x466E;
+const FILE_MIME_TYPE: u32 = 0x4660;
+const FILE_DESCRIPTION: u32 = 0x467E;
 
 /// MKV parser
 pub struct MkvParser;
@@ -65,9 +159,27 @@ impl FormatParser for MkvParser {
             )));
         }
 
-        // Initialize metadata - skeleton implementation
-        // Full EBML parsing will be implemented in subsequent tasks
-        let metadata = MetadataMap::new();
+        let mut metadata = MetadataMap::with_capacity(32);
+        let mut offset = 0u64;
+
+        // Parse EBML header
+        offset = parse_ebml_header(reader, offset, &mut metadata)?;
+
+        // Parse Segment (main container)
+        while offset < reader.size() {
+            match parse_element_header(reader, offset) {
+                Ok((element_id, element_size, header_size)) => {
+                    if element_id == SEGMENT {
+                        let segment_offset = offset + header_size;
+                        let segment_end = segment_offset + element_size;
+                        parse_segment(reader, segment_offset, segment_end, &mut metadata)?;
+                        break;
+                    }
+                    offset += header_size + element_size;
+                }
+                Err(_) => break,
+            }
+        }
 
         Ok(metadata)
     }
@@ -75,6 +187,944 @@ impl FormatParser for MkvParser {
     fn supports_format(&self, format: FileFormat) -> bool {
         matches!(format, FileFormat::MKV)
     }
+}
+
+/// Parse EBML header
+fn parse_ebml_header(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<u64> {
+    let (element_id, element_size, header_size) = parse_element_header(reader, offset)?;
+
+    if element_id != EBML_HEADER {
+        return Err(ExifToolError::parse_error(format!(
+            "Missing EBML header: expected 0x{:08X}, found 0x{:08X}",
+            EBML_HEADER, element_id
+        )));
+    }
+
+    offset += header_size;
+    let header_end = offset + element_size;
+
+    while offset < header_end {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+
+                match elem_id {
+                    EBML_DOC_TYPE => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                "Matroska:DocType".to_string(),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    EBML_DOC_TYPE_VERSION => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                "Matroska:DocTypeVersion".to_string(),
+                                TagValue::new_integer(value as i64),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+
+                offset = data_offset + elem_size;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(offset)
+}
+
+/// Parse Segment container
+fn parse_segment(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((element_id, element_size, header_size)) => {
+                let data_offset = offset + header_size;
+                let element_end = data_offset + element_size;
+
+                match element_id {
+                    INFO => {
+                        parse_info(reader, data_offset, element_end, metadata)?;
+                    }
+                    TRACKS => {
+                        parse_tracks(reader, data_offset, element_end, metadata)?;
+                    }
+                    TAGS => {
+                        parse_tags(reader, data_offset, element_end, metadata)?;
+                    }
+                    CHAPTERS => {
+                        parse_chapters(reader, data_offset, element_end, metadata)?;
+                    }
+                    ATTACHMENTS => {
+                        parse_attachments(reader, data_offset, element_end, metadata)?;
+                    }
+                    _ => {}
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse Info segment
+fn parse_info(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let mut timecode_scale = 1_000_000u64; // Default: 1ms
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+
+                match elem_id {
+                    TIMECODE_SCALE => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            timecode_scale = value;
+                        }
+                    }
+                    DURATION => {
+                        if let Ok(value) = read_float(reader, data_offset, elem_size as usize) {
+                            // Duration is in timecode scale units
+                            let duration_secs = (value * timecode_scale as f64) / 1_000_000_000.0;
+                            metadata.insert(
+                                "Matroska:Duration".to_string(),
+                                TagValue::new_string(format!("{:.3}", duration_secs)),
+                            );
+                        }
+                    }
+                    DATE_UTC => {
+                        if let Ok(value) = read_sint(reader, data_offset, elem_size as usize) {
+                            // DateUTC is nanoseconds since 2001-01-01T00:00:00 UTC
+                            let timestamp = 978307200i64 + (value / 1_000_000_000);
+                            metadata.insert(
+                                "Matroska:DateTimeOriginal".to_string(),
+                                TagValue::new_integer(timestamp),
+                            );
+                        }
+                    }
+                    TITLE => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata
+                                .insert("Matroska:Title".to_string(), TagValue::new_string(value));
+                        }
+                    }
+                    MUXING_APP => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                "Matroska:MuxingApp".to_string(),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    WRITING_APP => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                "Matroska:WritingApp".to_string(),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+
+                offset = data_offset + elem_size;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse Tracks segment
+fn parse_tracks(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let mut track_count = 0;
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                if elem_id == TRACK_ENTRY {
+                    track_count += 1;
+                    parse_track_entry(reader, data_offset, element_end, track_count, metadata)?;
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse single track entry
+fn parse_track_entry(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    track_num: usize,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let track_prefix = format!("Matroska:Track{}:", track_num);
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                match elem_id {
+                    TRACK_TYPE => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            let type_str = match value {
+                                1 => "Video",
+                                2 => "Audio",
+                                3 => "Complex",
+                                17 => "Subtitle",
+                                18 => "Buttons",
+                                32 => "Control",
+                                _ => "Unknown",
+                            };
+                            metadata.insert(
+                                format!("{}TrackType", track_prefix),
+                                TagValue::new_string(type_str.to_string()),
+                            );
+                        }
+                    }
+                    CODEC_ID => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}CodecID", track_prefix),
+                                TagValue::new_string(value.clone()),
+                            );
+                            // Also add as generic CodecID for first video/audio track
+                            if track_num == 1 {
+                                metadata.insert(
+                                    "Matroska:CodecID".to_string(),
+                                    TagValue::new_string(value),
+                                );
+                            }
+                        }
+                    }
+                    CODEC_NAME => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}CodecName", track_prefix),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    TRACK_NAME => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}TrackName", track_prefix),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    TRACK_LANGUAGE => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}TrackLanguage", track_prefix),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    VIDEO => {
+                        parse_video_info(
+                            reader,
+                            data_offset,
+                            element_end,
+                            &track_prefix,
+                            metadata,
+                        )?;
+                    }
+                    AUDIO => {
+                        parse_audio_info(
+                            reader,
+                            data_offset,
+                            element_end,
+                            &track_prefix,
+                            metadata,
+                        )?;
+                    }
+                    _ => {}
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse video track information
+fn parse_video_info(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    track_prefix: &str,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+
+                match elem_id {
+                    PIXEL_WIDTH => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}ImageWidth", track_prefix),
+                                TagValue::new_integer(value as i64),
+                            );
+                            // Also add as generic ImageWidth for first video track
+                            if track_prefix.contains("Track1:") {
+                                metadata.insert(
+                                    "Matroska:ImageWidth".to_string(),
+                                    TagValue::new_integer(value as i64),
+                                );
+                            }
+                        }
+                    }
+                    PIXEL_HEIGHT => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}ImageHeight", track_prefix),
+                                TagValue::new_integer(value as i64),
+                            );
+                            // Also add as generic ImageHeight for first video track
+                            if track_prefix.contains("Track1:") {
+                                metadata.insert(
+                                    "Matroska:ImageHeight".to_string(),
+                                    TagValue::new_integer(value as i64),
+                                );
+                            }
+                        }
+                    }
+                    DISPLAY_WIDTH => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}DisplayWidth", track_prefix),
+                                TagValue::new_integer(value as i64),
+                            );
+                        }
+                    }
+                    DISPLAY_HEIGHT => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}DisplayHeight", track_prefix),
+                                TagValue::new_integer(value as i64),
+                            );
+                        }
+                    }
+                    FRAME_RATE => {
+                        if let Ok(value) = read_float(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}FrameRate", track_prefix),
+                                TagValue::new_string(format!("{:.3}", value)),
+                            );
+                            // Also add as generic FrameRate for first video track
+                            if track_prefix.contains("Track1:") {
+                                metadata.insert(
+                                    "Matroska:FrameRate".to_string(),
+                                    TagValue::new_string(format!("{:.3}", value)),
+                                );
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+
+                offset = data_offset + elem_size;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse audio track information
+fn parse_audio_info(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    track_prefix: &str,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+
+                match elem_id {
+                    SAMPLING_FREQUENCY => {
+                        if let Ok(value) = read_float(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}AudioSampleRate", track_prefix),
+                                TagValue::new_string(format!("{:.0}", value)),
+                            );
+                            // Also add as generic AudioSampleRate for first audio track
+                            if track_prefix.contains("Track")
+                                && !metadata.contains_key("Matroska:AudioSampleRate")
+                            {
+                                metadata.insert(
+                                    "Matroska:AudioSampleRate".to_string(),
+                                    TagValue::new_string(format!("{:.0}", value)),
+                                );
+                            }
+                        }
+                    }
+                    CHANNELS => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}AudioChannels", track_prefix),
+                                TagValue::new_integer(value as i64),
+                            );
+                            // Also add as generic AudioChannels for first audio track
+                            if track_prefix.contains("Track")
+                                && !metadata.contains_key("Matroska:AudioChannels")
+                            {
+                                metadata.insert(
+                                    "Matroska:AudioChannels".to_string(),
+                                    TagValue::new_integer(value as i64),
+                                );
+                            }
+                        }
+                    }
+                    BIT_DEPTH => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}AudioBitsPerSample", track_prefix),
+                                TagValue::new_integer(value as i64),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+
+                offset = data_offset + elem_size;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse Tags segment
+fn parse_tags(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                if elem_id == TAG {
+                    parse_tag(reader, data_offset, element_end, metadata)?;
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse single Tag element
+fn parse_tag(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                if elem_id == SIMPLE_TAG {
+                    parse_simple_tag(reader, data_offset, element_end, metadata)?;
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse SimpleTag element
+fn parse_simple_tag(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let mut tag_name = String::new();
+    let mut tag_value = String::new();
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+
+                match elem_id {
+                    TAG_NAME => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            tag_name = value;
+                        }
+                    }
+                    TAG_STRING => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            tag_value = value;
+                        }
+                    }
+                    _ => {}
+                }
+
+                offset = data_offset + elem_size;
+            }
+            Err(_) => break,
+        }
+    }
+
+    if !tag_name.is_empty() && !tag_value.is_empty() {
+        // Map common tag names to Matroska namespace
+        let key = format!("Matroska:Tag:{}", tag_name);
+        metadata.insert(key, TagValue::new_string(tag_value));
+    }
+
+    Ok(())
+}
+
+/// Parse Chapters segment
+fn parse_chapters(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let mut chapter_count = 0;
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                if elem_id == EDITION_ENTRY {
+                    chapter_count = parse_edition_entry(
+                        reader,
+                        data_offset,
+                        element_end,
+                        chapter_count,
+                        metadata,
+                    )?;
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    if chapter_count > 0 {
+        metadata.insert(
+            "Matroska:ChapterCount".to_string(),
+            TagValue::new_integer(chapter_count as i64),
+        );
+    }
+
+    Ok(())
+}
+
+/// Parse EditionEntry (contains chapters)
+fn parse_edition_entry(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    mut chapter_count: usize,
+    metadata: &mut MetadataMap,
+) -> Result<usize> {
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                if elem_id == CHAPTER_ATOM {
+                    chapter_count += 1;
+                    parse_chapter_atom(reader, data_offset, element_end, chapter_count, metadata)?;
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(chapter_count)
+}
+
+/// Parse ChapterAtom
+fn parse_chapter_atom(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    chapter_num: usize,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let chapter_prefix = format!("Matroska:Chapter{}:", chapter_num);
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                match elem_id {
+                    CHAPTER_TIME_START => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            // Time is in nanoseconds
+                            let time_secs = value as f64 / 1_000_000_000.0;
+                            metadata.insert(
+                                format!("{}TimeStart", chapter_prefix),
+                                TagValue::new_string(format!("{:.3}", time_secs)),
+                            );
+                        }
+                    }
+                    CHAPTER_TIME_END => {
+                        if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
+                            let time_secs = value as f64 / 1_000_000_000.0;
+                            metadata.insert(
+                                format!("{}TimeEnd", chapter_prefix),
+                                TagValue::new_string(format!("{:.3}", time_secs)),
+                            );
+                        }
+                    }
+                    CHAPTER_DISPLAY => {
+                        parse_chapter_display(
+                            reader,
+                            data_offset,
+                            element_end,
+                            &chapter_prefix,
+                            metadata,
+                        )?;
+                    }
+                    _ => {}
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse ChapterDisplay
+fn parse_chapter_display(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    chapter_prefix: &str,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+
+                if elem_id == CHAP_STRING {
+                    if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                        metadata.insert(
+                            format!("{}Title", chapter_prefix),
+                            TagValue::new_string(value),
+                        );
+                    }
+                }
+
+                offset = data_offset + elem_size;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse Attachments segment
+fn parse_attachments(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let mut attachment_count = 0;
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+                let element_end = data_offset + elem_size;
+
+                if elem_id == ATTACHED_FILE {
+                    attachment_count += 1;
+                    parse_attached_file(
+                        reader,
+                        data_offset,
+                        element_end,
+                        attachment_count,
+                        metadata,
+                    )?;
+                }
+
+                offset = element_end;
+            }
+            Err(_) => break,
+        }
+    }
+
+    if attachment_count > 0 {
+        metadata.insert(
+            "Matroska:AttachmentCount".to_string(),
+            TagValue::new_integer(attachment_count as i64),
+        );
+    }
+
+    Ok(())
+}
+
+/// Parse AttachedFile
+fn parse_attached_file(
+    reader: &dyn FileReader,
+    mut offset: u64,
+    end_offset: u64,
+    attachment_num: usize,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let attachment_prefix = format!("Matroska:Attachment{}:", attachment_num);
+
+    while offset < end_offset {
+        match parse_element_header(reader, offset) {
+            Ok((elem_id, elem_size, hdr_size)) => {
+                let data_offset = offset + hdr_size;
+
+                match elem_id {
+                    FILE_NAME => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}FileName", attachment_prefix),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    FILE_MIME_TYPE => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}MIMEType", attachment_prefix),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    FILE_DESCRIPTION => {
+                        if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                            metadata.insert(
+                                format!("{}Description", attachment_prefix),
+                                TagValue::new_string(value),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+
+                offset = data_offset + elem_size;
+            }
+            Err(_) => break,
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse EBML element header (ID + size)
+/// Returns (element_id, element_size, header_size)
+fn parse_element_header(reader: &dyn FileReader, offset: u64) -> Result<(u32, u64, u64)> {
+    // Read ID (variable-length)
+    let (element_id, id_size) = read_vint_id(reader, offset)?;
+
+    // Read size (variable-length)
+    let (element_size, size_len) = read_vint(reader, offset + id_size)?;
+
+    let header_size = id_size + size_len;
+
+    Ok((element_id, element_size, header_size))
+}
+
+/// Read EBML variable-length integer (for element IDs)
+/// Note: Unlike size VINTs, element IDs keep the length marker bits!
+fn read_vint_id(reader: &dyn FileReader, offset: u64) -> Result<(u32, u64)> {
+    let first_byte = reader.read(offset, 1)?[0];
+
+    let num_bytes = if first_byte & 0x80 != 0 {
+        1
+    } else if first_byte & 0x40 != 0 {
+        2
+    } else if first_byte & 0x20 != 0 {
+        3
+    } else if first_byte & 0x10 != 0 {
+        4
+    } else {
+        return Err(ExifToolError::parse_error("Invalid VINT ID"));
+    };
+
+    let bytes = reader.read(offset, num_bytes)?;
+    let mut value = bytes[0] as u32;
+
+    for byte in bytes.iter().take(num_bytes).skip(1) {
+        value = (value << 8) | *byte as u32;
+    }
+
+    Ok((value, num_bytes as u64))
+}
+
+/// Read EBML variable-length integer (for sizes)
+fn read_vint(reader: &dyn FileReader, offset: u64) -> Result<(u64, u64)> {
+    let first_byte = reader.read(offset, 1)?[0];
+
+    let (num_bytes, mask) = if first_byte & 0x80 != 0 {
+        (1, 0x7F)
+    } else if first_byte & 0x40 != 0 {
+        (2, 0x3F)
+    } else if first_byte & 0x20 != 0 {
+        (3, 0x1F)
+    } else if first_byte & 0x10 != 0 {
+        (4, 0x0F)
+    } else if first_byte & 0x08 != 0 {
+        (5, 0x07)
+    } else if first_byte & 0x04 != 0 {
+        (6, 0x03)
+    } else if first_byte & 0x02 != 0 {
+        (7, 0x01)
+    } else if first_byte & 0x01 != 0 {
+        (8, 0x00)
+    } else {
+        return Err(ExifToolError::parse_error("Invalid VINT size"));
+    };
+
+    let bytes = reader.read(offset, num_bytes)?;
+    let mut value = (bytes[0] & mask) as u64;
+
+    for byte in bytes.iter().take(num_bytes).skip(1) {
+        value = (value << 8) | *byte as u64;
+    }
+
+    Ok((value, num_bytes as u64))
+}
+
+/// Read unsigned integer from EBML data
+fn read_uint(reader: &dyn FileReader, offset: u64, size: usize) -> Result<u64> {
+    if size == 0 || size > 8 {
+        return Err(ExifToolError::parse_error("Invalid uint size"));
+    }
+
+    let bytes = reader.read(offset, size)?;
+    let mut value = 0u64;
+
+    for &byte in bytes {
+        value = (value << 8) | byte as u64;
+    }
+
+    Ok(value)
+}
+
+/// Read signed integer from EBML data
+fn read_sint(reader: &dyn FileReader, offset: u64, size: usize) -> Result<i64> {
+    if size == 0 || size > 8 {
+        return Err(ExifToolError::parse_error("Invalid sint size"));
+    }
+
+    let bytes = reader.read(offset, size)?;
+    let mut value = if bytes[0] & 0x80 != 0 { -1i64 } else { 0i64 };
+
+    for &byte in bytes {
+        value = (value << 8) | byte as i64;
+    }
+
+    Ok(value)
+}
+
+/// Read floating point from EBML data
+fn read_float(reader: &dyn FileReader, offset: u64, size: usize) -> Result<f64> {
+    match size {
+        4 => {
+            let bytes = reader.read(offset, 4)?;
+            let bits = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+            Ok(f32::from_bits(bits) as f64)
+        }
+        8 => {
+            let bytes = reader.read(offset, 8)?;
+            let bits = u64::from_be_bytes([
+                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+            ]);
+            Ok(f64::from_bits(bits))
+        }
+        _ => Err(ExifToolError::parse_error("Invalid float size")),
+    }
+}
+
+/// Read UTF-8 string from EBML data
+fn read_string(reader: &dyn FileReader, offset: u64, size: usize) -> Result<String> {
+    if size == 0 {
+        return Ok(String::new());
+    }
+
+    let bytes = reader.read(offset, size)?;
+    String::from_utf8(bytes.to_vec())
+        .map_err(|_| ExifToolError::parse_error("Invalid UTF-8 string"))
 }
 
 /// Convenience function to parse MKV metadata from a reader.
@@ -134,10 +1184,35 @@ mod tests {
 
     #[test]
     fn test_mkv_signature_valid() {
-        let data = b"\x1A\x45\xDF\xA3\x00\x00\x00\x00";
-        let reader = TestReader::new(data);
+        // Minimal valid EBML file structure
+        // Note: For this test, we just verify signature check passes
+        // The parser will fail later when trying to parse the structure,
+        // but that's OK for a basic signature test
+        let mut data = vec![];
+
+        // EBML Header element (0x1A45DFA3)
+        data.extend_from_slice(&[0x1A, 0x45, 0xDF, 0xA3]);
+        // Size (using 1-byte VINT = 0x8F means size 15)
+        data.push(0x8F);
+        // EBML Version (0x4286)
+        data.extend_from_slice(&[0x42, 0x86]);
+        data.push(0x81); // size = 1
+        data.push(0x01); // value = 1
+                         // DocType (0x4282)
+        data.extend_from_slice(&[0x42, 0x82]);
+        data.push(0x84); // size = 4
+        data.extend_from_slice(b"webm");
+        // DocTypeVersion (0x4287)
+        data.extend_from_slice(&[0x42, 0x87]);
+        data.push(0x81); // size = 1
+        data.push(0x02); // value = 2
+
+        let reader = TestReader::new(&data);
         let parser = MkvParser;
         let result = parser.parse(&reader);
+        if let Err(ref e) = result {
+            eprintln!("Parse error: {:?}", e);
+        }
         assert!(result.is_ok());
     }
 
@@ -157,5 +1232,38 @@ mod tests {
         let parser = MkvParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_read_vint() {
+        // Test 1-byte VINT: 0x81 = 1000_0001 = value 1
+        let data = vec![0x81];
+        let reader = TestReader::new(&data);
+        let (value, size) = read_vint(&reader, 0).unwrap();
+        assert_eq!(value, 1);
+        assert_eq!(size, 1);
+
+        // Test 2-byte VINT: 0x40 0x00 = value 0
+        let data = vec![0x40, 0x00];
+        let reader = TestReader::new(&data);
+        let (value, size) = read_vint(&reader, 0).unwrap();
+        assert_eq!(value, 0);
+        assert_eq!(size, 2);
+    }
+
+    #[test]
+    fn test_read_uint() {
+        let data = vec![0x01, 0x02, 0x03, 0x04];
+        let reader = TestReader::new(&data);
+        let value = read_uint(&reader, 0, 4).unwrap();
+        assert_eq!(value, 0x01020304);
+    }
+
+    #[test]
+    fn test_read_string() {
+        let data = b"Hello, World!";
+        let reader = TestReader::new(data);
+        let value = read_string(&reader, 0, data.len()).unwrap();
+        assert_eq!(value, "Hello, World!");
     }
 }

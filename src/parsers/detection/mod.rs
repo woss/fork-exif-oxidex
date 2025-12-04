@@ -242,8 +242,60 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
         return Ok(FileFormat::JXL);
     }
 
+    // Plain text detection (fallback for files that look like text)
+    // Check if most bytes are printable ASCII or valid UTF-8
+    if is_likely_text(magic_bytes) {
+        return Ok(FileFormat::TXT);
+    }
+
     // No known format matched
     Ok(FileFormat::Unknown)
+}
+
+/// Checks if data is likely to be plain text
+///
+/// Uses heuristics to determine if the data consists primarily of
+/// printable characters and valid text encodings.
+///
+/// # Arguments
+///
+/// * `data` - Data to check
+///
+/// # Returns
+///
+/// `true` if data appears to be text, `false` otherwise
+fn is_likely_text(data: &[u8]) -> bool {
+    if data.is_empty() {
+        return false;
+    }
+
+    // Check for UTF-8 BOM
+    if data.len() >= 3 && &data[0..3] == b"\xEF\xBB\xBF" {
+        return true;
+    }
+
+    // Check for UTF-16 BOM
+    if data.len() >= 2 && (&data[0..2] == b"\xFF\xFE" || &data[0..2] == b"\xFE\xFF") {
+        return true;
+    }
+
+    // Try to validate as UTF-8
+    if std::str::from_utf8(data).is_ok() {
+        // Check if it contains mostly printable characters
+        let printable_count = data
+            .iter()
+            .filter(|&&b| {
+                (0x20..0x7F).contains(&b) || // Printable ASCII
+                b == b'\t' || b == b'\n' || b == b'\r' // Whitespace
+            })
+            .count();
+
+        // If at least 95% of characters are printable, consider it text
+        let ratio = printable_count as f64 / data.len() as f64;
+        return ratio >= 0.95;
+    }
+
+    false
 }
 
 #[cfg(test)]

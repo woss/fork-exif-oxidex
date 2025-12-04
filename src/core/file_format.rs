@@ -237,6 +237,9 @@ pub enum FileFormat {
     /// Email message format (.eml)
     EML,
 
+    /// Plain text format (.txt)
+    TXT,
+
     /// Windows shortcut (.lnk)
     LNK,
 
@@ -347,6 +350,7 @@ impl FileFormat {
             FileFormat::HDF5 => "HDF5",
             FileFormat::VCF => "vCard",
             FileFormat::EML => "EML",
+            FileFormat::TXT => "TXT",
             FileFormat::LNK => "Windows Shortcut",
             FileFormat::SQLite => "SQLite",
             FileFormat::Prefetch => "Windows Prefetch",
@@ -438,6 +442,7 @@ impl FileFormat {
             FileFormat::HDF5 => &["h5", "hdf5"],
             FileFormat::VCF => &["vcf", "vcard"],
             FileFormat::EML => &["eml", "email"],
+            FileFormat::TXT => &["txt", "text"],
             FileFormat::LNK => &["lnk"],
             FileFormat::SQLite => &["db", "sqlite", "sqlite3"],
             FileFormat::Prefetch => &["pf"],
