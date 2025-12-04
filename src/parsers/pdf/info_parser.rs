@@ -116,15 +116,17 @@ pub fn parse_info_dict(reader: &dyn FileReader) -> Result<MetadataMap> {
 /// Encapsulates the PDF cross-reference table and trailer data needed for
 /// navigating the PDF object structure. This avoids repeatedly reading and
 /// parsing the same data.
-struct PdfContext {
-    xref_data: Vec<u8>,
-    xref_map: HashMap<u32, u64>,
+pub struct PdfContext {
+    /// Raw xref table and trailer data
+    pub xref_data: Vec<u8>,
+    /// Map of object numbers to file byte offsets
+    pub xref_map: HashMap<u32, u64>,
 }
 
 impl PdfContext {
     /// Loads the PDF context by reading the trailer and xref table from the file.
     /// This centralizes the common logic of finding and parsing the xref table.
-    fn load(reader: &dyn FileReader) -> Result<Self> {
+    pub fn load(reader: &dyn FileReader) -> Result<Self> {
         let file_size = reader.size();
 
         // Read the last 1024 bytes to find trailer
@@ -149,7 +151,7 @@ impl PdfContext {
     }
 
     /// Gets the file offset for a given object number, with descriptive error messages.
-    fn get_object_offset(&self, object_num: u32, object_type: &str) -> Result<u64> {
+    pub fn get_object_offset(&self, object_num: u32, object_type: &str) -> Result<u64> {
         self.xref_map.get(&object_num).copied().ok_or_else(|| {
             ExifToolError::parse_error(format!(
                 "{} object {} not found in xref table",
@@ -176,7 +178,11 @@ fn convert_info_dict_to_metadata(info_dict: HashMap<String, String>) -> Metadata
                 insert_date_metadata(&mut metadata, "CreationDate", "CreateDate", &value)
             }
             "ModDate" => insert_date_metadata(&mut metadata, "ModDate", "ModifyDate", &value),
+            "SourceModified" => {
+                insert_date_metadata(&mut metadata, "SourceModified", "SourceModified", &value)
+            }
             "Keywords" => insert_keywords_metadata(&mut metadata, &value),
+            "Trapped" => insert_trapped_metadata(&mut metadata, &value),
             _ => {
                 metadata.insert(format!("PDF:{}", key), TagValue::new_string(value));
             }
@@ -229,6 +235,26 @@ fn insert_keywords_metadata(metadata: &mut MetadataMap, value: &str) {
     metadata.insert("PDF:Keywords".to_string(), tag_value);
 }
 
+/// Inserts trapped metadata, converting PDF name values to proper format.
+/// PDF Trapped values are PDF names: /True, /False, or /Unknown
+fn insert_trapped_metadata(metadata: &mut MetadataMap, value: &str) {
+    // Strip leading slash if present (from PDF name parsing)
+    let trapped_value = value.strip_prefix('/').unwrap_or(value);
+
+    // Convert to proper case (True, False, Unknown)
+    let normalized = match trapped_value.to_lowercase().as_str() {
+        "true" => "True",
+        "false" => "False",
+        "unknown" => "Unknown",
+        _ => trapped_value, // Keep original if not recognized
+    };
+
+    metadata.insert(
+        "PDF:Trapped".to_string(),
+        TagValue::new_string(normalized.to_string()),
+    );
+}
+
 //
 // ═══════════════════════════════════════════════════════════════════════════
 // Date Formatting
@@ -244,7 +270,7 @@ fn insert_keywords_metadata(metadata: &mut MetadataMap, value: &str) {
 /// - D:20240115143000+00'00' → 2024:01:15 14:30:00+00:00
 /// - D:20240115143000Z → 2024:01:15 14:30:00+00:00
 /// - D:20240115 → 2024:01:15 00:00:00
-fn format_pdf_date(pdf_date: &str) -> Option<String> {
+pub fn format_pdf_date(pdf_date: &str) -> Option<String> {
     // Remove "D:" prefix if present
     let date_str = pdf_date.strip_prefix("D:").unwrap_or(pdf_date);
 
@@ -376,10 +402,12 @@ fn extract_media_box_from_pages(pages_data: &[u8]) -> Result<String> {
 
 /// Object reference structure (e.g., "4 0 R" means object 4, generation 0)
 #[derive(Debug, Clone, Copy)]
-struct ObjectRef {
-    object_num: u32,
+pub struct ObjectRef {
+    /// The object number in the PDF file
+    pub object_num: u32,
+    /// The generation number (usually 0)
     #[allow(dead_code)]
-    generation: u16,
+    pub generation: u16,
 }
 
 //
@@ -903,5 +931,52 @@ mod tests {
         let result = find_xref_offset(tail);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 1234);
+    }
+
+    #[test]
+    fn test_insert_trapped_metadata_true() {
+        let mut metadata = MetadataMap::new();
+        insert_trapped_metadata(&mut metadata, "True");
+        assert_eq!(metadata.get_string("PDF:Trapped"), Some("True"));
+    }
+
+    #[test]
+    fn test_insert_trapped_metadata_false() {
+        let mut metadata = MetadataMap::new();
+        insert_trapped_metadata(&mut metadata, "False");
+        assert_eq!(metadata.get_string("PDF:Trapped"), Some("False"));
+    }
+
+    #[test]
+    fn test_insert_trapped_metadata_unknown() {
+        let mut metadata = MetadataMap::new();
+        insert_trapped_metadata(&mut metadata, "Unknown");
+        assert_eq!(metadata.get_string("PDF:Trapped"), Some("Unknown"));
+    }
+
+    #[test]
+    fn test_insert_trapped_metadata_case_insensitive() {
+        let mut metadata = MetadataMap::new();
+        insert_trapped_metadata(&mut metadata, "true");
+        assert_eq!(metadata.get_string("PDF:Trapped"), Some("True"));
+
+        let mut metadata = MetadataMap::new();
+        insert_trapped_metadata(&mut metadata, "/false");
+        assert_eq!(metadata.get_string("PDF:Trapped"), Some("False"));
+    }
+
+    #[test]
+    fn test_source_modified_date_formatting() {
+        let mut info_dict = HashMap::new();
+        info_dict.insert(
+            "SourceModified".to_string(),
+            "D:20240315143000Z".to_string(),
+        );
+
+        let metadata = convert_info_dict_to_metadata(info_dict);
+        assert_eq!(
+            metadata.get_string("PDF:SourceModified"),
+            Some("2024:03:15 14:30:00Z")
+        );
     }
 }

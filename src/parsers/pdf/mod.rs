@@ -8,6 +8,7 @@
 //! The parser extracts metadata from:
 //! - **Info dictionary**: Standard PDF metadata fields (Title, Author, Subject, etc.)
 //! - **XMP packets**: Extensible Metadata Platform XML data
+//! - **Encrypt dictionary**: Encryption and security information
 //!
 //! # PDF Structure
 //!
@@ -44,14 +45,22 @@
 
 #![allow(dead_code)]
 
+pub mod encryption_parser;
 pub mod info_parser;
+pub mod permissions_parser;
+pub mod resources_parser;
+pub mod root_parser;
+pub mod shared;
+pub mod signature_parser;
+pub mod structure_parser;
 pub mod xmp_extractor;
 
 use crate::core::{FileReader, MetadataMap};
 use crate::error::{ExifToolError, Result};
 use crate::parsers::icc::extract_icc_profile;
-use info_parser::parse_info_dict;
-use xmp_extractor::extract_xmp_metadata;
+use encryption_parser::parse_encryption_metadata;
+// use root_parser::parse_root_metadata;
+// use structure_parser::parse_structure_metadata;
 
 /// PDF signature/magic bytes
 const PDF_SIGNATURE: &[u8] = b"%PDF-";
@@ -159,7 +168,7 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     );
 
     // Extract Info dictionary metadata
-    match parse_info_dict(reader) {
+    match info_parser::parse_info_dict(reader) {
         Ok(info_metadata) => {
             // Merge Info dictionary tags into main metadata
             for (key, value) in info_metadata.iter() {
@@ -173,7 +182,7 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     }
 
     // Extract XMP metadata
-    match extract_xmp_metadata(reader) {
+    match xmp_extractor::extract_xmp_metadata(reader) {
         Ok(xmp_metadata) => {
             // Merge XMP tags into main metadata
             for (key, value) in xmp_metadata.iter() {
@@ -189,7 +198,6 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Extract ICC profile metadata
     match extract_icc_profile(reader) {
         Ok(icc_metadata) => {
-            // Merge ICC profile tags into main metadata
             for (key, value) in icc_metadata.iter() {
                 metadata.insert(key.clone(), value.clone());
             }
@@ -199,10 +207,91 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         }
     }
 
+    // Extract root dictionary metadata (Language, PageLayout, PageMode)
+    // TODO: Implement root_parser
+    // if let Ok(root_meta) = root_parser::parse_root_metadata(reader) {
+    //     for (key, value) in root_meta.iter() {
+    //         metadata.insert(key.clone(), value.clone());
+    //     }
+    // }
+
+    // Extract encryption metadata
+    if let Ok(enc_meta) = encryption_parser::parse_encryption_metadata(reader) {
+        for (key, value) in enc_meta.iter() {
+            metadata.insert(key.clone(), value.clone());
+        }
+    }
+
+    // Extract digital signature metadata
+    if let Ok(sig_meta) = signature_parser::parse_signature_metadata(reader) {
+        for (key, value) in sig_meta.iter() {
+            metadata.insert(key.clone(), value.clone());
+        }
+    }
+
+    // Extract permissions metadata
+    if let Ok(perm_meta) = permissions_parser::parse_permissions_metadata(reader) {
+        for (key, value) in perm_meta.iter() {
+            metadata.insert(key.clone(), value.clone());
+        }
+    }
+
+    // Extract embedded resources metadata
+    // TODO: Uncomment when resources_parser is fixed
+    // if let Ok(res_meta) = resources_parser::parse_resources_metadata(reader) {
+    //     for (key, value) in res_meta.iter() {
+    //         metadata.insert(key.clone(), value.clone());
+    //     }
+    // }
+
+    // Extract encryption metadata
+    match parse_encryption_metadata(reader) {
+        Ok(encryption_metadata) => {
+            // Merge encryption tags into main metadata
+            for (key, value) in encryption_metadata.iter() {
+                metadata.insert(key.clone(), value.clone());
+            }
+        }
+        Err(e) => {
+            // Log warning but continue - encryption might not be parseable
+            eprintln!("Warning: Failed to parse PDF encryption metadata: {}", e);
+        }
+    }
+
+    // Extract Root/Catalog metadata
+    // TODO: Implement root_parser
+    // match parse_root_metadata(reader) {
+    //     Ok(root_metadata) => {
+    //         // Merge Root tags into main metadata
+    //         for (key, value) in root_metadata.iter() {
+    //             metadata.insert(key.clone(), value.clone());
+    //         }
+    //     }
+    //     Err(e) => {
+    //         // Log warning but continue - Root metadata might not be parseable
+    //         eprintln!("Warning: Failed to parse PDF Root metadata: {}", e);
+    //     }
+    // }
+
+    // Extract structure and features metadata
+    // TODO: Implement structure_parser
+    // match parse_structure_metadata(reader) {
+    //     Ok(structure_metadata) => {
+    //         // Merge structure tags into main metadata
+    //         for (key, value) in structure_metadata.iter() {
+    //             metadata.insert(key.clone(), value.clone());
+    //         }
+    //     }
+    //     Err(e) => {
+    //         // Log warning but continue - structure metadata might not be parseable
+    //         eprintln!("Warning: Failed to parse PDF structure metadata: {}", e);
+    //     }
+    // }
+
     // If we didn't extract any metadata at all, return error
     if metadata.is_empty() {
         return Err(ExifToolError::parse_error(
-            "No metadata found in PDF (no Info dictionary, XMP, or ICC profile)",
+            "No metadata found in PDF (no Info dictionary, XMP, ICC profile, encryption, Root, or structure)",
         ));
     }
 
