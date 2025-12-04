@@ -33,7 +33,7 @@
 
 use crate::error::{ExifToolError, Result};
 use crate::parsers::jpeg::segment_parser::Segment;
-use crate::parsers::xmp::parse_xmp;
+use crate::parsers::xmp::{parse_xmp, parse_xmp_history};
 
 /// The XMP identifier string that appears at the start of XMP APP1 segments.
 /// This is a null-terminated string: "http://ns.adobe.com/xap/1.0/\0"
@@ -103,12 +103,18 @@ pub fn extract_xmp_from_segments(segments: &[Segment]) -> Result<Vec<(String, St
         // Extract the XML payload (skip the 29-byte XMP identifier)
         let xml_payload = &segment.data[XMP_IDENTIFIER.len()..];
 
-        // Parse the XMP XML data
+        // Parse the XMP XML data for standard properties
         let xmp_tags = parse_xmp(xml_payload).map_err(|e| {
             ExifToolError::parse_error(format!("Failed to parse XMP segment: {}", e))
         })?;
 
         all_xmp_tags.extend(xmp_tags);
+
+        // Parse XMP history for forensic metadata
+        let xml_str = std::str::from_utf8(xml_payload).unwrap_or("");
+        if let Ok(history_tags) = parse_xmp_history(xml_str) {
+            all_xmp_tags.extend(history_tags);
+        }
     }
 
     Ok(all_xmp_tags)

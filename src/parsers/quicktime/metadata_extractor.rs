@@ -162,6 +162,20 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
             extract_movie_header(&mvhd, &mut metadata)?;
         }
 
+        // Extract track headers (tkhd) from all trak atoms
+        if let Ok(children) = moov.parse_children() {
+            let trak_atoms: Vec<_> = children
+                .iter()
+                .filter(|a| a.atom_type.matches("trak"))
+                .collect();
+
+            for (index, trak) in trak_atoms.iter().enumerate() {
+                if let Some(tkhd) = trak.find_child("tkhd") {
+                    let _ = extract_track_header(&tkhd, &mut metadata, index);
+                }
+            }
+        }
+
         // Extract from all possible locations
         if let Some(udta) = moov.find_child("udta") {
             // Extract handler metadata (hdlr) - may be in udta or udta→meta
@@ -348,13 +362,26 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
         "QuickTime:MovieHeaderVersion".to_string(),
         TagValue::Integer(version as i64),
     );
+
+    // Add both legacy CreateDate/ModifyDate and new MediaCreateDate/MediaModifyDate
+    let create_date_str = mac_time_to_string(creation_time);
+    let modify_date_str = mac_time_to_string(modification_time);
+
     metadata.insert(
         "QuickTime:CreateDate".to_string(),
-        TagValue::String(mac_time_to_string(creation_time)),
+        TagValue::String(create_date_str.clone()),
+    );
+    metadata.insert(
+        "QuickTime:MediaCreateDate".to_string(),
+        TagValue::String(create_date_str),
     );
     metadata.insert(
         "QuickTime:ModifyDate".to_string(),
-        TagValue::String(mac_time_to_string(modification_time)),
+        TagValue::String(modify_date_str.clone()),
+    );
+    metadata.insert(
+        "QuickTime:MediaModifyDate".to_string(),
+        TagValue::String(modify_date_str),
     );
     metadata.insert(
         "QuickTime:TimeScale".to_string(),
@@ -445,6 +472,55 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
     Ok(())
 }
 
+/// Extract track header metadata from tkhd atom
+fn extract_track_header(
+    tkhd: &Atom,
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    if tkhd.data.len() < 84 {
+        return Ok(());
+    }
+
+    let r = BigEndianReader(tkhd.data);
+    let version = tkhd.data[0];
+
+    // Parse time fields based on version (v0: 32-bit, v1: 64-bit)
+    let (creation_time, modification_time) = if version == 1 {
+        if r.len() < 20 {
+            return Ok(());
+        }
+        (r.u64_at(4).unwrap_or(0), r.u64_at(12).unwrap_or(0))
+    } else {
+        (
+            r.u32_at(4).unwrap_or(0) as u64,
+            r.u32_at(8).unwrap_or(0) as u64,
+        )
+    };
+
+    // Add track-specific timestamp tags
+    let create_date_str = mac_time_to_string(creation_time);
+    let modify_date_str = mac_time_to_string(modification_time);
+
+    // Use track index for tag names if we have multiple tracks
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    metadata.insert(
+        format!("QuickTime:TrackCreateDate{}", track_suffix),
+        TagValue::String(create_date_str),
+    );
+    metadata.insert(
+        format!("QuickTime:TrackModifyDate{}", track_suffix),
+        TagValue::String(modify_date_str),
+    );
+
+    Ok(())
+}
+
 /// Extract handler metadata from hdlr atom
 fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(), String> {
     if hdlr.data.len() < 24 {
@@ -495,9 +571,9 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
     Ok(())
 }
 
-/// Convert Mac epoch time (seconds since 1904-01-01) to date string
+/// Convert Mac epoch time (seconds since 1904-01-01) to ISO 8601 date string
 fn mac_time_to_string(mac_time: u64) -> String {
-    // Mac epoch is 1904-01-01, Unix epoch is 1970-01-01
+    // Mac epoch is 1904-01-01 00:00:00 UTC, Unix epoch is 1970-01-01 00:00:00 UTC
     // Difference is 66 years = 2082844800 seconds
     const MAC_EPOCH_OFFSET: i64 = 2082844800;
 
@@ -507,12 +583,71 @@ fn mac_time_to_string(mac_time: u64) -> String {
 
     let unix_time = mac_time as i64 - MAC_EPOCH_OFFSET;
     if unix_time <= 0 {
-        return "0000:00:00 00:00:00".to_string();
+        return "1904:01:01 00:00:00".to_string();
     }
 
-    // Simple date formatting (avoiding chrono dependency for this example)
-    // Just return a formatted string matching ExifTool's output
-    "0000:00:00 00:00:00".to_string()
+    // Convert Unix timestamp to date components
+    // This is a simplified calculation for dates after 1970-01-01
+    const SECONDS_PER_DAY: i64 = 86400;
+    const SECONDS_PER_HOUR: i64 = 3600;
+    const SECONDS_PER_MINUTE: i64 = 60;
+
+    let days_since_epoch = unix_time / SECONDS_PER_DAY;
+    let remaining_seconds = unix_time % SECONDS_PER_DAY;
+    let hours = remaining_seconds / SECONDS_PER_HOUR;
+    let minutes = (remaining_seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+    let seconds = remaining_seconds % SECONDS_PER_MINUTE;
+
+    // Simple year/month/day calculation (approximate, good enough for metadata)
+    // Using average of 365.25 days per year
+    let mut year = 1970;
+    let mut days = days_since_epoch;
+
+    // Add years
+    while days >= 365 {
+        let year_days = if is_leap_year(year) { 366 } else { 365 };
+        if days >= year_days {
+            days -= year_days;
+            year += 1;
+        } else {
+            break;
+        }
+    }
+
+    // Calculate month and day
+    let (month, day) = days_to_month_day(days as u32, is_leap_year(year));
+
+    format!(
+        "{:04}:{:02}:{:02} {:02}:{:02}:{:02}",
+        year, month, day, hours, minutes, seconds
+    )
+}
+
+/// Check if a year is a leap year
+fn is_leap_year(year: i64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+/// Convert day of year to month and day
+fn days_to_month_day(mut days: u32, is_leap: bool) -> (u32, u32) {
+    const MONTH_DAYS: [u32; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const MONTH_DAYS_LEAP: [u32; 12] = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+    let month_days = if is_leap {
+        &MONTH_DAYS_LEAP
+    } else {
+        &MONTH_DAYS
+    };
+
+    for (i, &month_len) in month_days.iter().enumerate() {
+        if days < month_len {
+            return ((i + 1) as u32, days + 1);
+        }
+        days -= month_len;
+    }
+
+    // Fallback for invalid input
+    (12, 31)
 }
 
 /// Extract classic QuickTime user data atoms (©xxx)
@@ -644,25 +779,76 @@ fn extract_mp4_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), S
 
     if let (Some(keys), Some(ilst)) = (keys_atom, ilst_atom) {
         // Parse the keys
-        let _key_map = parse_mp4_keys(keys.data)?;
+        let key_map = parse_mp4_keys(keys.data)?;
 
         // Parse the ilst items
         let items = ilst.parse_children().unwrap_or_default();
 
         for item in items {
             // MP4 ilst uses numeric atom types that correspond to key indices
-            // Extract the numeric ID from the atom type
+            // The atom type is a 4-byte integer (index into keys)
+            let atom_type_bytes = item.atom_type.as_bytes();
+
+            // Try to interpret as a big-endian integer
+            let key_index = u32::from_be_bytes(*atom_type_bytes);
+
             if let Some(data_atom) = item.find_child("data") {
                 if let Some(value) = extract_itunes_data_value(data_atom.data) {
-                    // Try to map to a known key, otherwise use a generic name
-                    let tag_name = format!("MP4:{}", item.atom_type.as_str());
-                    metadata.insert(tag_name, value);
+                    // Look up the key name
+                    if let Some(key_name) = key_map.get(&key_index) {
+                        // Map Apple-specific keys to standard tag names
+                        let tag_name = map_apple_key_to_tag(key_name);
+                        metadata.insert(tag_name, value.clone());
+
+                        // Special handling for GPS coordinates
+                        if key_name == "com.apple.quicktime.location.ISO6709" {
+                            if let TagValue::String(ref gps_str) = value {
+                                if let Some((lat, lon, alt)) = parse_iso6709(gps_str) {
+                                    metadata.insert(
+                                        "QuickTime:GPSLatitude".to_string(),
+                                        TagValue::Float(lat),
+                                    );
+                                    metadata.insert(
+                                        "QuickTime:GPSLongitude".to_string(),
+                                        TagValue::Float(lon),
+                                    );
+                                    if let Some(altitude) = alt {
+                                        metadata.insert(
+                                            "QuickTime:GPSAltitude".to_string(),
+                                            TagValue::Float(altitude),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Fallback to using the atom type as the tag name
+                        let tag_name = format!("MP4:{}", item.atom_type.as_str());
+                        metadata.insert(tag_name, value);
+                    }
                 }
             }
         }
     }
 
     Ok(())
+}
+
+/// Map Apple-specific mdta keys to standard QuickTime tag names
+fn map_apple_key_to_tag(key_name: &str) -> String {
+    match key_name {
+        "com.apple.quicktime.location.ISO6709" => "QuickTime:GPSCoordinates".to_string(),
+        "com.apple.quicktime.location.accuracy.horizontal" => {
+            "QuickTime:LocationAccuracyHorizontal".to_string()
+        }
+        "com.apple.quicktime.location.role" => "QuickTime:LocationRole".to_string(),
+        "com.apple.quicktime.creationLocation.name" => "QuickTime:CreationLocationName".to_string(),
+        "com.apple.quicktime.make" => "QuickTime:Make".to_string(),
+        "com.apple.quicktime.model" => "QuickTime:Model".to_string(),
+        "com.apple.quicktime.software" => "QuickTime:Software".to_string(),
+        "com.apple.quicktime.creationdate" => "QuickTime:ContentCreateDate".to_string(),
+        _ => format!("QuickTime:{}", key_name),
+    }
 }
 
 /// Parse MP4 keys atom to build a map of key indices to key names
@@ -803,6 +989,46 @@ fn decode_utf16(data: &[u8]) -> Option<String> {
         .collect();
 
     String::from_utf16(&utf16_chars).ok()
+}
+
+/// Parse ISO 6709 GPS coordinate string
+/// Format: +DD.DDDD+DDD.DDDD+AAA.AAA/ or variations
+/// Returns (latitude, longitude, altitude)
+fn parse_iso6709(gps_string: &str) -> Option<(f64, f64, Option<f64>)> {
+    let s = gps_string.trim();
+    if s.is_empty() {
+        return None;
+    }
+
+    // Remove trailing slash if present
+    let s = s.trim_end_matches('/');
+
+    // Parse latitude (starts with + or -)
+    let (lat_str, rest) = if let Some(pos) = s[1..].find(&['+', '-'][..]) {
+        s.split_at(pos + 1)
+    } else {
+        return None;
+    };
+
+    let latitude = lat_str.parse::<f64>().ok()?;
+
+    // Parse longitude (next + or -)
+    let (lon_str, alt_str) = if let Some(pos) = rest[1..].find(&['+', '-'][..]) {
+        rest.split_at(pos + 1)
+    } else {
+        (rest, "")
+    };
+
+    let longitude = lon_str.parse::<f64>().ok()?;
+
+    // Parse altitude if present
+    let altitude = if !alt_str.is_empty() {
+        alt_str.parse::<f64>().ok()
+    } else {
+        None
+    };
+
+    Some((latitude, longitude, altitude))
 }
 
 /// Extract HEIF-specific metadata from meta atom including EXIF data
@@ -1338,5 +1564,108 @@ mod tests {
 
         let result = decode_utf16(&data);
         assert_eq!(result, Some("Hi".to_string()));
+    }
+
+    #[test]
+    fn test_mac_time_to_string() {
+        // Test zero time
+        assert_eq!(mac_time_to_string(0), "0000:00:00 00:00:00");
+
+        // Test Mac epoch (1904-01-01)
+        const MAC_EPOCH_OFFSET: u64 = 2082844800;
+        assert_eq!(mac_time_to_string(MAC_EPOCH_OFFSET), "1904:01:01 00:00:00");
+
+        // Test Unix epoch (1970-01-01)
+        assert_eq!(mac_time_to_string(MAC_EPOCH_OFFSET), "1904:01:01 00:00:00");
+
+        // Test a known timestamp: 2024-01-01 00:00:00 UTC
+        // Unix timestamp for 2024-01-01: 1704067200
+        let mac_time = 1704067200 + MAC_EPOCH_OFFSET;
+        let result = mac_time_to_string(mac_time);
+        assert!(result.starts_with("2024:01:01"));
+    }
+
+    #[test]
+    fn test_is_leap_year() {
+        assert!(is_leap_year(2000)); // Divisible by 400
+        assert!(is_leap_year(2004)); // Divisible by 4, not by 100
+        assert!(!is_leap_year(1900)); // Divisible by 100, not by 400
+        assert!(!is_leap_year(2001)); // Not divisible by 4
+        assert!(is_leap_year(2024));
+    }
+
+    #[test]
+    fn test_days_to_month_day() {
+        // Test regular year
+        assert_eq!(days_to_month_day(0, false), (1, 1)); // Jan 1
+        assert_eq!(days_to_month_day(31, false), (2, 1)); // Feb 1
+        assert_eq!(days_to_month_day(59, false), (3, 1)); // Mar 1
+        assert_eq!(days_to_month_day(364, false), (12, 31)); // Dec 31
+
+        // Test leap year
+        assert_eq!(days_to_month_day(59, true), (2, 29)); // Feb 29
+        assert_eq!(days_to_month_day(60, true), (3, 1)); // Mar 1
+    }
+
+    #[test]
+    fn test_parse_iso6709_basic() {
+        // Test basic GPS coordinates
+        let result = parse_iso6709("+37.7749-122.4194/");
+        assert!(result.is_some());
+        let (lat, lon, alt) = result.unwrap();
+        assert!((lat - 37.7749).abs() < 0.0001);
+        assert!((lon - (-122.4194)).abs() < 0.0001);
+        assert!(alt.is_none());
+    }
+
+    #[test]
+    fn test_parse_iso6709_with_altitude() {
+        // Test GPS coordinates with altitude
+        let result = parse_iso6709("+40.7128-074.0060+010.5/");
+        assert!(result.is_some());
+        let (lat, lon, alt) = result.unwrap();
+        assert!((lat - 40.7128).abs() < 0.0001);
+        assert!((lon - (-74.0060)).abs() < 0.0001);
+        assert!(alt.is_some());
+        assert!((alt.unwrap() - 10.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_parse_iso6709_no_slash() {
+        // Test without trailing slash
+        let result = parse_iso6709("+51.5074-000.1278");
+        assert!(result.is_some());
+        let (lat, lon, _) = result.unwrap();
+        assert!((lat - 51.5074).abs() < 0.0001);
+        assert!((lon - (-0.1278)).abs() < 0.0001);
+    }
+
+    #[test]
+    fn test_parse_iso6709_invalid() {
+        // Test invalid inputs
+        assert!(parse_iso6709("").is_none());
+        assert!(parse_iso6709("invalid").is_none());
+        assert!(parse_iso6709("+37.7749").is_none()); // Missing longitude
+    }
+
+    #[test]
+    fn test_map_apple_key_to_tag() {
+        assert_eq!(
+            map_apple_key_to_tag("com.apple.quicktime.location.ISO6709"),
+            "QuickTime:GPSCoordinates"
+        );
+        assert_eq!(
+            map_apple_key_to_tag("com.apple.quicktime.make"),
+            "QuickTime:Make"
+        );
+        assert_eq!(
+            map_apple_key_to_tag("com.apple.quicktime.model"),
+            "QuickTime:Model"
+        );
+        assert_eq!(
+            map_apple_key_to_tag("com.apple.quicktime.software"),
+            "QuickTime:Software"
+        );
+        assert_eq!(map_apple_key_to_tag("unknown.key"), "QuickTime:unknown.key");
     }
 }
