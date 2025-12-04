@@ -1,0 +1,58 @@
+name: Update Coverage Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'oxidex-tags-*/src/**'
+      - 'scripts/generate_tag_coverage.py'
+      - '.github/workflows/update-coverage-docs.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: update-coverage-docs
+  cancel-in-progress: true
+
+jobs:
+  update-coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Generate coverage report
+        run: |
+          uv run scripts/generate_tag_coverage.py --output docs/reference/tag-coverage-analysis.md
+          echo "Coverage report generated"
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet docs/reference/tag-coverage-analysis.md || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/reference/tag-coverage-analysis.md
+          git commit -m "docs: auto-update tag coverage analysis
+
+          Generated from commit ${{ github.sha }}
+
+          [skip ci]"
+          git push
