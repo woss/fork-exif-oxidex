@@ -223,6 +223,53 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                     TagValue::Integer(chunk_size as i64),
                 );
             }
+            b"ANIM" => {
+                // Animation control chunk
+                if chunk_size >= 6 {
+                    let anim_data = reader.read(chunk_data_offset, 6)?;
+
+                    // Background color (4 bytes ARGB)
+                    let bg_color = u32::from_le_bytes([
+                        anim_data[0],
+                        anim_data[1],
+                        anim_data[2],
+                        anim_data[3],
+                    ]);
+
+                    // Loop count (2 bytes) - 0 means infinite
+                    let loop_count = u16::from_le_bytes([anim_data[4], anim_data[5]]);
+
+                    metadata.insert(
+                        "WebP:AnimationBackgroundColor".to_string(),
+                        TagValue::String(format!("0x{:08X}", bg_color)),
+                    );
+
+                    if loop_count == 0 {
+                        metadata.insert(
+                            "WebP:AnimationLoopCount".to_string(),
+                            TagValue::String("Infinite".to_string()),
+                        );
+                    } else {
+                        metadata.insert(
+                            "WebP:AnimationLoopCount".to_string(),
+                            TagValue::Integer(loop_count as i64),
+                        );
+                    }
+                }
+            }
+            b"ANMF" => {
+                // Animation frame chunk - just count them
+                if !metadata.contains_key("WebP:AnimationFrameCount") {
+                    metadata.insert("WebP:AnimationFrameCount".to_string(), TagValue::Integer(1));
+                } else if let Some(TagValue::Integer(count)) =
+                    metadata.get("WebP:AnimationFrameCount")
+                {
+                    metadata.insert(
+                        "WebP:AnimationFrameCount".to_string(),
+                        TagValue::Integer(count + 1),
+                    );
+                }
+            }
             _ => {
                 // Skip unknown chunks
             }

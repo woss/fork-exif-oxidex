@@ -209,10 +209,16 @@ pub fn extract_optional_metadata(
 
     // Subsystem
     let subsystem_name = match nt_header.subsystem {
+        subsystem_types::IMAGE_SUBSYSTEM_UNKNOWN => "Unknown",
+        subsystem_types::IMAGE_SUBSYSTEM_NATIVE => "Native (Driver)",
         subsystem_types::IMAGE_SUBSYSTEM_WINDOWS_GUI => "Windows GUI",
         subsystem_types::IMAGE_SUBSYSTEM_WINDOWS_CUI => "Windows Console",
-        subsystem_types::IMAGE_SUBSYSTEM_NATIVE => "Native (Driver)",
+        subsystem_types::IMAGE_SUBSYSTEM_OS2_CUI => "OS/2 Console",
+        subsystem_types::IMAGE_SUBSYSTEM_POSIX_CUI => "POSIX Console",
         subsystem_types::IMAGE_SUBSYSTEM_EFI_APPLICATION => "EFI Application",
+        subsystem_types::IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER => "EFI Boot Service Driver",
+        subsystem_types::IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER => "EFI Runtime Driver",
+        subsystem_types::IMAGE_SUBSYSTEM_XBOX => "Xbox",
         _ => "Unknown",
     };
     metadata.insert(
@@ -240,6 +246,85 @@ pub fn extract_optional_metadata(
             TagValue::Integer(nt_header.checksum as i64),
         );
     }
+
+    // DLL Characteristics
+    metadata.insert(
+        "PE:DllCharacteristics".to_string(),
+        TagValue::Integer(nt_header.dll_characteristics as i64),
+    );
+
+    // Decode DLL characteristic bit flags
+    let mut dll_flags = Vec::new();
+
+    // Reference: Microsoft PE/COFF specification IMAGE_OPTIONAL_HEADER.DllCharacteristics
+    if (nt_header.dll_characteristics & 0x0020) != 0 {
+        dll_flags.push("High entropy VA");
+    }
+    if (nt_header.dll_characteristics & 0x0040) != 0 {
+        dll_flags.push("Dynamic base");
+    }
+    if (nt_header.dll_characteristics & 0x0080) != 0 {
+        dll_flags.push("Force integrity");
+    }
+    if (nt_header.dll_characteristics & 0x0100) != 0 {
+        dll_flags.push("NX compatible");
+    }
+    if (nt_header.dll_characteristics & 0x0200) != 0 {
+        dll_flags.push("No isolation");
+    }
+    if (nt_header.dll_characteristics & 0x0400) != 0 {
+        dll_flags.push("No SEH");
+    }
+    if (nt_header.dll_characteristics & 0x0800) != 0 {
+        dll_flags.push("No bind");
+    }
+    if (nt_header.dll_characteristics & 0x1000) != 0 {
+        dll_flags.push("AppContainer");
+    }
+    if (nt_header.dll_characteristics & 0x2000) != 0 {
+        dll_flags.push("WDM driver");
+    }
+    if (nt_header.dll_characteristics & 0x4000) != 0 {
+        dll_flags.push("Control flow guard");
+    }
+    if (nt_header.dll_characteristics & 0x8000) != 0 {
+        dll_flags.push("Terminal server aware");
+    }
+
+    if !dll_flags.is_empty() {
+        metadata.insert(
+            "PE:DllCharacteristicsDecoded".to_string(),
+            TagValue::String(dll_flags.join(", ")),
+        );
+    }
+
+    // Security features derived from DLL characteristics
+    metadata.insert(
+        "PE:ASLR".to_string(),
+        TagValue::Integer(if (nt_header.dll_characteristics & 0x0040) != 0 {
+            1
+        } else {
+            0
+        }),
+    );
+
+    metadata.insert(
+        "PE:DEP".to_string(),
+        TagValue::Integer(if (nt_header.dll_characteristics & 0x0100) != 0 {
+            1
+        } else {
+            0
+        }),
+    );
+
+    metadata.insert(
+        "PE:ControlFlowGuard".to_string(),
+        TagValue::Integer(if (nt_header.dll_characteristics & 0x4000) != 0 {
+            1
+        } else {
+            0
+        }),
+    );
 }
 
 /// Extract metadata from VERSION_INFO resource
@@ -1007,5 +1092,142 @@ mod tests {
 
         // Should not add any metadata for empty imports
         assert!(!metadata.contains_key("PE:ImportedDLLs"));
+    }
+
+    #[test]
+    fn test_extract_optional_metadata_dll_characteristics() {
+        // Test DLL characteristics decoding
+        let std_header = OptionalHeaderStandard {
+            magic: 0x020B, // PE32+
+            major_linker_version: 14,
+            minor_linker_version: 0,
+            size_of_code: 0x1000,
+            size_of_initialized_data: 0x2000,
+            size_of_uninitialized_data: 0,
+            address_of_entry_point: 0x1000,
+            base_of_code: 0x1000,
+        };
+
+        let nt_header = OptionalHeaderNT {
+            image_base: 0x140000000,
+            section_alignment: 0x1000,
+            file_alignment: 0x200,
+            major_operating_system_version: 10,
+            minor_operating_system_version: 0,
+            major_image_version: 1,
+            minor_image_version: 0,
+            major_subsystem_version: 10,
+            minor_subsystem_version: 0,
+            win32_version_value: 0,
+            size_of_image: 0x10000,
+            size_of_headers: 0x400,
+            checksum: 0x12345,
+            subsystem: subsystem_types::IMAGE_SUBSYSTEM_WINDOWS_GUI,
+            dll_characteristics: 0x4160, // ASLR | DEP | NX | CFG
+            size_of_stack_reserve: 0x100000,
+            size_of_stack_commit: 0x1000,
+            size_of_heap_reserve: 0x100000,
+            size_of_heap_commit: 0x1000,
+            loader_flags: 0,
+            number_of_rva_and_sizes: 16,
+            data_directories: vec![],
+        };
+
+        let mut metadata = MetadataMap::new();
+        extract_optional_metadata(&std_header, &nt_header, &mut metadata);
+
+        // Check DllCharacteristics raw value
+        assert_eq!(
+            metadata.get_integer("PE:DllCharacteristics").unwrap(),
+            0x4160
+        );
+
+        // Check decoded flags
+        let decoded = metadata.get_string("PE:DllCharacteristicsDecoded").unwrap();
+        assert!(decoded.contains("High entropy VA"));
+        assert!(decoded.contains("Dynamic base"));
+        assert!(decoded.contains("NX compatible"));
+        assert!(decoded.contains("Control flow guard"));
+
+        // Check security feature flags
+        assert_eq!(metadata.get_integer("PE:ASLR").unwrap(), 1);
+        assert_eq!(metadata.get_integer("PE:DEP").unwrap(), 1);
+        assert_eq!(metadata.get_integer("PE:ControlFlowGuard").unwrap(), 1);
+    }
+
+    #[test]
+    fn test_extract_optional_metadata_subsystem_types() {
+        let std_header = OptionalHeaderStandard {
+            magic: 0x010B, // PE32
+            major_linker_version: 14,
+            minor_linker_version: 0,
+            size_of_code: 0x1000,
+            size_of_initialized_data: 0x2000,
+            size_of_uninitialized_data: 0,
+            address_of_entry_point: 0x1000,
+            base_of_code: 0x1000,
+        };
+
+        // Test various subsystem types
+        let test_cases = vec![
+            (subsystem_types::IMAGE_SUBSYSTEM_NATIVE, "Native (Driver)"),
+            (subsystem_types::IMAGE_SUBSYSTEM_WINDOWS_GUI, "Windows GUI"),
+            (
+                subsystem_types::IMAGE_SUBSYSTEM_WINDOWS_CUI,
+                "Windows Console",
+            ),
+            (subsystem_types::IMAGE_SUBSYSTEM_OS2_CUI, "OS/2 Console"),
+            (subsystem_types::IMAGE_SUBSYSTEM_POSIX_CUI, "POSIX Console"),
+            (
+                subsystem_types::IMAGE_SUBSYSTEM_EFI_APPLICATION,
+                "EFI Application",
+            ),
+            (
+                subsystem_types::IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER,
+                "EFI Boot Service Driver",
+            ),
+            (
+                subsystem_types::IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER,
+                "EFI Runtime Driver",
+            ),
+            (subsystem_types::IMAGE_SUBSYSTEM_XBOX, "Xbox"),
+        ];
+
+        for (subsystem_type, expected_name) in test_cases {
+            let nt_header = OptionalHeaderNT {
+                image_base: 0x400000,
+                section_alignment: 0x1000,
+                file_alignment: 0x200,
+                major_operating_system_version: 6,
+                minor_operating_system_version: 1,
+                major_image_version: 1,
+                minor_image_version: 0,
+                major_subsystem_version: 6,
+                minor_subsystem_version: 1,
+                win32_version_value: 0,
+                size_of_image: 0x10000,
+                size_of_headers: 0x400,
+                checksum: 0,
+                subsystem: subsystem_type,
+                dll_characteristics: 0,
+                size_of_stack_reserve: 0x100000,
+                size_of_stack_commit: 0x1000,
+                size_of_heap_reserve: 0x100000,
+                size_of_heap_commit: 0x1000,
+                loader_flags: 0,
+                number_of_rva_and_sizes: 16,
+                data_directories: vec![],
+            };
+
+            let mut metadata = MetadataMap::new();
+            extract_optional_metadata(&std_header, &nt_header, &mut metadata);
+
+            assert_eq!(
+                metadata.get_string("PE:Subsystem").unwrap(),
+                expected_name,
+                "Failed for subsystem type {}",
+                subsystem_type
+            );
+        }
     }
 }

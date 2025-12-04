@@ -1075,6 +1075,10 @@ pub struct CodeSignatureInfo {
     pub has_cms_signature: bool,
     /// Signer common name (from CMS signature)
     pub signer_name: Option<String>,
+    /// Whether entitlements are present
+    pub has_entitlements: bool,
+    /// List of key entitlement keys extracted from plist (for security analysis)
+    pub entitlement_keys: Vec<String>,
 }
 
 // =============================================================================

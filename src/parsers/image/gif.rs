@@ -97,6 +97,9 @@ impl GIFParser {
         let mut frame_count = 0;
         let mut is_animated = false;
         let mut comment = String::new();
+        let mut first_gce: Option<GraphicControlExtension> = None;
+        let mut has_transparency = false;
+        let mut transparent_color: Option<u8> = None;
 
         while pos < reader.size() {
             let byte = match reader.read(pos, 1) {
@@ -138,7 +141,22 @@ impl GIFParser {
                         }
                         0xF9 => {
                             // Graphic control extension
-                            pos = Self::skip_sub_blocks(reader, pos)?;
+                            if let Ok((new_pos, gce)) =
+                                Self::parse_graphic_control_extension(reader, pos)
+                            {
+                                pos = new_pos;
+
+                                // Store first GCE for metadata
+                                if first_gce.is_none() {
+                                    if gce.transparent_color_flag {
+                                        has_transparency = true;
+                                        transparent_color = Some(gce.transparent_color_index);
+                                    }
+                                    first_gce = Some(gce);
+                                }
+                            } else {
+                                pos = Self::skip_sub_blocks(reader, pos)?;
+                            }
                         }
                         _ => {
                             pos = Self::skip_sub_blocks(reader, pos)?;
@@ -190,7 +208,56 @@ impl GIFParser {
             } else {
                 Some(comment)
             },
+            delay_time: first_gce.as_ref().map(|gce| gce.delay_time),
+            disposal_method: first_gce.as_ref().map(|gce| gce.disposal_method),
+            has_transparency,
+            transparent_color,
         })
+    }
+
+    /// Parses a Graphic Control Extension block
+    fn parse_graphic_control_extension(
+        reader: &dyn FileReader,
+        pos: u64,
+    ) -> Result<(u64, GraphicControlExtension)> {
+        // Read block size (should be 4)
+        let block_size = reader.read(pos, 1)?[0];
+        if block_size != 4 {
+            return Err(ExifToolError::parse_error(
+                "Invalid Graphic Control Extension block size",
+            ));
+        }
+
+        // Read the 4-byte block data
+        let data = reader.read(pos + 1, 4)?;
+
+        let packed = data[0];
+        let disposal_method = (packed & 0b00011100) >> 2;
+        let user_input_flag = (packed & 0b00000010) != 0;
+        let transparent_color_flag = (packed & 0b00000001) != 0;
+
+        let delay_time = u16::from_le_bytes([data[1], data[2]]);
+        let transparent_color_index = data[3];
+
+        // Skip to terminator (0x00)
+        let mut new_pos = pos + 1 + 4;
+        if new_pos < reader.size() {
+            let terminator = reader.read(new_pos, 1)?[0];
+            if terminator == 0 {
+                new_pos += 1;
+            }
+        }
+
+        Ok((
+            new_pos,
+            GraphicControlExtension {
+                disposal_method,
+                user_input_flag,
+                transparent_color_flag,
+                delay_time,
+                transparent_color_index,
+            },
+        ))
     }
 
     /// Skips sub-blocks (sequence of sized blocks terminated by 0x00)
@@ -252,6 +319,20 @@ struct BlockScanResult {
     frame_count: u32,
     is_animated: bool,
     comment: Option<String>,
+    delay_time: Option<u16>,
+    disposal_method: Option<u8>,
+    has_transparency: bool,
+    transparent_color: Option<u8>,
+}
+
+/// Graphic Control Extension data
+#[derive(Debug, Default, Clone, Copy)]
+struct GraphicControlExtension {
+    disposal_method: u8,
+    user_input_flag: bool,
+    transparent_color_flag: bool,
+    delay_time: u16,
+    transparent_color_index: u8,
 }
 
 impl FormatParser for GIFParser {
@@ -337,6 +418,40 @@ impl FormatParser for GIFParser {
 
         if let Some(comment) = scan_result.comment {
             metadata.insert("Comment".to_string(), TagValue::String(comment));
+        }
+
+        if let Some(delay_time) = scan_result.delay_time {
+            metadata.insert(
+                "FrameDelay".to_string(),
+                TagValue::String(format!("{} cs", delay_time)),
+            );
+        }
+
+        if let Some(disposal_method) = scan_result.disposal_method {
+            let disposal_str = match disposal_method {
+                0 => "Unspecified",
+                1 => "Do not dispose",
+                2 => "Restore to background",
+                3 => "Restore to previous",
+                _ => "Unknown",
+            };
+            metadata.insert(
+                "DisposalMethod".to_string(),
+                TagValue::String(disposal_str.to_string()),
+            );
+        }
+
+        if scan_result.has_transparency {
+            metadata.insert(
+                "HasTransparency".to_string(),
+                TagValue::String("yes".to_string()),
+            );
+            if let Some(color) = scan_result.transparent_color {
+                metadata.insert(
+                    "TransparentColorIndex".to_string(),
+                    TagValue::Integer(color as i64),
+                );
+            }
         }
 
         Ok(metadata)

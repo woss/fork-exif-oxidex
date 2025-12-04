@@ -52,6 +52,57 @@ impl BMPParser {
         let bits = reader.read(28, 2)?;
         Ok(u16::from_le_bytes([bits[0], bits[1]]))
     }
+
+    /// Reads compression method from BMP header (offset 30, 4 bytes)
+    pub fn read_compression(reader: &dyn FileReader) -> Result<u32> {
+        if reader.size() < 34 {
+            return Ok(0);
+        }
+        let comp = reader.read(30, 4)?;
+        Ok(u32::from_le_bytes([comp[0], comp[1], comp[2], comp[3]]))
+    }
+
+    /// Reads horizontal resolution from BMP header (offset 38, 4 bytes)
+    /// Returns pixels per meter
+    pub fn read_h_resolution(reader: &dyn FileReader) -> Result<i32> {
+        if reader.size() < 42 {
+            return Ok(0);
+        }
+        let res = reader.read(38, 4)?;
+        Ok(i32::from_le_bytes([res[0], res[1], res[2], res[3]]))
+    }
+
+    /// Reads vertical resolution from BMP header (offset 42, 4 bytes)
+    /// Returns pixels per meter
+    pub fn read_v_resolution(reader: &dyn FileReader) -> Result<i32> {
+        if reader.size() < 46 {
+            return Ok(0);
+        }
+        let res = reader.read(42, 4)?;
+        Ok(i32::from_le_bytes([res[0], res[1], res[2], res[3]]))
+    }
+
+    /// Reads number of colors in palette (offset 46, 4 bytes)
+    pub fn read_num_colors(reader: &dyn FileReader) -> Result<u32> {
+        if reader.size() < 50 {
+            return Ok(0);
+        }
+        let colors = reader.read(46, 4)?;
+        Ok(u32::from_le_bytes([
+            colors[0], colors[1], colors[2], colors[3],
+        ]))
+    }
+
+    /// Reads number of important colors (offset 50, 4 bytes)
+    pub fn read_num_important_colors(reader: &dyn FileReader) -> Result<u32> {
+        if reader.size() < 54 {
+            return Ok(0);
+        }
+        let colors = reader.read(50, 4)?;
+        Ok(u32::from_le_bytes([
+            colors[0], colors[1], colors[2], colors[3],
+        ]))
+    }
 }
 
 impl FormatParser for BMPParser {
@@ -83,6 +134,55 @@ impl FormatParser for BMPParser {
             "BitDepth".to_string(),
             TagValue::String(bit_depth.to_string()),
         );
+
+        // Compression method
+        let compression = Self::read_compression(reader)?;
+        let compression_str = match compression {
+            0 => "None",
+            1 => "RLE 8-bit",
+            2 => "RLE 4-bit",
+            3 => "Bitfields",
+            4 => "JPEG",
+            5 => "PNG",
+            _ => "Unknown",
+        };
+        metadata.insert(
+            "Compression".to_string(),
+            TagValue::String(compression_str.to_string()),
+        );
+
+        // Resolution
+        let h_res = Self::read_h_resolution(reader)?;
+        let v_res = Self::read_v_resolution(reader)?;
+        if h_res > 0 {
+            metadata.insert(
+                "XResolution".to_string(),
+                TagValue::String(format!("{} pixels/meter", h_res)),
+            );
+        }
+        if v_res > 0 {
+            metadata.insert(
+                "YResolution".to_string(),
+                TagValue::String(format!("{} pixels/meter", v_res)),
+            );
+        }
+
+        // Color palette information
+        let num_colors = Self::read_num_colors(reader)?;
+        if num_colors > 0 {
+            metadata.insert(
+                "NumColors".to_string(),
+                TagValue::Integer(num_colors as i64),
+            );
+        }
+
+        let important_colors = Self::read_num_important_colors(reader)?;
+        if important_colors > 0 {
+            metadata.insert(
+                "NumImportantColors".to_string(),
+                TagValue::Integer(important_colors as i64),
+            );
+        }
 
         Ok(metadata)
     }

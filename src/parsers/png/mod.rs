@@ -43,9 +43,9 @@ mod value_conversion;
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use chunk_parser::{
-    parse_bkgd_chunk, parse_chrm_chunk, parse_chunk, parse_gama_chunk, parse_ihdr_chunk,
-    parse_itxt_chunk, parse_phys_chunk, parse_png_signature, parse_text_chunk, parse_time_chunk,
-    PNG_SIGNATURE,
+    parse_bkgd_chunk, parse_chrm_chunk, parse_chunk, parse_gama_chunk, parse_hist_chunk,
+    parse_ihdr_chunk, parse_itxt_chunk, parse_phys_chunk, parse_png_signature, parse_sbit_chunk,
+    parse_text_chunk, parse_time_chunk, parse_ztxt_chunk, PNG_SIGNATURE,
 };
 
 /// Parses PNG file and extracts all metadata.
@@ -292,6 +292,43 @@ pub fn parse_png_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     }
                 }
                 // Silently skip malformed or compressed iTXt chunks
+            }
+
+            b"zTXt" => {
+                // Parse zTXt chunk (compressed text)
+                if let Ok((keyword, text)) = parse_ztxt_chunk(&chunk.data) {
+                    let tag_name = format!("PNG:zTXt:{}", keyword);
+                    metadata.insert(tag_name, TagValue::new_string(text));
+                }
+                // Silently skip malformed zTXt chunks
+            }
+
+            b"sBIT" => {
+                // Parse sBIT chunk (significant bits)
+                if let Ok(bits) = parse_sbit_chunk(&chunk.data) {
+                    let bits_str = bits
+                        .iter()
+                        .map(|b| b.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    metadata.insert(
+                        "PNG:SignificantBits".to_string(),
+                        TagValue::new_string(bits_str),
+                    );
+                }
+            }
+
+            b"hIST" => {
+                // Parse hIST chunk (histogram)
+                if let Ok(histogram) = parse_hist_chunk(&chunk.data) {
+                    metadata.insert(
+                        "PNG:Histogram".to_string(),
+                        TagValue::new_string(format!(
+                            "(Binary data {} entries, use -b option to extract)",
+                            histogram.len()
+                        )),
+                    );
+                }
             }
 
             b"eXIf" => {

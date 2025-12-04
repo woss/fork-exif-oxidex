@@ -64,6 +64,9 @@ use std::str;
 /// - Language (from /Lang key)
 /// - PageLayout (SinglePage, OneColumn, TwoColumnLeft, TwoColumnRight, TwoPageLeft, TwoPageRight)
 /// - PageMode (UseNone, UseOutlines, UseThumbs, FullScreen, UseOC, UseAttachments)
+/// - JavaScript (Yes/No - indicates if document contains JavaScript)
+/// - Outlines (Yes/No - indicates if document has bookmarks)
+/// - Names (Yes/No - indicates if document has named destinations)
 pub fn parse_root_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Load PDF navigation context (xref table and trailer)
     let context = PdfContext::load(reader)?;
@@ -73,12 +76,33 @@ pub fn parse_root_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     let root_offset = context.get_object_offset(root_ref.object_num, "Root")?;
     let root_data = reader.read(
         root_offset,
-        std::cmp::min(4096, reader.size().saturating_sub(root_offset) as usize),
+        std::cmp::min(8192, reader.size().saturating_sub(root_offset) as usize),
     )?;
     let root_dict = parse_root_object(root_data)?;
 
-    // Convert dictionary to metadata map
-    let metadata = convert_root_dict_to_metadata(root_dict);
+    // Convert dictionary to metadata map with basic fields
+    let mut metadata = convert_root_dict_to_metadata(root_dict);
+
+    // Detect JavaScript presence (security indicator)
+    let has_javascript = detect_javascript(root_data, reader, &context);
+    metadata.insert(
+        "PDF:JavaScript".to_string(),
+        TagValue::new_string(if has_javascript { "Yes" } else { "No" }),
+    );
+
+    // Detect Outlines/Bookmarks
+    let has_outlines = detect_outlines(root_data);
+    metadata.insert(
+        "PDF:Outlines".to_string(),
+        TagValue::new_string(if has_outlines { "Yes" } else { "No" }),
+    );
+
+    // Detect Named Destinations
+    let has_names = detect_names(root_data);
+    metadata.insert(
+        "PDF:Names".to_string(),
+        TagValue::new_string(if has_names { "Yes" } else { "No" }),
+    );
 
     Ok(metadata)
 }
@@ -488,6 +512,86 @@ fn parse_name_value(input: &[u8]) -> IResult<&[u8], String> {
 
 //
 // ═══════════════════════════════════════════════════════════════════════════
+// Feature Detection Functions
+// ═══════════════════════════════════════════════════════════════════════════
+//
+
+/// Detects if the PDF document contains JavaScript.
+///
+/// JavaScript in PDFs can be found in several locations:
+/// 1. /Names -> /JavaScript dictionary in the Root
+/// 2. /AA (Additional Actions) with /JS entries
+/// 3. /OpenAction with JavaScript actions
+fn detect_javascript(root_data: &[u8], reader: &dyn FileReader, context: &PdfContext) -> bool {
+    let root_str = String::from_utf8_lossy(root_data);
+
+    // Check for /Names dictionary with /JavaScript
+    if root_str.contains("/Names") && root_str.contains("/JavaScript") {
+        return true;
+    }
+
+    // Check for /AA (Additional Actions) with /JS
+    if root_str.contains("/AA") {
+        // Look for /JS key which indicates JavaScript action
+        if root_str.contains("/JS") {
+            return true;
+        }
+    }
+
+    // Check for /OpenAction with JavaScript
+    if root_str.contains("/OpenAction") {
+        // Try to follow the OpenAction reference if it exists
+        if let Ok(action_ref) = find_dict_reference(root_data, "/OpenAction") {
+            if let Ok(offset) = context.get_object_offset(action_ref.object_num, "OpenAction") {
+                if let Ok(action_data) = reader.read(
+                    offset,
+                    std::cmp::min(1024, reader.size().saturating_sub(offset) as usize),
+                ) {
+                    let action_str = String::from_utf8_lossy(action_data);
+                    if action_str.contains("/JS") || action_str.contains("/JavaScript") {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Search for /JavaScript keyword anywhere in root data
+    root_str.contains("/JavaScript")
+}
+
+/// Detects if the PDF document has Outlines (bookmarks).
+///
+/// Outlines are referenced from the Root/Catalog dictionary via /Outlines key.
+fn detect_outlines(root_data: &[u8]) -> bool {
+    // Look for /Outlines key in Root dictionary
+    root_data
+        .windows(b"/Outlines".len())
+        .any(|window| window == b"/Outlines")
+}
+
+/// Detects if the PDF document has Named Destinations.
+///
+/// Named destinations are stored in the /Names dictionary, specifically
+/// in the /Dests subdictionary.
+fn detect_names(root_data: &[u8]) -> bool {
+    let root_str = String::from_utf8_lossy(root_data);
+
+    // Check for /Names dictionary
+    if root_str.contains("/Names") {
+        // More specifically, check for /Dests which contains named destinations
+        if root_str.contains("/Dests") {
+            return true;
+        }
+        // Names dictionary exists even without Dests
+        return true;
+    }
+
+    false
+}
+
+//
+// ═══════════════════════════════════════════════════════════════════════════
 // Basic Nom Parsers
 // ═══════════════════════════════════════════════════════════════════════════
 //
@@ -632,5 +736,168 @@ startxref
         let (_, (key, value)) = result.unwrap();
         assert_eq!(key, "Lang");
         assert_eq!(value, "en-US");
+    }
+
+    #[test]
+    fn test_detect_javascript_with_names() {
+        let pdf = create_pdf_with_javascript();
+        let reader = TestReader::new(pdf);
+        let result = parse_root_metadata(&reader);
+
+        assert!(result.is_ok());
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("PDF:JavaScript"), Some("Yes"));
+    }
+
+    #[test]
+    fn test_detect_javascript_none() {
+        let pdf = create_test_pdf_with_root();
+        let reader = TestReader::new(pdf);
+        let result = parse_root_metadata(&reader);
+
+        assert!(result.is_ok());
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("PDF:JavaScript"), Some("No"));
+    }
+
+    #[test]
+    fn test_detect_outlines() {
+        let pdf = create_pdf_with_outlines();
+        let reader = TestReader::new(pdf);
+        let result = parse_root_metadata(&reader);
+
+        assert!(result.is_ok());
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("PDF:Outlines"), Some("Yes"));
+    }
+
+    #[test]
+    fn test_detect_outlines_none() {
+        let pdf = create_test_pdf_with_root();
+        let reader = TestReader::new(pdf);
+        let result = parse_root_metadata(&reader);
+
+        assert!(result.is_ok());
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("PDF:Outlines"), Some("No"));
+    }
+
+    #[test]
+    fn test_detect_names() {
+        let pdf = create_pdf_with_names();
+        let reader = TestReader::new(pdf);
+        let result = parse_root_metadata(&reader);
+
+        assert!(result.is_ok());
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("PDF:Names"), Some("Yes"));
+    }
+
+    #[test]
+    fn test_detect_names_none() {
+        let pdf = create_test_pdf_with_root();
+        let reader = TestReader::new(pdf);
+        let result = parse_root_metadata(&reader);
+
+        assert!(result.is_ok());
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("PDF:Names"), Some("No"));
+    }
+
+    /// Creates a PDF with JavaScript
+    fn create_pdf_with_javascript() -> Vec<u8> {
+        let pdf = b"%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Names << /JavaScript 5 0 R >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>
+endobj
+5 0 obj
+<< /Names [(MyScript) 6 0 R] >>
+endobj
+6 0 obj
+<< /S /JavaScript /JS (app.alert('Hello');) >>
+endobj
+xref
+0 7
+0000000000 65535 f
+0000000009 00000 n
+0000000086 00000 n
+0000000145 00000 n
+0000000000 65535 f
+0000000216 00000 n
+0000000258 00000 n
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+320
+%%EOF";
+        pdf.to_vec()
+    }
+
+    /// Creates a PDF with Outlines (bookmarks)
+    fn create_pdf_with_outlines() -> Vec<u8> {
+        let pdf = b"%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Outlines 5 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>
+endobj
+5 0 obj
+<< /Type /Outlines /Count 0 >>
+endobj
+xref
+0 6
+0000000000 65535 f
+0000000009 00000 n
+0000000074 00000 n
+0000000133 00000 n
+0000000000 65535 f
+0000000204 00000 n
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+246
+%%EOF";
+        pdf.to_vec()
+    }
+
+    /// Creates a PDF with Names dictionary
+    fn create_pdf_with_names() -> Vec<u8> {
+        let pdf = b"%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Names << /Dests 5 0 R >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>
+endobj
+5 0 obj
+<< /Names [(Page1) [3 0 R /XYZ 0 792 0]] >>
+endobj
+xref
+0 6
+0000000000 65535 f
+0000000009 00000 n
+0000000080 00000 n
+0000000139 00000 n
+0000000000 65535 f
+0000000210 00000 n
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+270
+%%EOF";
+        pdf.to_vec()
     }
 }

@@ -583,6 +583,23 @@ fn extract_code_signature_metadata(
             TagValue::Integer(cs_info.n_code_slots as i64),
         );
     }
+
+    // Entitlements
+    metadata.insert(
+        "MachO:HasEntitlements".to_string(),
+        TagValue::Integer(if cs_info.has_entitlements { 1 } else { 0 }),
+    );
+
+    if !cs_info.entitlement_keys.is_empty() {
+        metadata.insert(
+            "MachO:EntitlementKeys".to_string(),
+            TagValue::String(cs_info.entitlement_keys.join(", ")),
+        );
+        metadata.insert(
+            "MachO:EntitlementCount".to_string(),
+            TagValue::Integer(cs_info.entitlement_keys.len() as i64),
+        );
+    }
 }
 
 /// Extract FAT/Universal binary metadata

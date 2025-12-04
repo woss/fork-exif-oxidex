@@ -209,13 +209,12 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         }
     }
 
-    // Extract root dictionary metadata (Language, PageLayout, PageMode)
-    // TODO: Implement root_parser
-    // if let Ok(root_meta) = root_parser::parse_root_metadata(reader) {
-    //     for (key, value) in root_meta.iter() {
-    //         metadata.insert(key.clone(), value.clone());
-    //     }
-    // }
+    // Extract root dictionary metadata (Language, PageLayout, PageMode, JavaScript, Outlines, Names)
+    if let Ok(root_meta) = root_parser::parse_root_metadata(reader) {
+        for (key, value) in root_meta.iter() {
+            metadata.insert(key.clone(), value.clone());
+        }
+    }
 
     // Extract encryption metadata
     if let Ok(enc_meta) = encryption_parser::parse_encryption_metadata(reader) {

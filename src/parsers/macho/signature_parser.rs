@@ -147,7 +147,7 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
 
     info.is_signed = true;
 
-    // Find and parse Code Directory
+    // Find and parse Code Directory, entitlements, and CMS signature
     for idx in &super_blob.index {
         if idx.blob_type == 0 {
             // CSSLOT_CODEDIRECTORY
@@ -162,6 +162,19 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
                     info.hash_type = Some(hash_type_name(cd.hash_type).to_string());
                     info.cd_version = cd.version;
                     info.n_code_slots = cd.n_code_slots;
+                }
+            }
+        }
+
+        // Check for entitlements
+        if idx.blob_type == 5 {
+            // CSSLOT_ENTITLEMENTS
+            info.has_entitlements = true;
+
+            // Try to extract entitlement keys
+            if (idx.offset as usize) < data.len() {
+                if let Some(keys) = extract_entitlement_keys(&data[idx.offset as usize..]) {
+                    info.entitlement_keys = keys;
                 }
             }
         }
@@ -181,6 +194,68 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
     }
 
     Some(info)
+}
+
+/// Extract entitlement keys from entitlements blob
+fn extract_entitlement_keys(data: &[u8]) -> Option<Vec<String>> {
+    // Entitlements are stored as a plist (XML) after the blob header
+    if data.len() < 8 {
+        return None;
+    }
+
+    // Skip blob header (magic + length)
+    let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    if magic != cs_magic::CSMAGIC_BLOBWRAPPER && magic != 0xFADE7171 {
+        // 0xFADE7171 is CSMAGIC_EMBEDDED_ENTITLEMENTS
+        return None;
+    }
+
+    let plist_data = &data[8..];
+
+    // Look for XML plist structure
+    if plist_data.len() < 20 {
+        return None;
+    }
+
+    // Convert to string for parsing
+    let plist_str = String::from_utf8_lossy(plist_data);
+
+    // Extract key names from <key>...</key> tags (simplified extraction)
+    let mut keys = Vec::new();
+    let mut pos = 0;
+
+    while let Some(start) = plist_str[pos..].find("<key>") {
+        let start_pos = pos + start + 5; // Skip "<key>"
+        if let Some(end) = plist_str[start_pos..].find("</key>") {
+            let key = plist_str[start_pos..start_pos + end].trim();
+            // Filter for security-relevant entitlements
+            if !key.is_empty()
+                && key.len() < 200
+                && (key.contains("com.apple")
+                    || key.contains("security")
+                    || key.contains("sandbox")
+                    || key.contains("network")
+                    || key.contains("keychain")
+                    || key.contains("hardened"))
+            {
+                keys.push(key.to_string());
+            }
+            pos = start_pos + end + 6;
+        } else {
+            break;
+        }
+
+        // Limit to first 20 entitlements
+        if keys.len() >= 20 {
+            break;
+        }
+    }
+
+    if keys.is_empty() {
+        None
+    } else {
+        Some(keys)
+    }
 }
 
 /// Extract signer common name from CMS signature blob

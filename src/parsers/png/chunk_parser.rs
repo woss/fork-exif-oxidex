@@ -510,6 +510,130 @@ pub fn parse_bkgd_chunk(data: &[u8]) -> Result<u16> {
     }
 }
 
+/// Parses a zTXt chunk (Compressed Text).
+///
+/// # Format
+///
+/// ```text
+/// Keyword: 1-79 bytes (Latin-1)
+/// Null separator: 1 byte (0x00)
+/// Compression method: 1 byte (0=deflate)
+/// Compressed text: n bytes (zlib compressed)
+/// ```
+///
+/// # Parameters
+///
+/// - `data`: zTXt chunk data
+///
+/// # Returns
+///
+/// - `Ok((keyword, text))`: Extracted keyword and decompressed text as UTF-8 strings
+/// - `Err`: Parse error
+pub fn parse_ztxt_chunk(data: &[u8]) -> Result<(String, String)> {
+    use flate2::read::ZlibDecoder;
+    use std::io::Read;
+
+    // Find null separator
+    let null_pos = data
+        .iter()
+        .position(|&b| b == 0)
+        .ok_or_else(|| ExifToolError::parse_error("zTXt chunk missing null separator"))?;
+
+    if null_pos == 0 {
+        return Err(ExifToolError::parse_error("zTXt chunk has empty keyword"));
+    }
+
+    // Extract keyword
+    let keyword = String::from_utf8_lossy(&data[..null_pos]).to_string();
+
+    // Check compression method
+    if null_pos + 1 >= data.len() {
+        return Err(ExifToolError::parse_error("zTXt chunk truncated"));
+    }
+
+    let compression_method = data[null_pos + 1];
+    if compression_method != 0 {
+        return Err(ExifToolError::parse_error(format!(
+            "Unsupported zTXt compression method: {}",
+            compression_method
+        )));
+    }
+
+    // Decompress text
+    let compressed_data = &data[null_pos + 2..];
+    let mut decoder = ZlibDecoder::new(compressed_data);
+    let mut decompressed = Vec::new();
+
+    decoder
+        .read_to_end(&mut decompressed)
+        .map_err(|e| ExifToolError::parse_error(format!("Failed to decompress zTXt: {}", e)))?;
+
+    let text = String::from_utf8_lossy(&decompressed).to_string();
+
+    Ok((keyword, text))
+}
+
+/// Parses an sBIT chunk (Significant Bits).
+///
+/// # Format
+///
+/// Format depends on color type:
+/// - Grayscale (0): 1 byte (gray)
+/// - RGB (2): 3 bytes (red, green, blue)
+/// - Palette (3): 3 bytes (red, green, blue)
+/// - Grayscale+Alpha (4): 2 bytes (gray, alpha)
+/// - RGBA (6): 4 bytes (red, green, blue, alpha)
+///
+/// # Parameters
+///
+/// - `data`: sBIT chunk data (1-4 bytes)
+///
+/// # Returns
+///
+/// - `Ok(bits)`: Vector of significant bit values
+/// - `Err`: Parse error
+pub fn parse_sbit_chunk(data: &[u8]) -> Result<Vec<u8>> {
+    if data.is_empty() || data.len() > 4 {
+        return Err(ExifToolError::parse_error(format!(
+            "sBIT chunk has invalid length: {}",
+            data.len()
+        )));
+    }
+
+    Ok(data.to_vec())
+}
+
+/// Parses an hIST chunk (Image Histogram).
+///
+/// # Format
+///
+/// ```text
+/// Frequencies: 2*n bytes (n = palette size)
+/// Each frequency: 2 bytes (u16, big-endian)
+/// ```
+///
+/// # Parameters
+///
+/// - `data`: hIST chunk data
+///
+/// # Returns
+///
+/// - `Ok(histogram)`: Vector of frequency values
+/// - `Err`: Parse error
+pub fn parse_hist_chunk(data: &[u8]) -> Result<Vec<u16>> {
+    if !data.len().is_multiple_of(2) {
+        return Err(ExifToolError::parse_error("hIST chunk length must be even"));
+    }
+
+    let mut histogram = Vec::new();
+    for i in (0..data.len()).step_by(2) {
+        let freq = u16::from_be_bytes([data[i], data[i + 1]]);
+        histogram.push(freq);
+    }
+
+    Ok(histogram)
+}
+
 /// Parses a tIME chunk (Last Modification Time).
 ///
 /// # Format
@@ -914,6 +1038,84 @@ mod tests {
     fn test_parse_gama_chunk_invalid_length() {
         let data = [0u8; 3]; // Wrong length
         let result = parse_gama_chunk(&data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_ztxt_chunk() {
+        use flate2::write::ZlibEncoder;
+        use flate2::Compression;
+        use std::io::Write;
+
+        // Create compressed text data
+        let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(b"This is compressed text").unwrap();
+        let compressed = encoder.finish().unwrap();
+
+        // Build zTXt chunk data: keyword\0compression_method\0compressed_data
+        let mut data = Vec::new();
+        data.extend_from_slice(b"Description");
+        data.push(0); // null
+        data.push(0); // compression method = 0 (deflate)
+        data.extend_from_slice(&compressed);
+
+        let result = parse_ztxt_chunk(&data);
+        assert!(result.is_ok());
+
+        let (keyword, text) = result.unwrap();
+        assert_eq!(keyword, "Description");
+        assert_eq!(text, "This is compressed text");
+    }
+
+    #[test]
+    fn test_parse_sbit_chunk() {
+        // Test grayscale (1 byte)
+        let data = vec![8];
+        let result = parse_sbit_chunk(&data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![8]);
+
+        // Test RGB (3 bytes)
+        let data = vec![8, 8, 8];
+        let result = parse_sbit_chunk(&data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![8, 8, 8]);
+
+        // Test RGBA (4 bytes)
+        let data = vec![8, 8, 8, 8];
+        let result = parse_sbit_chunk(&data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec![8, 8, 8, 8]);
+
+        // Test invalid (too many bytes)
+        let data = vec![8, 8, 8, 8, 8];
+        let result = parse_sbit_chunk(&data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_hist_chunk() {
+        // Create histogram with 3 entries
+        let mut data = Vec::new();
+        data.extend_from_slice(&100u16.to_be_bytes());
+        data.extend_from_slice(&200u16.to_be_bytes());
+        data.extend_from_slice(&300u16.to_be_bytes());
+
+        let result = parse_hist_chunk(&data);
+        assert!(result.is_ok());
+
+        let histogram = result.unwrap();
+        assert_eq!(histogram.len(), 3);
+        assert_eq!(histogram[0], 100);
+        assert_eq!(histogram[1], 200);
+        assert_eq!(histogram[2], 300);
+    }
+
+    #[test]
+    fn test_parse_hist_chunk_invalid_length() {
+        // Odd length should fail
+        let data = vec![0, 1, 2];
+        let result = parse_hist_chunk(&data);
         assert!(result.is_err());
     }
 }
