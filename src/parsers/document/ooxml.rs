@@ -59,6 +59,21 @@ impl FormatParser for DocxParser {
             parse_custom_properties(&xml_content, &mut metadata)?;
         }
 
+        // Parse [Content_Types].xml
+        if let Ok(mut content_types_file) = archive.by_name("[Content_Types].xml") {
+            let mut xml_content = String::new();
+            content_types_file
+                .read_to_string(&mut xml_content)
+                .map_err(|e| {
+                    ExifToolError::parse_error(format!("Failed to read [Content_Types].xml: {}", e))
+                })?;
+
+            parse_content_types(&xml_content, &mut metadata)?;
+        }
+
+        // Parse DOCX-specific properties
+        parse_docx_specific(&mut archive, &mut metadata)?;
+
         Ok(metadata)
     }
 
@@ -101,6 +116,16 @@ impl FormatParser for XlsxParser {
             custom_file.read_to_string(&mut xml_content).ok();
             parse_custom_properties(&xml_content, &mut metadata)?;
         }
+
+        // Parse [Content_Types].xml
+        if let Ok(mut content_types_file) = archive.by_name("[Content_Types].xml") {
+            let mut xml_content = String::new();
+            content_types_file.read_to_string(&mut xml_content).ok();
+            parse_content_types(&xml_content, &mut metadata)?;
+        }
+
+        // Parse XLSX-specific properties
+        parse_xlsx_specific(&mut archive, &mut metadata)?;
 
         Ok(metadata)
     }
@@ -145,6 +170,13 @@ impl FormatParser for PptxParser {
             parse_custom_properties(&xml_content, &mut metadata)?;
         }
 
+        // Parse [Content_Types].xml
+        if let Ok(mut content_types_file) = archive.by_name("[Content_Types].xml") {
+            let mut xml_content = String::new();
+            content_types_file.read_to_string(&mut xml_content).ok();
+            parse_content_types(&xml_content, &mut metadata)?;
+        }
+
         Ok(metadata)
     }
 
@@ -174,6 +206,7 @@ fn parse_core_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                             "creator" => "OOXML:Creator",
                             "subject" => "OOXML:Subject",
                             "description" => "OOXML:Description",
+                            "keywords" => "OOXML:Keywords",
                             "created" => "OOXML:CreateDate",
                             "modified" => "OOXML:ModifyDate",
                             "lastModifiedBy" => "OOXML:LastModifiedBy",
@@ -227,6 +260,9 @@ fn parse_app_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                             "Pages" => "OOXML:Pages",
                             "Words" => "OOXML:Words",
                             "Characters" => "OOXML:Characters",
+                            "CharactersWithSpaces" => "OOXML:CharactersWithSpaces",
+                            "Lines" => "OOXML:Lines",
+                            "Paragraphs" => "OOXML:Paragraphs",
                             "Company" => "OOXML:Company",
                             "Manager" => "OOXML:Manager",
                             "Template" => "OOXML:Template",
@@ -235,6 +271,10 @@ fn parse_app_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                             "PresentationFormat" => "OOXML:PresentationFormat",
                             "AppVersion" => "OOXML:AppVersion",
                             "DocSecurity" => "OOXML:DocSecurity",
+                            "ScaleCrop" => "OOXML:ScaleCrop",
+                            "LinksUpToDate" => "OOXML:LinksUpToDate",
+                            "SharedDoc" => "OOXML:SharedDoc",
+                            "HyperlinksChanged" => "OOXML:HyperlinksChanged",
                             "TotalTime" => {
                                 // Convert minutes to human-readable format
                                 if let Ok(minutes) = text.parse::<u64>() {
@@ -347,6 +387,181 @@ fn format_edit_time(minutes: u64) -> String {
             if m == 1 { "" } else { "s" }
         ),
     }
+}
+
+/// Parse [Content_Types].xml to detect content types and embedded objects
+fn parse_content_types(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
+    let mut reader = Reader::from_str(xml);
+    reader.config_mut().trim_text(true);
+
+    let mut buf = Vec::new();
+    let mut content_types = Vec::new();
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Empty(e)) | Ok(Event::Start(e)) => {
+                let element_name = String::from_utf8_lossy(e.local_name().as_ref()).to_string();
+
+                if element_name == "Override" || element_name == "Default" {
+                    for attr in e.attributes().flatten() {
+                        let key_bytes = attr.key.local_name();
+                        let key = String::from_utf8_lossy(key_bytes.as_ref());
+                        if key == "ContentType" {
+                            let content_type = String::from_utf8_lossy(&attr.value).to_string();
+                            // Track interesting content types (embedded objects, images, etc.)
+                            if content_type.contains("image/")
+                                || content_type.contains("ole")
+                                || content_type.contains("drawing")
+                                || content_type.contains("chart")
+                            {
+                                content_types.push(content_type);
+                            }
+                        }
+                    }
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    if !content_types.is_empty() {
+        let unique_types: std::collections::HashSet<_> = content_types.into_iter().collect();
+        let types_list = unique_types.into_iter().collect::<Vec<_>>().join(", ");
+        metadata.insert(
+            "OOXML:EmbeddedContentTypes".to_string(),
+            TagValue::new_string(types_list),
+        );
+    }
+
+    Ok(())
+}
+
+/// Parse DOCX-specific properties (styles count, comments presence)
+fn parse_docx_specific<R: Read + std::io::Seek>(
+    archive: &mut ZipArchive<R>,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    // Check for comments
+    if archive.by_name("word/comments.xml").is_ok() {
+        metadata.insert(
+            "OOXML:HasComments".to_string(),
+            TagValue::new_string("true".to_string()),
+        );
+
+        // Try to count comments
+        if let Ok(mut comments_file) = archive.by_name("word/comments.xml") {
+            let mut xml_content = String::new();
+            if comments_file.read_to_string(&mut xml_content).is_ok() {
+                let comment_count = count_xml_elements(&xml_content, "comment");
+                if comment_count > 0 {
+                    metadata.insert(
+                        "OOXML:CommentsCount".to_string(),
+                        TagValue::new_string(comment_count.to_string()),
+                    );
+                }
+            }
+        }
+    }
+
+    // Check for styles
+    if let Ok(mut styles_file) = archive.by_name("word/styles.xml") {
+        let mut xml_content = String::new();
+        if styles_file.read_to_string(&mut xml_content).is_ok() {
+            let styles_count = count_xml_elements(&xml_content, "style");
+            if styles_count > 0 {
+                metadata.insert(
+                    "OOXML:StylesCount".to_string(),
+                    TagValue::new_string(styles_count.to_string()),
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse XLSX-specific properties (sheet names and count)
+fn parse_xlsx_specific<R: Read + std::io::Seek>(
+    archive: &mut ZipArchive<R>,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    if let Ok(mut workbook_file) = archive.by_name("xl/workbook.xml") {
+        let mut xml_content = String::new();
+        if workbook_file.read_to_string(&mut xml_content).is_ok() {
+            let mut reader = Reader::from_str(&xml_content);
+            reader.config_mut().trim_text(true);
+
+            let mut buf = Vec::new();
+            let mut sheet_names = Vec::new();
+
+            loop {
+                match reader.read_event_into(&mut buf) {
+                    Ok(Event::Empty(e)) | Ok(Event::Start(e)) => {
+                        let element_name =
+                            String::from_utf8_lossy(e.local_name().as_ref()).to_string();
+
+                        if element_name == "sheet" {
+                            for attr in e.attributes().flatten() {
+                                let key_bytes = attr.key.local_name();
+                                let key = String::from_utf8_lossy(key_bytes.as_ref());
+                                if key == "name" {
+                                    let name = String::from_utf8_lossy(&attr.value).to_string();
+                                    sheet_names.push(name);
+                                }
+                            }
+                        }
+                    }
+                    Ok(Event::Eof) => break,
+                    Err(_) => break,
+                    _ => {}
+                }
+                buf.clear();
+            }
+
+            if !sheet_names.is_empty() {
+                metadata.insert(
+                    "OOXML:SheetCount".to_string(),
+                    TagValue::new_string(sheet_names.len().to_string()),
+                );
+                metadata.insert(
+                    "OOXML:SheetNames".to_string(),
+                    TagValue::new_string(sheet_names.join(", ")),
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Helper function to count occurrences of XML elements
+fn count_xml_elements(xml: &str, element_name: &str) -> usize {
+    let mut reader = Reader::from_str(xml);
+    reader.config_mut().trim_text(true);
+
+    let mut buf = Vec::new();
+    let mut count = 0;
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(e)) | Ok(Event::Empty(e)) => {
+                let name_bytes = e.local_name();
+                let name = String::from_utf8_lossy(name_bytes.as_ref());
+                if name == element_name {
+                    count += 1;
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    count
 }
 
 /// Standalone function to parse DOCX metadata
@@ -587,5 +802,124 @@ mod tests {
         assert_eq!(format_edit_time(120), "2 hours");
         assert_eq!(format_edit_time(150), "2 hours 30 minutes");
         assert_eq!(format_edit_time(301), "5 hours 1 minute");
+    }
+
+    #[test]
+    fn test_parse_core_properties_with_keywords() {
+        let xml = r#"<?xml version="1.0"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+                   xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Test Document</dc:title>
+    <dc:creator>John Doe</dc:creator>
+    <dc:keywords>forensics, metadata, testing</dc:keywords>
+    <dc:subject>Testing Keywords</dc:subject>
+</cp:coreProperties>"#;
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_core_properties(xml, &mut metadata);
+        assert!(result.is_ok());
+        assert_eq!(
+            metadata.get("OOXML:Keywords").unwrap().as_string(),
+            Some("forensics, metadata, testing")
+        );
+    }
+
+    #[test]
+    fn test_parse_app_properties_extended() {
+        let xml = r#"<?xml version="1.0"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+    <Application>Microsoft Office Word</Application>
+    <Words>1500</Words>
+    <Characters>8500</Characters>
+    <CharactersWithSpaces>10000</CharactersWithSpaces>
+    <Lines>75</Lines>
+    <Paragraphs>50</Paragraphs>
+    <ScaleCrop>false</ScaleCrop>
+    <LinksUpToDate>true</LinksUpToDate>
+    <SharedDoc>false</SharedDoc>
+    <HyperlinksChanged>true</HyperlinksChanged>
+</Properties>"#;
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_app_properties(xml, &mut metadata);
+        assert!(result.is_ok());
+
+        assert_eq!(
+            metadata.get("OOXML:Words").unwrap().as_string(),
+            Some("1500")
+        );
+        assert_eq!(
+            metadata.get("OOXML:Characters").unwrap().as_string(),
+            Some("8500")
+        );
+        assert_eq!(
+            metadata
+                .get("OOXML:CharactersWithSpaces")
+                .unwrap()
+                .as_string(),
+            Some("10000")
+        );
+        assert_eq!(metadata.get("OOXML:Lines").unwrap().as_string(), Some("75"));
+        assert_eq!(
+            metadata.get("OOXML:Paragraphs").unwrap().as_string(),
+            Some("50")
+        );
+        assert_eq!(
+            metadata.get("OOXML:ScaleCrop").unwrap().as_string(),
+            Some("false")
+        );
+        assert_eq!(
+            metadata.get("OOXML:LinksUpToDate").unwrap().as_string(),
+            Some("true")
+        );
+        assert_eq!(
+            metadata.get("OOXML:SharedDoc").unwrap().as_string(),
+            Some("false")
+        );
+        assert_eq!(
+            metadata.get("OOXML:HyperlinksChanged").unwrap().as_string(),
+            Some("true")
+        );
+    }
+
+    #[test]
+    fn test_parse_content_types() {
+        let xml = r#"<?xml version="1.0"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+    <Default Extension="xml" ContentType="application/xml"/>
+    <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+    <Override PartName="/word/media/image1.png" ContentType="image/png"/>
+    <Override PartName="/word/media/image2.jpeg" ContentType="image/jpeg"/>
+    <Override PartName="/word/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>
+</Types>"#;
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_content_types(xml, &mut metadata);
+        assert!(result.is_ok());
+
+        let embedded_types = metadata
+            .get("OOXML:EmbeddedContentTypes")
+            .unwrap()
+            .as_string()
+            .unwrap();
+        assert!(embedded_types.contains("image/png"));
+        assert!(embedded_types.contains("image/jpeg"));
+        assert!(embedded_types.contains("chart"));
+    }
+
+    #[test]
+    fn test_count_xml_elements() {
+        let xml = r#"<?xml version="1.0"?>
+<root>
+    <item>One</item>
+    <item>Two</item>
+    <other>Other</other>
+    <item>Three</item>
+</root>"#;
+
+        assert_eq!(count_xml_elements(xml, "item"), 3);
+        assert_eq!(count_xml_elements(xml, "other"), 1);
+        assert_eq!(count_xml_elements(xml, "nonexistent"), 0);
     }
 }

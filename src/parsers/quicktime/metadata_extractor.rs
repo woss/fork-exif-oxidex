@@ -173,6 +173,22 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
                 if let Some(tkhd) = trak.find_child("tkhd") {
                     let _ = extract_track_header(&tkhd, &mut metadata, index);
                 }
+
+                // Extract media header (mdhd) from trak→mdia→mdhd
+                if let Some(mdia) = trak.find_child("mdia") {
+                    if let Some(mdhd) = mdia.find_child("mdhd") {
+                        let _ = extract_media_header(&mdhd, &mut metadata, index);
+                    }
+
+                    // Extract sample description (stsd) from trak→mdia→minf→stbl→stsd
+                    if let Some(minf) = mdia.find_child("minf") {
+                        if let Some(stbl) = minf.find_child("stbl") {
+                            if let Some(stsd) = stbl.find_child("stsd") {
+                                let _ = extract_sample_description(&stsd, &mut metadata, index);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -484,23 +500,29 @@ fn extract_track_header(
 
     let r = BigEndianReader(tkhd.data);
     let version = tkhd.data[0];
+    let flags = [tkhd.data[1], tkhd.data[2], tkhd.data[3]];
 
     // Parse time fields based on version (v0: 32-bit, v1: 64-bit)
-    let (creation_time, modification_time) = if version == 1 {
-        if r.len() < 20 {
+    let (creation_time, modification_time, track_id, duration, width_offset) = if version == 1 {
+        if r.len() < 36 {
             return Ok(());
         }
-        (r.u64_at(4).unwrap_or(0), r.u64_at(12).unwrap_or(0))
+        (
+            r.u64_at(4).unwrap_or(0),
+            r.u64_at(12).unwrap_or(0),
+            r.u32_at(20).unwrap_or(0),
+            r.u64_at(28).unwrap_or(0),
+            76usize,
+        )
     } else {
         (
             r.u32_at(4).unwrap_or(0) as u64,
             r.u32_at(8).unwrap_or(0) as u64,
+            r.u32_at(12).unwrap_or(0),
+            r.u32_at(20).unwrap_or(0) as u64,
+            60usize,
         )
     };
-
-    // Add track-specific timestamp tags
-    let create_date_str = mac_time_to_string(creation_time);
-    let modify_date_str = mac_time_to_string(modification_time);
 
     // Use track index for tag names if we have multiple tracks
     let track_suffix = if track_index > 0 {
@@ -508,6 +530,10 @@ fn extract_track_header(
     } else {
         String::new()
     };
+
+    // Add track-specific timestamp tags
+    let create_date_str = mac_time_to_string(creation_time);
+    let modify_date_str = mac_time_to_string(modification_time);
 
     metadata.insert(
         format!("QuickTime:TrackCreateDate{}", track_suffix),
@@ -517,6 +543,291 @@ fn extract_track_header(
         format!("QuickTime:TrackModifyDate{}", track_suffix),
         TagValue::String(modify_date_str),
     );
+
+    // Track ID
+    metadata.insert(
+        format!("QuickTime:TrackID{}", track_suffix),
+        TagValue::Integer(track_id as i64),
+    );
+
+    // Track duration
+    metadata.insert(
+        format!("QuickTime:TrackDuration{}", track_suffix),
+        TagValue::String(format!("{} units", duration)),
+    );
+
+    // Track layer (2 bytes at version-dependent offset)
+    let layer_offset = if version == 1 { 44 } else { 32 };
+    if let Some(layer) = r.i16_at(layer_offset) {
+        metadata.insert(
+            format!("QuickTime:TrackLayer{}", track_suffix),
+            TagValue::Integer(layer as i64),
+        );
+    }
+
+    // Track enabled flag (bit 0 of flags)
+    let enabled = (flags[2] & 0x01) != 0;
+    metadata.insert(
+        format!("QuickTime:TrackEnabled{}", track_suffix),
+        TagValue::String(if enabled { "Yes" } else { "No" }.to_string()),
+    );
+
+    // Track width and height (fixed-point 16.16 at end of atom)
+    if r.len() >= width_offset + 8 {
+        if let Some(width_fixed) = r.u32_at(width_offset) {
+            let width = (width_fixed >> 16) as f64 + (width_fixed & 0xFFFF) as f64 / 65536.0;
+            metadata.insert(
+                format!("QuickTime:TrackWidth{}", track_suffix),
+                TagValue::String(format!("{:.2}", width)),
+            );
+        }
+
+        if let Some(height_fixed) = r.u32_at(width_offset + 4) {
+            let height = (height_fixed >> 16) as f64 + (height_fixed & 0xFFFF) as f64 / 65536.0;
+            metadata.insert(
+                format!("QuickTime:TrackHeight{}", track_suffix),
+                TagValue::String(format!("{:.2}", height)),
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Extract media header metadata from mdhd atom
+fn extract_media_header(
+    mdhd: &Atom,
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    if mdhd.data.len() < 24 {
+        return Ok(());
+    }
+
+    let r = BigEndianReader(mdhd.data);
+    let version = mdhd.data[0];
+
+    // Use track index for tag names if we have multiple tracks
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    // Parse time fields based on version (v0: 32-bit, v1: 64-bit)
+    let (creation_time, modification_time, timescale, duration, lang_offset) = if version == 1 {
+        if r.len() < 32 {
+            return Ok(());
+        }
+        (
+            r.u64_at(4).unwrap_or(0),
+            r.u64_at(12).unwrap_or(0),
+            r.u32_at(20).unwrap_or(0),
+            r.u64_at(24).unwrap_or(0),
+            32usize,
+        )
+    } else {
+        (
+            r.u32_at(4).unwrap_or(0) as u64,
+            r.u32_at(8).unwrap_or(0) as u64,
+            r.u32_at(12).unwrap_or(0),
+            r.u32_at(16).unwrap_or(0) as u64,
+            20usize,
+        )
+    };
+
+    // Media timestamps
+    let create_date_str = mac_time_to_string(creation_time);
+    let modify_date_str = mac_time_to_string(modification_time);
+
+    metadata.insert(
+        format!("QuickTime:MediaCreateDate{}", track_suffix),
+        TagValue::String(create_date_str),
+    );
+    metadata.insert(
+        format!("QuickTime:MediaModifyDate{}", track_suffix),
+        TagValue::String(modify_date_str),
+    );
+
+    // Media timescale
+    metadata.insert(
+        format!("QuickTime:MediaTimeScale{}", track_suffix),
+        TagValue::Integer(timescale as i64),
+    );
+
+    // Media duration
+    let duration_sec = if timescale > 0 {
+        duration as f64 / timescale as f64
+    } else {
+        0.0
+    };
+    metadata.insert(
+        format!("QuickTime:MediaDuration{}", track_suffix),
+        TagValue::String(format!("{:.2} s", duration_sec)),
+    );
+
+    // Language code (ISO 639-2/T language code packed in 16 bits)
+    if let Some(lang_code) = r.u16_at(lang_offset) {
+        // Language code is packed: 3 characters, 5 bits each
+        let lang_char1 = ((lang_code >> 10) & 0x1F) as u8 + 0x60;
+        let lang_char2 = ((lang_code >> 5) & 0x1F) as u8 + 0x60;
+        let lang_char3 = (lang_code & 0x1F) as u8 + 0x60;
+
+        if (0x61..=0x7A).contains(&lang_char1) {
+            let lang_str = String::from_utf8(vec![lang_char1, lang_char2, lang_char3])
+                .unwrap_or_else(|_| "und".to_string());
+            metadata.insert(
+                format!("QuickTime:MediaLanguageCode{}", track_suffix),
+                TagValue::String(lang_str),
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Extract sample description metadata from stsd atom
+fn extract_sample_description(
+    stsd: &Atom,
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    if stsd.data.len() < 8 {
+        return Ok(());
+    }
+
+    let r = BigEndianReader(stsd.data);
+
+    // Skip version/flags (4 bytes)
+    let entry_count = r.u32_at(4).unwrap_or(0);
+
+    // Use track index for tag names
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    metadata.insert(
+        format!("QuickTime:SampleDescriptionCount{}", track_suffix),
+        TagValue::Integer(entry_count as i64),
+    );
+
+    // Parse first sample description entry
+    if entry_count > 0 && stsd.data.len() >= 16 {
+        // Each sample description starts at offset 8
+        let entry_data = &stsd.data[8..];
+
+        if entry_data.len() >= 8 {
+            // Size (4 bytes)
+            let _size = r.u32_at(8).unwrap_or(0);
+
+            // Format/Codec ID (4 bytes)
+            if let Ok(format) = std::str::from_utf8(&entry_data[4..8]) {
+                metadata.insert(
+                    format!("QuickTime:CompressorID{}", track_suffix),
+                    TagValue::String(format.to_string()),
+                );
+
+                // Map common codec IDs to readable names
+                let codec_name = match format {
+                    "avc1" | "avc3" => "H.264/AVC",
+                    "hvc1" | "hev1" => "H.265/HEVC",
+                    "mp4v" => "MPEG-4 Video",
+                    "mp4a" => "MPEG-4 Audio (AAC)",
+                    "jpeg" => "JPEG",
+                    "raw " => "Uncompressed",
+                    "sowt" => "PCM (little-endian)",
+                    "twos" => "PCM (big-endian)",
+                    "alaw" => "A-law",
+                    "ulaw" => "µ-law",
+                    "vp08" => "VP8",
+                    "vp09" => "VP9",
+                    "av01" => "AV1",
+                    _ => format,
+                };
+                metadata.insert(
+                    format!("QuickTime:CompressorName{}", track_suffix),
+                    TagValue::String(codec_name.to_string()),
+                );
+            }
+
+            // For video sample descriptions
+            if entry_data.len() >= 86 {
+                // Check if this looks like a video sample description
+                // Video sample descriptions have width/height at specific offsets
+
+                // Width (2 bytes at offset 32)
+                if let Some(width) = BigEndianReader(entry_data).u16_at(32) {
+                    if width > 0 && width < 10000 {
+                        // Sanity check
+                        metadata.insert(
+                            format!("QuickTime:VideoWidth{}", track_suffix),
+                            TagValue::Integer(width as i64),
+                        );
+                    }
+                }
+
+                // Height (2 bytes at offset 34)
+                if let Some(height) = BigEndianReader(entry_data).u16_at(34) {
+                    if height > 0 && height < 10000 {
+                        // Sanity check
+                        metadata.insert(
+                            format!("QuickTime:VideoHeight{}", track_suffix),
+                            TagValue::Integer(height as i64),
+                        );
+                    }
+                }
+
+                // Bit depth (2 bytes at offset 82)
+                if let Some(depth) = BigEndianReader(entry_data).u16_at(82) {
+                    metadata.insert(
+                        format!("QuickTime:BitDepth{}", track_suffix),
+                        TagValue::Integer(depth as i64),
+                    );
+                }
+            }
+
+            // For audio sample descriptions
+            if entry_data.len() >= 36 {
+                // Audio sample descriptions have channel count and sample rate
+
+                // Channel count (2 bytes at offset 24)
+                if let Some(channels) = BigEndianReader(entry_data).u16_at(24) {
+                    if channels > 0 && channels <= 32 {
+                        // Sanity check
+                        metadata.insert(
+                            format!("QuickTime:AudioChannels{}", track_suffix),
+                            TagValue::Integer(channels as i64),
+                        );
+                    }
+                }
+
+                // Sample size (2 bytes at offset 26)
+                if let Some(sample_size) = BigEndianReader(entry_data).u16_at(26) {
+                    if sample_size > 0 && sample_size <= 64 {
+                        // Sanity check
+                        metadata.insert(
+                            format!("QuickTime:AudioBitsPerSample{}", track_suffix),
+                            TagValue::Integer(sample_size as i64),
+                        );
+                    }
+                }
+
+                // Sample rate (fixed-point 16.16 at offset 32)
+                if let Some(sample_rate_fixed) = BigEndianReader(entry_data).u32_at(32) {
+                    let sample_rate = (sample_rate_fixed >> 16) as f64;
+                    if (8000.0..=192000.0).contains(&sample_rate) {
+                        // Sanity check
+                        metadata.insert(
+                            format!("QuickTime:AudioSampleRate{}", track_suffix),
+                            TagValue::String(format!("{:.0} Hz", sample_rate)),
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     Ok(())
 }
@@ -564,6 +875,43 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
                     "QuickTime:HandlerVendorID".to_string(),
                     TagValue::String(vendor_name.to_string()),
                 );
+            }
+        }
+    }
+
+    // Handler description (name) - null-terminated or Pascal string after reserved fields
+    // Offset 24+ contains the name (may be Pascal string with length prefix or null-terminated)
+    if hdlr.data.len() > 24 {
+        let name_data = &hdlr.data[24..];
+
+        // Try Pascal string first (length prefix)
+        if !name_data.is_empty() && name_data[0] > 0 && name_data[0] < 128 {
+            let length = name_data[0] as usize;
+            if name_data.len() > length {
+                if let Ok(name) = std::str::from_utf8(&name_data[1..=length]) {
+                    let trimmed = name.trim();
+                    if !trimmed.is_empty() {
+                        metadata.insert(
+                            "QuickTime:HandlerDescription".to_string(),
+                            TagValue::String(trimmed.to_string()),
+                        );
+                    }
+                }
+            }
+        } else {
+            // Try null-terminated string
+            if let Some(null_pos) = name_data.iter().position(|&b| b == 0) {
+                if null_pos > 0 {
+                    if let Ok(name) = std::str::from_utf8(&name_data[..null_pos]) {
+                        let trimmed = name.trim();
+                        if !trimmed.is_empty() {
+                            metadata.insert(
+                                "QuickTime:HandlerDescription".to_string(),
+                                TagValue::String(trimmed.to_string()),
+                            );
+                        }
+                    }
+                }
             }
         }
     }

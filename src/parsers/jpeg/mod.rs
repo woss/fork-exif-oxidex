@@ -4,8 +4,10 @@
 
 #![allow(dead_code)]
 
+pub mod app_parsers;
 pub mod exif_parser;
 pub mod iptc_parser;
+pub mod jfif_parser;
 pub mod segment_parser;
 pub mod xmp_parser;
 
