@@ -30,8 +30,8 @@ Run all tools in parallel, capture JSON, summarize:
 # Stats
 tokei --output json . 2>/dev/null
 
-# Duplication (min 20 lines, JSON output)
-jscpd --min-lines 20 --reporters json --output /tmp/jscpd/ . 2>/dev/null
+# Duplication (min 20 lines, JSON output, exclude node_modules/target/dist)
+jscpd --min-lines 20 --ignore "**/node_modules/**,**/target/**,**/dist/**" --reporters json --output /tmp/jscpd/ . 2>/dev/null
 
 # Complexity per file (JSON output)
 scc --by-file --format json . 2>/dev/null
@@ -40,7 +40,7 @@ scc --by-file --format json . 2>/dev/null
 Or single parallel command:
 ```bash
 tokei --output json . > /tmp/tokei.json 2>/dev/null & \
-jscpd --min-lines 20 --reporters json --output /tmp/jscpd/ . 2>/dev/null & \
+jscpd --min-lines 20 --ignore "**/node_modules/**,**/target/**,**/dist/**" --reporters json --output /tmp/jscpd/ . 2>/dev/null & \
 scc --by-file --format json . > /tmp/scc.json 2>/dev/null & \
 wait
 ```
