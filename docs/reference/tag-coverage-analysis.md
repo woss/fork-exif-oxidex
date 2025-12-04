@@ -59,7 +59,7 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 |----------|----------|---------|
 | JPEG photos | ⚠️ 67% | EXIF, XMP, IPTC, MakerNotes |
 | RAW photos | ⚠️ 37% | DNG, CR2, NEF, ARW, etc. |
-| Video files | ⚠️ 32% | QuickTime, Matroska, RIFF |
+| Video files | ⚠️ 44% | QuickTime, Matroska, RIFF |
 | Audio files | ✅ 100% | ID3, FLAC, Vorbis, AAC |
 | PDF documents | ✅ 75% | Info dict, XMP |
 | Office docs | ⚠️ 60% | OOXML, iWork |
@@ -96,6 +96,9 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | Mach-O | 75% | ✅ Good |
 | IPTC | 60% | ✅ Good |
 | XMP | 60% | ✅ Good |
+| QuickTime | 60% | ✅ Good |
+| MP4 | 60% | ✅ Good |
+| MOV | 60% | ✅ Good |
 | PNG | 60% | ✅ Good |
 | DOCX | 60% | ✅ Good |
 | XLSX | 60% | ✅ Good |
@@ -105,9 +108,6 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 
 | Format | Coverage | Priority |
 |--------|----------|----------|
-| QuickTime | 40% | High |
-| MP4 | 40% | High |
-| MOV | 40% | High |
 | TEXT | 40% | High |
 | MKV | 20% | Medium |
 | AVI | 20% | Medium |
@@ -182,8 +182,7 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 - **DNG** (20% coverage)
 - **CR2** (20% coverage)
 - **NEF** (20% coverage)
-- **QuickTime** (40% coverage)
-- **MP4** (40% coverage)
+- **TEXT** (40% coverage)
 
 ---
 
