@@ -100,5 +100,8 @@ mod pe_import_test;
 #[path = "integration/makernote_integration.rs"]
 mod makernote_integration;
 
+#[path = "integration/cli_feature_tests.rs"]
+mod cli_feature_tests;
+
 #[path = "forensic/mod.rs"]
 mod forensic;

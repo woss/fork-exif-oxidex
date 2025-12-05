@@ -101,13 +101,17 @@ impl CliArgs {
         let mut tag_modifications = Vec::new();
 
         for arg in raw_args {
-            // Check if this looks like a tag modification or date shift
-            // These start with '-' but aren't double-dash flags, and contain '='
+            // Check if this looks like a tag modification, date shift, or specific tag extraction
+            // These start with '-' but aren't double-dash flags, and contain '=' or ':'
+            // (Tag names usually contain ':' like "-EXIF:Model", or '=' for assignment)
             if arg.starts_with('-')
                 && !arg.starts_with("--")
-                && (arg.contains('=') || arg.ends_with("+=") || arg.ends_with("-="))
+                && (arg.contains('=')
+                    || arg.ends_with("+=")
+                    || arg.ends_with("-=")
+                    || arg.contains(':'))
             {
-                // This is a tag modification or date shift - don't pass to lexopt
+                // This is a tag modification, date shift, or specific tag - don't pass to lexopt
                 tag_modifications.push(arg);
             } else {
                 // Regular argument - pass to lexopt
