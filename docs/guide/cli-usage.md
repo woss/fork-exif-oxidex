@@ -535,12 +535,12 @@ done
 
 **Remove all metadata (privacy):**
 
-This feature is planned but not yet implemented. For now, use the original ExifTool:
+OxiDex supports removing all metadata from a file, which is useful for privacy or cleaning up files.
 
 ```bash
-# Future feature (not yet available)
-# oxidex -all= photo.jpg
+oxidex -all= photo.jpg
 ```
+
 
 ## Performance Tips
 
