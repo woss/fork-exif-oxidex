@@ -11,6 +11,7 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::buffered_reader::BufferedReader;
+use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::tag_db::lookup_tag_name;
 
@@ -157,8 +158,9 @@ impl JXLParser {
 
         while offset + 8 <= file_size {
             let header = reader.read(offset as u64, 8)?;
-            let box_size =
-                u32::from_be_bytes([header[0], header[1], header[2], header[3]]) as usize;
+            // ISOBMFF uses big-endian byte order
+            let header_reader = EndianReader::big_endian(header);
+            let box_size = header_reader.u32_at(0).unwrap_or(0) as usize;
             let box_type = std::str::from_utf8(&header[4..8]).unwrap_or("????");
 
             if box_size == 0 {
@@ -233,24 +235,21 @@ impl JXLParser {
             _ => return,
         };
 
-        // Verify TIFF magic
-        let magic = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([tiff_data[2], tiff_data[3]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([tiff_data[2], tiff_data[3]]),
+        // Create EndianReader with appropriate byte order
+        let endian_order = match byte_order {
+            ByteOrder::LittleEndian => EndianByteOrder::Little,
+            ByteOrder::BigEndian => EndianByteOrder::Big,
         };
+        let header_reader = EndianReader::new(tiff_data, endian_order);
+
+        // Verify TIFF magic
+        let magic = header_reader.u16_at(2).unwrap_or(0);
         if magic != 0x002A {
             return;
         }
 
         // Get IFD0 offset
-        let ifd0_offset = match byte_order {
-            ByteOrder::LittleEndian => {
-                u32::from_le_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
-            }
-            ByteOrder::BigEndian => {
-                u32::from_be_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
-            }
-        };
+        let ifd0_offset = header_reader.u32_at(4).unwrap_or(0);
 
         // Create a BufferedReader from the TIFF data
         let reader = BufferedReader::from_bytes(tiff_data);
@@ -270,20 +269,8 @@ impl JXLParser {
 
                 // Check for ExifIFD pointer (tag 0x8769)
                 if *tag_id == 0x8769 && raw_bytes.len() >= 4 {
-                    let exif_offset = match byte_order {
-                        ByteOrder::LittleEndian => u32::from_le_bytes([
-                            raw_bytes[0],
-                            raw_bytes[1],
-                            raw_bytes[2],
-                            raw_bytes[3],
-                        ]),
-                        ByteOrder::BigEndian => u32::from_be_bytes([
-                            raw_bytes[0],
-                            raw_bytes[1],
-                            raw_bytes[2],
-                            raw_bytes[3],
-                        ]),
-                    };
+                    let tag_reader = EndianReader::new(raw_bytes, endian_order);
+                    let exif_offset = tag_reader.u32_at(0).unwrap_or(0);
                     if let Ok(exif_entries) = parse_ifd(&reader, exif_offset as u64, byte_order) {
                         for (exif_tag_id, exif_field_type, exif_value_count, exif_raw_bytes) in
                             &exif_entries
@@ -303,20 +290,8 @@ impl JXLParser {
 
                 // Check for GPS IFD pointer (tag 0x8825)
                 if *tag_id == 0x8825 && raw_bytes.len() >= 4 {
-                    let gps_offset = match byte_order {
-                        ByteOrder::LittleEndian => u32::from_le_bytes([
-                            raw_bytes[0],
-                            raw_bytes[1],
-                            raw_bytes[2],
-                            raw_bytes[3],
-                        ]),
-                        ByteOrder::BigEndian => u32::from_be_bytes([
-                            raw_bytes[0],
-                            raw_bytes[1],
-                            raw_bytes[2],
-                            raw_bytes[3],
-                        ]),
-                    };
+                    let tag_reader = EndianReader::new(raw_bytes, endian_order);
+                    let gps_offset = tag_reader.u32_at(0).unwrap_or(0);
                     if let Ok(gps_entries) = parse_ifd(&reader, gps_offset as u64, byte_order) {
                         for (gps_tag_id, gps_field_type, gps_value_count, gps_raw_bytes) in
                             &gps_entries
@@ -443,6 +418,13 @@ fn raw_bytes_to_tag_value(
 ) -> TagValue {
     use crate::parsers::common::exif_types::ExifType;
 
+    // Create EndianReader with appropriate byte order
+    let endian_order = match byte_order {
+        ByteOrder::LittleEndian => EndianByteOrder::Little,
+        ByteOrder::BigEndian => EndianByteOrder::Big,
+    };
+    let reader = EndianReader::new(bytes, endian_order);
+
     if let Some(exif_type) = ExifType::from_u16(field_type) {
         match exif_type {
             ExifType::Ascii => {
@@ -450,47 +432,23 @@ fn raw_bytes_to_tag_value(
                 return TagValue::String(text.trim_end_matches('\0').to_string());
             }
             ExifType::Short if bytes.len() >= 2 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-                    ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-                };
+                let value = reader.u16_at(0).unwrap_or(0);
                 return TagValue::Integer(value as i64);
             }
             ExifType::Long if bytes.len() >= 4 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
+                let value = reader.u32_at(0).unwrap_or(0);
                 return TagValue::Integer(value as i64);
             }
             ExifType::Rational if bytes.len() >= 8 => {
-                let num = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                if let Some((num, den)) = reader.rational_at(0) {
+                    if den == 1 {
+                        return TagValue::Integer(num as i64);
                     }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
-                let den = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
-                    }
-                };
-                if den == 1 {
-                    return TagValue::Integer(num as i64);
+                    return TagValue::Rational {
+                        numerator: num as i32,
+                        denominator: den as i32,
+                    };
                 }
-                return TagValue::Rational {
-                    numerator: num as i32,
-                    denominator: den as i32,
-                };
             }
             ExifType::Undefined => {
                 // Special handling for ExifVersion

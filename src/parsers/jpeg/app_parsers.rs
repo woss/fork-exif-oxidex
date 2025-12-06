@@ -9,6 +9,7 @@
 //! - SOF: Start of Frame (component information)
 
 use crate::core::{MetadataMap, TagValue};
+use crate::io::EndianReader;
 
 /// Parse ICC Profile (APP2) segment
 ///
@@ -39,12 +40,8 @@ pub fn parse_icc_profile_segment(data: &[u8], metadata: &mut MetadataMap) -> Res
 
         // Profile size (bytes 0-3)
         if profile_data.len() >= 4 {
-            let size = u32::from_be_bytes([
-                profile_data[0],
-                profile_data[1],
-                profile_data[2],
-                profile_data[3],
-            ]);
+            let reader = EndianReader::big_endian(profile_data);
+            let size = reader.u32_at(0).unwrap_or(0);
             metadata.insert(
                 "ICC_Profile:ProfileSize".to_string(),
                 TagValue::Integer(size as i64),
@@ -110,8 +107,9 @@ pub fn parse_ducky_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<()
     // Ducky format: sequence of tag-length-value triplets
     let mut offset = 5;
     while offset + 4 <= data.len() {
-        let tag_id = u16::from_be_bytes([data[offset], data[offset + 1]]);
-        let length = u16::from_be_bytes([data[offset + 2], data[offset + 3]]) as usize;
+        let header_reader = EndianReader::big_endian(&data[offset..]);
+        let tag_id = header_reader.u16_at(0).unwrap_or(0);
+        let length = header_reader.u16_at(2).unwrap_or(0) as usize;
         offset += 4;
 
         if offset + length > data.len() {
@@ -125,12 +123,8 @@ pub fn parse_ducky_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<()
             0x0001 => {
                 // Quality
                 if length >= 4 {
-                    let quality = i32::from_be_bytes([
-                        value_data[0],
-                        value_data[1],
-                        value_data[2],
-                        value_data[3],
-                    ]);
+                    let value_reader = EndianReader::big_endian(value_data);
+                    let quality = value_reader.i32_at(0).unwrap_or(0);
                     metadata.insert(
                         "Ducky:Quality".to_string(),
                         TagValue::Integer(quality as i64),
@@ -182,22 +176,24 @@ pub fn parse_adobe_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<()
         return Err("Invalid Adobe identifier".to_string());
     }
 
+    let reader = EndianReader::big_endian(data);
+
     // DCT Encode Version (2 bytes at offset 5)
-    let dct_encode_version = u16::from_be_bytes([data[5], data[6]]);
+    let dct_encode_version = reader.u16_at(5).unwrap_or(0);
     metadata.insert(
         "Adobe:DCTEncodeVersion".to_string(),
         TagValue::Integer(dct_encode_version as i64),
     );
 
     // APP14 Flags0 (2 bytes at offset 7)
-    let flags0 = u16::from_be_bytes([data[7], data[8]]);
+    let flags0 = reader.u16_at(7).unwrap_or(0);
     metadata.insert(
         "Adobe:APP14Flags0".to_string(),
         TagValue::Integer(flags0 as i64),
     );
 
     // APP14 Flags1 (2 bytes at offset 9)
-    let flags1 = u16::from_be_bytes([data[9], data[10]]);
+    let flags1 = reader.u16_at(9).unwrap_or(0);
     metadata.insert(
         "Adobe:APP14Flags1".to_string(),
         TagValue::Integer(flags1 as i64),
@@ -291,6 +287,8 @@ pub fn parse_sof_segment(
         return Err("SOF segment too short".to_string());
     }
 
+    let reader = EndianReader::big_endian(data);
+
     // Sample precision (1 byte)
     let precision = data[0];
     metadata.insert(
@@ -299,14 +297,14 @@ pub fn parse_sof_segment(
     );
 
     // Image height (2 bytes)
-    let height = u16::from_be_bytes([data[1], data[2]]);
+    let height = reader.u16_at(1).unwrap_or(0);
     metadata.insert(
         "JPEG:ImageHeight".to_string(),
         TagValue::Integer(height as i64),
     );
 
     // Image width (2 bytes)
-    let width = u16::from_be_bytes([data[3], data[4]]);
+    let width = reader.u16_at(3).unwrap_or(0);
     metadata.insert(
         "JPEG:ImageWidth".to_string(),
         TagValue::Integer(width as i64),

@@ -29,6 +29,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// SQLite signature: "SQLite format 3\0" (16 bytes)
 const SQLITE_MAGIC: &[u8] = b"SQLite format 3\0";
@@ -68,15 +69,19 @@ impl SQLiteParser {
     }
 
     /// Reads a 2-byte big-endian integer from the file
+    /// SQLite uses big-endian byte order for header fields
     fn read_u16_be(reader: &dyn FileReader, offset: u64) -> Result<u16> {
         let bytes = reader.read(offset, 2)?;
-        Ok(u16::from_be_bytes([bytes[0], bytes[1]]))
+        let endian_reader = EndianReader::big_endian(bytes);
+        Ok(endian_reader.u16_at(0).unwrap_or(0))
     }
 
     /// Reads a 4-byte big-endian integer from the file
+    /// SQLite uses big-endian byte order for header fields
     fn read_u32_be(reader: &dyn FileReader, offset: u64) -> Result<u32> {
         let bytes = reader.read(offset, 4)?;
-        Ok(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+        let endian_reader = EndianReader::big_endian(bytes);
+        Ok(endian_reader.u32_at(0).unwrap_or(0))
     }
 
     /// Reads the database page size from the header

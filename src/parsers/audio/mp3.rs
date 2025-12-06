@@ -37,6 +37,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use nom::{
     bytes::complete::{tag, take},
     number::complete::be_u8,
@@ -165,6 +166,7 @@ fn decode_synchsafe_u32(bytes: &[u8]) -> u32 {
 /// Parse ID3v2 frames
 fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> Result<()> {
     let mut offset = 0;
+    let reader = EndianReader::big_endian(data);
 
     while offset + 10 < data.len() {
         // Frame header size depends on version
@@ -180,22 +182,19 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
                 decode_synchsafe_u32(&data[offset + 4..offset + 8])
             } else {
                 // ID3v2.3 uses regular integers
-                u32::from_be_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ])
+                reader.u32_at(offset + 4).unwrap_or(0)
             };
-            let frame_flags = u16::from_be_bytes([data[offset + 8], data[offset + 9]]);
+            let frame_flags = reader.u16_at(offset + 8).unwrap_or(0);
             offset += 10;
 
             (frame_id, frame_size, frame_flags)
         } else {
-            // ID3v2.2: 6-byte header
+            // ID3v2.2: 6-byte header (3-byte size, big-endian)
             let frame_id = String::from_utf8_lossy(&data[offset..offset + 3]).to_string();
-            let frame_size =
-                u32::from_be_bytes([0, data[offset + 3], data[offset + 4], data[offset + 5]]);
+            // ID3v2.2 uses 3 bytes for size, need to handle specially
+            let frame_size = ((data[offset + 3] as u32) << 16)
+                | ((data[offset + 4] as u32) << 8)
+                | (data[offset + 5] as u32);
             offset += 6;
 
             (frame_id, frame_size, 0)

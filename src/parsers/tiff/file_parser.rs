@@ -59,6 +59,7 @@
 
 use crate::core::FileReader;
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder, IfdEntries};
 use crate::parsers::tiff::makernote_dispatcher::dispatch_makernote;
 use std::collections::{HashMap, HashSet};
@@ -146,11 +147,13 @@ pub fn parse_tiff_header(reader: &dyn FileReader) -> Result<TiffHeader> {
         }
     };
 
+    // Create EndianReader for parsing remaining header fields
+    let endian_reader = EndianReader::new(header, byte_order.to_io_byte_order());
+
     // Parse magic number (bytes 2-3) - should be 42
-    let magic = match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([header[2], header[3]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([header[2], header[3]]),
-    };
+    let magic = endian_reader.u16_at(2).ok_or_else(|| {
+        ExifToolError::parse_error("Failed to read TIFF magic number")
+    })?;
 
     if magic != 42 {
         return Err(ExifToolError::parse_error(format!(
@@ -160,10 +163,9 @@ pub fn parse_tiff_header(reader: &dyn FileReader) -> Result<TiffHeader> {
     }
 
     // Parse first IFD offset (bytes 4-7)
-    let first_ifd_offset = match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([header[4], header[5], header[6], header[7]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([header[4], header[5], header[6], header[7]]),
-    };
+    let first_ifd_offset = endian_reader.u32_at(4).ok_or_else(|| {
+        ExifToolError::parse_error("Failed to read first IFD offset")
+    })?;
 
     Ok(TiffHeader {
         byte_order,
@@ -189,11 +191,10 @@ fn read_entry_count(
     byte_order: ByteOrder,
 ) -> Result<u16> {
     let data = reader.read(ifd_offset, 2)?;
-    let count = match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([data[0], data[1]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([data[0], data[1]]),
-    };
-    Ok(count)
+    let endian_reader = EndianReader::new(data, byte_order.to_io_byte_order());
+    endian_reader.u16_at(0).ok_or_else(|| {
+        ExifToolError::parse_error_at("Failed to read IFD entry count", ifd_offset as usize)
+    })
 }
 
 /// Reads the "next IFD offset" field after an IFD's tag entries.
@@ -220,11 +221,13 @@ fn read_next_ifd_offset(
 ) -> Result<u32> {
     let next_offset_location = ifd_offset + 2 + (entry_count as u64 * 12);
     let data = reader.read(next_offset_location, 4)?;
-    let offset = match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([data[0], data[1], data[2], data[3]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([data[0], data[1], data[2], data[3]]),
-    };
-    Ok(offset)
+    let endian_reader = EndianReader::new(data, byte_order.to_io_byte_order());
+    endian_reader.u32_at(0).ok_or_else(|| {
+        ExifToolError::parse_error_at(
+            "Failed to read next IFD offset",
+            next_offset_location as usize,
+        )
+    })
 }
 
 /// Extracts a u32 value from tag value bytes.
@@ -241,16 +244,8 @@ fn read_next_ifd_offset(
 /// - `Some(u32)`: Extracted offset value
 /// - `None`: Value is too small to contain a u32
 fn extract_u32_from_tag_value(value: &[u8], byte_order: ByteOrder) -> Option<u32> {
-    if value.len() < 4 {
-        return None;
-    }
-
-    let offset = match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([value[0], value[1], value[2], value[3]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([value[0], value[1], value[2], value[3]]),
-    };
-
-    Some(offset)
+    let endian_reader = EndianReader::new(value, byte_order.to_io_byte_order());
+    endian_reader.u32_at(0)
 }
 
 /// Extracts the camera Make string from tag values

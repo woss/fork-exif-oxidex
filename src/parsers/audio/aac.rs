@@ -36,6 +36,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// ADTS sync word (12 bits: 0xFFF)
 const ADTS_SYNC_WORD: u16 = 0xFFF;
@@ -85,9 +86,10 @@ impl FormatParser for AacParser {
 
         // Read first ADTS frame header (7 bytes minimum)
         let header = reader.read(0, 7)?;
+        let header_reader = EndianReader::big_endian(header);
 
         // Verify ADTS sync word (0xFFF in first 12 bits)
-        let sync = u16::from_be_bytes([header[0], header[1]]);
+        let sync = header_reader.u16_at(0).unwrap_or(0);
         if (sync >> 4) != ADTS_SYNC_WORD {
             return Err(ExifToolError::parse_error(format!(
                 "Invalid AAC ADTS signature: expected sync word 0xFFF, found 0x{:03X}",
@@ -126,7 +128,8 @@ impl FormatParser for AacParser {
         while offset + 7 < scan_size {
             // Verify sync word
             let sync_bytes = reader.read(offset, 2)?;
-            let sync = u16::from_be_bytes([sync_bytes[0], sync_bytes[1]]);
+            let sync_reader = EndianReader::big_endian(sync_bytes);
+            let sync = sync_reader.u16_at(0).unwrap_or(0);
 
             if (sync >> 4) != ADTS_SYNC_WORD {
                 break;

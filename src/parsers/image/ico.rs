@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 const ICO_SIGNATURE: &[u8] = &[0x00, 0x00];
 const ICO_TYPE_ICON: u16 = 1;
@@ -32,25 +33,33 @@ impl ICOParser {
         if &header[0..2] != ICO_SIGNATURE {
             return Ok(false);
         }
-        let file_type = u16::from_le_bytes([header[2], header[3]]);
+        // ICO uses little-endian byte order
+        let header_reader = EndianReader::little_endian(header);
+        let file_type = header_reader.u16_at(2).unwrap_or(0);
         Ok(file_type == ICO_TYPE_ICON || file_type == ICO_TYPE_CURSOR)
     }
 
     /// Reads the file type (1=ICO, 2=CUR)
     fn read_file_type(reader: &dyn FileReader) -> Result<u16> {
         let header = reader.read(2, 2)?;
-        Ok(u16::from_le_bytes([header[0], header[1]]))
+        // ICO uses little-endian byte order
+        let header_reader = EndianReader::little_endian(header);
+        Ok(header_reader.u16_at(0).unwrap_or(0))
     }
 
     /// Reads the image count from header
     fn read_image_count(reader: &dyn FileReader) -> Result<u16> {
         let count_bytes = reader.read(4, 2)?;
-        Ok(u16::from_le_bytes([count_bytes[0], count_bytes[1]]))
+        // ICO uses little-endian byte order
+        let count_reader = EndianReader::little_endian(count_bytes);
+        Ok(count_reader.u16_at(0).unwrap_or(0))
     }
 
     /// Parses a directory entry at the given offset
     fn read_directory_entry(reader: &dyn FileReader, offset: u64) -> Result<IcoDirectoryEntry> {
         let entry = reader.read(offset, 16)?;
+        // ICO uses little-endian byte order
+        let entry_reader = EndianReader::little_endian(entry);
 
         // Width and height: 0 means 256
         let width = if entry[0] == 0 { 256 } else { entry[0] as u16 };
@@ -58,7 +67,7 @@ impl ICOParser {
         let color_count = entry[2];
 
         // Bits per pixel at offset 6-7 (for ICO) or hotspot Y (for CUR)
-        let bits_per_pixel = u16::from_le_bytes([entry[6], entry[7]]);
+        let bits_per_pixel = entry_reader.u16_at(6).unwrap_or(0);
 
         Ok(IcoDirectoryEntry {
             width,

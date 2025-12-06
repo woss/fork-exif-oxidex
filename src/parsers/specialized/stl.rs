@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// Known software signatures in binary STL headers
 const SOFTWARE_SIGNATURES: &[(&str, &str)] = &[
@@ -181,13 +182,10 @@ impl STLParser {
             );
         }
 
+        // Binary STL uses little-endian byte order
         let count_bytes = reader.read(80, 4)?;
-        let triangle_count = u32::from_le_bytes([
-            count_bytes[0],
-            count_bytes[1],
-            count_bytes[2],
-            count_bytes[3],
-        ]);
+        let count_reader = EndianReader::little_endian(count_bytes);
+        let triangle_count = count_reader.u32_at(0).unwrap_or(0);
         metadata.insert(
             "TriangleCount".to_string(),
             TagValue::Integer(triangle_count as i64),
@@ -213,26 +211,12 @@ impl STLParser {
                 break;
             }
             let triangle_data = reader.read(offset, 50)?;
+            let triangle_reader = EndianReader::little_endian(triangle_data);
             for j in 0..3 {
                 let base = 12 + j * 12;
-                let x = f32::from_le_bytes([
-                    triangle_data[base],
-                    triangle_data[base + 1],
-                    triangle_data[base + 2],
-                    triangle_data[base + 3],
-                ]);
-                let y = f32::from_le_bytes([
-                    triangle_data[base + 4],
-                    triangle_data[base + 5],
-                    triangle_data[base + 6],
-                    triangle_data[base + 7],
-                ]);
-                let z = f32::from_le_bytes([
-                    triangle_data[base + 8],
-                    triangle_data[base + 9],
-                    triangle_data[base + 10],
-                    triangle_data[base + 11],
-                ]);
+                let x = triangle_reader.f32_at(base).unwrap_or(0.0);
+                let y = triangle_reader.f32_at(base + 4).unwrap_or(0.0);
+                let z = triangle_reader.f32_at(base + 8).unwrap_or(0.0);
                 bbox.update(x, y, z);
             }
         }

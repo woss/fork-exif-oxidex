@@ -3,6 +3,7 @@
 //! Handles detection of binary executable formats including PE, Mach-O, and DWG.
 
 use crate::core::{FileFormat, FileReader};
+use crate::io::EndianReader;
 
 use super::helpers::matches_at_offset;
 
@@ -30,7 +31,9 @@ pub fn detect_pe_format(data: &[u8], reader: &dyn FileReader) -> Option<FileForm
         return None;
     }
 
-    let e_lfanew = u32::from_le_bytes([data[0x3C], data[0x3D], data[0x3E], data[0x3F]]) as u64;
+    // PE format uses little-endian byte order
+    let header = EndianReader::little_endian(data);
+    let e_lfanew = header.u32_at(0x3C).unwrap_or(0) as u64;
 
     // Verify PE signature at e_lfanew offset
     if e_lfanew < reader.size() && e_lfanew + 4 <= reader.size() {

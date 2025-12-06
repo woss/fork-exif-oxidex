@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// Parser for glTF (GL Transmission Format) 3D model files
 ///
@@ -57,13 +58,10 @@ impl GLTFParser {
             }
 
             // Read chunk header: length(4) + type(4)
+            // GLB uses little-endian byte order
             let chunk_header = reader.read(12, 8)?;
-            let chunk_length = u32::from_le_bytes([
-                chunk_header[0],
-                chunk_header[1],
-                chunk_header[2],
-                chunk_header[3],
-            ]) as usize;
+            let chunk_reader = EndianReader::little_endian(chunk_header);
+            let chunk_length = chunk_reader.u32_at(0).unwrap_or(0) as usize;
 
             // Read JSON chunk data
             let json_data = reader.read(20, chunk_length)?;
@@ -144,14 +142,14 @@ impl GLTFParser {
     }
 
     /// Extracts version from GLB binary header
+    /// GLB uses little-endian byte order
     fn extract_glb_version(reader: &dyn FileReader) -> Option<u32> {
         if reader.size() < 8 {
             return None;
         }
         let header = reader.read(4, 4).ok()?;
-        Some(u32::from_le_bytes([
-            header[0], header[1], header[2], header[3],
-        ]))
+        let version_reader = EndianReader::little_endian(header);
+        version_reader.u32_at(0)
     }
 }
 

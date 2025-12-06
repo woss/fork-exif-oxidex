@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// Parser for AutoCAD DWG (Drawing) files
 ///
@@ -66,9 +67,11 @@ impl DWGParser {
 
         let version = Self::read_version(reader)?;
         // Codepage only reliable in R2007+
+        // DWG uses little-endian byte order
         if version.as_str() >= "AC1021" {
             let codepage_bytes = reader.read(19, 2)?;
-            let codepage = u16::from_le_bytes([codepage_bytes[0], codepage_bytes[1]]);
+            let codepage_reader = EndianReader::little_endian(codepage_bytes);
+            let codepage = codepage_reader.u16_at(0).unwrap_or(0);
             if codepage > 0 {
                 return Ok(Some(codepage));
             }
@@ -84,36 +87,21 @@ impl DWGParser {
         }
 
         // For R2004+ (AC1018+), preview data location is in header
+        // DWG uses little-endian byte order
         let version = Self::read_version(reader)?;
         if version.as_str() >= "AC1018" {
             // Read potential preview address at offset 13
             let preview_bytes = reader.read(13, 8)?;
-            let preview_offset = u64::from_le_bytes([
-                preview_bytes[0],
-                preview_bytes[1],
-                preview_bytes[2],
-                preview_bytes[3],
-                preview_bytes[4],
-                preview_bytes[5],
-                preview_bytes[6],
-                preview_bytes[7],
-            ]);
+            let preview_reader = EndianReader::little_endian(preview_bytes);
+            let preview_offset = preview_reader.u64_at(0).unwrap_or(0);
 
             // Validate offset is within file bounds
             if preview_offset > 0 && preview_offset < reader.size() {
                 // Try to read preview size (typically follows offset)
                 if reader.size() >= 29 {
                     let size_bytes = reader.read(21, 8)?;
-                    let preview_size = u64::from_le_bytes([
-                        size_bytes[0],
-                        size_bytes[1],
-                        size_bytes[2],
-                        size_bytes[3],
-                        size_bytes[4],
-                        size_bytes[5],
-                        size_bytes[6],
-                        size_bytes[7],
-                    ]);
+                    let size_reader = EndianReader::little_endian(size_bytes);
+                    let preview_size = size_reader.u64_at(0).unwrap_or(0);
                     if preview_size > 0 && preview_offset + preview_size <= reader.size() {
                         return Ok(Some((preview_offset, preview_size)));
                     }

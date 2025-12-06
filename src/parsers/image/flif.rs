@@ -12,6 +12,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use std::io;
 
@@ -166,12 +167,8 @@ fn parse_flif_metadata_chunks(
         }
 
         // Read chunk size (4 bytes, big-endian after chunk type)
-        let chunk_size = u32::from_be_bytes([
-            chunk_header[4],
-            chunk_header[5],
-            chunk_header[6],
-            chunk_header[7],
-        ]) as u64;
+        let size_reader = EndianReader::big_endian(&chunk_header[4..8]);
+        let chunk_size = size_reader.u32_at(0).unwrap_or(0) as u64;
 
         offset += 8;
 
@@ -225,24 +222,21 @@ fn parse_flif_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         _ => return Err(ExifToolError::parse_error("Invalid TIFF byte order")),
     };
 
-    // Verify TIFF magic (0x002A)
-    let magic = match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([exif_data[2], exif_data[3]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([exif_data[2], exif_data[3]]),
+    // Create EndianReader with appropriate byte order
+    let endian_order = match byte_order {
+        ByteOrder::LittleEndian => EndianByteOrder::Little,
+        ByteOrder::BigEndian => EndianByteOrder::Big,
     };
+    let tiff_reader = EndianReader::new(exif_data, endian_order);
+
+    // Verify TIFF magic (0x002A)
+    let magic = tiff_reader.u16_at(2).unwrap_or(0);
     if magic != 0x002A {
         return Err(ExifToolError::parse_error("Invalid TIFF magic number"));
     }
 
     // Get IFD0 offset
-    let ifd_offset = match byte_order {
-        ByteOrder::LittleEndian => {
-            u32::from_le_bytes([exif_data[4], exif_data[5], exif_data[6], exif_data[7]])
-        }
-        ByteOrder::BigEndian => {
-            u32::from_be_bytes([exif_data[4], exif_data[5], exif_data[6], exif_data[7]])
-        }
-    };
+    let ifd_offset = tiff_reader.u32_at(4).unwrap_or(0);
 
     // Create in-memory reader for EXIF data
     let exif_reader = FLIFExifReader::new(exif_data.to_vec());
@@ -317,11 +311,18 @@ fn raw_bytes_to_tag_value(
 ) -> TagValue {
     use crate::parsers::common::exif_types::ExifType;
 
+    // Create EndianReader with appropriate byte order
+    let endian_order = match byte_order {
+        ByteOrder::LittleEndian => EndianByteOrder::Little,
+        ByteOrder::BigEndian => EndianByteOrder::Big,
+    };
+    let reader = EndianReader::new(bytes, endian_order);
+
     if let Some(exif_type) = ExifType::from_u16(field_type) {
         match exif_type {
             ExifType::Byte if !bytes.is_empty() => {
                 if value_count == 1 {
-                    return TagValue::Integer(bytes[0] as i64);
+                    return TagValue::Integer(reader.u8_at(0).unwrap_or(0) as i64);
                 }
                 return TagValue::Binary(bytes.to_vec());
             }
@@ -331,23 +332,13 @@ fn raw_bytes_to_tag_value(
             }
             ExifType::Short if bytes.len() >= 2 => {
                 if value_count == 1 {
-                    let val = match byte_order {
-                        ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-                        ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-                    };
+                    let val = reader.u16_at(0).unwrap_or(0);
                     return TagValue::Integer(val as i64);
                 }
             }
             ExifType::Long if bytes.len() >= 4 => {
                 if value_count == 1 {
-                    let val = match byte_order {
-                        ByteOrder::LittleEndian => {
-                            u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                        }
-                        ByteOrder::BigEndian => {
-                            u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                        }
-                    };
+                    let val = reader.u32_at(0).unwrap_or(0);
                     return TagValue::Integer(val as i64);
                 }
             }

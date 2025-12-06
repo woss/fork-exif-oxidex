@@ -34,6 +34,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use encoding_rs::WINDOWS_1252;
 
 /// RIFF signature
@@ -112,14 +113,10 @@ pub(crate) fn parse_riff_chunks(
     while offset + 8 < end_offset {
         // Read chunk header (4 byte ID + 4 byte size)
         let chunk_header = reader.read(offset, 8)?;
+        let header_reader = EndianReader::little_endian(chunk_header);
 
         let chunk_id = &chunk_header[0..4];
-        let chunk_size = u32::from_le_bytes([
-            chunk_header[4],
-            chunk_header[5],
-            chunk_header[6],
-            chunk_header[7],
-        ]) as u64;
+        let chunk_size = header_reader.u32_at(4).unwrap_or(0) as u64;
 
         offset += 8;
 
@@ -163,11 +160,12 @@ pub(crate) fn parse_riff_chunks(
 /// Parse fmt chunk (format information)
 fn parse_fmt_chunk(reader: &dyn FileReader, offset: u64, metadata: &mut MetadataMap) -> Result<()> {
     let fmt_data = reader.read(offset, 16)?;
+    let fmt_reader = EndianReader::little_endian(fmt_data);
 
-    let audio_format = u16::from_le_bytes([fmt_data[0], fmt_data[1]]);
-    let num_channels = u16::from_le_bytes([fmt_data[2], fmt_data[3]]);
-    let sample_rate = u32::from_le_bytes([fmt_data[4], fmt_data[5], fmt_data[6], fmt_data[7]]);
-    let bits_per_sample = u16::from_le_bytes([fmt_data[14], fmt_data[15]]);
+    let audio_format = fmt_reader.u16_at(0).unwrap_or(0);
+    let num_channels = fmt_reader.u16_at(2).unwrap_or(0);
+    let sample_rate = fmt_reader.u32_at(4).unwrap_or(0);
+    let bits_per_sample = fmt_reader.u16_at(14).unwrap_or(0);
 
     metadata.insert(
         "RIFF:AudioFormat".to_string(),
@@ -201,11 +199,10 @@ fn parse_info_chunk(
     while offset + 8 < end_offset {
         // Read tag header (4 byte ID + 4 byte size)
         let tag_header = reader.read(offset, 8)?;
+        let header_reader = EndianReader::little_endian(tag_header);
 
         let tag_id = &tag_header[0..4];
-        let tag_size =
-            u32::from_le_bytes([tag_header[4], tag_header[5], tag_header[6], tag_header[7]])
-                as usize;
+        let tag_size = header_reader.u32_at(4).unwrap_or(0) as usize;
 
         offset += 8;
 

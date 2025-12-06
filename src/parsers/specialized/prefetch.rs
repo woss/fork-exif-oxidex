@@ -44,6 +44,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::timestamp::filetime_to_iso8601;
+use crate::io::EndianReader;
 
 /// Prefetch signature: "SCCA" (4 bytes) for uncompressed files
 const PREFETCH_MAGIC: &[u8] = b"SCCA";
@@ -100,28 +102,18 @@ impl PrefetchParser {
         Ok(None)
     }
 
-    /// Reads a 4-byte little-endian integer from the file
-    fn read_u32_le(reader: &dyn FileReader, offset: u64) -> Result<u32> {
-        let bytes = reader.read(offset, 4)?;
-        Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-    }
-
-    /// Reads an 8-byte little-endian integer from the file (for FILETIME)
-    fn read_u64_le(reader: &dyn FileReader, offset: u64) -> Result<u64> {
-        let bytes = reader.read(offset, 8)?;
-        Ok(u64::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-        ]))
-    }
-
     /// Reads the version from prefetch header (offset 0, 4 bytes)
     fn read_version(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 0)
+        let data = reader.read(0, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads the file size from header (offset 12, 4 bytes)
     fn read_file_size(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 12)
+        let data = reader.read(12, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads the executable name from header (offset 16, 60 bytes UTF-16LE)
@@ -145,7 +137,9 @@ impl PrefetchParser {
 
     /// Reads the path hash from header (offset 76, 4 bytes)
     fn read_path_hash(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 76)
+        let data = reader.read(76, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads the run count from file information section
@@ -155,7 +149,9 @@ impl PrefetchParser {
     fn read_run_count(reader: &dyn FileReader, _version: u32) -> Result<u32> {
         // For all versions 17-30, file info section starts at offset 84
         // Run count is at offset 144 (0x90)
-        Self::read_u32_le(reader, 144)
+        let data = reader.read(144, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads the last run time from file information section
@@ -169,7 +165,9 @@ impl PrefetchParser {
             VERSION_WIN8 | VERSION_WIN10 => 128, // v26/v30: offset 0x80
             _ => 128,                            // Default to newer format
         };
-        Self::read_u64_le(reader, offset)
+        let data = reader.read(offset, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads previous run times (up to 7 additional timestamps for v26+)
@@ -188,41 +186,28 @@ impl PrefetchParser {
             if offset + 8 > reader.size() {
                 break;
             }
-            let filetime = Self::read_u64_le(reader, offset)?;
+            let data = reader.read(offset, 8)?;
+            let r = EndianReader::little_endian(&data);
+            let ft = r.u64_at(0).unwrap_or(0);
             // Stop at zero values (unused slots)
-            if filetime == 0 {
+            if ft == 0 {
                 break;
             }
-            times.push(filetime);
+            times.push(ft);
         }
 
         Ok(times)
     }
 
-    /// Converts Windows FILETIME to ISO 8601 string
+    /// Converts Windows FILETIME to ISO 8601 string using shared utility
     ///
     /// FILETIME is a 64-bit value representing 100-nanosecond intervals since
     /// January 1, 1601 (UTC).
-    fn filetime_to_iso8601(filetime: u64) -> String {
-        // Windows FILETIME epoch: 1601-01-01
-        // Unix epoch: 1970-01-01
-        // Difference: 11644473600 seconds = 116444736000000000 in 100-ns intervals
-        const FILETIME_UNIX_DIFF: u64 = 116444736000000000;
-
+    fn convert_filetime(filetime: u64) -> String {
         if filetime == 0 {
             return "0000-00-00T00:00:00Z".to_string();
         }
-
-        // Convert to Unix timestamp
-        let unix_100ns = filetime.saturating_sub(FILETIME_UNIX_DIFF);
-        let unix_secs = unix_100ns / 10_000_000;
-        let nanos = (unix_100ns % 10_000_000) * 100;
-
-        // Create UTC datetime
-        match chrono::DateTime::from_timestamp(unix_secs as i64, nanos as u32) {
-            Some(dt) => dt.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-            None => "Invalid timestamp".to_string(),
-        }
+        filetime_to_iso8601(filetime).unwrap_or_else(|| "Invalid timestamp".to_string())
     }
 
     /// Maps version number to Windows OS name
@@ -340,7 +325,7 @@ impl FormatParser for PrefetchParser {
         let last_run_time = Self::read_last_run_time(reader, version)?;
         metadata.insert(
             "Prefetch:LastRunTime".to_string(),
-            TagValue::String(Self::filetime_to_iso8601(last_run_time)),
+            TagValue::String(Self::convert_filetime(last_run_time)),
         );
 
         // Read previous run times (v26+ only)
@@ -348,7 +333,7 @@ impl FormatParser for PrefetchParser {
         if !previous_times.is_empty() {
             let formatted_times: Vec<String> = previous_times
                 .iter()
-                .map(|&t| Self::filetime_to_iso8601(t))
+                .map(|&t| Self::convert_filetime(t))
                 .collect();
             metadata.insert(
                 "Prefetch:PreviousRunTimes".to_string(),
@@ -366,7 +351,7 @@ impl FormatParser for PrefetchParser {
             TagValue::String(format!(
                 "Program executed {} time(s). Last execution: {}",
                 run_count,
-                Self::filetime_to_iso8601(last_run_time)
+                Self::convert_filetime(last_run_time)
             )),
         );
 
@@ -581,16 +566,16 @@ mod tests {
     }
 
     #[test]
-    fn test_filetime_to_iso8601() {
+    fn test_convert_filetime() {
         // Test known FILETIME value: 2023-01-15 12:30:00 UTC
         let filetime: u64 = 133182594000000000;
-        let result = PrefetchParser::filetime_to_iso8601(filetime);
+        let result = PrefetchParser::convert_filetime(filetime);
         assert_eq!(result, "2023-01-15T12:30:00Z");
     }
 
     #[test]
-    fn test_filetime_to_iso8601_zero() {
-        let result = PrefetchParser::filetime_to_iso8601(0);
+    fn test_convert_filetime_zero() {
+        let result = PrefetchParser::convert_filetime(0);
         assert_eq!(result, "0000-00-00T00:00:00Z");
     }
 

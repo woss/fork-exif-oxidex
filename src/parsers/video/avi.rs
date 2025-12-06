@@ -37,6 +37,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// RIFF signature
 const RIFF_SIGNATURE: &[u8] = b"RIFF";
@@ -116,13 +117,9 @@ fn parse_avi_chunks(
         // Read chunk header (4 byte ID + 4 byte size)
         let chunk_header = reader.read(offset, 8)?;
 
+        let r = EndianReader::little_endian(chunk_header);
         let chunk_id = &chunk_header[0..4];
-        let chunk_size = u32::from_le_bytes([
-            chunk_header[4],
-            chunk_header[5],
-            chunk_header[6],
-            chunk_header[7],
-        ]) as u64;
+        let chunk_size = r.u32_at(4).unwrap_or(0) as u64;
 
         offset += 8;
 
@@ -186,13 +183,9 @@ fn parse_hdrl_list(
         // Read chunk header
         let chunk_header = reader.read(offset, 8)?;
 
+        let r = EndianReader::little_endian(chunk_header);
         let chunk_id = &chunk_header[0..4];
-        let chunk_size = u32::from_le_bytes([
-            chunk_header[4],
-            chunk_header[5],
-            chunk_header[6],
-            chunk_header[7],
-        ]) as u64;
+        let chunk_size = r.u32_at(4).unwrap_or(0) as u64;
 
         offset += 8;
 
@@ -236,13 +229,12 @@ fn parse_avih_chunk(
     metadata: &mut MetadataMap,
 ) -> Result<()> {
     let avih_data = reader.read(offset, 56)?;
+    let r = EndianReader::little_endian(avih_data);
 
-    let microsec_per_frame =
-        u32::from_le_bytes([avih_data[0], avih_data[1], avih_data[2], avih_data[3]]);
-    let total_frames =
-        u32::from_le_bytes([avih_data[16], avih_data[17], avih_data[18], avih_data[19]]);
-    let width = u32::from_le_bytes([avih_data[32], avih_data[33], avih_data[34], avih_data[35]]);
-    let height = u32::from_le_bytes([avih_data[36], avih_data[37], avih_data[38], avih_data[39]]);
+    let microsec_per_frame = r.u32_at(0).unwrap_or(0);
+    let total_frames = r.u32_at(16).unwrap_or(0);
+    let width = r.u32_at(32).unwrap_or(0);
+    let height = r.u32_at(36).unwrap_or(0);
 
     // Calculate frame rate from microseconds per frame
     if microsec_per_frame > 0 {
@@ -294,13 +286,9 @@ fn parse_stream_list(
         // Read chunk header
         let chunk_header = reader.read(offset, 8)?;
 
+        let r = EndianReader::little_endian(chunk_header);
         let chunk_id = &chunk_header[0..4];
-        let chunk_size = u32::from_le_bytes([
-            chunk_header[4],
-            chunk_header[5],
-            chunk_header[6],
-            chunk_header[7],
-        ]) as u64;
+        let chunk_size = r.u32_at(4).unwrap_or(0) as u64;
 
         offset += 8;
 
@@ -364,12 +352,13 @@ fn parse_stream_header(
     metadata: &mut MetadataMap,
 ) -> Result<Option<[u8; 4]>> {
     let strh_data = reader.read(offset, 56)?;
+    let r = EndianReader::little_endian(strh_data);
 
     let stream_type = [strh_data[0], strh_data[1], strh_data[2], strh_data[3]];
     let codec_fourcc = [strh_data[4], strh_data[5], strh_data[6], strh_data[7]];
-    let scale = u32::from_le_bytes([strh_data[20], strh_data[21], strh_data[22], strh_data[23]]);
-    let rate = u32::from_le_bytes([strh_data[24], strh_data[25], strh_data[26], strh_data[27]]);
-    let length = u32::from_le_bytes([strh_data[32], strh_data[33], strh_data[34], strh_data[35]]);
+    let scale = r.u32_at(20).unwrap_or(0);
+    let rate = r.u32_at(24).unwrap_or(0);
+    let length = r.u32_at(32).unwrap_or(0);
 
     // Stream type
     let type_str = match &stream_type {
@@ -480,10 +469,11 @@ fn parse_video_format(
     metadata: &mut MetadataMap,
 ) -> Result<()> {
     let bih_data = reader.read(offset, 40)?;
+    let r = EndianReader::little_endian(bih_data);
 
-    let width = u32::from_le_bytes([bih_data[4], bih_data[5], bih_data[6], bih_data[7]]);
-    let height = u32::from_le_bytes([bih_data[8], bih_data[9], bih_data[10], bih_data[11]]);
-    let bit_count = u16::from_le_bytes([bih_data[14], bih_data[15]]);
+    let width = r.u32_at(4).unwrap_or(0);
+    let height = r.u32_at(8).unwrap_or(0);
+    let bit_count = r.u16_at(14).unwrap_or(0);
     let compression = [bih_data[16], bih_data[17], bih_data[18], bih_data[19]];
 
     metadata.insert(
@@ -519,13 +509,13 @@ fn parse_audio_format(
     metadata: &mut MetadataMap,
 ) -> Result<()> {
     let wfx_data = reader.read(offset, 16)?;
+    let r = EndianReader::little_endian(wfx_data);
 
-    let format_tag = u16::from_le_bytes([wfx_data[0], wfx_data[1]]);
-    let channels = u16::from_le_bytes([wfx_data[2], wfx_data[3]]);
-    let samples_per_sec = u32::from_le_bytes([wfx_data[4], wfx_data[5], wfx_data[6], wfx_data[7]]);
-    let avg_bytes_per_sec =
-        u32::from_le_bytes([wfx_data[8], wfx_data[9], wfx_data[10], wfx_data[11]]);
-    let bits_per_sample = u16::from_le_bytes([wfx_data[14], wfx_data[15]]);
+    let format_tag = r.u16_at(0).unwrap_or(0);
+    let channels = r.u16_at(2).unwrap_or(0);
+    let samples_per_sec = r.u32_at(4).unwrap_or(0);
+    let avg_bytes_per_sec = r.u32_at(8).unwrap_or(0);
+    let bits_per_sample = r.u16_at(14).unwrap_or(0);
 
     // Audio format tag
     let format_name = match format_tag {

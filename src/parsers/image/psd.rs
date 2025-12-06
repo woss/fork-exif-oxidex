@@ -12,6 +12,7 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::buffered_reader::BufferedReader;
+use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::tag_db::lookup_tag_name;
 
@@ -49,7 +50,9 @@ impl PSDParser {
             return Ok(0);
         }
         let version_bytes = reader.read(4, 2)?;
-        Ok(u16::from_be_bytes([version_bytes[0], version_bytes[1]]))
+        // PSD uses big-endian byte order
+        let version_reader = EndianReader::big_endian(version_bytes);
+        Ok(version_reader.u16_at(0).unwrap_or(0))
     }
 
     /// Parse the PSD header (26 bytes)
@@ -59,9 +62,11 @@ impl PSDParser {
         }
 
         let header = reader.read(0, 26)?;
+        // PSD uses big-endian byte order
+        let header_reader = EndianReader::big_endian(header);
 
         // Version (offset 4, 2 bytes)
-        let version = u16::from_be_bytes([header[4], header[5]]);
+        let version = header_reader.u16_at(4).unwrap_or(1);
         let format_name = if version == 1 { "PSD" } else { "PSB" };
         metadata.insert(
             "FileType".to_string(),
@@ -70,26 +75,26 @@ impl PSDParser {
         metadata.insert("PSDVersion".to_string(), TagValue::Integer(version as i64));
 
         // Channels (offset 12, 2 bytes)
-        let channels = u16::from_be_bytes([header[12], header[13]]);
+        let channels = header_reader.u16_at(12).unwrap_or(0);
         metadata.insert(
             "NumChannels".to_string(),
             TagValue::Integer(channels as i64),
         );
 
         // Height (offset 14, 4 bytes)
-        let height = u32::from_be_bytes([header[14], header[15], header[16], header[17]]);
+        let height = header_reader.u32_at(14).unwrap_or(0);
         metadata.insert("ImageHeight".to_string(), TagValue::Integer(height as i64));
 
         // Width (offset 18, 4 bytes)
-        let width = u32::from_be_bytes([header[18], header[19], header[20], header[21]]);
+        let width = header_reader.u32_at(18).unwrap_or(0);
         metadata.insert("ImageWidth".to_string(), TagValue::Integer(width as i64));
 
         // Bit Depth (offset 22, 2 bytes)
-        let depth = u16::from_be_bytes([header[22], header[23]]);
+        let depth = header_reader.u16_at(22).unwrap_or(0);
         metadata.insert("BitDepth".to_string(), TagValue::Integer(depth as i64));
 
         // Color Mode (offset 24, 2 bytes)
-        let color_mode = u16::from_be_bytes([header[24], header[25]]);
+        let color_mode = header_reader.u16_at(24).unwrap_or(0);
         let color_mode_name = match color_mode {
             0 => "Bitmap",
             1 => "Grayscale",
@@ -117,12 +122,9 @@ impl PSDParser {
 
         // Color mode data length at offset 26
         let cmd_len_bytes = reader.read(26, 4)?;
-        let color_mode_data_length = u32::from_be_bytes([
-            cmd_len_bytes[0],
-            cmd_len_bytes[1],
-            cmd_len_bytes[2],
-            cmd_len_bytes[3],
-        ]);
+        // PSD uses big-endian byte order
+        let cmd_len_reader = EndianReader::big_endian(cmd_len_bytes);
+        let color_mode_data_length = cmd_len_reader.u32_at(0).unwrap_or(0);
 
         // Image resources section starts after color mode data
         let resources_offset = 30 + color_mode_data_length as usize;
@@ -133,8 +135,8 @@ impl PSDParser {
 
         // Image resources length
         let irl_bytes = reader.read(resources_offset as u64, 4)?;
-        let resources_length =
-            u32::from_be_bytes([irl_bytes[0], irl_bytes[1], irl_bytes[2], irl_bytes[3]]) as usize;
+        let irl_reader = EndianReader::big_endian(irl_bytes);
+        let resources_length = irl_reader.u32_at(0).unwrap_or(0) as usize;
 
         if resources_length == 0 || reader.size() < (resources_offset + 4 + resources_length) as u64
         {
@@ -154,7 +156,8 @@ impl PSDParser {
             pos += 4;
 
             // Resource ID (2 bytes)
-            let resource_id = u16::from_be_bytes([resources_data[pos], resources_data[pos + 1]]);
+            let res_reader = EndianReader::big_endian(&resources_data[pos..]);
+            let resource_id = res_reader.u16_at(0).unwrap_or(0);
             pos += 2;
 
             // Pascal string name (padded to even)
@@ -171,12 +174,8 @@ impl PSDParser {
             }
 
             // Resource data size (4 bytes)
-            let data_size = u32::from_be_bytes([
-                resources_data[pos],
-                resources_data[pos + 1],
-                resources_data[pos + 2],
-                resources_data[pos + 3],
-            ]) as usize;
+            let size_reader = EndianReader::big_endian(&resources_data[pos..]);
+            let data_size = size_reader.u32_at(0).unwrap_or(0) as usize;
             pos += 4;
 
             if pos + data_size > resources_data.len() {
@@ -233,16 +232,19 @@ impl PSDParser {
             return;
         }
 
+        // PSD uses big-endian byte order
+        let res_reader = EndianReader::big_endian(data);
+
         // Horizontal resolution (fixed point 16.16)
-        let h_res_fixed = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+        let h_res_fixed = res_reader.u32_at(0).unwrap_or(0);
         let h_res = h_res_fixed as f64 / 65536.0;
 
         // Resolution unit (offset 4, 2 bytes): 1=pixels/inch, 2=pixels/cm
-        let res_unit = u16::from_be_bytes([data[4], data[5]]);
+        let res_unit = res_reader.u16_at(4).unwrap_or(1);
         let unit_name = if res_unit == 1 { "inch" } else { "cm" };
 
         // Vertical resolution (offset 8, fixed point 16.16)
-        let v_res_fixed = u32::from_be_bytes([data[8], data[9], data[10], data[11]]);
+        let v_res_fixed = res_reader.u32_at(8).unwrap_or(0);
         let v_res = v_res_fixed as f64 / 65536.0;
 
         metadata.insert(
@@ -272,20 +274,21 @@ impl PSDParser {
             _ => return,
         };
 
-        // Verify TIFF magic
-        let magic = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[2], data[3]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[2], data[3]]),
+        // Create EndianReader with appropriate byte order
+        let endian_order = match byte_order {
+            ByteOrder::LittleEndian => EndianByteOrder::Little,
+            ByteOrder::BigEndian => EndianByteOrder::Big,
         };
+        let tiff_reader = EndianReader::new(data, endian_order);
+
+        // Verify TIFF magic
+        let magic = tiff_reader.u16_at(2).unwrap_or(0);
         if magic != 0x002A {
             return;
         }
 
         // Get IFD0 offset
-        let ifd0_offset = match byte_order {
-            ByteOrder::LittleEndian => u32::from_le_bytes([data[4], data[5], data[6], data[7]]),
-            ByteOrder::BigEndian => u32::from_be_bytes([data[4], data[5], data[6], data[7]]),
-        };
+        let ifd0_offset = tiff_reader.u32_at(4).unwrap_or(0);
 
         // Create a BufferedReader from the TIFF data
         let reader = BufferedReader::from_bytes(data);
@@ -305,20 +308,8 @@ impl PSDParser {
 
                 // Check for ExifIFD pointer
                 if *tag_id == 0x8769 && raw_bytes.len() >= 4 {
-                    let exif_offset = match byte_order {
-                        ByteOrder::LittleEndian => u32::from_le_bytes([
-                            raw_bytes[0],
-                            raw_bytes[1],
-                            raw_bytes[2],
-                            raw_bytes[3],
-                        ]),
-                        ByteOrder::BigEndian => u32::from_be_bytes([
-                            raw_bytes[0],
-                            raw_bytes[1],
-                            raw_bytes[2],
-                            raw_bytes[3],
-                        ]),
-                    };
+                    let tag_reader = EndianReader::new(raw_bytes, endian_order);
+                    let exif_offset = tag_reader.u32_at(0).unwrap_or(0);
                     if let Ok(exif_entries) = parse_ifd(&reader, exif_offset as u64, byte_order) {
                         for (exif_tag_id, exif_field_type, exif_value_count, exif_raw_bytes) in
                             &exif_entries
@@ -425,6 +416,13 @@ fn raw_bytes_to_tag_value(
 ) -> TagValue {
     use crate::parsers::common::exif_types::ExifType;
 
+    // Create EndianReader with appropriate byte order
+    let endian_order = match byte_order {
+        ByteOrder::LittleEndian => EndianByteOrder::Little,
+        ByteOrder::BigEndian => EndianByteOrder::Big,
+    };
+    let reader = EndianReader::new(bytes, endian_order);
+
     if let Some(exif_type) = ExifType::from_u16(field_type) {
         match exif_type {
             ExifType::Ascii => {
@@ -432,47 +430,23 @@ fn raw_bytes_to_tag_value(
                 return TagValue::String(text.trim_end_matches('\0').to_string());
             }
             ExifType::Short if bytes.len() >= 2 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-                    ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-                };
+                let value = reader.u16_at(0).unwrap_or(0);
                 return TagValue::Integer(value as i64);
             }
             ExifType::Long if bytes.len() >= 4 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
+                let value = reader.u32_at(0).unwrap_or(0);
                 return TagValue::Integer(value as i64);
             }
             ExifType::Rational if bytes.len() >= 8 => {
-                let num = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                if let Some((num, den)) = reader.rational_at(0) {
+                    if den == 1 {
+                        return TagValue::Integer(num as i64);
                     }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
-                let den = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
-                    }
-                };
-                if den == 1 {
-                    return TagValue::Integer(num as i64);
+                    return TagValue::Rational {
+                        numerator: num as i32,
+                        denominator: den as i32,
+                    };
                 }
-                return TagValue::Rational {
-                    numerator: num as i32,
-                    denominator: den as i32,
-                };
             }
             ExifType::Undefined => {
                 if tag_id == 0x9000 && bytes.len() >= 4 {

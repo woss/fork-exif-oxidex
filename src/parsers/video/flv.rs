@@ -41,6 +41,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// FLV signature
 const FLV_SIGNATURE: &[u8] = b"FLV";
@@ -102,9 +103,12 @@ impl FormatParser for FlvParser {
             // Read tag header (11 bytes)
             let tag_header = reader.read(offset, 11)?;
 
+            let r = EndianReader::big_endian(tag_header);
             let tag_type = tag_header[0];
-            let data_size =
-                u32::from_be_bytes([0, tag_header[1], tag_header[2], tag_header[3]]) as u64;
+            // Read 24-bit big-endian value (3 bytes) for data size
+            let data_size = ((r.u8_at(1).unwrap_or(0) as u32) << 16)
+                | ((r.u8_at(2).unwrap_or(0) as u32) << 8)
+                | (r.u8_at(3).unwrap_or(0) as u32);
 
             // Check if this is a script data tag
             if tag_type == TAG_TYPE_SCRIPT && data_size > 0 && data_size < 100_000 {
@@ -117,7 +121,7 @@ impl FormatParser for FlvParser {
             }
 
             // Move to next tag (tag header + data size + previous tag size)
-            offset += 11 + data_size + 4;
+            offset += 11 + data_size as u64 + 4;
         }
 
         Ok(metadata)
@@ -156,13 +160,14 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         return Ok(()); // Not a string, skip
     }
 
+    let r = EndianReader::big_endian(data);
     let mut offset = 1;
 
     // Skip first string (should be "onMetaData")
     if offset + 2 > data.len() {
         return Ok(());
     }
-    let str_len = u16::from_be_bytes([data[offset], data[offset + 1]]) as usize;
+    let str_len = r.u16_at(offset).unwrap_or(0) as usize;
     offset += 2 + str_len;
 
     // Check for ECMA array marker
@@ -180,7 +185,7 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     // Parse key-value pairs
     while offset + 3 < data.len() {
         // Read key length
-        let key_len = u16::from_be_bytes([data[offset], data[offset + 1]]) as usize;
+        let key_len = r.u16_at(offset).unwrap_or(0) as usize;
         offset += 2;
 
         if key_len == 0 {
@@ -209,17 +214,7 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
                 if offset + 8 > data.len() {
                     break;
                 }
-                let value_bytes = &data[offset..offset + 8];
-                let value = f64::from_be_bytes([
-                    value_bytes[0],
-                    value_bytes[1],
-                    value_bytes[2],
-                    value_bytes[3],
-                    value_bytes[4],
-                    value_bytes[5],
-                    value_bytes[6],
-                    value_bytes[7],
-                ]);
+                let value = r.f64_at(offset).unwrap_or(0.0);
                 offset += 8;
 
                 // Map common metadata fields
@@ -255,7 +250,7 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
                 if offset + 2 > data.len() {
                     break;
                 }
-                let str_len = u16::from_be_bytes([data[offset], data[offset + 1]]) as usize;
+                let str_len = r.u16_at(offset).unwrap_or(0) as usize;
                 offset += 2 + str_len;
             }
             _ => {

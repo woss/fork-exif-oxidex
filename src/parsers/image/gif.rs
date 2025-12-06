@@ -6,6 +6,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// GIF signature: "GIF87a" or "GIF89a"
 const GIF87A_SIGNATURE: &[u8] = b"GIF87a";
@@ -45,8 +46,10 @@ impl GIFParser {
             return Ok((0, 0));
         }
         let dims = reader.read(6, 4)?;
-        let width = u16::from_le_bytes([dims[0], dims[1]]);
-        let height = u16::from_le_bytes([dims[2], dims[3]]);
+        // GIF uses little-endian byte order
+        let endian_reader = EndianReader::little_endian(dims);
+        let width = endian_reader.u16_at(0).unwrap_or(0);
+        let height = endian_reader.u16_at(2).unwrap_or(0);
         Ok((width, height))
     }
 
@@ -56,9 +59,11 @@ impl GIFParser {
             return Ok(LogicalScreenDescriptor::default());
         }
         let lsd = reader.read(6, 7)?;
+        // GIF uses little-endian byte order
+        let endian_reader = EndianReader::little_endian(lsd);
 
-        let width = u16::from_le_bytes([lsd[0], lsd[1]]);
-        let height = u16::from_le_bytes([lsd[2], lsd[3]]);
+        let width = endian_reader.u16_at(0).unwrap_or(0);
+        let height = endian_reader.u16_at(2).unwrap_or(0);
 
         let packed = lsd[4];
         let global_color_table_flag = (packed & 0b10000000) != 0;
@@ -230,13 +235,15 @@ impl GIFParser {
 
         // Read the 4-byte block data
         let data = reader.read(pos + 1, 4)?;
+        // GIF uses little-endian byte order
+        let gce_reader = EndianReader::little_endian(data);
 
         let packed = data[0];
         let disposal_method = (packed & 0b00011100) >> 2;
         let user_input_flag = (packed & 0b00000010) != 0;
         let transparent_color_flag = (packed & 0b00000001) != 0;
 
-        let delay_time = u16::from_le_bytes([data[1], data[2]]);
+        let delay_time = gce_reader.u16_at(1).unwrap_or(0);
         let transparent_color_index = data[3];
 
         // Skip to terminator (0x00)

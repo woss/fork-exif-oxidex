@@ -34,6 +34,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use encoding_rs::UTF_8;
 
 /// OGG page signature
@@ -167,12 +168,13 @@ fn parse_opus_head(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         return Err(ExifToolError::parse_error("OpusHead packet too small"));
     }
 
-    let version = data[0];
-    let channels = data[1];
-    let pre_skip = u16::from_le_bytes([data[2], data[3]]);
-    let sample_rate = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
-    let output_gain = i16::from_le_bytes([data[8], data[9]]);
-    let channel_mapping_family = data[10];
+    let reader = EndianReader::little_endian(data);
+    let version = reader.u8_at(0).unwrap_or(0);
+    let channels = reader.u8_at(1).unwrap_or(0);
+    let pre_skip = reader.u16_at(2).unwrap_or(0);
+    let sample_rate = reader.u32_at(4).unwrap_or(0);
+    let output_gain = reader.i16_at(8).unwrap_or(0);
+    let channel_mapping_family = reader.u8_at(10).unwrap_or(0);
 
     metadata.insert(
         "Opus:Version".to_string(),
@@ -205,13 +207,14 @@ fn parse_opus_head(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 /// Parse OpusTags packet (Vorbis comment format)
 fn parse_opus_tags(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     let mut offset = 0;
+    let reader = EndianReader::little_endian(data);
 
     // Vendor string length (4 bytes, little-endian)
     if data.len() < 4 {
         return Err(ExifToolError::parse_error("OpusTags packet too small"));
     }
 
-    let vendor_length = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let vendor_length = reader.u32_at(offset).unwrap_or(0) as usize;
     offset += 4;
 
     // Skip vendor string
@@ -225,12 +228,7 @@ fn parse_opus_tags(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         return Err(ExifToolError::parse_error("Missing comment list length"));
     }
 
-    let comment_count = u32::from_le_bytes([
-        data[offset],
-        data[offset + 1],
-        data[offset + 2],
-        data[offset + 3],
-    ]);
+    let comment_count = reader.u32_at(offset).unwrap_or(0);
     offset += 4;
 
     // Safety limit
@@ -244,12 +242,7 @@ fn parse_opus_tags(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         }
 
         // Comment length (4 bytes, little-endian)
-        let comment_length = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]) as usize;
+        let comment_length = reader.u32_at(offset).unwrap_or(0) as usize;
         offset += 4;
 
         if offset + comment_length > data.len() {

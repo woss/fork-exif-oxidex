@@ -1,3 +1,4 @@
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 
 // ============================================================================
@@ -20,10 +21,9 @@ impl FromIfdBytes for i16 {
     const SIZE: usize = 2;
 
     fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
-        match byte_order {
-            ByteOrder::LittleEndian => i16::from_le_bytes([bytes[0], bytes[1]]),
-            ByteOrder::BigEndian => i16::from_be_bytes([bytes[0], bytes[1]]),
-        }
+        let reader = EndianReader::new(bytes, byte_order.to_io_byte_order());
+        // Safe to unwrap: caller ensures bytes.len() >= SIZE
+        reader.i16_at(0).unwrap_or(0)
     }
 }
 
@@ -31,10 +31,9 @@ impl FromIfdBytes for u16 {
     const SIZE: usize = 2;
 
     fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
-        match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-        }
+        let reader = EndianReader::new(bytes, byte_order.to_io_byte_order());
+        // Safe to unwrap: caller ensures bytes.len() >= SIZE
+        reader.u16_at(0).unwrap_or(0)
     }
 }
 
@@ -42,10 +41,9 @@ impl FromIfdBytes for i32 {
     const SIZE: usize = 4;
 
     fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
-        match byte_order {
-            ByteOrder::LittleEndian => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-            ByteOrder::BigEndian => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        }
+        let reader = EndianReader::new(bytes, byte_order.to_io_byte_order());
+        // Safe to unwrap: caller ensures bytes.len() >= SIZE
+        reader.i32_at(0).unwrap_or(0)
     }
 }
 
@@ -53,10 +51,9 @@ impl FromIfdBytes for u32 {
     const SIZE: usize = 4;
 
     fn from_bytes(bytes: &[u8], byte_order: ByteOrder) -> Self {
-        match byte_order {
-            ByteOrder::LittleEndian => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-            ByteOrder::BigEndian => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        }
+        let reader = EndianReader::new(bytes, byte_order.to_io_byte_order());
+        // Safe to unwrap: caller ensures bytes.len() >= SIZE
+        reader.u32_at(0).unwrap_or(0)
     }
 }
 
@@ -144,19 +141,18 @@ pub fn extract_i16_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
             ByteOrder::BigEndian => entry.value_offset.to_be_bytes(),
         };
 
+        // Use EndianReader for parsing inline values
+        let reader = EndianReader::new(&bytes, byte_order.to_io_byte_order());
         for i in 0..count {
-            let offset = i * 2;
-            let value = match byte_order {
-                ByteOrder::LittleEndian => i16::from_le_bytes([bytes[offset], bytes[offset + 1]]),
-                ByteOrder::BigEndian => i16::from_be_bytes([bytes[offset], bytes[offset + 1]]),
-            };
-            result.push(value);
+            if let Some(value) = reader.i16_at(i * 2) {
+                result.push(value);
+            }
         }
 
         return Some(result);
     }
 
-    // Offset-based: read from data at specified offset
+    // Offset-based: read from data at specified offset using EndianReader
     let offset = entry.value_offset as usize;
 
     // Bounds check
@@ -164,20 +160,14 @@ pub fn extract_i16_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
         return None;
     }
 
-    let mut result = Vec::with_capacity(count);
     let array_data = &data[offset..offset + bytes_needed];
+    let reader = EndianReader::new(array_data, byte_order.to_io_byte_order());
 
+    let mut result = Vec::with_capacity(count);
     for i in 0..count {
-        let byte_offset = i * 2;
-        let value = match byte_order {
-            ByteOrder::LittleEndian => {
-                i16::from_le_bytes([array_data[byte_offset], array_data[byte_offset + 1]])
-            }
-            ByteOrder::BigEndian => {
-                i16::from_be_bytes([array_data[byte_offset], array_data[byte_offset + 1]])
-            }
-        };
-        result.push(value);
+        if let Some(value) = reader.i16_at(i * 2) {
+            result.push(value);
+        }
     }
 
     Some(result)
@@ -375,19 +365,21 @@ pub fn extract_rational_array(
     }
 
     let count = entry.value_count as usize;
-    let rational_size = u32::SIZE * 2; // 8 bytes per rational (numerator + denominator)
+    let rational_size = 8; // 8 bytes per rational (numerator + denominator)
     let offset = entry.value_offset as usize;
 
     if offset + (count * rational_size) > data.len() {
         return None;
     }
 
+    // Use EndianReader's rational_at method for cleaner parsing
+    let reader = EndianReader::new(data, byte_order.to_io_byte_order());
     let mut array = Vec::with_capacity(count);
     for i in 0..count {
         let pos = offset + (i * rational_size);
-        let num = u32::from_bytes(&data[pos..pos + u32::SIZE], byte_order);
-        let den = u32::from_bytes(&data[pos + u32::SIZE..pos + rational_size], byte_order);
-        array.push((num, den));
+        if let Some(rational) = reader.rational_at(pos) {
+            array.push(rational);
+        }
     }
 
     Some(array)

@@ -29,6 +29,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::timestamp::filetime_to_iso8601;
+use crate::io::EndianReader;
 
 /// Registry hive signature: "regf" (4 bytes)
 const REGF_MAGIC: &[u8] = b"regf";
@@ -39,10 +41,6 @@ const REGF_HEADER_SIZE: usize = 4096;
 /// Hive type values
 const HIVE_TYPE_NORMAL: u32 = 0;
 const HIVE_TYPE_TRANSACTION_LOG: u32 = 1;
-
-/// Windows FILETIME epoch offset (1601-01-01 to 1970-01-01)
-/// 116444736000000000 = number of 100-nanosecond intervals
-const FILETIME_EPOCH_OFFSET: i64 = 116444736000000000;
 
 /// Windows Registry Hive parser for extracting forensic metadata
 pub struct RegistryParser;
@@ -70,70 +68,72 @@ impl RegistryParser {
         Ok(magic == REGF_MAGIC)
     }
 
-    /// Reads a 4-byte little-endian integer from the file
-    fn read_u32_le(reader: &dyn FileReader, offset: u64) -> Result<u32> {
-        let bytes = reader.read(offset, 4)?;
-        Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-    }
-
-    /// Reads an 8-byte little-endian integer from the file
-    fn read_u64_le(reader: &dyn FileReader, offset: u64) -> Result<u64> {
-        let bytes = reader.read(offset, 8)?;
-        Ok(u64::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-        ]))
-    }
-
     /// Reads primary sequence number (offset 4, 4 bytes)
     ///
     /// Incremented at the beginning of a write operation.
     fn read_primary_sequence(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 4)
+        let data = reader.read(4, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads secondary sequence number (offset 8, 4 bytes)
     ///
     /// Incremented at the end of a write operation. Equals primary when clean shutdown.
     fn read_secondary_sequence(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 8)
+        let data = reader.read(8, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads last written timestamp (offset 12, 8 bytes)
     ///
     /// Windows FILETIME format: 100-nanosecond intervals since 1601-01-01.
     fn read_last_written(reader: &dyn FileReader) -> Result<u64> {
-        Self::read_u64_le(reader, 12)
+        let data = reader.read(12, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads major version (offset 20, 4 bytes)
     fn read_major_version(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 20)
+        let data = reader.read(20, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads minor version (offset 24, 4 bytes)
     fn read_minor_version(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 24)
+        let data = reader.read(24, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads hive type (offset 28, 4 bytes)
     ///
     /// 0 = normal hive, 1 = transaction log
     fn read_hive_type(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 28)
+        let data = reader.read(28, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads root cell offset (offset 36, 4 bytes)
     ///
     /// Offset to the root key cell in the hive bins data.
     fn read_root_cell_offset(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 36)
+        let data = reader.read(36, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads hive bins data size (offset 40, 4 bytes)
     ///
     /// Total size of the hive bins data section.
     fn read_data_size(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 40)
+        let data = reader.read(40, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads embedded hive name (offset 48, 64 bytes)
@@ -161,7 +161,7 @@ impl RegistryParser {
             .unwrap_or_else(|_| String::new()))
     }
 
-    /// Converts Windows FILETIME to ISO 8601 timestamp
+    /// Converts Windows FILETIME to ISO 8601 timestamp using shared utility
     ///
     /// # Arguments
     ///
@@ -170,75 +170,12 @@ impl RegistryParser {
     /// # Returns
     ///
     /// ISO 8601 formatted timestamp string
-    fn filetime_to_iso8601(filetime: u64) -> String {
+    fn convert_filetime(filetime: u64) -> String {
         if filetime == 0 {
             return "1601-01-01T00:00:00Z".to_string();
         }
-
-        // Convert to Unix timestamp
-        let unix_timestamp_ns = filetime as i64 - FILETIME_EPOCH_OFFSET;
-        let unix_timestamp_secs = unix_timestamp_ns / 10_000_000;
-
-        // Handle invalid/out-of-range timestamps
-        if unix_timestamp_secs < 0 {
-            return format!("Invalid (FILETIME: {})", filetime);
-        }
-
-        // Format as ISO 8601
-        // Note: This is a simplified conversion. For production use,
-        // consider using a proper datetime library like chrono.
-        let seconds = unix_timestamp_secs as u64;
-        let days = seconds / 86400;
-        let remaining = seconds % 86400;
-        let hours = remaining / 3600;
-        let minutes = (remaining % 3600) / 60;
-        let secs = remaining % 60;
-
-        // Calculate date from days since Unix epoch (1970-01-01)
-        let epoch_year = 1970;
-        let mut year = epoch_year;
-        let mut remaining_days = days;
-
-        // Simple year calculation (not accounting for all leap year edge cases)
-        loop {
-            let days_in_year = if Self::is_leap_year(year) { 366 } else { 365 };
-            if remaining_days < days_in_year as u64 {
-                break;
-            }
-            remaining_days -= days_in_year as u64;
-            year += 1;
-        }
-
-        // Calculate month and day
-        let (month, day) = Self::days_to_month_day(remaining_days as u32, Self::is_leap_year(year));
-
-        format!(
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-            year, month, day, hours, minutes, secs
-        )
-    }
-
-    /// Checks if a year is a leap year
-    fn is_leap_year(year: u64) -> bool {
-        (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
-    }
-
-    /// Converts day-of-year to month and day
-    fn days_to_month_day(days: u32, is_leap: bool) -> (u32, u32) {
-        let days_in_months = if is_leap {
-            [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        } else {
-            [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        };
-
-        let mut remaining = days;
-        for (i, &days_in_month) in days_in_months.iter().enumerate() {
-            if remaining < days_in_month {
-                return ((i + 1) as u32, remaining + 1);
-            }
-            remaining -= days_in_month;
-        }
-        (12, 31) // Fallback
+        filetime_to_iso8601(filetime)
+            .unwrap_or_else(|| format!("Invalid (FILETIME: {})", filetime))
     }
 
     /// Decodes hive type value to human-readable string
@@ -341,7 +278,7 @@ impl FormatParser for RegistryParser {
 
         // Timestamps and sequence numbers
         let last_written = Self::read_last_written(reader)?;
-        let last_written_iso = Self::filetime_to_iso8601(last_written);
+        let last_written_iso = Self::convert_filetime(last_written);
         metadata.insert(
             "Registry:LastWritten".to_string(),
             TagValue::String(last_written_iso),
@@ -590,24 +527,16 @@ mod tests {
     }
 
     #[test]
-    fn test_is_leap_year() {
-        assert!(RegistryParser::is_leap_year(2000));
-        assert!(RegistryParser::is_leap_year(2020));
-        assert!(!RegistryParser::is_leap_year(1900));
-        assert!(!RegistryParser::is_leap_year(2019));
-    }
-
-    #[test]
-    fn test_filetime_to_iso8601() {
+    fn test_convert_filetime() {
         // Test zero FILETIME
         assert_eq!(
-            RegistryParser::filetime_to_iso8601(0),
+            RegistryParser::convert_filetime(0),
             "1601-01-01T00:00:00Z"
         );
 
         // Test a known FILETIME value
         // 130000000000000000 corresponds to approximately 2013
-        let timestamp = RegistryParser::filetime_to_iso8601(130000000000000000);
+        let timestamp = RegistryParser::convert_filetime(130000000000000000);
         assert!(timestamp.starts_with("201"));
     }
 

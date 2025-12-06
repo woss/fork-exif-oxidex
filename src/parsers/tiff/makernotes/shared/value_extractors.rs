@@ -1,3 +1,4 @@
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 
 /// Extract integer value from IFD entry.
@@ -126,16 +127,9 @@ pub fn extract_i32_value(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -
         // SLONG type - value is inline in value_offset
         Some(entry.value_offset as i32)
     } else {
-        // Offset-based - read from data buffer
-        let offset = entry.value_offset as usize;
-        if offset + 4 > data.len() {
-            return None;
-        }
-        let bytes = &data[offset..offset + 4];
-        Some(match byte_order {
-            ByteOrder::LittleEndian => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-            ByteOrder::BigEndian => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        })
+        // Offset-based - read from data buffer using EndianReader
+        let reader = EndianReader::new(data, byte_order.to_io_byte_order());
+        reader.i32_at(entry.value_offset as usize)
     }
 }
 

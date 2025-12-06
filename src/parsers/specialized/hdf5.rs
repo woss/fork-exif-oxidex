@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 const HDF5_SIGNATURE: &[u8] = &[0x89, 0x48, 0x44, 0x46, 0x0D, 0x0A, 0x1A, 0x0A];
 
@@ -51,24 +52,26 @@ impl HDF5Parser {
             ));
         }
 
-        let sb = reader.read(8, 24)?;
+        // HDF5 uses little-endian byte order
+        let sb_data = reader.read(8, 24)?;
+        let sb = EndianReader::little_endian(sb_data);
 
-        Self::insert_int(metadata, "FreeSpaceVersion", sb[1] as i64);
-        Self::insert_int(metadata, "RootGroupVersion", sb[2] as i64);
-        Self::insert_int(metadata, "SharedHeaderVersion", sb[4] as i64);
+        Self::insert_int(metadata, "FreeSpaceVersion", sb.u8_at(1).unwrap_or(0) as i64);
+        Self::insert_int(metadata, "RootGroupVersion", sb.u8_at(2).unwrap_or(0) as i64);
+        Self::insert_int(metadata, "SharedHeaderVersion", sb.u8_at(4).unwrap_or(0) as i64);
 
-        let offset_size = sb[5];
+        let offset_size = sb.u8_at(5).unwrap_or(0);
         Self::insert_int(metadata, "OffsetSize", offset_size as i64);
         Self::insert_addressing_mode(metadata, offset_size);
-        Self::insert_int(metadata, "LengthSize", sb[6] as i64);
+        Self::insert_int(metadata, "LengthSize", sb.u8_at(6).unwrap_or(0) as i64);
 
-        let group_leaf_k = u16::from_le_bytes([sb[8], sb[9]]);
+        let group_leaf_k = sb.u16_at(8).unwrap_or(0);
         Self::insert_int(metadata, "GroupLeafNodeK", group_leaf_k as i64);
 
-        let group_internal_k = u16::from_le_bytes([sb[10], sb[11]]);
+        let group_internal_k = sb.u16_at(10).unwrap_or(0);
         Self::insert_int(metadata, "GroupInternalNodeK", group_internal_k as i64);
 
-        let flags = u32::from_le_bytes([sb[12], sb[13], sb[14], sb[15]]);
+        let flags = sb.u32_at(12).unwrap_or(0);
         Self::insert_int(metadata, "FileConsistencyFlags", flags as i64);
         Self::insert_closed_status(metadata, flags == 0);
 
@@ -117,11 +120,10 @@ impl HDF5Parser {
 
     /// Reads an offset value (4 or 8 bytes) as little-endian
     fn read_offset(bytes: &[u8], size: u8) -> u64 {
+        let reader = EndianReader::little_endian(bytes);
         match size {
-            4 => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as u64,
-            8 => u64::from_le_bytes([
-                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-            ]),
+            4 => reader.u32_at(0).unwrap_or(0) as u64,
+            8 => reader.u64_at(0).unwrap_or(0),
             _ => 0,
         }
     }

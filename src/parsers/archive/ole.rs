@@ -5,6 +5,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// OLE file signature (magic bytes)
 const OLE_SIGNATURE: &[u8] = &[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
@@ -67,17 +68,19 @@ impl OLEParser {
             ));
         }
 
-        // Read header (first 512 bytes)
-        let header = reader.read(0, 512)?;
+        // Read header (first 512 bytes) - OLE uses little-endian byte order
+        let header_data = reader.read(0, 512)?;
 
         // Verify signature
-        if &header[0..8] != OLE_SIGNATURE {
+        if &header_data[0..8] != OLE_SIGNATURE {
             return Err(ExifToolError::parse_error("Invalid OLE signature"));
         }
 
+        let header = EndianReader::little_endian(header_data);
+
         // Parse sector sizes
-        let sector_shift = u16::from_le_bytes([header[30], header[31]]) as usize;
-        let mini_sector_shift = u16::from_le_bytes([header[32], header[33]]) as usize;
+        let sector_shift = header.u16_at(30).unwrap_or(0) as usize;
+        let mini_sector_shift = header.u16_at(32).unwrap_or(0) as usize;
 
         let sector_size = 1 << sector_shift;
         let mini_sector_size = 1 << mini_sector_shift;
@@ -87,15 +90,13 @@ impl OLEParser {
         }
 
         // Parse FAT information
-        let total_sectors = u32::from_le_bytes([header[44], header[45], header[46], header[47]]);
-        let first_dir_sector = u32::from_le_bytes([header[48], header[49], header[50], header[51]]);
-        let first_mini_fat_sector =
-            u32::from_le_bytes([header[60], header[61], header[62], header[63]]);
-        let mini_fat_sectors = u32::from_le_bytes([header[64], header[65], header[66], header[67]]);
-        let first_difat_sector =
-            u32::from_le_bytes([header[68], header[69], header[70], header[71]]);
-        let difat_sectors = u32::from_le_bytes([header[72], header[73], header[74], header[75]]);
-        let fat_sectors = u32::from_le_bytes([header[76], header[77], header[78], header[79]]);
+        let total_sectors = header.u32_at(44).unwrap_or(0);
+        let first_dir_sector = header.u32_at(48).unwrap_or(0);
+        let first_mini_fat_sector = header.u32_at(60).unwrap_or(0);
+        let mini_fat_sectors = header.u32_at(64).unwrap_or(0);
+        let first_difat_sector = header.u32_at(68).unwrap_or(0);
+        let difat_sectors = header.u32_at(72).unwrap_or(0);
+        let fat_sectors = header.u32_at(76).unwrap_or(0);
 
         Ok(OLEHeader {
             sector_size,
@@ -126,7 +127,7 @@ impl OLEParser {
             ));
         }
 
-        // Read first directory sector
+        // Read first directory sector - OLE uses little-endian byte order
         let dir_data = reader.read(dir_offset as u64, header.sector_size)?;
 
         // Parse directory entries (4 per 512-byte sector, more for larger sectors)
@@ -139,9 +140,10 @@ impl OLEParser {
             }
 
             let entry_data = &dir_data[offset..offset + DIR_ENTRY_SIZE];
+            let entry = EndianReader::little_endian(entry_data);
 
             // Parse entry name (first 64 bytes, UTF-16LE)
-            let name_len = u16::from_le_bytes([entry_data[64], entry_data[65]]) as usize;
+            let name_len = entry.u16_at(64).unwrap_or(0) as usize;
             if name_len > 64 {
                 continue;
             }
@@ -163,36 +165,11 @@ impl OLEParser {
             }
 
             let entry_type = entry_data[66];
-            let left_sibling = u32::from_le_bytes([
-                entry_data[68],
-                entry_data[69],
-                entry_data[70],
-                entry_data[71],
-            ]);
-            let right_sibling = u32::from_le_bytes([
-                entry_data[72],
-                entry_data[73],
-                entry_data[74],
-                entry_data[75],
-            ]);
-            let child_did = u32::from_le_bytes([
-                entry_data[76],
-                entry_data[77],
-                entry_data[78],
-                entry_data[79],
-            ]);
-            let start_sector = u32::from_le_bytes([
-                entry_data[116],
-                entry_data[117],
-                entry_data[118],
-                entry_data[119],
-            ]);
-            let size = u32::from_le_bytes([
-                entry_data[120],
-                entry_data[121],
-                entry_data[122],
-                entry_data[123],
-            ]);
+            let left_sibling = entry.u32_at(68).unwrap_or(0);
+            let right_sibling = entry.u32_at(72).unwrap_or(0);
+            let child_did = entry.u32_at(76).unwrap_or(0);
+            let start_sector = entry.u32_at(116).unwrap_or(0);
+            let size = entry.u32_at(120).unwrap_or(0);
 
             entries.push(DirectoryEntry {
                 name,
@@ -575,9 +552,12 @@ impl VBAAnalyzer {
         let mut output = Vec::new();
         let mut pos = 1; // Skip signature
 
+        // VBA compression uses little-endian byte order
+        let reader = EndianReader::little_endian(data);
+
         while pos + 2 <= data.len() {
             // Read chunk header (2 bytes, little-endian)
-            let chunk_header = u16::from_le_bytes([data[pos], data[pos + 1]]);
+            let chunk_header = reader.u16_at(pos).unwrap_or(0);
             pos += 2;
 
             // Parse header fields
@@ -634,7 +614,7 @@ impl VBAAnalyzer {
                                 break;
                             }
 
-                            let token = u16::from_le_bytes([data[pos], data[pos + 1]]);
+                            let token = reader.u16_at(pos).unwrap_or(0);
                             pos += 2;
 
                             // Calculate offset and length based on decompressed size

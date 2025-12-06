@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 const EXR_SIGNATURE: &[u8] = &[0x76, 0x2F, 0x31, 0x01];
 
@@ -31,12 +32,9 @@ impl EXRParser {
             ));
         }
         let version_bytes = reader.read(4, 4)?;
-        let flags = u32::from_le_bytes([
-            version_bytes[0],
-            version_bytes[1],
-            version_bytes[2],
-            version_bytes[3],
-        ]);
+        // EXR uses little-endian byte order
+        let version_reader = EndianReader::little_endian(version_bytes);
+        let flags = version_reader.u32_at(0).unwrap_or(0);
         Ok((
             version_bytes[0],
             (flags & 0x200) != 0,
@@ -99,8 +97,9 @@ impl EXRParser {
                 break;
             }
             let size_bytes = reader.read(offset, 4)?;
-            let size =
-                u32::from_le_bytes([size_bytes[0], size_bytes[1], size_bytes[2], size_bytes[3]]);
+            // EXR uses little-endian byte order
+            let size_reader = EndianReader::little_endian(size_bytes);
+            let size = size_reader.u32_at(0).unwrap_or(0);
             offset += 4;
 
             // Read attribute value
@@ -124,12 +123,15 @@ impl EXRParser {
         attr_type: &str,
         value: &[u8],
     ) -> Result<()> {
+        // EXR uses little-endian byte order
+        let attr_reader = EndianReader::little_endian(value);
+
         match (name, attr_type) {
             ("dataWindow" | "displayWindow", "box2i") if value.len() >= 16 => {
-                let x_min = i32::from_le_bytes([value[0], value[1], value[2], value[3]]);
-                let y_min = i32::from_le_bytes([value[4], value[5], value[6], value[7]]);
-                let x_max = i32::from_le_bytes([value[8], value[9], value[10], value[11]]);
-                let y_max = i32::from_le_bytes([value[12], value[13], value[14], value[15]]);
+                let x_min = attr_reader.i32_at(0).unwrap_or(0);
+                let y_min = attr_reader.i32_at(4).unwrap_or(0);
+                let x_max = attr_reader.i32_at(8).unwrap_or(0);
+                let y_max = attr_reader.i32_at(12).unwrap_or(0);
 
                 if name == "dataWindow" {
                     let width = (x_max - x_min + 1) as u32;
@@ -179,7 +181,7 @@ impl EXRParser {
                 );
             }
             ("pixelAspectRatio" | "screenWindowWidth", "float") if value.len() >= 4 => {
-                let bits = u32::from_le_bytes([value[0], value[1], value[2], value[3]]);
+                let bits = attr_reader.u32_at(0).unwrap_or(0);
                 let float_val = f32::from_bits(bits) as f64;
                 let key = if name == "pixelAspectRatio" {
                     "PixelAspectRatio"
@@ -189,10 +191,8 @@ impl EXRParser {
                 metadata.insert(key.to_string(), TagValue::Float(float_val));
             }
             ("screenWindowCenter", "v2f") if value.len() >= 8 => {
-                let x =
-                    f32::from_bits(u32::from_le_bytes([value[0], value[1], value[2], value[3]]));
-                let y =
-                    f32::from_bits(u32::from_le_bytes([value[4], value[5], value[6], value[7]]));
+                let x = f32::from_bits(attr_reader.u32_at(0).unwrap_or(0));
+                let y = f32::from_bits(attr_reader.u32_at(4).unwrap_or(0));
                 metadata.insert(
                     "ScreenWindowCenter".to_string(),
                     TagValue::String(format!("{},{}", x, y)),

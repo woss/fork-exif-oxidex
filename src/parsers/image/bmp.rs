@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// BMP signature: "BM" (0x42 0x4D)
 const BMP_SIGNATURE: &[u8] = b"BM";
@@ -27,20 +28,10 @@ impl BMPParser {
         if reader.size() < 26 {
             return Ok((0, 0));
         }
-        let width_bytes = reader.read(18, 4)?;
-        let height_bytes = reader.read(22, 4)?;
-        let width = i32::from_le_bytes([
-            width_bytes[0],
-            width_bytes[1],
-            width_bytes[2],
-            width_bytes[3],
-        ]);
-        let height = i32::from_le_bytes([
-            height_bytes[0],
-            height_bytes[1],
-            height_bytes[2],
-            height_bytes[3],
-        ]);
+        let header_data = reader.read(18, 8)?;
+        let endian_reader = EndianReader::little_endian(header_data);
+        let width = endian_reader.i32_at(0).unwrap_or(0);
+        let height = endian_reader.i32_at(4).unwrap_or(0);
         Ok((width, height))
     }
 
@@ -50,7 +41,8 @@ impl BMPParser {
             return Ok(0);
         }
         let bits = reader.read(28, 2)?;
-        Ok(u16::from_le_bytes([bits[0], bits[1]]))
+        let endian_reader = EndianReader::little_endian(bits);
+        Ok(endian_reader.u16_at(0).unwrap_or(0))
     }
 
     /// Reads compression method from BMP header (offset 30, 4 bytes)
@@ -59,7 +51,8 @@ impl BMPParser {
             return Ok(0);
         }
         let comp = reader.read(30, 4)?;
-        Ok(u32::from_le_bytes([comp[0], comp[1], comp[2], comp[3]]))
+        let endian_reader = EndianReader::little_endian(comp);
+        Ok(endian_reader.u32_at(0).unwrap_or(0))
     }
 
     /// Reads horizontal resolution from BMP header (offset 38, 4 bytes)
@@ -69,7 +62,8 @@ impl BMPParser {
             return Ok(0);
         }
         let res = reader.read(38, 4)?;
-        Ok(i32::from_le_bytes([res[0], res[1], res[2], res[3]]))
+        let endian_reader = EndianReader::little_endian(res);
+        Ok(endian_reader.i32_at(0).unwrap_or(0))
     }
 
     /// Reads vertical resolution from BMP header (offset 42, 4 bytes)
@@ -79,7 +73,8 @@ impl BMPParser {
             return Ok(0);
         }
         let res = reader.read(42, 4)?;
-        Ok(i32::from_le_bytes([res[0], res[1], res[2], res[3]]))
+        let endian_reader = EndianReader::little_endian(res);
+        Ok(endian_reader.i32_at(0).unwrap_or(0))
     }
 
     /// Reads number of colors in palette (offset 46, 4 bytes)
@@ -88,9 +83,8 @@ impl BMPParser {
             return Ok(0);
         }
         let colors = reader.read(46, 4)?;
-        Ok(u32::from_le_bytes([
-            colors[0], colors[1], colors[2], colors[3],
-        ]))
+        let endian_reader = EndianReader::little_endian(colors);
+        Ok(endian_reader.u32_at(0).unwrap_or(0))
     }
 
     /// Reads number of important colors (offset 50, 4 bytes)
@@ -99,9 +93,8 @@ impl BMPParser {
             return Ok(0);
         }
         let colors = reader.read(50, 4)?;
-        Ok(u32::from_le_bytes([
-            colors[0], colors[1], colors[2], colors[3],
-        ]))
+        let endian_reader = EndianReader::little_endian(colors);
+        Ok(endian_reader.u32_at(0).unwrap_or(0))
     }
 }
 

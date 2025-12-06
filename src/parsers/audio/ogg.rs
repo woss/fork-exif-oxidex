@@ -33,6 +33,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use encoding_rs::UTF_8;
 
 /// OGG page signature
@@ -150,13 +151,14 @@ impl FormatParser for OggParser {
 /// Parse Vorbis comment data
 fn parse_vorbis_comments(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     let mut offset = 0;
+    let reader = EndianReader::little_endian(data);
 
     // Vendor string length (4 bytes, little-endian)
     if data.len() < 4 {
         return Err(ExifToolError::parse_error("Vorbis comment block too small"));
     }
 
-    let vendor_length = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let vendor_length = reader.u32_at(offset).unwrap_or(0) as usize;
     offset += 4;
 
     // Skip vendor string
@@ -170,12 +172,7 @@ fn parse_vorbis_comments(data: &[u8], metadata: &mut MetadataMap) -> Result<()> 
         return Err(ExifToolError::parse_error("Missing comment list length"));
     }
 
-    let comment_count = u32::from_le_bytes([
-        data[offset],
-        data[offset + 1],
-        data[offset + 2],
-        data[offset + 3],
-    ]);
+    let comment_count = reader.u32_at(offset).unwrap_or(0);
     offset += 4;
 
     // Parse each comment
@@ -185,12 +182,7 @@ fn parse_vorbis_comments(data: &[u8], metadata: &mut MetadataMap) -> Result<()> 
         }
 
         // Comment length (4 bytes, little-endian)
-        let comment_length = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]) as usize;
+        let comment_length = reader.u32_at(offset).unwrap_or(0) as usize;
         offset += 4;
 
         if offset + comment_length > data.len() {

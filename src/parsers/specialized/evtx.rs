@@ -50,6 +50,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::timestamp::filetime_to_iso8601;
+use crate::io::EndianReader;
 
 /// EVTX file header signature: "ElfFile\0" (8 bytes)
 const EVTX_MAGIC: &[u8] = b"ElfFile\0";
@@ -74,9 +76,6 @@ const FLAG_DIRTY: u32 = 0x1;
 
 /// Flag indicating log file reached size limit (full)
 const FLAG_FULL: u32 = 0x2;
-
-/// Windows FILETIME epoch (January 1, 1601) in Unix timestamp
-const FILETIME_EPOCH_DIFF: i64 = 11644473600;
 
 /// Windows Event Log (EVTX) parser for extracting forensic metadata
 pub struct EVTXParser;
@@ -104,74 +103,74 @@ impl EVTXParser {
         Ok(magic == EVTX_MAGIC)
     }
 
-    /// Reads a 2-byte little-endian integer from the file
-    fn read_u16_le(reader: &dyn FileReader, offset: u64) -> Result<u16> {
-        let bytes = reader.read(offset, 2)?;
-        Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
-    }
-
-    /// Reads a 4-byte little-endian integer from the file
-    fn read_u32_le(reader: &dyn FileReader, offset: u64) -> Result<u32> {
-        let bytes = reader.read(offset, 4)?;
-        Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-    }
-
-    /// Reads an 8-byte little-endian integer from the file
-    fn read_u64_le(reader: &dyn FileReader, offset: u64) -> Result<u64> {
-        let bytes = reader.read(offset, 8)?;
-        Ok(u64::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-        ]))
-    }
-
     /// Reads first chunk number (offset 8, 8 bytes)
     fn read_first_chunk(reader: &dyn FileReader) -> Result<u64> {
-        Self::read_u64_le(reader, 8)
+        let data = reader.read(8, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads last chunk number (offset 16, 8 bytes)
     fn read_last_chunk(reader: &dyn FileReader) -> Result<u64> {
-        Self::read_u64_le(reader, 16)
+        let data = reader.read(16, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads next record identifier (offset 24, 8 bytes)
     fn read_next_record_id(reader: &dyn FileReader) -> Result<u64> {
-        Self::read_u64_le(reader, 24)
+        let data = reader.read(24, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads header size (offset 32, 4 bytes) - should be 128
     fn read_header_size(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 32)
+        let data = reader.read(32, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads minor version (offset 36, 2 bytes)
     fn read_minor_version(reader: &dyn FileReader) -> Result<u16> {
-        Self::read_u16_le(reader, 36)
+        let data = reader.read(36, 2)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads major version (offset 38, 2 bytes)
     fn read_major_version(reader: &dyn FileReader) -> Result<u16> {
-        Self::read_u16_le(reader, 38)
+        let data = reader.read(38, 2)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads header block size (offset 40, 2 bytes) - should be 4096
     fn read_header_block_size(reader: &dyn FileReader) -> Result<u16> {
-        Self::read_u16_le(reader, 40)
+        let data = reader.read(40, 2)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads chunk count (offset 42, 2 bytes)
     fn read_chunk_count(reader: &dyn FileReader) -> Result<u16> {
-        Self::read_u16_le(reader, 42)
+        let data = reader.read(42, 2)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads flags (offset 76, 4 bytes)
     fn read_flags(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 76)
+        let data = reader.read(76, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads checksum (offset 120, 4 bytes)
     fn read_checksum(reader: &dyn FileReader) -> Result<u32> {
-        Self::read_u32_le(reader, 120)
+        let data = reader.read(120, 4)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Verifies chunk signature by checking chunk magic header
@@ -199,25 +198,33 @@ impl EVTXParser {
 
     /// Reads first event record ID from chunk (offset 8, 8 bytes)
     fn read_chunk_first_record_id(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
-        Self::read_u64_le(reader, chunk_offset + 8)
+        let data = reader.read(chunk_offset + 8, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads last event record ID from chunk (offset 16, 8 bytes)
     fn read_chunk_last_record_id(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
-        Self::read_u64_le(reader, chunk_offset + 16)
+        let data = reader.read(chunk_offset + 16, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads first event record timestamp from chunk (offset 24, 8 bytes FILETIME)
     fn read_chunk_first_timestamp(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
-        Self::read_u64_le(reader, chunk_offset + 24)
+        let data = reader.read(chunk_offset + 24, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads last event record timestamp from chunk (offset 32, 8 bytes FILETIME)
     fn read_chunk_last_timestamp(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
-        Self::read_u64_le(reader, chunk_offset + 32)
+        let data = reader.read(chunk_offset + 32, 8)?;
+        let r = EndianReader::little_endian(&data);
+        Ok(r.u64_at(0).unwrap_or(0))
     }
 
-    /// Converts Windows FILETIME to ISO 8601 string
+    /// Converts Windows FILETIME to ISO 8601 string using shared utility
     ///
     /// FILETIME is a 64-bit value representing 100-nanosecond intervals since
     /// January 1, 1601 UTC.
@@ -229,37 +236,8 @@ impl EVTXParser {
     /// # Returns
     ///
     /// ISO 8601 formatted timestamp string (e.g., "2024-01-15T10:30:00Z")
-    fn filetime_to_iso8601(filetime: u64) -> String {
-        // Convert 100-nanosecond intervals to seconds
-        let seconds_since_1601 = filetime / 10_000_000;
-
-        // Convert to Unix timestamp (seconds since January 1, 1970)
-        let unix_timestamp = seconds_since_1601 as i64 - FILETIME_EPOCH_DIFF;
-
-        // Handle invalid timestamps gracefully
-        if !(0..=i64::MAX / 1000).contains(&unix_timestamp) {
-            return "Invalid".to_string();
-        }
-
-        // Format as ISO 8601
-        // Simple formatting without external dependencies
-        let days_since_epoch = unix_timestamp / 86400;
-        let seconds_today = unix_timestamp % 86400;
-
-        let hours = seconds_today / 3600;
-        let minutes = (seconds_today % 3600) / 60;
-        let seconds = seconds_today % 60;
-
-        // Approximate year calculation (not accounting for leap years perfectly)
-        let year = 1970 + (days_since_epoch / 365);
-        let day_of_year = days_since_epoch % 365;
-        let month = (day_of_year / 30) + 1;
-        let day = (day_of_year % 30) + 1;
-
-        format!(
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-            year, month, day, hours, minutes, seconds
-        )
+    fn convert_filetime(filetime: u64) -> String {
+        filetime_to_iso8601(filetime).unwrap_or_else(|| "Invalid".to_string())
     }
 
     /// Formats version as Major.Minor string
@@ -400,7 +378,7 @@ impl FormatParser for EVTXParser {
             if first_timestamp > 0 {
                 metadata.insert(
                     "EVTX:FirstEventTime".to_string(),
-                    TagValue::String(Self::filetime_to_iso8601(first_timestamp)),
+                    TagValue::String(Self::convert_filetime(first_timestamp)),
                 );
             }
 
@@ -408,7 +386,7 @@ impl FormatParser for EVTXParser {
             if last_timestamp > 0 {
                 metadata.insert(
                     "EVTX:LastEventTime".to_string(),
-                    TagValue::String(Self::filetime_to_iso8601(last_timestamp)),
+                    TagValue::String(Self::convert_filetime(last_timestamp)),
                 );
             }
 
@@ -687,21 +665,21 @@ mod tests {
     }
 
     #[test]
-    fn test_filetime_to_iso8601() {
+    fn test_convert_filetime() {
         // Test with a known timestamp
         // 133000000000000000 = approximately 2023-05-01
-        let result = EVTXParser::filetime_to_iso8601(133000000000000000);
+        let result = EVTXParser::convert_filetime(133000000000000000);
         assert!(result.contains("T"));
         assert!(result.contains("Z"));
         assert!(!result.contains("Invalid"));
     }
 
     #[test]
-    fn test_filetime_to_iso8601_invalid() {
-        // Test with zero
-        let result = EVTXParser::filetime_to_iso8601(0);
-        // Should handle gracefully
-        assert!(result.contains("T") || result == "Invalid");
+    fn test_convert_filetime_invalid() {
+        // Test with zero (before Unix epoch)
+        let result = EVTXParser::convert_filetime(0);
+        // Should return "Invalid" for timestamps before Unix epoch
+        assert_eq!(result, "Invalid");
     }
 
     #[test]

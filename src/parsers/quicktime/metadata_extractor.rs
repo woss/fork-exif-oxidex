@@ -9,7 +9,8 @@
 
 use super::atom_parser::Atom;
 use crate::core::{FileReader, MetadataMap, TagValue};
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::io::timestamp::mac_time_to_iso8601;
+use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder as TiffByteOrder};
 use crate::tag_db::lookup_tag_name;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -63,34 +64,34 @@ impl<'a> BigEndianReader<'a> {
 /// Helper for reading integers with configurable byte order (for EXIF parsing)
 struct EndianReader<'a> {
     data: &'a [u8],
-    order: ByteOrder,
+    order: TiffByteOrder,
 }
 
 impl<'a> EndianReader<'a> {
-    fn new(data: &'a [u8], order: ByteOrder) -> Self {
+    fn new(data: &'a [u8], order: TiffByteOrder) -> Self {
         Self { data, order }
     }
 
     fn u16_at(&self, offset: usize) -> Option<u16> {
         self.data.get(offset..offset + 2).map(|b| match self.order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([b[0], b[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([b[0], b[1]]),
+            TiffByteOrder::LittleEndian => u16::from_le_bytes([b[0], b[1]]),
+            TiffByteOrder::BigEndian => u16::from_be_bytes([b[0], b[1]]),
         })
     }
 
     fn u32_at(&self, offset: usize) -> Option<u32> {
         self.data.get(offset..offset + 4).map(|b| match self.order {
-            ByteOrder::LittleEndian => u32::from_le_bytes([b[0], b[1], b[2], b[3]]),
-            ByteOrder::BigEndian => u32::from_be_bytes([b[0], b[1], b[2], b[3]]),
+            TiffByteOrder::LittleEndian => u32::from_le_bytes([b[0], b[1], b[2], b[3]]),
+            TiffByteOrder::BigEndian => u32::from_be_bytes([b[0], b[1], b[2], b[3]]),
         })
     }
 
     fn u64_at(&self, offset: usize) -> Option<u64> {
         self.data.get(offset..offset + 8).map(|b| match self.order {
-            ByteOrder::LittleEndian => {
+            TiffByteOrder::LittleEndian => {
                 u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
             }
-            ByteOrder::BigEndian => {
+            TiffByteOrder::BigEndian => {
                 u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
             }
         })
@@ -98,15 +99,15 @@ impl<'a> EndianReader<'a> {
 
     fn i16_at(&self, offset: usize) -> Option<i16> {
         self.data.get(offset..offset + 2).map(|b| match self.order {
-            ByteOrder::LittleEndian => i16::from_le_bytes([b[0], b[1]]),
-            ByteOrder::BigEndian => i16::from_be_bytes([b[0], b[1]]),
+            TiffByteOrder::LittleEndian => i16::from_le_bytes([b[0], b[1]]),
+            TiffByteOrder::BigEndian => i16::from_be_bytes([b[0], b[1]]),
         })
     }
 
     fn i32_at(&self, offset: usize) -> Option<i32> {
         self.data.get(offset..offset + 4).map(|b| match self.order {
-            ByteOrder::LittleEndian => i32::from_le_bytes([b[0], b[1], b[2], b[3]]),
-            ByteOrder::BigEndian => i32::from_be_bytes([b[0], b[1], b[2], b[3]]),
+            TiffByteOrder::LittleEndian => i32::from_le_bytes([b[0], b[1], b[2], b[3]]),
+            TiffByteOrder::BigEndian => i32::from_be_bytes([b[0], b[1], b[2], b[3]]),
         })
     }
 
@@ -380,8 +381,11 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
     );
 
     // Add both legacy CreateDate/ModifyDate and new MediaCreateDate/MediaModifyDate
-    let create_date_str = mac_time_to_string(creation_time);
-    let modify_date_str = mac_time_to_string(modification_time);
+    // Use shared timestamp utility for dates after 1970, fallback to legacy for older dates
+    let create_date_str = mac_time_to_iso8601(creation_time)
+        .unwrap_or_else(|| format_mac_time_legacy(creation_time));
+    let modify_date_str = mac_time_to_iso8601(modification_time)
+        .unwrap_or_else(|| format_mac_time_legacy(modification_time));
 
     metadata.insert(
         "QuickTime:CreateDate".to_string(),
@@ -532,8 +536,11 @@ fn extract_track_header(
     };
 
     // Add track-specific timestamp tags
-    let create_date_str = mac_time_to_string(creation_time);
-    let modify_date_str = mac_time_to_string(modification_time);
+    // Use shared timestamp utility for dates after 1970, fallback to legacy for older dates
+    let create_date_str = mac_time_to_iso8601(creation_time)
+        .unwrap_or_else(|| format_mac_time_legacy(creation_time));
+    let modify_date_str = mac_time_to_iso8601(modification_time)
+        .unwrap_or_else(|| format_mac_time_legacy(modification_time));
 
     metadata.insert(
         format!("QuickTime:TrackCreateDate{}", track_suffix),
@@ -637,8 +644,11 @@ fn extract_media_header(
     };
 
     // Media timestamps
-    let create_date_str = mac_time_to_string(creation_time);
-    let modify_date_str = mac_time_to_string(modification_time);
+    // Use shared timestamp utility for dates after 1970, fallback to legacy for older dates
+    let create_date_str = mac_time_to_iso8601(creation_time)
+        .unwrap_or_else(|| format_mac_time_legacy(creation_time));
+    let modify_date_str = mac_time_to_iso8601(modification_time)
+        .unwrap_or_else(|| format_mac_time_legacy(modification_time));
 
     metadata.insert(
         format!("QuickTime:MediaCreateDate{}", track_suffix),
@@ -919,8 +929,11 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
     Ok(())
 }
 
-/// Convert Mac epoch time (seconds since 1904-01-01) to ISO 8601 date string
-fn mac_time_to_string(mac_time: u64) -> String {
+/// Convert Mac epoch time (seconds since 1904-01-01) to date string.
+///
+/// This is a legacy helper that handles pre-1970 dates. For dates after 1970,
+/// prefer using `mac_time_to_iso8601` from the shared timestamp utilities.
+fn format_mac_time_legacy(mac_time: u64) -> String {
     // Mac epoch is 1904-01-01 00:00:00 UTC, Unix epoch is 1970-01-01 00:00:00 UTC
     // Difference is 66 years = 2082844800 seconds
     const MAC_EPOCH_OFFSET: i64 = 2082844800;
@@ -1665,15 +1678,15 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
 
     // Detect byte order from TIFF header
     let byte_order = match &tiff_data[0..2] {
-        b"II" => ByteOrder::LittleEndian,
-        b"MM" => ByteOrder::BigEndian,
+        b"II" => TiffByteOrder::LittleEndian,
+        b"MM" => TiffByteOrder::BigEndian,
         _ => return Err("Invalid TIFF byte order marker".to_string()),
     };
 
     // Verify TIFF magic number (0x002A)
     let magic = match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([tiff_data[2], tiff_data[3]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([tiff_data[2], tiff_data[3]]),
+        TiffByteOrder::LittleEndian => u16::from_le_bytes([tiff_data[2], tiff_data[3]]),
+        TiffByteOrder::BigEndian => u16::from_be_bytes([tiff_data[2], tiff_data[3]]),
     };
 
     if magic != 0x002A {
@@ -1682,10 +1695,10 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
 
     // Read IFD0 offset
     let ifd_offset = match byte_order {
-        ByteOrder::LittleEndian => {
+        TiffByteOrder::LittleEndian => {
             u32::from_le_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
         }
-        ByteOrder::BigEndian => {
+        TiffByteOrder::BigEndian => {
             u32::from_be_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
         }
     };
@@ -1705,10 +1718,10 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
         // Check for ExifIFD pointer (tag 0x8769)
         if *tag_id == 0x8769 && raw_bytes.len() >= 4 {
             let offset = match byte_order {
-                ByteOrder::LittleEndian => {
+                TiffByteOrder::LittleEndian => {
                     u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
                 }
-                ByteOrder::BigEndian => {
+                TiffByteOrder::BigEndian => {
                     u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
                 }
             };
@@ -1719,10 +1732,10 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
         // Check for GPS Sub-IFD pointer (tag 0x8825)
         if *tag_id == 0x8825 && raw_bytes.len() >= 4 {
             let offset = match byte_order {
-                ByteOrder::LittleEndian => {
+                TiffByteOrder::LittleEndian => {
                     u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
                 }
-                ByteOrder::BigEndian => {
+                TiffByteOrder::BigEndian => {
                     u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
                 }
             };
@@ -1768,10 +1781,11 @@ fn raw_bytes_to_tag_value(
     bytes: &[u8],
     field_type: u16,
     value_count: u32,
-    byte_order: ByteOrder,
+    byte_order: TiffByteOrder,
 ) -> TagValue {
     use crate::parsers::common::exif_types::ExifType;
 
+    // Create local EndianReader with the TIFF byte order
     let r = EndianReader::new(bytes, byte_order);
 
     let Some(exif_type) = ExifType::from_u16(field_type) else {
@@ -1808,6 +1822,7 @@ fn raw_bytes_to_tag_value(
             .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
         ExifType::Rational if r.len() >= 8 => {
             if value_count == 1 {
+                // Local EndianReader::rational_at already returns f64
                 r.rational_at(0)
                     .map(TagValue::Float)
                     .unwrap_or_else(|| TagValue::Binary(bytes.to_vec()))
@@ -1840,10 +1855,12 @@ fn raw_bytes_to_tag_value(
             .i32_at(0)
             .map(|v| TagValue::Integer(v as i64))
             .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
-        ExifType::SRational if r.len() >= 8 => r
-            .srational_at(0)
-            .map(TagValue::Float)
-            .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
+        ExifType::SRational if r.len() >= 8 => {
+            // Local EndianReader::srational_at already returns f64
+            r.srational_at(0)
+                .map(TagValue::Float)
+                .unwrap_or_else(|| TagValue::Binary(bytes.to_vec()))
+        }
         ExifType::Float if r.len() >= 4 => r
             .f32_at(0)
             .map(|v| TagValue::Float(v as f64))
@@ -1915,22 +1932,44 @@ mod tests {
     }
 
     #[test]
-    fn test_mac_time_to_string() {
+    fn test_format_mac_time_legacy() {
         // Test zero time
-        assert_eq!(mac_time_to_string(0), "0000:00:00 00:00:00");
+        assert_eq!(format_mac_time_legacy(0), "0000:00:00 00:00:00");
 
         // Test Mac epoch (1904-01-01)
         const MAC_EPOCH_OFFSET: u64 = 2082844800;
-        assert_eq!(mac_time_to_string(MAC_EPOCH_OFFSET), "1904:01:01 00:00:00");
+        assert_eq!(
+            format_mac_time_legacy(MAC_EPOCH_OFFSET),
+            "1904:01:01 00:00:00"
+        );
 
-        // Test Unix epoch (1970-01-01)
-        assert_eq!(mac_time_to_string(MAC_EPOCH_OFFSET), "1904:01:01 00:00:00");
+        // Test Unix epoch (1970-01-01) - this should use mac_time_to_iso8601 in practice
+        assert_eq!(
+            format_mac_time_legacy(MAC_EPOCH_OFFSET),
+            "1904:01:01 00:00:00"
+        );
 
         // Test a known timestamp: 2024-01-01 00:00:00 UTC
         // Unix timestamp for 2024-01-01: 1704067200
         let mac_time = 1704067200 + MAC_EPOCH_OFFSET;
-        let result = mac_time_to_string(mac_time);
+        let result = format_mac_time_legacy(mac_time);
         assert!(result.starts_with("2024:01:01"));
+    }
+
+    #[test]
+    fn test_mac_time_to_iso8601_integration() {
+        // Test that the shared timestamp utility works for dates after 1970
+        const MAC_EPOCH_OFFSET: u64 = 2082844800;
+
+        // Unix timestamp for 2024-01-01: 1704067200
+        let mac_time = 1704067200 + MAC_EPOCH_OFFSET;
+        let result = mac_time_to_iso8601(mac_time);
+        assert!(result.is_some());
+        assert!(result.unwrap().starts_with("2024-01-01"));
+
+        // Test that dates before 1970 return None
+        let old_mac_time = 100u64; // Very early date (1904)
+        assert!(mac_time_to_iso8601(old_mac_time).is_none());
     }
 
     #[test]

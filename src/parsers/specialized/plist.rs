@@ -51,6 +51,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// Binary plist magic bytes (version 0)
 const BPLIST_MAGIC_V0: &[u8] = b"bplist00";
@@ -376,13 +377,13 @@ impl PlistParser {
     }
 
     /// Reads a big-endian u64 from a byte slice
+    /// Binary plist uses big-endian byte order
     fn read_u64_be(bytes: &[u8]) -> u64 {
         if bytes.len() < 8 {
             return 0;
         }
-        u64::from_be_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-        ])
+        let reader = EndianReader::big_endian(bytes);
+        reader.u64_at(0).unwrap_or(0)
     }
 }
 

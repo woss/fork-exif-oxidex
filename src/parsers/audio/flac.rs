@@ -42,6 +42,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use nom::{
     number::complete::{be_u16, be_u24, be_u8},
     IResult,
@@ -284,13 +285,14 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
     use encoding_rs::UTF_8;
 
     let mut offset = 0;
+    let reader = EndianReader::little_endian(data);
 
     // Vendor string length (4 bytes, little-endian)
     if data.len() < 4 {
         return Err(ExifToolError::parse_error("Vorbis comment block too small"));
     }
 
-    let vendor_length = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let vendor_length = reader.u32_at(offset).unwrap_or(0) as usize;
     offset += 4;
 
     // Skip vendor string
@@ -304,12 +306,7 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
         return Err(ExifToolError::parse_error("Missing comment list length"));
     }
 
-    let comment_count = u32::from_le_bytes([
-        data[offset],
-        data[offset + 1],
-        data[offset + 2],
-        data[offset + 3],
-    ]);
+    let comment_count = reader.u32_at(offset).unwrap_or(0);
     offset += 4;
 
     // Safety limit: cap at 10,000 comments to prevent excessive memory usage
@@ -323,12 +320,7 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
         }
 
         // Comment length (4 bytes, little-endian)
-        let comment_length = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]) as usize;
+        let comment_length = reader.u32_at(offset).unwrap_or(0) as usize;
         offset += 4;
 
         if offset + comment_length > data.len() {
