@@ -3,39 +3,12 @@
 //! These tests verify comprehensive metadata extraction from Prefetch files
 //! across different Windows versions (XP, Vista, Win8, Win10/11).
 
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
 use oxidex::core::{FormatParser, TagValue};
 use oxidex::parsers::specialized::prefetch::PrefetchParser;
-
-/// Test implementation of FileReader for unit testing
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl oxidex::core::FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-
-        if start > self.data.len() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "offset beyond end of data",
-            ));
-        }
-
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Helper function to create a Prefetch file with specific parameters
 ///

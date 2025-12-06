@@ -305,39 +305,7 @@ fn parse_apev2_tag(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
-
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: &[u8]) -> Self {
-            Self {
-                data: data.to_vec(),
-            }
-        }
-    }
-
-    impl crate::core::FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = start.saturating_add(length).min(self.data.len());
-
-            if start > self.data.len() {
-                return Err(io::Error::new(
-                    io::ErrorKind::UnexpectedEof,
-                    "offset beyond data",
-                ));
-            }
-
-            Ok(&self.data[start..end])
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use crate::test_support::TestReader;
 
     #[test]
     fn test_ape_signature_valid() {
@@ -350,7 +318,7 @@ mod tests {
         data[22..24].copy_from_slice(&2u16.to_le_bytes()); // stereo
         data[24..26].copy_from_slice(&16u16.to_le_bytes()); // 16-bit
 
-        let reader = TestReader::new(&data);
+        let reader = TestReader::new(data);
         let parser = ApeParser;
         let result = parser.parse(&reader);
         assert!(result.is_ok());
@@ -365,7 +333,7 @@ mod tests {
     #[test]
     fn test_ape_signature_invalid() {
         let data = b"INVALID DATA";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = ApeParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
@@ -374,7 +342,7 @@ mod tests {
     #[test]
     fn test_ape_file_too_small() {
         let data = b"MAC ";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = ApeParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());

@@ -3,38 +3,12 @@
 //! Comprehensive tests for OLE (Compound File Binary Format) parsing and VBA macro
 //! forensic analysis, including detection of suspicious patterns used in malware.
 
-use oxidex::core::{FileReader, FormatParser};
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
+use oxidex::core::FormatParser;
 use oxidex::parsers::archive::ole::{OLEParser, VBAAnalyzer};
-use std::io;
-
-/// Test implementation of FileReader for in-memory test data
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-        if start > self.data.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "offset beyond end",
-            ));
-        }
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 // ============================================================================
 // Test 1: Detect Auto_Open pattern (auto-execution)

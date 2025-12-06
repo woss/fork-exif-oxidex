@@ -10,9 +10,12 @@
 //! - Extra data blocks (tracker data, known folders)
 //! - Edge cases and error handling
 
-use oxidex::core::{FileReader, FormatParser, TagValue};
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
+use oxidex::core::{FormatParser, TagValue};
 use oxidex::parsers::specialized::lnk::LNKParser;
-use std::io;
 
 /// LNK file magic number
 const LNK_MAGIC: u32 = 0x0000004C;
@@ -38,37 +41,6 @@ const FLAG_IS_UNICODE: u32 = 0x0080;
 /// Extra data block signatures
 const TRACKER_DATA_BLOCK_SIG: u32 = 0xA0000003;
 const KNOWN_FOLDER_BLOCK_SIG: u32 = 0xA000000B;
-
-/// Test implementation of FileReader for unit testing
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-
-        if start > self.data.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "offset beyond end of data",
-            ));
-        }
-
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Create a minimal valid LNK header with specified flags and attributes
 fn create_lnk_header(flags: u32, file_attrs: u32) -> Vec<u8> {

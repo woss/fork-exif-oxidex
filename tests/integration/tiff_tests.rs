@@ -14,6 +14,10 @@
 //! - EXIF sub-IFD extraction
 //! - Error handling (invalid headers, truncated files)
 
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
 use oxidex::io::buffered_reader::BufferedReader;
 use oxidex::parsers::tiff::file_parser::{parse_tiff_file, parse_tiff_header};
 use oxidex::parsers::tiff::ifd_parser::ByteOrder;
@@ -360,39 +364,7 @@ fn test_forensic_timezone_and_subsecond_tags() {
     // 1. Timezone information for datetime tags
     // 2. Subsecond precision for timestamps
 
-    use oxidex::core::FileReader;
-    use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
-
-    // Create a minimal TIFF IFD with forensic tags
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: Vec<u8>) -> Self {
-            Self { data }
-        }
-    }
-
-    impl FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = start + length;
-
-            if end > self.data.len() {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::UnexpectedEof,
-                    "read beyond end of file",
-                ));
-            }
-
-            Ok(&self.data[start..end])
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use oxidex::parsers::tiff::ifd_parser::parse_ifd;
 
     // Build test IFD with all 6 forensic tags
     let mut data = vec![0u8; 500];

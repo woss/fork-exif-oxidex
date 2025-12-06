@@ -291,34 +291,7 @@ pub fn parse_macho_metadata(reader: &dyn FileReader) -> std::result::Result<Meta
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: Vec<u8>) -> Self {
-            TestReader { data }
-        }
-    }
-
-    impl FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = start + length;
-            if end > self.data.len() {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::UnexpectedEof,
-                    "Read beyond end of file",
-                ));
-            }
-            Ok(&self.data[start..end])
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use crate::test_support::TestReader;
 
     fn create_minimal_macho_64() -> Vec<u8> {
         let mut data = Vec::new();

@@ -4,44 +4,18 @@
 //! metadata extraction, encoding detection, application identification, and forensic
 //! indicators. Tests use synthetic SQLite headers to verify parser behavior.
 
-use oxidex::core::{FileReader, TagValue};
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
+use oxidex::core::TagValue;
 use oxidex::parsers::specialized::sqlite::{parse_sqlite_metadata, SQLiteParser};
-use std::io;
 
 /// SQLite magic signature: "SQLite format 3\0" (16 bytes)
 const SQLITE_MAGIC: &[u8; 16] = b"SQLite format 3\0";
 
 /// SQLite header size (100 bytes)
 const SQLITE_HEADER_SIZE: usize = 100;
-
-/// Test implementation of FileReader for unit testing
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-        if start > self.data.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "offset beyond end",
-            ));
-        }
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Helper function to create a synthetic SQLite header with custom parameters
 ///

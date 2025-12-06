@@ -6,41 +6,12 @@
 //! - Hive purpose inference from names
 //! - All major hive types (NTUSER, SYSTEM, SOFTWARE, SECURITY, DEFAULT, SAM)
 
-use oxidex::core::{FileReader, TagValue};
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
+use oxidex::core::TagValue;
 use oxidex::parsers::specialized::registry::parse_registry_metadata;
-use std::io;
-
-/// Test FileReader implementation for unit and integration testing
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    /// Creates a new TestReader with the provided data
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    /// Reads a slice of data at the given offset
-    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-        if start > self.data.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "offset beyond end",
-            ));
-        }
-        Ok(&self.data[start..end])
-    }
-
-    /// Returns the total size of the data
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Creates a minimal valid registry hive header for testing
 ///

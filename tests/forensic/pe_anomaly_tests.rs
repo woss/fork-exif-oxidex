@@ -4,40 +4,14 @@
 //! suspicious characteristics in PE files including packing, obfuscation,
 //! and malicious patterns.
 
-use oxidex::core::{FileReader, TagValue};
+#[path = "../common/mod.rs"]
+mod common;
+
+#[allow(unused_imports)]
+use common::TestReader;
+use oxidex::core::TagValue;
 use oxidex::parsers::pe::anomaly_detector::AnomalyDetector;
 use oxidex::parsers::pe::structures::SectionHeader;
-
-/// Test implementation of FileReader for unit testing
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-
-        if start > self.data.len() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "offset beyond end of data",
-            ));
-        }
-
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Helper to create a section header for testing
 fn create_section(

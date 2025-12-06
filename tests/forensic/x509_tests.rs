@@ -4,38 +4,12 @@
 //! Tests cover format detection, signature verification, fingerprint calculation,
 //! and metadata extraction from various certificate structures.
 
-use oxidex::core::{FileReader, TagValue};
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
+use oxidex::core::TagValue;
 use oxidex::parsers::specialized::x509::{parse_x509_metadata, X509Parser};
-use std::io;
-
-/// Test implementation of FileReader for unit testing
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-        if start > self.data.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "offset beyond end",
-            ));
-        }
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Test 1: PEM format detection
 ///

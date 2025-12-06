@@ -4,38 +4,12 @@
 //! Tests cover format detection, signature verification, metadata extraction,
 //! and parsing of various data types (strings, integers, booleans, dates, arrays, dictionaries).
 
-use oxidex::core::{FileReader, TagValue};
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
+use oxidex::core::TagValue;
 use oxidex::parsers::specialized::plist::{parse_plist_metadata, PlistParser};
-use std::io;
-
-/// Test implementation of FileReader for unit testing
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-        if start > self.data.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "offset beyond end",
-            ));
-        }
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Binary plist magic bytes
 const BPLIST_MAGIC: &[u8; 6] = b"bplist";

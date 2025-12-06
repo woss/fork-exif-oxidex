@@ -312,39 +312,7 @@ fn parse_info_chunk(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
-
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: &[u8]) -> Self {
-            Self {
-                data: data.to_vec(),
-            }
-        }
-    }
-
-    impl crate::core::FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = start.saturating_add(length).min(self.data.len());
-
-            if start > self.data.len() {
-                return Err(io::Error::new(
-                    io::ErrorKind::UnexpectedEof,
-                    "offset beyond data",
-                ));
-            }
-
-            Ok(&self.data[start..end])
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use crate::test_support::TestReader;
 
     #[test]
     fn test_wav_signature_valid() {
@@ -354,7 +322,7 @@ mod tests {
         data[4..8].copy_from_slice(&44u32.to_le_bytes()); // file size - 8
         data[8..12].copy_from_slice(b"WAVE");
 
-        let reader = TestReader::new(&data);
+        let reader = TestReader::from_slice(&data);
         let parser = WavParser;
         let result = parser.parse(&reader);
         assert!(result.is_ok());
@@ -363,7 +331,7 @@ mod tests {
     #[test]
     fn test_wav_signature_invalid_riff() {
         let data = b"INVALID DATA";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = WavParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
@@ -376,7 +344,7 @@ mod tests {
         data[4..8].copy_from_slice(&44u32.to_le_bytes());
         data[8..12].copy_from_slice(b"XXXX"); // Invalid WAVE signature
 
-        let reader = TestReader::new(&data);
+        let reader = TestReader::from_slice(&data);
         let parser = WavParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
@@ -385,7 +353,7 @@ mod tests {
     #[test]
     fn test_wav_file_too_small() {
         let data = b"RIFF";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = WavParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());

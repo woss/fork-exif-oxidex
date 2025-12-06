@@ -29,15 +29,16 @@ fn run_oxidex_command(args: &[&str], input_file: &Path) -> (String, String, i32)
 fn read_metadata_json(file: &Path) -> serde_json::Value {
     let (stdout, _, exit_code) = run_oxidex_command(&["-j"], file);
     assert_eq!(exit_code, 0, "Failed to read metadata in JSON format.");
-    let json: serde_json::Value = serde_json::from_str(&stdout).expect("Failed to parse JSON output");
-    
+    let json: serde_json::Value =
+        serde_json::from_str(&stdout).expect("Failed to parse JSON output");
+
     // oxidex -j returns an array of objects [{...}]
     if let Some(array) = json.as_array() {
         if let Some(first) = array.first() {
             return first.clone();
         }
     }
-    
+
     // Fallback (should not happen if output format is correct)
     json
 }
@@ -97,7 +98,7 @@ fn test_cli_specific_tag_extraction() {
         .expect("Failed to copy test file");
 
     // Extract only IFD0:Make and IFD0:Model
-    let (stdout, stderr, exit_code) = 
+    let (stdout, stderr, exit_code) =
         run_oxidex_command(&["-IFD0:Make", "-IFD0:Model"], &test_file);
     assert_eq!(exit_code, 0, "stdout: {}\nstderr: {}", stdout, stderr);
 
@@ -106,7 +107,13 @@ fn test_cli_specific_tag_extraction() {
     assert!(stdout.contains("IFD0:Model"));
     assert!(!stdout.contains("IFD0:ModifyDate")); // Should not contain other tags
     assert!(!stdout.contains("Found metadata tag(s)")); // Should not contain general header
-    assert_eq!(stdout.lines().filter(|&line| !line.trim().is_empty()).count(), 2); // Only 2 relevant lines
+    assert_eq!(
+        stdout
+            .lines()
+            .filter(|&line| !line.trim().is_empty())
+            .count(),
+        2
+    ); // Only 2 relevant lines
 }
 
 #[test]

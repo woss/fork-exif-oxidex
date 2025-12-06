@@ -44,6 +44,10 @@ pub mod writers;
 pub mod error;
 pub mod tag_db;
 
+// Test Support (only compiled for tests)
+#[cfg(test)]
+pub mod test_support;
+
 /// Library version string
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

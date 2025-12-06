@@ -3,6 +3,10 @@
 //! This test validates the entire parsing pipeline from file reading through
 //! format detection, segment parsing, and EXIF tag extraction.
 
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
 use oxidex::core::{FileFormat, FileReader};
 use oxidex::io::MMapReader;
 use oxidex::parsers::detection::detect_format;
@@ -683,37 +687,6 @@ fn test_jpeg_xmp_extraction_end_to_end() {
     println!("  Title:   {}", title_tags[0].1);
     println!("  Rights:  {}", rights_tags[0].1);
     println!("\n✓ All integration test assertions passed!\n");
-}
-
-/// Helper: Creates a FileReader from byte buffer
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl oxidex::core::FileReader for TestReader {
-    fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start + length;
-
-        if end > self.data.len() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "read beyond end of file",
-            ));
-        }
-
-        Ok(&self.data[start..end])
-    }
-
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
 }
 
 #[test]

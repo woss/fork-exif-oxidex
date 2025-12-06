@@ -9,54 +9,12 @@
 //! - Event timeline information
 //! - Corruption detection via checksums
 
-use oxidex::core::{FileReader, TagValue};
+#[path = "../common/mod.rs"]
+mod common;
+
+use common::TestReader;
+use oxidex::core::TagValue;
 use oxidex::parsers::specialized::evtx::parse_evtx_metadata;
-use std::io;
-
-/// Test implementation of FileReader for EVTX integration testing
-///
-/// Provides in-memory file reading interface matching the FileReader trait,
-/// allowing synthetic test data without actual file I/O.
-struct TestReader {
-    data: Vec<u8>,
-}
-
-impl TestReader {
-    /// Creates a new test reader with the given byte data
-    fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl FileReader for TestReader {
-    /// Reads a slice of bytes from the test data
-    ///
-    /// # Arguments
-    /// * `offset` - Byte offset to start reading from
-    /// * `length` - Number of bytes to read
-    ///
-    /// # Returns
-    /// * `Ok(&[u8])` - Slice of requested data
-    /// * `Err` - If offset is beyond file size
-    fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-        let start = offset as usize;
-        let end = start.saturating_add(length).min(self.data.len());
-
-        if start > self.data.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "offset beyond end of data",
-            ));
-        }
-
-        Ok(&self.data[start..end])
-    }
-
-    /// Returns the total size of the test data
-    fn size(&self) -> u64 {
-        self.data.len() as u64
-    }
-}
 
 /// Creates a minimal EVTX file header with configurable parameters
 ///

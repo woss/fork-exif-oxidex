@@ -103,44 +103,12 @@ pub fn parse_webm_metadata(reader: &dyn FileReader) -> std::result::Result<Metad
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
-
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: &[u8]) -> Self {
-            Self {
-                data: data.to_vec(),
-            }
-        }
-    }
-
-    impl crate::core::FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = start.saturating_add(length).min(self.data.len());
-
-            if start > self.data.len() {
-                return Err(io::Error::new(
-                    io::ErrorKind::UnexpectedEof,
-                    "offset beyond data",
-                ));
-            }
-
-            Ok(&self.data[start..end])
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use crate::test_support::TestReader;
 
     #[test]
     fn test_webm_signature_valid() {
         let data = b"\x1A\x45\xDF\xA3\x00\x00\x00\x00";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = WebmParser;
         let result = parser.parse(&reader);
         assert!(result.is_ok());
@@ -149,7 +117,7 @@ mod tests {
     #[test]
     fn test_webm_signature_invalid() {
         let data = b"INVALID DATA";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = WebmParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
@@ -158,7 +126,7 @@ mod tests {
     #[test]
     fn test_webm_file_too_small() {
         let data = b"\x1A\x45";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = WebmParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());

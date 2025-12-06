@@ -271,39 +271,7 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
-
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: &[u8]) -> Self {
-            Self {
-                data: data.to_vec(),
-            }
-        }
-    }
-
-    impl crate::core::FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = start.saturating_add(length).min(self.data.len());
-
-            if start > self.data.len() {
-                return Err(io::Error::new(
-                    io::ErrorKind::UnexpectedEof,
-                    "offset beyond data",
-                ));
-            }
-
-            Ok(&self.data[start..end])
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use crate::test_support::TestReader;
 
     #[test]
     fn test_flv_signature_valid() {
@@ -314,7 +282,7 @@ mod tests {
         data[4] = 0x05; // flags (has audio + video)
         data[5..9].copy_from_slice(&9u32.to_be_bytes()); // data offset
 
-        let reader = TestReader::new(&data);
+        let reader = TestReader::from_slice(&data);
         let parser = FlvParser;
         let result = parser.parse(&reader);
         assert!(result.is_ok());
@@ -326,7 +294,7 @@ mod tests {
     #[test]
     fn test_flv_signature_invalid() {
         let data = b"INVALID DATA";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = FlvParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
@@ -335,7 +303,7 @@ mod tests {
     #[test]
     fn test_flv_file_too_small() {
         let data = b"FLV";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = FlvParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());

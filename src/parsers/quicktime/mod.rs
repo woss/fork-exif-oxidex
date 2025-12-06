@@ -148,33 +148,7 @@ fn validate_signature(reader: &dyn FileReader) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// Test file reader for unit testing
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: Vec<u8>) -> Self {
-            Self { data }
-        }
-    }
-
-    impl FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> std::io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = (start + length).min(self.data.len());
-            if start >= self.data.len() {
-                Ok(&[])
-            } else {
-                Ok(&self.data[start..end])
-            }
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use crate::test_support::TestReader;
 
     /// Create a minimal QuickTime file structure with user data
     fn create_test_quicktime_file() -> Vec<u8> {

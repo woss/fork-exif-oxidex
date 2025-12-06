@@ -1148,39 +1148,7 @@ pub fn parse_mkv_metadata(reader: &dyn FileReader) -> std::result::Result<Metada
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
-
-    struct TestReader {
-        data: Vec<u8>,
-    }
-
-    impl TestReader {
-        fn new(data: &[u8]) -> Self {
-            Self {
-                data: data.to_vec(),
-            }
-        }
-    }
-
-    impl crate::core::FileReader for TestReader {
-        fn read(&self, offset: u64, length: usize) -> io::Result<&[u8]> {
-            let start = offset as usize;
-            let end = start.saturating_add(length).min(self.data.len());
-
-            if start > self.data.len() {
-                return Err(io::Error::new(
-                    io::ErrorKind::UnexpectedEof,
-                    "offset beyond data",
-                ));
-            }
-
-            Ok(&self.data[start..end])
-        }
-
-        fn size(&self) -> u64 {
-            self.data.len() as u64
-        }
-    }
+    use crate::test_support::TestReader;
 
     #[test]
     fn test_mkv_signature_valid() {
@@ -1207,7 +1175,7 @@ mod tests {
         data.push(0x81); // size = 1
         data.push(0x02); // value = 2
 
-        let reader = TestReader::new(&data);
+        let reader = TestReader::from_slice(&data);
         let parser = MkvParser;
         let result = parser.parse(&reader);
         if let Err(ref e) = result {
@@ -1219,7 +1187,7 @@ mod tests {
     #[test]
     fn test_mkv_signature_invalid() {
         let data = b"INVALID DATA";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = MkvParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
@@ -1228,7 +1196,7 @@ mod tests {
     #[test]
     fn test_mkv_file_too_small() {
         let data = b"\x1A\x45";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let parser = MkvParser;
         let result = parser.parse(&reader);
         assert!(result.is_err());
@@ -1238,14 +1206,14 @@ mod tests {
     fn test_read_vint() {
         // Test 1-byte VINT: 0x81 = 1000_0001 = value 1
         let data = vec![0x81];
-        let reader = TestReader::new(&data);
+        let reader = TestReader::from_slice(&data);
         let (value, size) = read_vint(&reader, 0).unwrap();
         assert_eq!(value, 1);
         assert_eq!(size, 1);
 
         // Test 2-byte VINT: 0x40 0x00 = value 0
         let data = vec![0x40, 0x00];
-        let reader = TestReader::new(&data);
+        let reader = TestReader::from_slice(&data);
         let (value, size) = read_vint(&reader, 0).unwrap();
         assert_eq!(value, 0);
         assert_eq!(size, 2);
@@ -1254,7 +1222,7 @@ mod tests {
     #[test]
     fn test_read_uint() {
         let data = vec![0x01, 0x02, 0x03, 0x04];
-        let reader = TestReader::new(&data);
+        let reader = TestReader::from_slice(&data);
         let value = read_uint(&reader, 0, 4).unwrap();
         assert_eq!(value, 0x01020304);
     }
@@ -1262,7 +1230,7 @@ mod tests {
     #[test]
     fn test_read_string() {
         let data = b"Hello, World!";
-        let reader = TestReader::new(data);
+        let reader = TestReader::from_slice(data);
         let value = read_string(&reader, 0, data.len()).unwrap();
         assert_eq!(value, "Hello, World!");
     }
