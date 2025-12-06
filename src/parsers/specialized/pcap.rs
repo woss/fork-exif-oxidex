@@ -45,6 +45,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// PCAP magic numbers
 const PCAP_MAGIC_BE: u32 = 0xa1b2c3d4; // Big-endian microsecond
@@ -180,33 +181,6 @@ impl PCAPParser {
         }
     }
 
-    /// Reads a 2-byte unsigned integer with specified endianness
-    fn read_u16(data: &[u8], little_endian: bool) -> u16 {
-        if little_endian {
-            u16::from_le_bytes([data[0], data[1]])
-        } else {
-            u16::from_be_bytes([data[0], data[1]])
-        }
-    }
-
-    /// Reads a 4-byte unsigned integer with specified endianness
-    fn read_u32(data: &[u8], little_endian: bool) -> u32 {
-        if little_endian {
-            u32::from_le_bytes([data[0], data[1], data[2], data[3]])
-        } else {
-            u32::from_be_bytes([data[0], data[1], data[2], data[3]])
-        }
-    }
-
-    /// Reads a 4-byte signed integer with specified endianness
-    fn read_i32(data: &[u8], little_endian: bool) -> i32 {
-        if little_endian {
-            i32::from_le_bytes([data[0], data[1], data[2], data[3]])
-        } else {
-            i32::from_be_bytes([data[0], data[1], data[2], data[3]])
-        }
-    }
-
     /// Parses classic PCAP format
     fn parse_pcap(
         reader: &dyn FileReader,
@@ -224,9 +198,16 @@ impl PCAPParser {
         // Read global header
         let header = reader.read(0, PCAP_GLOBAL_HEADER_SIZE)?;
 
+        // Create EndianReader based on detected byte order
+        let r = if little_endian {
+            EndianReader::little_endian(&header)
+        } else {
+            EndianReader::big_endian(&header)
+        };
+
         // Parse version
-        let version_major = Self::read_u16(&header[4..6], little_endian);
-        let version_minor = Self::read_u16(&header[6..8], little_endian);
+        let version_major = r.u16_at(4).unwrap();
+        let version_minor = r.u16_at(6).unwrap();
         metadata.insert(
             "PCAP:Version".to_string(),
             TagValue::String(format!("{}.{}", version_major, version_minor)),
@@ -241,28 +222,28 @@ impl PCAPParser {
         );
 
         // Parse timezone offset (GMT to local correction)
-        let thiszone = Self::read_i32(&header[8..12], little_endian);
+        let thiszone = r.i32_at(8).unwrap();
         metadata.insert(
             "PCAP:TimeZone".to_string(),
             TagValue::String(format!("{} seconds", thiszone)),
         );
 
         // Parse timestamp accuracy (always 0 in practice)
-        let sigfigs = Self::read_u32(&header[12..16], little_endian);
+        let sigfigs = r.u32_at(12).unwrap();
         metadata.insert(
             "PCAP:TimestampAccuracy".to_string(),
             TagValue::String(sigfigs.to_string()),
         );
 
         // Parse snaplen (maximum packet length)
-        let snaplen = Self::read_u32(&header[16..20], little_endian);
+        let snaplen = r.u32_at(16).unwrap();
         metadata.insert(
             "PCAP:SnapLen".to_string(),
             TagValue::String(format!("{} bytes", snaplen)),
         );
 
         // Parse link layer type
-        let network = Self::read_u32(&header[20..24], little_endian);
+        let network = r.u32_at(20).unwrap();
         metadata.insert(
             "PCAP:LinkType".to_string(),
             TagValue::String(network.to_string()),
@@ -359,11 +340,18 @@ impl PCAPParser {
                 break;
             };
 
+            // Create EndianReader for packet header
+            let r = if little_endian {
+                EndianReader::little_endian(&pkt_header)
+            } else {
+                EndianReader::big_endian(&pkt_header)
+            };
+
             // Extract timestamp seconds
-            let ts_sec = Self::read_u32(&pkt_header[0..4], little_endian);
+            let ts_sec = r.u32_at(0).unwrap();
 
             // Extract packet length
-            let incl_len = Self::read_u32(&pkt_header[8..12], little_endian);
+            let incl_len = r.u32_at(8).unwrap();
 
             // Validate packet length
             if incl_len > safe_snaplen || incl_len > 1_000_000 {
@@ -408,8 +396,15 @@ impl PCAPParser {
                 break;
             };
 
-            let block_type = Self::read_u32(&block_header[0..4], little_endian);
-            let block_length = Self::read_u32(&block_header[4..8], little_endian);
+            // Create EndianReader for block header
+            let r = if little_endian {
+                EndianReader::little_endian(&block_header)
+            } else {
+                EndianReader::big_endian(&block_header)
+            };
+
+            let block_type = r.u32_at(0).unwrap();
+            let block_length = r.u32_at(4).unwrap();
 
             // Validate block length
             if !(12..=1_000_000).contains(&block_length) {
@@ -443,8 +438,14 @@ impl PCAPParser {
                         if let Ok(idb_data) = reader.read(offset, block_length as usize) {
                             // IDB header: link_type (2) + reserved (2) + snaplen (4) = 8 bytes after block header
                             if idb_data.len() > 16 {
-                                let link_type = Self::read_u16(&idb_data[8..10], little_endian);
-                                let snaplen = Self::read_u32(&idb_data[12..16], little_endian);
+                                let r = if little_endian {
+                                    EndianReader::little_endian(&idb_data)
+                                } else {
+                                    EndianReader::big_endian(&idb_data)
+                                };
+
+                                let link_type = r.u16_at(8).unwrap();
+                                let snaplen = r.u32_at(12).unwrap();
 
                                 // First interface's link type
                                 if interface_count == 1 {
@@ -483,10 +484,16 @@ impl PCAPParser {
                     if block_type == PCAPNG_BLOCK_EPB && block_length >= 32 {
                         if let Ok(epb_data) = reader.read(offset, 32.min(block_length as usize)) {
                             if epb_data.len() >= 20 {
+                                let r = if little_endian {
+                                    EndianReader::little_endian(&epb_data)
+                                } else {
+                                    EndianReader::big_endian(&epb_data)
+                                };
+
                                 // Timestamp is at offset 8 (after block header)
                                 // Stored as two 32-bit values: high (upper 32 bits) and low (lower 32 bits)
-                                let ts_high = Self::read_u32(&epb_data[8..12], little_endian);
-                                let ts_low = Self::read_u32(&epb_data[12..16], little_endian);
+                                let ts_high = r.u32_at(8).unwrap();
+                                let ts_low = r.u32_at(12).unwrap();
                                 let timestamp_us = ((ts_high as u64) << 32) | (ts_low as u64);
 
                                 if first_packet_ts.is_none() {
@@ -515,10 +522,14 @@ impl PCAPParser {
                     // Interface Statistics Block
                     if let Ok(isb_data) = reader.read(offset, block_length as usize) {
                         if isb_data.len() >= 24 {
-                            let isb_starttime_high =
-                                Self::read_u32(&isb_data[12..16], little_endian);
-                            let isb_starttime_low =
-                                Self::read_u32(&isb_data[16..20], little_endian);
+                            let r = if little_endian {
+                                EndianReader::little_endian(&isb_data)
+                            } else {
+                                EndianReader::big_endian(&isb_data)
+                            };
+
+                            let isb_starttime_high = r.u32_at(12).unwrap();
+                            let isb_starttime_low = r.u32_at(16).unwrap();
                             if isb_starttime_high != 0 || isb_starttime_low != 0 {
                                 let ts = ((isb_starttime_high as u64) << 32)
                                     | (isb_starttime_low as u64);
@@ -610,9 +621,20 @@ impl PCAPParser {
         let mut options = std::collections::HashMap::new();
         let mut offset = 0;
 
+        let r = if little_endian {
+            EndianReader::little_endian(data)
+        } else {
+            EndianReader::big_endian(data)
+        };
+
         while offset + 4 <= data.len() {
-            let opt_code = Self::read_u16(&data[offset..offset + 2], little_endian);
-            let opt_length = Self::read_u16(&data[offset + 2..offset + 4], little_endian) as usize;
+            let Some(opt_code) = r.u16_at(offset) else {
+                break;
+            };
+            let Some(opt_length) = r.u16_at(offset + 2) else {
+                break;
+            };
+            let opt_length = opt_length as usize;
 
             // opt_code 0 = end of options
             if opt_code == 0 {
@@ -658,9 +680,20 @@ impl PCAPParser {
         let mut options = Vec::new();
         let mut offset = 0;
 
+        let r = if little_endian {
+            EndianReader::little_endian(data)
+        } else {
+            EndianReader::big_endian(data)
+        };
+
         while offset + 4 <= data.len() {
-            let opt_code = Self::read_u16(&data[offset..offset + 2], little_endian);
-            let opt_length = Self::read_u16(&data[offset + 2..offset + 4], little_endian) as usize;
+            let Some(opt_code) = r.u16_at(offset) else {
+                break;
+            };
+            let Some(opt_length) = r.u16_at(offset + 2) else {
+                break;
+            };
+            let opt_length = opt_length as usize;
 
             if opt_code == 0 {
                 break;
@@ -711,29 +744,7 @@ impl PCAPParser {
                         options.push(("PCAPNG:InterfaceMAC".to_string(), TagValue::String(mac)));
                     }
                     PCAPNG_OPT_IF_SPEED if opt_length >= 8 => {
-                        let speed = if little_endian {
-                            u64::from_le_bytes([
-                                value_bytes[0],
-                                value_bytes[1],
-                                value_bytes[2],
-                                value_bytes[3],
-                                value_bytes[4],
-                                value_bytes[5],
-                                value_bytes[6],
-                                value_bytes[7],
-                            ])
-                        } else {
-                            u64::from_be_bytes([
-                                value_bytes[0],
-                                value_bytes[1],
-                                value_bytes[2],
-                                value_bytes[3],
-                                value_bytes[4],
-                                value_bytes[5],
-                                value_bytes[6],
-                                value_bytes[7],
-                            ])
-                        };
+                        let speed = r.u64_at(offset).unwrap();
                         let speed_str = if speed >= 1_000_000_000 {
                             format!("{} Gbps", speed / 1_000_000_000)
                         } else if speed >= 1_000_000 {
@@ -882,10 +893,20 @@ impl PCAPParser {
         let mut count = 0u32;
         let mut offset = 0;
 
+        let r = if little_endian {
+            EndianReader::little_endian(data)
+        } else {
+            EndianReader::big_endian(data)
+        };
+
         while offset + 4 <= data.len() {
-            let record_type = Self::read_u16(&data[offset..offset + 2], little_endian);
-            let record_length =
-                Self::read_u16(&data[offset + 2..offset + 4], little_endian) as usize;
+            let Some(record_type) = r.u16_at(offset) else {
+                break;
+            };
+            let Some(record_length) = r.u16_at(offset + 2) else {
+                break;
+            };
+            let record_length = record_length as usize;
 
             if record_type == 0 {
                 break;

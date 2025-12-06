@@ -7,6 +7,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// GZIP signature: 0x1F 0x8B
 const GZ_SIGNATURE: &[u8] = &[0x1F, 0x8B];
@@ -39,6 +40,7 @@ impl GZParser {
         }
 
         let header = reader.read(0, 10)?;
+        let r = EndianReader::little_endian(header);
 
         let method = header[2];
         let compression_name = match method {
@@ -53,7 +55,7 @@ impl GZParser {
         let flags = header[3];
 
         // MTIME: Unix timestamp (4 bytes, little-endian)
-        let mtime = u32::from_le_bytes([header[4], header[5], header[6], header[7]]);
+        let mtime = r.u32_at(4).unwrap_or(0);
         if mtime != 0 {
             use chrono::{TimeZone, Utc};
             if let Some(dt) = Utc.timestamp_opt(mtime as i64, 0).single() {
@@ -108,7 +110,8 @@ impl GZParser {
                 return Ok(offset);
             }
             let xlen_bytes = reader.read(offset, 2)?;
-            let xlen = u16::from_le_bytes([xlen_bytes[0], xlen_bytes[1]]) as u64;
+            let r = EndianReader::little_endian(xlen_bytes);
+            let xlen = r.u16_at(0).unwrap_or(0) as u64;
             offset += 2 + xlen;
         }
 
@@ -166,8 +169,9 @@ impl GZParser {
         }
 
         let trailer = reader.read(size - 8, 8)?;
-        let crc32 = u32::from_le_bytes([trailer[0], trailer[1], trailer[2], trailer[3]]);
-        let isize = u32::from_le_bytes([trailer[4], trailer[5], trailer[6], trailer[7]]);
+        let r = EndianReader::little_endian(trailer);
+        let crc32 = r.u32_at(0).unwrap_or(0);
+        let isize = r.u32_at(4).unwrap_or(0);
 
         metadata.insert(
             "CRC32".to_string(),

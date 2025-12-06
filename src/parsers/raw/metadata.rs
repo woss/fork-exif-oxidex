@@ -179,10 +179,7 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
     let byte_order = detect_byte_order(data)?;
 
     // Read first IFD offset from TIFF header (bytes 4-7)
-    let first_ifd_offset = match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([data[4], data[5], data[6], data[7]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([data[4], data[5], data[6], data[7]]),
-    } as u64;
+    let first_ifd_offset = read_u32(&data[4..8], byte_order) as u64;
 
     // Parse all IFDs in the chain
     let mut metadata = MetadataMap::new();
@@ -830,8 +827,13 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
     }
 
     // Read JPEG offset and length (big-endian)
-    let jpeg_offset = u32::from_be_bytes([data[84], data[85], data[86], data[87]]) as usize;
-    let jpeg_length = u32::from_be_bytes([data[88], data[89], data[90], data[91]]) as usize;
+    let reader = crate::io::EndianReader::big_endian(data);
+    let jpeg_offset = reader.u32_at(84).ok_or_else(|| {
+        ExifToolError::parse_error("RAF: failed to read JPEG offset")
+    })? as usize;
+    let jpeg_length = reader.u32_at(88).ok_or_else(|| {
+        ExifToolError::parse_error("RAF: failed to read JPEG length")
+    })? as usize;
 
     // Validate JPEG offset and length
     if jpeg_offset >= data.len() {
@@ -887,20 +889,7 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                     if let Ok(byte_order) = detect_byte_order(exif_data) {
                         // Read first IFD offset (bytes 4-7 in TIFF header)
                         if exif_data.len() >= 8 {
-                            let first_ifd_offset = match byte_order {
-                                ByteOrder::LittleEndian => u32::from_le_bytes([
-                                    exif_data[4],
-                                    exif_data[5],
-                                    exif_data[6],
-                                    exif_data[7],
-                                ]),
-                                ByteOrder::BigEndian => u32::from_be_bytes([
-                                    exif_data[4],
-                                    exif_data[5],
-                                    exif_data[6],
-                                    exif_data[7],
-                                ]),
-                            } as u64;
+                            let first_ifd_offset = read_u32(&exif_data[4..8], byte_order) as u64;
 
                             // Create reader for EXIF data
                             let exif_reader = SliceReader::new(exif_data);
@@ -1009,10 +998,14 @@ fn detect_byte_order(data: &[u8]) -> Result<ByteOrder> {
 ///
 /// The parsed u32 value
 fn read_u32(bytes: &[u8], byte_order: ByteOrder) -> u32 {
-    match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-    }
+    use crate::io::EndianReader;
+
+    let reader = match byte_order {
+        ByteOrder::LittleEndian => EndianReader::little_endian(bytes),
+        ByteOrder::BigEndian => EndianReader::big_endian(bytes),
+    };
+
+    reader.u32_at(0).unwrap_or(0)
 }
 
 /// Convert raw bytes to TagValue (simplified version)

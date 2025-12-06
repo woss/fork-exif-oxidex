@@ -3,6 +3,7 @@
 //! This module handles parsing of Mach-O code signatures, including
 //! the Code Directory, requirements, and entitlements.
 
+use crate::io::EndianReader;
 use nom::{
     number::complete::{be_u32, be_u8},
     IResult,
@@ -134,7 +135,10 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
     };
 
     // Check for SuperBlob magic
-    let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    let reader = EndianReader::big_endian(data);
+    let Some(magic) = reader.u32_at(0) else {
+        return Some(info);
+    };
     if magic != cs_magic::CSMAGIC_EMBEDDED_SIGNATURE {
         return Some(info);
     }
@@ -204,7 +208,8 @@ fn extract_entitlement_keys(data: &[u8]) -> Option<Vec<String>> {
     }
 
     // Skip blob header (magic + length)
-    let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    let reader = EndianReader::big_endian(data);
+    let magic = reader.u32_at(0)?;
     if magic != cs_magic::CSMAGIC_BLOBWRAPPER && magic != 0xFADE7171 {
         // 0xFADE7171 is CSMAGIC_EMBEDDED_ENTITLEMENTS
         return None;
@@ -268,7 +273,8 @@ fn extract_signer_from_cms(data: &[u8]) -> Option<String> {
     }
 
     // Skip blob header (magic + length)
-    let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    let reader = EndianReader::big_endian(data);
+    let magic = reader.u32_at(0)?;
     if magic != cs_magic::CSMAGIC_BLOBWRAPPER {
         return None;
     }

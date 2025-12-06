@@ -7,6 +7,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// 7z signature: 0x37 0x7A 0xBC 0xAF 0x27 0x1C
 const SEVENZ_SIGNATURE: &[u8] = &[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C];
@@ -31,20 +32,15 @@ impl StartHeader {
         }
 
         let header = reader.read(0, START_HEADER_SIZE)?;
+        let r = EndianReader::little_endian(header);
 
         Ok(Self {
             major_version: header[6],
             minor_version: header[7],
-            start_header_crc: u32::from_le_bytes([header[8], header[9], header[10], header[11]]),
-            next_header_offset: u64::from_le_bytes([
-                header[12], header[13], header[14], header[15], header[16], header[17], header[18],
-                header[19],
-            ]),
-            next_header_size: u64::from_le_bytes([
-                header[20], header[21], header[22], header[23], header[24], header[25], header[26],
-                header[27],
-            ]),
-            next_header_crc: u32::from_le_bytes([header[28], header[29], header[30], header[31]]),
+            start_header_crc: r.u32_at(8).unwrap_or(0),
+            next_header_offset: r.u64_at(12).unwrap_or(0),
+            next_header_size: r.u64_at(20).unwrap_or(0),
+            next_header_crc: r.u32_at(28).unwrap_or(0),
         })
     }
 

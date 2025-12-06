@@ -31,6 +31,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// LNK signature: 0x4C 0x00 0x00 0x00 (magic number)
 /// This is the little-endian representation of 0x0000004C
@@ -88,32 +89,6 @@ fn get_days_in_month(month: u32, year: u64) -> u64 {
 pub struct LNKParser;
 
 impl LNKParser {
-    /// Reads a u32 from the given offset in little-endian format
-    fn read_u32_le(reader: &dyn FileReader, offset: u64) -> Result<u32> {
-        let bytes = reader.read(offset, 4)?;
-        Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-    }
-
-    /// Reads a u64 from the given offset in little-endian format
-    fn read_u64_le(reader: &dyn FileReader, offset: u64) -> Result<u64> {
-        let bytes = reader.read(offset, 8)?;
-        Ok(u64::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-        ]))
-    }
-
-    /// Reads a u16 from the given offset in little-endian format
-    fn read_u16_le(reader: &dyn FileReader, offset: u64) -> Result<u16> {
-        if offset + 2 > reader.size() {
-            return Ok(0);
-        }
-        let bytes = reader.read(offset, 2)?;
-        if bytes.len() < 2 {
-            return Ok(0);
-        }
-        Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
-    }
-
     /// Converts Windows FILETIME (64-bit value) to ISO 8601 string
     ///
     /// FILETIME represents the number of 100-nanosecond intervals since 1601-01-01 00:00:00 UTC.
@@ -225,13 +200,10 @@ impl LNKParser {
         if reader.size() < 24 {
             return Ok(0);
         }
-        let flags_bytes = reader.read(20, 4)?;
-        Ok(u32::from_le_bytes([
-            flags_bytes[0],
-            flags_bytes[1],
-            flags_bytes[2],
-            flags_bytes[3],
-        ]))
+        let bytes = reader.read(20, 4)?;
+        EndianReader::little_endian(bytes)
+            .u32_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read link flags"))
     }
 
     /// Reads file attributes from the header
@@ -251,13 +223,10 @@ impl LNKParser {
         if reader.size() < 28 {
             return Ok(0);
         }
-        let attr_bytes = reader.read(24, 4)?;
-        Ok(u32::from_le_bytes([
-            attr_bytes[0],
-            attr_bytes[1],
-            attr_bytes[2],
-            attr_bytes[3],
-        ]))
+        let bytes = reader.read(24, 4)?;
+        EndianReader::little_endian(bytes)
+            .u32_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read file attributes"))
     }
 
     /// Decodes file attributes into human-readable flags
@@ -317,9 +286,20 @@ impl LNKParser {
             return Ok((0, 0, 0));
         }
 
-        let creation_time = Self::read_u64_le(reader, 28)?;
-        let access_time = Self::read_u64_le(reader, 36)?;
-        let write_time = Self::read_u64_le(reader, 44)?;
+        let creation_bytes = reader.read(28, 8)?;
+        let creation_time = EndianReader::little_endian(creation_bytes)
+            .u64_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read creation time"))?;
+
+        let access_bytes = reader.read(36, 8)?;
+        let access_time = EndianReader::little_endian(access_bytes)
+            .u64_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read access time"))?;
+
+        let write_bytes = reader.read(44, 8)?;
+        let write_time = EndianReader::little_endian(write_bytes)
+            .u64_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read write time"))?;
 
         Ok((creation_time, access_time, write_time))
     }
@@ -337,7 +317,16 @@ impl LNKParser {
         }
 
         // Read 2-byte character count
-        let count_chars = Self::read_u16_le(reader, offset)?;
+        if offset + 2 > reader.size() {
+            return Ok((String::new(), 0));
+        }
+        let count_bytes = reader.read(offset, 2)?;
+        if count_bytes.len() < 2 {
+            return Ok((String::new(), 0));
+        }
+        let count_chars = EndianReader::little_endian(count_bytes)
+            .u16_at(0)
+            .unwrap_or(0);
         if count_chars == 0 {
             return Ok((String::new(), 2));
         }
@@ -384,28 +373,45 @@ impl LNKParser {
         }
 
         // Read LinkInfo header
-        let link_info_size = Self::read_u32_le(reader, offset)?;
-        let link_info_header_size = Self::read_u32_le(reader, offset + 4)?;
+        let size_bytes = reader.read(offset, 4)?;
+        let link_info_size = EndianReader::little_endian(size_bytes)
+            .u32_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read link info size"))?;
+        let header_size_bytes = reader.read(offset + 4, 4)?;
+        let link_info_header_size = EndianReader::little_endian(header_size_bytes)
+            .u32_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read link info header size"))?;
 
         if link_info_size == 0 || link_info_header_size < 28 {
             return Ok(offset);
         }
 
         // Read LinkInfo flags
-        let link_info_flags = Self::read_u32_le(reader, offset + 8)?;
+        let flags_bytes = reader.read(offset + 8, 4)?;
+        let link_info_flags = EndianReader::little_endian(flags_bytes)
+            .u32_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read link info flags"))?;
 
         // Volume ID offset
-        let volume_id_offset = Self::read_u32_le(reader, offset + 12)?;
+        let vol_id_offset_bytes = reader.read(offset + 12, 4)?;
+        let volume_id_offset = EndianReader::little_endian(vol_id_offset_bytes)
+            .u32_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read volume ID offset"))?;
 
         // Local base path offset
-        let local_base_path_offset = Self::read_u32_le(reader, offset + 16)?;
+        let local_path_offset_bytes = reader.read(offset + 16, 4)?;
+        let local_base_path_offset = EndianReader::little_endian(local_path_offset_bytes)
+            .u32_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read local base path offset"))?;
 
         // VolumeID: Extract volume serial number if present
         if volume_id_offset > 0 && (link_info_flags & 0x0001) != 0 {
             let vol_offset = offset + volume_id_offset as u64;
-            if vol_offset + 8 < reader.size() {
-                let _volume_id_size = Self::read_u32_le(reader, vol_offset)?;
-                let volume_serial = Self::read_u32_le(reader, vol_offset + 8)?;
+            if vol_offset + 12 <= reader.size() {
+                let volume_serial_bytes = reader.read(vol_offset + 8, 4)?;
+                let volume_serial = EndianReader::little_endian(volume_serial_bytes)
+                    .u32_at(0)
+                    .ok_or_else(|| ExifToolError::parse_error("Failed to read volume serial"))?;
 
                 metadata.insert(
                     "VolumeSerialNumber".to_string(),
@@ -447,7 +453,10 @@ impl LNKParser {
 
         while current_offset + 4 < reader.size() {
             // Read block size
-            let block_size = Self::read_u32_le(reader, current_offset)?;
+            let size_bytes = reader.read(current_offset, 4)?;
+            let block_size = EndianReader::little_endian(size_bytes)
+                .u32_at(0)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read block size"))?;
 
             // Terminal block (size < 4) marks end of extra data
             if block_size < 4 {
@@ -459,7 +468,10 @@ impl LNKParser {
             }
 
             // Read block signature
-            let block_sig = Self::read_u32_le(reader, current_offset + 4)?;
+            let sig_bytes = reader.read(current_offset + 4, 4)?;
+            let block_sig = EndianReader::little_endian(sig_bytes)
+                .u32_at(0)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read block signature"))?;
 
             match block_sig {
                 TRACKER_DATA_BLOCK_SIG => {
@@ -666,8 +678,13 @@ impl FormatParser for LNKParser {
 
         // Skip LinkTargetIDList if present
         if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0 {
-            if let Ok(id_list_size) = Self::read_u16_le(reader, current_offset) {
-                current_offset += 2 + id_list_size as u64;
+            if current_offset + 2 <= reader.size() {
+                if let Ok(id_list_bytes) = reader.read(current_offset, 2) {
+                    if let Some(id_list_size) = EndianReader::little_endian(id_list_bytes).u16_at(0)
+                    {
+                        current_offset += 2 + id_list_size as u64;
+                    }
+                }
             }
         }
 

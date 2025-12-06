@@ -6,6 +6,7 @@
 //! - GNU ABI tag (OS/kernel version info)
 //! - GNU properties (security features like CET, BTI)
 
+use crate::io::{ByteOrder, EndianReader};
 use crate::parsers::elf::structures::{nt_core, nt_gnu, NoteEntry};
 use nom::{
     bytes::complete::take,
@@ -188,17 +189,18 @@ pub fn extract_gnu_abi_tag(notes: &[NoteEntry], is_little_endian: bool) -> Optio
             && note.note_type == nt_core::NT_GNU_ABI_TAG
             && note.desc.len() >= 16
         {
-            let read_u32 = if is_little_endian {
-                |bytes: &[u8]| u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+            let byte_order = if is_little_endian {
+                ByteOrder::Little
             } else {
-                |bytes: &[u8]| u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+                ByteOrder::Big
             };
+            let reader = EndianReader::new(&note.desc, byte_order);
 
             return Some(GnuAbiTag {
-                os: read_u32(&note.desc[0..4]),
-                major: read_u32(&note.desc[4..8]),
-                minor: read_u32(&note.desc[8..12]),
-                subminor: read_u32(&note.desc[12..16]),
+                os: reader.u32_at(0)?,
+                major: reader.u32_at(4)?,
+                minor: reader.u32_at(8)?,
+                subminor: reader.u32_at(12)?,
             });
         }
     }

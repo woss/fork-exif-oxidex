@@ -7,6 +7,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// ISO 9660 signature at offset 32769: "CD001"
 const ISO_SIGNATURE: &[u8] = b"CD001";
@@ -59,7 +60,8 @@ impl ISOParser {
     /// Reads both-endian format (LSB then MSB, 8 bytes total), returns LSB value
     fn read_u32_both(reader: &dyn FileReader, offset: u64) -> Result<u32> {
         let data = reader.read(offset, 8)?;
-        Ok(u32::from_le_bytes([data[0], data[1], data[2], data[3]]))
+        let r = EndianReader::little_endian(data);
+        Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads and inserts ISO date if valid

@@ -176,7 +176,9 @@ pub fn parse_chunk(reader: &dyn FileReader, offset: u64) -> Result<(u64, PngChun
     // Read CRC
     let crc_offset = offset + 8 + length as u64;
     let crc_data = reader.read(crc_offset, 4)?;
-    let crc = u32::from_be_bytes([crc_data[0], crc_data[1], crc_data[2], crc_data[3]]);
+    let crc = crate::io::EndianReader::big_endian(crc_data)
+        .u32_at(0)
+        .ok_or_else(|| ExifToolError::parse_error_at("Failed to read CRC", crc_offset as usize))?;
 
     let chunk = PngChunk {
         chunk_type,
@@ -348,8 +350,13 @@ pub fn parse_ihdr_chunk(data: &[u8]) -> Result<(u32, u32, u8, u8, u8, u8, u8)> {
         )));
     }
 
-    let width = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
-    let height = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
+    let reader = crate::io::EndianReader::big_endian(data);
+    let width = reader.u32_at(0).ok_or_else(|| {
+        ExifToolError::parse_error("IHDR chunk: failed to read width")
+    })?;
+    let height = reader.u32_at(4).ok_or_else(|| {
+        ExifToolError::parse_error("IHDR chunk: failed to read height")
+    })?;
     let bit_depth = data[8];
     let color_type = data[9];
     let compression = data[10];
@@ -401,14 +408,15 @@ pub fn parse_chrm_chunk(data: &[u8]) -> Result<ChromaticityValues> {
     }
 
     // Each value is stored as integer × 100,000
-    let white_x = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as f64 / 100000.0;
-    let white_y = u32::from_be_bytes([data[4], data[5], data[6], data[7]]) as f64 / 100000.0;
-    let red_x = u32::from_be_bytes([data[8], data[9], data[10], data[11]]) as f64 / 100000.0;
-    let red_y = u32::from_be_bytes([data[12], data[13], data[14], data[15]]) as f64 / 100000.0;
-    let green_x = u32::from_be_bytes([data[16], data[17], data[18], data[19]]) as f64 / 100000.0;
-    let green_y = u32::from_be_bytes([data[20], data[21], data[22], data[23]]) as f64 / 100000.0;
-    let blue_x = u32::from_be_bytes([data[24], data[25], data[26], data[27]]) as f64 / 100000.0;
-    let blue_y = u32::from_be_bytes([data[28], data[29], data[30], data[31]]) as f64 / 100000.0;
+    let reader = crate::io::EndianReader::big_endian(data);
+    let white_x = reader.u32_at(0).unwrap_or(0) as f64 / 100000.0;
+    let white_y = reader.u32_at(4).unwrap_or(0) as f64 / 100000.0;
+    let red_x = reader.u32_at(8).unwrap_or(0) as f64 / 100000.0;
+    let red_y = reader.u32_at(12).unwrap_or(0) as f64 / 100000.0;
+    let green_x = reader.u32_at(16).unwrap_or(0) as f64 / 100000.0;
+    let green_y = reader.u32_at(20).unwrap_or(0) as f64 / 100000.0;
+    let blue_x = reader.u32_at(24).unwrap_or(0) as f64 / 100000.0;
+    let blue_y = reader.u32_at(28).unwrap_or(0) as f64 / 100000.0;
 
     Ok((
         white_x, white_y, red_x, red_y, green_x, green_y, blue_x, blue_y,
@@ -441,8 +449,9 @@ pub fn parse_phys_chunk(data: &[u8]) -> Result<(u32, u32, u8)> {
         )));
     }
 
-    let pixels_x = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
-    let pixels_y = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
+    let reader = crate::io::EndianReader::big_endian(data);
+    let pixels_x = reader.u32_at(0).unwrap_or(0);
+    let pixels_y = reader.u32_at(4).unwrap_or(0);
     let unit = data[8];
 
     Ok((pixels_x, pixels_y, unit))
@@ -475,7 +484,8 @@ pub fn parse_gama_chunk(data: &[u8]) -> Result<f64> {
         )));
     }
 
-    let gamma_int = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    let reader = crate::io::EndianReader::big_endian(data);
+    let gamma_int = reader.u32_at(0).unwrap_or(0);
     let gamma = gamma_int as f64 / 100000.0;
 
     Ok(gamma)
@@ -500,9 +510,12 @@ pub fn parse_gama_chunk(data: &[u8]) -> Result<f64> {
 /// - `Err`: Parse error
 pub fn parse_bkgd_chunk(data: &[u8]) -> Result<u16> {
     match data.len() {
-        1 => Ok(data[0] as u16),                         // Palette index
-        2 => Ok(u16::from_be_bytes([data[0], data[1]])), // Gray value
-        6 => Ok(u16::from_be_bytes([data[0], data[1]])), // Red component (simplified)
+        1 => Ok(data[0] as u16), // Palette index
+        2 | 6 => {
+            // Gray value (2 bytes) or Red component (6 bytes, simplified to first value)
+            let reader = crate::io::EndianReader::big_endian(data);
+            Ok(reader.u16_at(0).unwrap_or(0))
+        }
         _ => Err(ExifToolError::parse_error(format!(
             "bKGD chunk has invalid length: {}",
             data.len()
@@ -625,10 +638,12 @@ pub fn parse_hist_chunk(data: &[u8]) -> Result<Vec<u16>> {
         return Err(ExifToolError::parse_error("hIST chunk length must be even"));
     }
 
+    let reader = crate::io::EndianReader::big_endian(data);
     let mut histogram = Vec::new();
     for i in (0..data.len()).step_by(2) {
-        let freq = u16::from_be_bytes([data[i], data[i + 1]]);
-        histogram.push(freq);
+        if let Some(freq) = reader.u16_at(i) {
+            histogram.push(freq);
+        }
     }
 
     Ok(histogram)
@@ -663,7 +678,8 @@ pub fn parse_time_chunk(data: &[u8]) -> Result<String> {
         )));
     }
 
-    let year = u16::from_be_bytes([data[0], data[1]]);
+    let reader = crate::io::EndianReader::big_endian(data);
+    let year = reader.u16_at(0).unwrap_or(0);
     let month = data[2];
     let day = data[3];
     let hour = data[4];
@@ -716,10 +732,14 @@ pub fn parse_exif_chunk(data: &[u8]) -> Result<IfdEntries> {
     };
 
     // Verify TIFF magic number (0x002A)
-    let magic = match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([data[2], data[3]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([data[2], data[3]]),
+    let reader = match byte_order {
+        ByteOrder::LittleEndian => crate::io::EndianReader::little_endian(data),
+        ByteOrder::BigEndian => crate::io::EndianReader::big_endian(data),
     };
+
+    let magic = reader.u16_at(2).ok_or_else(|| {
+        ExifToolError::parse_error("eXIf chunk too small to read TIFF magic number")
+    })?;
 
     if magic != 0x002A {
         return Err(ExifToolError::parse_error(format!(
@@ -729,10 +749,9 @@ pub fn parse_exif_chunk(data: &[u8]) -> Result<IfdEntries> {
     }
 
     // Read IFD offset
-    let ifd_offset = match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([data[4], data[5], data[6], data[7]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([data[4], data[5], data[6], data[7]]),
-    };
+    let ifd_offset = reader.u32_at(4).ok_or_else(|| {
+        ExifToolError::parse_error("eXIf chunk too small to read IFD offset")
+    })?;
 
     // Create an in-memory reader for the EXIF data
     let exif_reader = ExifDataReader::new(data.to_vec());

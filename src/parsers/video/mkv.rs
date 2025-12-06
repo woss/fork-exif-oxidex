@@ -66,6 +66,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// EBML header signature
 const EBML_SIGNATURE: &[u8] = b"\x1A\x45\xDF\xA3";
@@ -1072,11 +1073,33 @@ fn read_uint(reader: &dyn FileReader, offset: u64, size: usize) -> Result<u64> {
     }
 
     let bytes = reader.read(offset, size)?;
-    let mut value = 0u64;
+    let er = EndianReader::big_endian(bytes);
 
-    for &byte in bytes {
-        value = (value << 8) | byte as u64;
+    // EBML uses big-endian, read based on size
+    let value = match size {
+        1 => er.u8_at(0).map(|v| v as u64),
+        2 => er.u16_at(0).map(|v| v as u64),
+        3 => {
+            // 3-byte value: read as u32 with leading zero
+            let b0 = er.u8_at(0).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 0"))? as u32;
+            let b1 = er.u8_at(1).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 1"))? as u32;
+            let b2 = er.u8_at(2).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 2"))? as u32;
+            Some(((b0 << 16) | (b1 << 8) | b2) as u64)
+        }
+        4 => er.u32_at(0).map(|v| v as u64),
+        5..=7 => {
+            // Variable-length 5-7 bytes: manual read
+            let mut value = 0u64;
+            for i in 0..size {
+                let byte = er.u8_at(i).ok_or_else(|| ExifToolError::parse_error("Failed to read byte"))?;
+                value = (value << 8) | byte as u64;
+            }
+            Some(value)
+        }
+        8 => er.u64_at(0),
+        _ => None,
     }
+    .ok_or_else(|| ExifToolError::parse_error("Failed to read uint"))?;
 
     Ok(value)
 }
@@ -1088,30 +1111,41 @@ fn read_sint(reader: &dyn FileReader, offset: u64, size: usize) -> Result<i64> {
     }
 
     let bytes = reader.read(offset, size)?;
-    let mut value = if bytes[0] & 0x80 != 0 { -1i64 } else { 0i64 };
+    let er = EndianReader::big_endian(bytes);
 
-    for &byte in bytes {
-        value = (value << 8) | byte as i64;
+    // EBML uses big-endian, read based on size
+    let value = match size {
+        1 => er.i8_at(0).map(|v| v as i64),
+        2 => er.i16_at(0).map(|v| v as i64),
+        3..=7 => {
+            // Variable-length: sign-extend manually
+            let mut value = if bytes[0] & 0x80 != 0 { -1i64 } else { 0i64 };
+            for &byte in bytes.iter() {
+                value = (value << 8) | byte as i64;
+            }
+            Some(value)
+        }
+        8 => er.i64_at(0),
+        _ => None,
     }
+    .ok_or_else(|| ExifToolError::parse_error("Failed to read sint"))?;
 
     Ok(value)
 }
 
 /// Read floating point from EBML data
 fn read_float(reader: &dyn FileReader, offset: u64, size: usize) -> Result<f64> {
+    let bytes = reader.read(offset, size)?;
+    let er = EndianReader::big_endian(bytes);
+
     match size {
-        4 => {
-            let bytes = reader.read(offset, 4)?;
-            let bits = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-            Ok(f32::from_bits(bits) as f64)
-        }
-        8 => {
-            let bytes = reader.read(offset, 8)?;
-            let bits = u64::from_be_bytes([
-                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-            ]);
-            Ok(f64::from_bits(bits))
-        }
+        4 => er
+            .f32_at(0)
+            .map(|v| v as f64)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read f32")),
+        8 => er
+            .f64_at(0)
+            .ok_or_else(|| ExifToolError::parse_error("Failed to read f64")),
         _ => Err(ExifToolError::parse_error("Invalid float size")),
     }
 }
@@ -1123,8 +1157,11 @@ fn read_string(reader: &dyn FileReader, offset: u64, size: usize) -> Result<Stri
     }
 
     let bytes = reader.read(offset, size)?;
-    String::from_utf8(bytes.to_vec())
-        .map_err(|_| ExifToolError::parse_error("Invalid UTF-8 string"))
+    let er = EndianReader::big_endian(bytes);
+
+    er.str_at(0, size)
+        .map(|s| s.to_string())
+        .ok_or_else(|| ExifToolError::parse_error("Invalid UTF-8 string"))
 }
 
 /// Convenience function to parse MKV metadata from a reader.

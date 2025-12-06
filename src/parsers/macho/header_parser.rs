@@ -3,6 +3,7 @@
 //! This module handles parsing of Mach-O headers for both 32-bit and 64-bit
 //! formats, as well as FAT/Universal binary headers.
 
+use crate::io::EndianReader;
 use nom::{
     number::complete::{be_i32, be_u32, le_i32, le_u32},
     IResult,
@@ -16,10 +17,10 @@ use super::structures::{magic, FatArch, FatHeader, MachHeader};
 
 /// Determines if the data starts with a valid Mach-O or FAT binary magic number
 pub fn is_macho_magic(data: &[u8]) -> bool {
-    if data.len() < 4 {
+    let reader = EndianReader::big_endian(data);
+    let Some(magic) = reader.u32_at(0) else {
         return false;
-    }
-    let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    };
     matches!(
         magic,
         magic::MH_MAGIC
@@ -35,10 +36,10 @@ pub fn is_macho_magic(data: &[u8]) -> bool {
 
 /// Determines if the data starts with a FAT binary magic number
 pub fn is_fat_magic(data: &[u8]) -> bool {
-    if data.len() < 4 {
+    let reader = EndianReader::big_endian(data);
+    let Some(magic) = reader.u32_at(0) else {
         return false;
-    }
-    let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    };
     matches!(
         magic,
         magic::FAT_MAGIC | magic::FAT_CIGAM | magic::FAT_MAGIC_64 | magic::FAT_CIGAM_64
@@ -47,10 +48,8 @@ pub fn is_fat_magic(data: &[u8]) -> bool {
 
 /// Reads magic number from data as big-endian (always read as BE first)
 fn read_magic(data: &[u8]) -> Option<u32> {
-    if data.len() < 4 {
-        return None;
-    }
-    Some(u32::from_be_bytes([data[0], data[1], data[2], data[3]]))
+    let reader = EndianReader::big_endian(data);
+    reader.u32_at(0)
 }
 
 // =============================================================================

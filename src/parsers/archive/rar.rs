@@ -7,6 +7,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// RAR signature: "Rar!" (0x52 0x61 0x72 0x21)
 const RAR_SIGNATURE: &[u8] = b"Rar!";
@@ -94,7 +95,8 @@ impl RARParser {
 
         // Extract flags at offset 3-4 (little-endian u16)
         if header_data.len() >= 5 {
-            let flags = u16::from_le_bytes([header_data[3], header_data[4]]);
+            let reader = EndianReader::little_endian(header_data);
+            let flags = reader.u16_at(3).unwrap_or(0);
 
             metadata.insert(
                 "IsVolume".to_string(),
@@ -142,9 +144,10 @@ impl RARParser {
                 break;
             }
 
+            let r = EndianReader::little_endian(block_header);
             let block_type = block_header[2];
-            let _block_flags = u16::from_le_bytes([block_header[3], block_header[4]]);
-            let block_size = u16::from_le_bytes([block_header[5], block_header[6]]);
+            let _block_flags = r.u16_at(3).unwrap_or(0);
+            let block_size = r.u16_at(5).unwrap_or(0);
 
             if block_type == RAR4_BLOCK_FILE {
                 file_count += 1;
@@ -219,15 +222,9 @@ impl RARParser {
 
     /// Reads a 32-bit little-endian integer from RAR5 data
     fn read_rar5_u32(data: &[u8], offset: usize) -> Result<(u32, usize)> {
-        if offset + 4 > data.len() {
-            return Err(ExifToolError::parse_error("Unexpected end of RAR5 header"));
-        }
-        let value = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]);
+        let reader = EndianReader::little_endian(data);
+        let value = reader.u32_at(offset)
+            .ok_or_else(|| ExifToolError::parse_error("Unexpected end of RAR5 header"))?;
         Ok((value, offset + 4))
     }
 
