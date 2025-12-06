@@ -4,6 +4,7 @@
 //! handling the special cases where PNG outputs both enum-resolved and raw values.
 
 use crate::core::TagValue;
+use crate::io::{ByteOrder as IoByteOrder, EndianReader};
 use crate::parsers::common::exif_types::ExifType;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 
@@ -19,27 +20,24 @@ pub fn raw_bytes_to_tag_value_no_enum(
 ) -> TagValue {
     const EXIF_VERSION: u16 = 0x9000;
 
+    // Convert TIFF ByteOrder to IO ByteOrder for EndianReader
+    let io_order = match byte_order {
+        ByteOrder::LittleEndian => IoByteOrder::Little,
+        ByteOrder::BigEndian => IoByteOrder::Big,
+    };
+    let reader = EndianReader::new(bytes, io_order);
+
     if let Some(exif_type) = ExifType::from_u16(field_type) {
         match exif_type {
             // SHORT (type 3): 16-bit unsigned integer
             ExifType::Short if bytes.len() >= 2 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-                    ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-                };
+                let value = reader.u16_at(0).unwrap_or(0);
                 return TagValue::new_integer(value as i64);
             }
 
             // LONG (type 4): 32-bit unsigned integer
             ExifType::Long if bytes.len() >= 4 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
+                let value = reader.u32_at(0).unwrap_or(0);
                 return TagValue::new_integer(value as i64);
             }
 
@@ -83,6 +81,13 @@ pub fn raw_bytes_to_tag_value(
     tag_id: u16,
     byte_order: ByteOrder,
 ) -> TagValue {
+    // Convert TIFF ByteOrder to IO ByteOrder for EndianReader
+    let io_order = match byte_order {
+        ByteOrder::LittleEndian => IoByteOrder::Little,
+        ByteOrder::BigEndian => IoByteOrder::Big,
+    };
+    let reader = EndianReader::new(bytes, io_order);
+
     // Try to convert field_type to ExifType
     if let Some(exif_type) = ExifType::from_u16(field_type) {
         match exif_type {
@@ -94,34 +99,8 @@ pub fn raw_bytes_to_tag_value(
                     let mut values = Vec::new();
                     for i in 0..value_count as usize {
                         let offset = i * 8;
-                        let numerator = match byte_order {
-                            ByteOrder::LittleEndian => u32::from_le_bytes([
-                                bytes[offset],
-                                bytes[offset + 1],
-                                bytes[offset + 2],
-                                bytes[offset + 3],
-                            ]),
-                            ByteOrder::BigEndian => u32::from_be_bytes([
-                                bytes[offset],
-                                bytes[offset + 1],
-                                bytes[offset + 2],
-                                bytes[offset + 3],
-                            ]),
-                        };
-                        let denominator = match byte_order {
-                            ByteOrder::LittleEndian => u32::from_le_bytes([
-                                bytes[offset + 4],
-                                bytes[offset + 5],
-                                bytes[offset + 6],
-                                bytes[offset + 7],
-                            ]),
-                            ByteOrder::BigEndian => u32::from_be_bytes([
-                                bytes[offset + 4],
-                                bytes[offset + 5],
-                                bytes[offset + 6],
-                                bytes[offset + 7],
-                            ]),
-                        };
+                        let numerator = reader.u32_at(offset).unwrap_or(0);
+                        let denominator = reader.u32_at(offset + 4).unwrap_or(0);
                         if denominator != 0 {
                             values.push(numerator as f64 / denominator as f64);
                         } else {
@@ -136,22 +115,8 @@ pub fn raw_bytes_to_tag_value(
                 }
 
                 // Single rational value
-                let numerator = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
-                let denominator = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
-                    }
-                };
+                let numerator = reader.u32_at(0).unwrap_or(0);
+                let denominator = reader.u32_at(4).unwrap_or(0);
 
                 // Simplify: if denominator is 1, return as integer
                 if denominator == 1 {
@@ -168,14 +133,7 @@ pub fn raw_bytes_to_tag_value(
                     let mut values = Vec::new();
                     for i in 0..value_count as usize {
                         let offset = i * 2;
-                        let value = match byte_order {
-                            ByteOrder::LittleEndian => {
-                                u16::from_le_bytes([bytes[offset], bytes[offset + 1]])
-                            }
-                            ByteOrder::BigEndian => {
-                                u16::from_be_bytes([bytes[offset], bytes[offset + 1]])
-                            }
-                        };
+                        let value = reader.u16_at(offset).unwrap_or(0);
                         values.push(value as i64);
                     }
                     // Return as space-separated string for arrays
@@ -188,10 +146,7 @@ pub fn raw_bytes_to_tag_value(
                     );
                 }
 
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-                    ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-                };
+                let value = reader.u16_at(0).unwrap_or(0);
 
                 // Preserve raw numeric value; presentation later resolves friendly name.
                 return TagValue::new_integer(value as i64);
@@ -204,20 +159,7 @@ pub fn raw_bytes_to_tag_value(
                     let mut values = Vec::new();
                     for i in 0..value_count as usize {
                         let offset = i * 4;
-                        let value = match byte_order {
-                            ByteOrder::LittleEndian => u32::from_le_bytes([
-                                bytes[offset],
-                                bytes[offset + 1],
-                                bytes[offset + 2],
-                                bytes[offset + 3],
-                            ]),
-                            ByteOrder::BigEndian => u32::from_be_bytes([
-                                bytes[offset],
-                                bytes[offset + 1],
-                                bytes[offset + 2],
-                                bytes[offset + 3],
-                            ]),
-                        };
+                        let value = reader.u32_at(offset).unwrap_or(0);
                         values.push(value as i64);
                     }
                     // Return as space-separated string for arrays
@@ -230,14 +172,7 @@ pub fn raw_bytes_to_tag_value(
                     );
                 }
 
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => {
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                    ByteOrder::BigEndian => {
-                        u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-                    }
-                };
+                let value = reader.u32_at(0).unwrap_or(0);
 
                 // Preserve raw numeric value; presentation later resolves friendly name.
                 return TagValue::new_integer(value as i64);

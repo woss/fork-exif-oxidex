@@ -24,6 +24,7 @@
 
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::raw::RawFormat;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::tag_db::lookup_tag_name;
@@ -1000,8 +1001,6 @@ fn detect_byte_order(data: &[u8]) -> Result<ByteOrder> {
 ///
 /// The parsed u32 value
 fn read_u32(bytes: &[u8], byte_order: ByteOrder) -> u32 {
-    use crate::io::EndianReader;
-
     let reader = match byte_order {
         ByteOrder::LittleEndian => EndianReader::little_endian(bytes),
         ByteOrder::BigEndian => EndianReader::big_endian(bytes),
@@ -1046,10 +1045,11 @@ fn raw_bytes_to_simple_tag_value(
 
             // SHORT (16-bit unsigned)
             ExifType::Short if bytes.len() >= 2 => {
-                let value = match byte_order {
-                    ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-                    ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-                } as i64;
+                let reader = match byte_order {
+                    ByteOrder::LittleEndian => EndianReader::little_endian(bytes),
+                    ByteOrder::BigEndian => EndianReader::big_endian(bytes),
+                };
+                let value = reader.u16_at(0).unwrap_or(0) as i64;
                 return TagValue::new_integer(value);
             }
 

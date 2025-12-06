@@ -1,5 +1,6 @@
 //! PE VERSION_INFO Resource Parser
 
+use crate::io::EndianReader;
 use crate::parsers::pe::structures::VsFixedFileInfo;
 use nom::{
     number::complete::{le_u16, le_u32},
@@ -217,11 +218,12 @@ fn parse_string_entry(data: &[u8]) -> Option<(String, String, usize)> {
 
 /// Read null-terminated wide (UTF-16LE) string
 fn read_wide_string(data: &[u8]) -> Option<String> {
+    let reader = EndianReader::little_endian(data);
     let mut chars = Vec::new();
     let mut i = 0;
 
     while i + 1 < data.len() {
-        let ch = u16::from_le_bytes([data[i], data[i + 1]]);
+        let ch = reader.u16_at(i)?;
         if ch == 0 {
             break;
         }
@@ -238,12 +240,13 @@ fn read_wide_string_length(data: &[u8], byte_length: usize) -> Option<String> {
         return Some(String::new());
     }
 
+    let reader = EndianReader::little_endian(data);
     let mut chars = Vec::new();
     let mut i = 0;
     let max = byte_length.min(data.len());
 
     while i + 1 < max {
-        let ch = u16::from_le_bytes([data[i], data[i + 1]]);
+        let ch = reader.u16_at(i)?;
         if ch == 0 {
             break;
         }

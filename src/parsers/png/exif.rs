@@ -5,6 +5,7 @@
 
 use crate::core::{MetadataMap, TagValue};
 use crate::error::Result;
+use crate::io::{ByteOrder as IoByteOrder, EndianReader};
 use crate::parsers::png::chunk_parser::{parse_exif_chunk, ExifDataReader};
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
 use crate::tag_db::lookup_tag_name;
@@ -52,18 +53,18 @@ pub fn parse_and_insert_exif_tags(exif_data: &[u8], metadata: &mut MetadataMap) 
     let mut exif_ifd_offset = None;
     let mut gps_ifd_offset = None;
 
+    // Convert TIFF ByteOrder to IO ByteOrder for EndianReader
+    let io_order = match byte_order {
+        ByteOrder::LittleEndian => IoByteOrder::Little,
+        ByteOrder::BigEndian => IoByteOrder::Big,
+    };
+
     // Convert raw tag data to MetadataMap entries
     for (tag_id, field_type, value_count, raw_bytes) in &tags {
         // Check for EXIF Sub-IFD pointer (tag 0x8769)
         if *tag_id == 0x8769 && raw_bytes.len() >= 4 {
-            let offset = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-            };
+            let reader = EndianReader::new(raw_bytes, io_order);
+            let offset = reader.u32_at(0).unwrap_or(0);
             exif_ifd_offset = Some(offset as u64);
 
             // Perl ExifTool outputs ExifOffset in PNG:Exif namespace
@@ -76,14 +77,8 @@ pub fn parse_and_insert_exif_tags(exif_data: &[u8], metadata: &mut MetadataMap) 
 
         // Check for GPS Sub-IFD pointer (tag 0x8825)
         if *tag_id == 0x8825 && raw_bytes.len() >= 4 {
-            let offset = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-            };
+            let reader = EndianReader::new(raw_bytes, io_order);
+            let offset = reader.u32_at(0).unwrap_or(0);
             gps_ifd_offset = Some(offset as u64);
             continue; // Don't add the pointer tag to metadata
         }

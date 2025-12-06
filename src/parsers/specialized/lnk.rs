@@ -338,11 +338,11 @@ impl LNKParser {
             let byte_count = count_chars as usize * 2;
             let bytes = reader.read(current_offset, byte_count)?;
 
-            // Convert UTF-16LE to String
+            // Convert UTF-16LE to String using EndianReader for each u16 character
+            let le_reader = EndianReader::little_endian(bytes);
             let mut utf16_chars = Vec::new();
-            for i in (0..byte_count).step_by(2) {
-                if i + 1 < byte_count {
-                    let char_val = u16::from_le_bytes([bytes[i], bytes[i + 1]]);
+            for i in 0..count_chars as usize {
+                if let Some(char_val) = le_reader.u16_at(i * 2) {
                     utf16_chars.push(char_val);
                 }
             }

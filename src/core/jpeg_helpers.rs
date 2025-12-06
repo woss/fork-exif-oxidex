@@ -7,6 +7,7 @@ use super::{FileReader, MetadataMap, TagValue};
 use crate::core::operations_helpers::read_u32;
 use crate::core::tag_conversion::{parse_string_to_tag_value, raw_bytes_to_tag_value};
 use crate::core::tiff_helpers::{parse_exif_subifd, parse_gps_subifd};
+use crate::io::EndianReader;
 use crate::parsers::jpeg::segment_parser::Segment;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
@@ -34,8 +35,11 @@ pub fn process_jfif_segments(segments: &[Segment], metadata: &mut MetadataMap) {
             let version_major = segment.data[5];
             let version_minor = segment.data[6];
             let units = segment.data[7];
-            let x_density = u16::from_be_bytes([segment.data[8], segment.data[9]]);
-            let y_density = u16::from_be_bytes([segment.data[10], segment.data[11]]);
+
+            // JFIF uses big-endian byte order for density values
+            let reader = EndianReader::big_endian(segment.data);
+            let x_density = reader.u16_at(8).unwrap_or(0);
+            let y_density = reader.u16_at(10).unwrap_or(0);
 
             // Add JFIF tags to metadata
             metadata.insert(
@@ -108,14 +112,12 @@ pub fn process_exif_segments(
             };
 
             // Read IFD offset from bytes 4-7 (relative to TIFF data start)
-            let ifd_offset = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
-                }
-            } as u64;
+            // Create EndianReader with appropriate byte order for the TIFF data
+            let tiff_header_reader = match byte_order {
+                ByteOrder::LittleEndian => EndianReader::little_endian(tiff_data),
+                ByteOrder::BigEndian => EndianReader::big_endian(tiff_data),
+            };
+            let ifd_offset = tiff_header_reader.u32_at(4).unwrap_or(0) as u64;
 
             // Create a sub-reader for TIFF data
             // We need to create a wrapper that adjusts offsets to be relative to TIFF start

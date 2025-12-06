@@ -2,6 +2,7 @@
 
 use crate::core::FileReader;
 use crate::error::Result;
+use crate::io::EndianReader;
 use crate::parsers::pe::structures::{ExportInfo, ImageExportDirectory, SectionHeader};
 use nom::{number::complete::le_u32, IResult};
 
@@ -95,17 +96,12 @@ pub fn parse_exports(
             .ok_or_else(|| crate::error::ExifToolError::parse_error("Invalid EAT RVA"))?;
         let eat_size = (directory.number_of_functions * 4) as usize;
         let eat_data = reader.read(eat_offset, eat_size)?;
+        let eat_reader = EndianReader::little_endian(eat_data);
 
         // Count forwarded exports (RVA points within export section)
         for i in 0..directory.number_of_functions {
             let offset = (i * 4) as usize;
-            if offset + 4 <= eat_data.len() {
-                let function_rva = u32::from_le_bytes([
-                    eat_data[offset],
-                    eat_data[offset + 1],
-                    eat_data[offset + 2],
-                    eat_data[offset + 3],
-                ]);
+            if let Some(function_rva) = eat_reader.u32_at(offset) {
                 if function_rva > 0
                     && function_rva >= export_section_start
                     && function_rva < export_section_end
@@ -124,17 +120,12 @@ pub fn parse_exports(
         let names_to_read = std::cmp::min(directory.number_of_names, 30);
         let name_table_size = (names_to_read * 4) as usize;
         let name_table_data = reader.read(name_table_offset, name_table_size)?;
+        let name_table_reader = EndianReader::little_endian(name_table_data);
 
         // Read name RVAs and resolve to strings
         for i in 0..names_to_read {
             let offset = (i * 4) as usize;
-            if offset + 4 <= name_table_data.len() {
-                let name_rva = u32::from_le_bytes([
-                    name_table_data[offset],
-                    name_table_data[offset + 1],
-                    name_table_data[offset + 2],
-                    name_table_data[offset + 3],
-                ]);
+            if let Some(name_rva) = name_table_reader.u32_at(offset) {
                 if let Some(name_file_offset) = rva_to_file_offset(name_rva, sections) {
                     if let Ok(name) = read_string_at_offset(reader, name_file_offset) {
                         function_names.push(name);

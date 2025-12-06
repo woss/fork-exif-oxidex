@@ -207,6 +207,7 @@ pub fn serialize_ifd(
 mod tests {
     use super::*;
     use crate::core::tag_value::TagValue;
+    use crate::io::EndianReader;
     use crate::parsers::tiff::ifd_parser::parse_ifd;
     use crate::test_support::TestReader;
 
@@ -239,19 +240,17 @@ mod tests {
         assert_eq!(bytes.len(), 18);
 
         // Entry count should be 1
-        assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 1);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(0).unwrap_or(0), 1);
 
         // Tag ID should be 0x0110 (Model)
-        assert_eq!(u16::from_le_bytes([bytes[2], bytes[3]]), 0x0110);
+        assert_eq!(reader.u16_at(2).unwrap_or(0), 0x0110);
 
         // Type should be ASCII (2)
-        assert_eq!(u16::from_le_bytes([bytes[4], bytes[5]]), 2);
+        assert_eq!(reader.u16_at(4).unwrap_or(0), 2);
 
         // Count should be 4 (including null)
-        assert_eq!(
-            u32::from_le_bytes([bytes[6], bytes[7], bytes[8], bytes[9]]),
-            4
-        );
+        assert_eq!(reader.u32_at(6).unwrap_or(0), 4);
 
         // Value should be inline: "EOS\0"
         assert_eq!(&bytes[10..14], b"EOS\0");
@@ -272,22 +271,20 @@ mod tests {
         assert_eq!(bytes.len(), 24);
 
         // Entry count should be 1
-        assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 1);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(0).unwrap_or(0), 1);
 
         // Tag ID should be 0x010F (Make)
-        assert_eq!(u16::from_le_bytes([bytes[2], bytes[3]]), 0x010F);
+        assert_eq!(reader.u16_at(2).unwrap_or(0), 0x010F);
 
         // Type should be ASCII (2)
-        assert_eq!(u16::from_le_bytes([bytes[4], bytes[5]]), 2);
+        assert_eq!(reader.u16_at(4).unwrap_or(0), 2);
 
         // Count should be 6
-        assert_eq!(
-            u32::from_le_bytes([bytes[6], bytes[7], bytes[8], bytes[9]]),
-            6
-        );
+        assert_eq!(reader.u32_at(6).unwrap_or(0), 6);
 
         // Offset should point to value area (after IFD header)
-        let offset = u32::from_le_bytes([bytes[10], bytes[11], bytes[12], bytes[13]]);
+        let offset = reader.u32_at(10).unwrap_or(0);
         assert_eq!(offset, 18); // 2 + 12 + 4
 
         // Value data should be "Canon\0"
@@ -305,19 +302,17 @@ mod tests {
         let bytes = result.unwrap();
 
         // Entry count should be 1
-        assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 1);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(0).unwrap_or(0), 1);
 
         // Type should be Short (3)
-        assert_eq!(u16::from_le_bytes([bytes[4], bytes[5]]), 3);
+        assert_eq!(reader.u16_at(4).unwrap_or(0), 3);
 
         // Count should be 1
-        assert_eq!(
-            u32::from_le_bytes([bytes[6], bytes[7], bytes[8], bytes[9]]),
-            1
-        );
+        assert_eq!(reader.u32_at(6).unwrap_or(0), 1);
 
         // Value should be 400 (inline, as u16)
-        assert_eq!(u16::from_le_bytes([bytes[10], bytes[11]]), 400);
+        assert_eq!(reader.u16_at(10).unwrap_or(0), 400);
     }
 
     #[test]
@@ -331,21 +326,19 @@ mod tests {
         let bytes = result.unwrap();
 
         // Type should be Rational (5)
-        assert_eq!(u16::from_le_bytes([bytes[4], bytes[5]]), 5);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(4).unwrap_or(0), 5);
 
         // Count should be 1
-        assert_eq!(
-            u32::from_le_bytes([bytes[6], bytes[7], bytes[8], bytes[9]]),
-            1
-        );
+        assert_eq!(reader.u32_at(6).unwrap_or(0), 1);
 
         // Offset should point to value area
-        let offset = u32::from_le_bytes([bytes[10], bytes[11], bytes[12], bytes[13]]);
+        let offset = reader.u32_at(10).unwrap_or(0);
         assert_eq!(offset, 18);
 
         // Value data should be numerator (28) + denominator (10)
-        let numerator = u32::from_le_bytes([bytes[18], bytes[19], bytes[20], bytes[21]]);
-        let denominator = u32::from_le_bytes([bytes[22], bytes[23], bytes[24], bytes[25]]);
+        let numerator = reader.u32_at(18).unwrap_or(0);
+        let denominator = reader.u32_at(22).unwrap_or(0);
         assert_eq!(numerator, 28);
         assert_eq!(denominator, 10);
     }
@@ -363,14 +356,15 @@ mod tests {
         let bytes = result.unwrap();
 
         // Entry count should be 2
-        assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 2);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(0).unwrap_or(0), 2);
 
         // First entry should be Make (0x010F) - lower tag ID
-        let first_tag = u16::from_le_bytes([bytes[2], bytes[3]]);
+        let first_tag = reader.u16_at(2).unwrap_or(0);
         assert_eq!(first_tag, 0x010F);
 
         // Second entry should be Model (0x0110) - higher tag ID
-        let second_tag = u16::from_le_bytes([bytes[14], bytes[15]]);
+        let second_tag = reader.u16_at(14).unwrap_or(0);
         assert_eq!(second_tag, 0x0110);
     }
 
@@ -385,19 +379,17 @@ mod tests {
         let bytes = result.unwrap();
 
         // Entry count should be 1 (big-endian)
-        assert_eq!(u16::from_be_bytes([bytes[0], bytes[1]]), 1);
+        let reader = EndianReader::big_endian(&bytes);
+        assert_eq!(reader.u16_at(0).unwrap_or(0), 1);
 
         // Tag ID should be 0x0110 (big-endian)
-        assert_eq!(u16::from_be_bytes([bytes[2], bytes[3]]), 0x0110);
+        assert_eq!(reader.u16_at(2).unwrap_or(0), 0x0110);
 
         // Type should be ASCII (2, big-endian)
-        assert_eq!(u16::from_be_bytes([bytes[4], bytes[5]]), 2);
+        assert_eq!(reader.u16_at(4).unwrap_or(0), 2);
 
         // Count should be 4 (big-endian)
-        assert_eq!(
-            u32::from_be_bytes([bytes[6], bytes[7], bytes[8], bytes[9]]),
-            4
-        );
+        assert_eq!(reader.u32_at(6).unwrap_or(0), 4);
 
         // Value should still be "EOS\0" (ASCII is byte-oriented)
         assert_eq!(&bytes[10..14], b"EOS\0");
@@ -438,7 +430,8 @@ mod tests {
         assert!(iso.is_some());
         let (_, _, _, iso_value) = iso.unwrap();
         let iso_bytes = iso_value.as_ref();
-        assert_eq!(u16::from_le_bytes([iso_bytes[0], iso_bytes[1]]), 400);
+        let iso_reader = EndianReader::little_endian(iso_bytes);
+        assert_eq!(iso_reader.u16_at(0).unwrap_or(0), 400);
     }
 
     #[test]
@@ -492,8 +485,9 @@ mod tests {
 
         // Should be 8 bytes: numerator (28) + denominator (10)
         assert_eq!(value.len(), 8);
-        let numerator = u32::from_le_bytes([value[0], value[1], value[2], value[3]]);
-        let denominator = u32::from_le_bytes([value[4], value[5], value[6], value[7]]);
+        let value_reader = EndianReader::little_endian(value);
+        let numerator = value_reader.u32_at(0).unwrap_or(0);
+        let denominator = value_reader.u32_at(4).unwrap_or(0);
         assert_eq!(numerator, 28);
         assert_eq!(denominator, 10);
     }
@@ -511,7 +505,8 @@ mod tests {
         let bytes = result.unwrap();
 
         // Entry count should be 1 (only EXIF:Make)
-        assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 1);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(0).unwrap_or(0), 1);
     }
 
     #[test]
@@ -528,7 +523,8 @@ mod tests {
         let bytes = result.unwrap();
 
         // Entry count should be 1 (only EXIF:Make, unknown tag is skipped)
-        assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 1);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(0).unwrap_or(0), 1);
     }
 
     #[test]
@@ -545,13 +541,11 @@ mod tests {
         let bytes = result.unwrap();
 
         // Type should be Undefined (7)
-        assert_eq!(u16::from_le_bytes([bytes[4], bytes[5]]), 7);
+        let reader = EndianReader::little_endian(&bytes);
+        assert_eq!(reader.u16_at(4).unwrap_or(0), 7);
 
         // Count should be 4
-        assert_eq!(
-            u32::from_le_bytes([bytes[6], bytes[7], bytes[8], bytes[9]]),
-            4
-        );
+        assert_eq!(reader.u32_at(6).unwrap_or(0), 4);
 
         // Value should be inline
         assert_eq!(&bytes[10..14], &[0x41, 0x42, 0x43, 0x44]);

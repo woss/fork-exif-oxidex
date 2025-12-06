@@ -261,6 +261,7 @@ fn encode_u32_for_byte_order(value: u32, byte_order: ByteOrder) -> Vec<u8> {
 mod tests {
     use super::*;
     use crate::core::tag_value::TagValue;
+    use crate::io::EndianReader;
 
     #[test]
     fn test_builder_empty_ifd() {
@@ -294,7 +295,8 @@ mod tests {
         assert!(bytes.len() > 6);
 
         // Entry count should be 1
-        let count = u16::from_le_bytes([bytes[0], bytes[1]]);
+        let reader = EndianReader::little_endian(&bytes);
+        let count = reader.u16_at(0).unwrap_or(0);
         assert_eq!(count, 1);
     }
 
@@ -309,11 +311,12 @@ mod tests {
         let bytes = result.unwrap();
 
         // Entry count should be 1
-        let count = u16::from_le_bytes([bytes[0], bytes[1]]);
+        let reader = EndianReader::little_endian(&bytes);
+        let count = reader.u16_at(0).unwrap_or(0);
         assert_eq!(count, 1);
 
         // Tag ID should be EXIF_IFD_POINTER
-        let tag_id = u16::from_le_bytes([bytes[2], bytes[3]]);
+        let tag_id = reader.u16_at(2).unwrap_or(0);
         assert_eq!(tag_id, EXIF_IFD_POINTER);
     }
 

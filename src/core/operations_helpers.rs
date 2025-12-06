@@ -10,6 +10,7 @@
 
 use crate::core::TagValue;
 use crate::error::{ExifToolError, Result};
+use crate::io::{ByteOrder as IoByteOrder, EndianReader};
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 use chrono;
 
@@ -17,7 +18,22 @@ use chrono;
 // BYTE ORDER UTILITIES
 // ============================================================================
 
+/// Converts from TIFF ByteOrder to IO ByteOrder.
+///
+/// This helper bridges the two ByteOrder enums used in the codebase:
+/// - `crate::parsers::tiff::ifd_parser::ByteOrder` (LittleEndian/BigEndian)
+/// - `crate::io::ByteOrder` (Little/Big)
+#[inline]
+fn to_io_byte_order(byte_order: ByteOrder) -> IoByteOrder {
+    match byte_order {
+        ByteOrder::LittleEndian => IoByteOrder::Little,
+        ByteOrder::BigEndian => IoByteOrder::Big,
+    }
+}
+
 /// Reads an unsigned 16-bit integer from bytes with the specified byte order.
+///
+/// Uses `EndianReader` for consistent byte order handling across the codebase.
 ///
 /// # Arguments
 ///
@@ -26,17 +42,17 @@ use chrono;
 ///
 /// # Returns
 ///
-/// The u16 value
+/// The u16 value (returns 0 if bytes are too short)
 #[inline]
 pub fn read_u16(bytes: &[u8], byte_order: ByteOrder) -> u16 {
-    match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([bytes[0], bytes[1]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([bytes[0], bytes[1]]),
-    }
+    let reader = EndianReader::new(bytes, to_io_byte_order(byte_order));
+    reader.u16_at(0).unwrap_or(0)
 }
 
 /// Reads an unsigned 32-bit integer from bytes with the specified byte order.
 ///
+/// Uses `EndianReader` for consistent byte order handling across the codebase.
+///
 /// # Arguments
 ///
 /// * `bytes` - Byte slice (must be at least 4 bytes)
@@ -44,17 +60,17 @@ pub fn read_u16(bytes: &[u8], byte_order: ByteOrder) -> u16 {
 ///
 /// # Returns
 ///
-/// The u32 value
+/// The u32 value (returns 0 if bytes are too short)
 #[inline]
 pub fn read_u32(bytes: &[u8], byte_order: ByteOrder) -> u32 {
-    match byte_order {
-        ByteOrder::LittleEndian => u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        ByteOrder::BigEndian => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-    }
+    let reader = EndianReader::new(bytes, to_io_byte_order(byte_order));
+    reader.u32_at(0).unwrap_or(0)
 }
 
 /// Reads a signed 32-bit integer from bytes with the specified byte order.
 ///
+/// Uses `EndianReader` for consistent byte order handling across the codebase.
+///
 /// # Arguments
 ///
 /// * `bytes` - Byte slice (must be at least 4 bytes)
@@ -62,13 +78,11 @@ pub fn read_u32(bytes: &[u8], byte_order: ByteOrder) -> u32 {
 ///
 /// # Returns
 ///
-/// The i32 value
+/// The i32 value (returns 0 if bytes are too short)
 #[inline]
 pub fn read_i32(bytes: &[u8], byte_order: ByteOrder) -> i32 {
-    match byte_order {
-        ByteOrder::LittleEndian => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-        ByteOrder::BigEndian => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-    }
+    let reader = EndianReader::new(bytes, to_io_byte_order(byte_order));
+    reader.i32_at(0).unwrap_or(0)
 }
 
 // ============================================================================

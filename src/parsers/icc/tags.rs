@@ -10,6 +10,7 @@ use super::registries::{
 };
 use crate::core::TagValue;
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use std::collections::HashMap;
 
 /// Parses ICC tags using the tag registry
@@ -202,15 +203,10 @@ fn parse_mluc_type(data: &[u8]) -> Result<String> {
     }
 
     let utf16_bytes = &data[str_offset..str_offset + str_length];
-    let u16_vec: Vec<u16> = utf16_bytes
-        .chunks(2)
-        .filter_map(|chunk| {
-            if chunk.len() == 2 {
-                Some(u16::from_be_bytes([chunk[0], chunk[1]]))
-            } else {
-                None
-            }
-        })
+    let reader = EndianReader::big_endian(utf16_bytes);
+    let u16_vec: Vec<u16> = (0..utf16_bytes.len())
+        .step_by(2)
+        .filter_map(|offset| reader.u16_at(offset))
         .collect();
 
     String::from_utf16(&u16_vec)

@@ -4,6 +4,8 @@
 //! compiled with Microsoft tools. The Rich Header contains information about the
 //! tools and compilers used to build the executable.
 
+use crate::io::EndianReader;
+
 /// Rich Header Entry - represents a single tool/compiler used to build the PE
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RichHeaderEntry {
@@ -176,12 +178,8 @@ pub fn parse_rich_header(data: &[u8], dos_stub_end: usize, pe_offset: usize) -> 
         return None;
     }
 
-    let xor_key = u32::from_le_bytes([
-        data[rich_offset + 4],
-        data[rich_offset + 5],
-        data[rich_offset + 6],
-        data[rich_offset + 7],
-    ]);
+    let reader = EndianReader::little_endian(data);
+    let xor_key = reader.u32_at(rich_offset + 4)?;
 
     // Now search backwards for the start of the Rich Header (encrypted "DanS")
     let encrypted_dans = DANS_SIGNATURE ^ xor_key;
@@ -195,11 +193,11 @@ pub fn parse_rich_header(data: &[u8], dos_stub_end: usize, pe_offset: usize) -> 
     }
 
     let encrypted_data = &data[header_start..rich_offset];
+    let encrypted_reader = EndianReader::little_endian(encrypted_data);
     let mut decrypted_data = Vec::with_capacity(encrypted_data.len());
 
-    for chunk in encrypted_data.chunks(4) {
-        if chunk.len() == 4 {
-            let encrypted = u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+    for i in (0..encrypted_data.len()).step_by(4) {
+        if let Some(encrypted) = encrypted_reader.u32_at(i) {
             let decrypted = encrypted ^ xor_key;
             decrypted_data.extend_from_slice(&decrypted.to_le_bytes());
         }
@@ -210,12 +208,8 @@ pub fn parse_rich_header(data: &[u8], dos_stub_end: usize, pe_offset: usize) -> 
         return None;
     }
 
-    let dans_sig = u32::from_le_bytes([
-        decrypted_data[0],
-        decrypted_data[1],
-        decrypted_data[2],
-        decrypted_data[3],
-    ]);
+    let decrypted_reader = EndianReader::little_endian(&decrypted_data);
+    let dans_sig = decrypted_reader.u32_at(0)?;
 
     if dans_sig != DANS_SIGNATURE {
         return None;
@@ -226,18 +220,8 @@ pub fn parse_rich_header(data: &[u8], dos_stub_end: usize, pe_offset: usize) -> 
     let mut offset = 16;
 
     while offset + 8 <= decrypted_data.len() {
-        let compid = u32::from_le_bytes([
-            decrypted_data[offset],
-            decrypted_data[offset + 1],
-            decrypted_data[offset + 2],
-            decrypted_data[offset + 3],
-        ]);
-        let count = u32::from_le_bytes([
-            decrypted_data[offset + 4],
-            decrypted_data[offset + 5],
-            decrypted_data[offset + 6],
-            decrypted_data[offset + 7],
-        ]);
+        let compid = decrypted_reader.u32_at(offset).unwrap_or(0);
+        let count = decrypted_reader.u32_at(offset + 4).unwrap_or(0);
 
         // compid format: (build_number << 16) | product_id
         let product_id = (compid & 0xFFFF) as u16;

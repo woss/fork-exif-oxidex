@@ -14,6 +14,7 @@ use crate::core::operations_helpers::{
     gcd, is_datetime_string, is_printable_ascii, parse_exif_datetime, read_i32, read_u16, read_u32,
 };
 use crate::core::TagValue;
+use crate::io::EndianReader;
 use crate::parsers::common::exif_types::ExifType;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 
@@ -442,8 +443,11 @@ fn heuristic_bytes_to_tag_value(bytes: &[u8], byte_order: ByteOrder) -> TagValue
         let null_count = bytes.iter().filter(|&&b| b == 0).count();
         let has_printable = bytes.iter().any(|&b| (32..=126).contains(&b));
 
+        // If multiple nulls or no printable chars, treat as little-endian integer
+        // (common default for binary data of unknown type)
         if null_count > 1 || !has_printable {
-            let value = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as i64;
+            let reader = EndianReader::little_endian(bytes);
+            let value = reader.u32_at(0).unwrap_or(0) as i64;
             return TagValue::new_integer(value);
         }
 

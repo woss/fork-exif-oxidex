@@ -3,6 +3,7 @@
 //! This module extracts .NET assembly information from PE files,
 //! including CLR version, assembly name, version, culture, and public key token.
 
+use crate::io::EndianReader;
 use nom::{
     number::complete::{le_u16, le_u32},
     IResult,
@@ -173,7 +174,8 @@ fn parse_cli_metadata(
         return None;
     }
 
-    let signature = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    let reader = EndianReader::little_endian(data);
+    let signature = reader.u32_at(0)?;
     if signature != 0x424A5342 {
         return None;
     }
@@ -185,12 +187,7 @@ fn parse_cli_metadata(
     if offset + 4 > data.len() {
         return None;
     }
-    let version_len = u32::from_le_bytes([
-        data[offset],
-        data[offset + 1],
-        data[offset + 2],
-        data[offset + 3],
-    ]) as usize;
+    let version_len = reader.u32_at(offset)? as usize;
     offset += 4;
 
     // Read version string (null-terminated, padded to 4-byte boundary)
@@ -206,7 +203,7 @@ fn parse_cli_metadata(
     if offset + 4 > data.len() {
         return None;
     }
-    let stream_count = u16::from_le_bytes([data[offset + 2], data[offset + 3]]) as usize;
+    let stream_count = reader.u16_at(offset + 2)? as usize;
     offset += 4;
 
     // Find #~ or #- stream (metadata tables)
@@ -218,18 +215,8 @@ fn parse_cli_metadata(
             break;
         }
 
-        let stream_offset = u32::from_le_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]) as usize;
-        let stream_size = u32::from_le_bytes([
-            data[offset + 4],
-            data[offset + 5],
-            data[offset + 6],
-            data[offset + 7],
-        ]) as usize;
+        let stream_offset = reader.u32_at(offset)? as usize;
+        let stream_size = reader.u32_at(offset + 4)? as usize;
         offset += 8;
 
         // Read stream name (null-terminated, padded to 4-byte boundary)

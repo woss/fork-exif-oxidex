@@ -142,17 +142,19 @@ impl RegistryParser {
     fn read_hive_name(reader: &dyn FileReader) -> Result<String> {
         let bytes = reader.read(48, 64)?;
 
-        // Convert UTF-16LE to String
+        // Convert UTF-16LE to String using EndianReader for each u16 character
+        let le_reader = EndianReader::little_endian(bytes);
         let mut utf16_chars = Vec::new();
-        for i in (0..64).step_by(2) {
-            if i + 1 >= bytes.len() {
+        for i in 0..32 {
+            // 64 bytes = 32 UTF-16 characters
+            if let Some(char_code) = le_reader.u16_at(i * 2) {
+                if char_code == 0 {
+                    break; // Null terminator
+                }
+                utf16_chars.push(char_code);
+            } else {
                 break;
             }
-            let char_code = u16::from_le_bytes([bytes[i], bytes[i + 1]]);
-            if char_code == 0 {
-                break; // Null terminator
-            }
-            utf16_chars.push(char_code);
         }
 
         // Decode UTF-16LE to String

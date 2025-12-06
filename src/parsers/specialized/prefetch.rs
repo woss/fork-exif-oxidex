@@ -120,10 +120,11 @@ impl PrefetchParser {
     fn read_executable_name(reader: &dyn FileReader) -> Result<String> {
         let bytes = reader.read(16, EXECUTABLE_NAME_LEN)?;
 
-        // Convert UTF-16LE to Rust String
+        // Convert UTF-16LE to Rust String using EndianReader for each u16 character
+        let le_reader = EndianReader::little_endian(bytes);
         let mut utf16_chars = Vec::new();
-        for i in (0..EXECUTABLE_NAME_LEN).step_by(2) {
-            let char_val = u16::from_le_bytes([bytes[i], bytes[i + 1]]);
+        for i in 0..(EXECUTABLE_NAME_LEN / 2) {
+            let char_val = le_reader.u16_at(i * 2).unwrap_or(0);
             // Stop at null terminator
             if char_val == 0 {
                 break;

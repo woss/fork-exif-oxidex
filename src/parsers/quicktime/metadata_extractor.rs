@@ -10,137 +10,39 @@
 use super::atom_parser::Atom;
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::io::timestamp::mac_time_to_iso8601;
+use crate::io::{ByteOrder, EndianReader};
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder as TiffByteOrder};
 use crate::tag_db::lookup_tag_name;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io;
 
-/// Helper for reading big-endian integers from byte slices
-struct BigEndianReader<'a>(&'a [u8]);
-
-impl<'a> BigEndianReader<'a> {
-    fn u16_at(&self, offset: usize) -> Option<u16> {
-        self.0
-            .get(offset..offset + 2)
-            .map(|b| u16::from_be_bytes([b[0], b[1]]))
-    }
-
-    fn u32_at(&self, offset: usize) -> Option<u32> {
-        self.0
-            .get(offset..offset + 4)
-            .map(|b| u32::from_be_bytes([b[0], b[1], b[2], b[3]]))
-    }
-
-    fn u64_at(&self, offset: usize) -> Option<u64> {
-        self.0
-            .get(offset..offset + 8)
-            .map(|b| u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
-    }
-
-    fn i32_at(&self, offset: usize) -> Option<i32> {
-        self.0
-            .get(offset..offset + 4)
-            .map(|b| i32::from_be_bytes([b[0], b[1], b[2], b[3]]))
-    }
-
-    fn i16_at(&self, offset: usize) -> Option<i16> {
-        self.0
-            .get(offset..offset + 2)
-            .map(|b| i16::from_be_bytes([b[0], b[1]]))
-    }
-
-    fn str_at(&self, offset: usize, len: usize) -> Option<&'a str> {
-        self.0
-            .get(offset..offset + len)
-            .and_then(|b| std::str::from_utf8(b).ok())
-    }
-
-    fn len(&self) -> usize {
-        self.0.len()
+/// Helper function to compute rational value as f64
+/// Used when we need the computed float value rather than the (num, denom) tuple
+fn rational_to_f64(reader: &EndianReader, offset: usize) -> Option<f64> {
+    let (num, den) = reader.rational_at(offset)?;
+    if den != 0 {
+        Some(num as f64 / den as f64)
+    } else {
+        None
     }
 }
 
-/// Helper for reading integers with configurable byte order (for EXIF parsing)
-struct EndianReader<'a> {
-    data: &'a [u8],
-    order: TiffByteOrder,
+/// Helper function to compute signed rational value as f64
+fn srational_to_f64(reader: &EndianReader, offset: usize) -> Option<f64> {
+    let (num, den) = reader.srational_at(offset)?;
+    if den != 0 {
+        Some(num as f64 / den as f64)
+    } else {
+        None
+    }
 }
 
-impl<'a> EndianReader<'a> {
-    fn new(data: &'a [u8], order: TiffByteOrder) -> Self {
-        Self { data, order }
-    }
-
-    fn u16_at(&self, offset: usize) -> Option<u16> {
-        self.data.get(offset..offset + 2).map(|b| match self.order {
-            TiffByteOrder::LittleEndian => u16::from_le_bytes([b[0], b[1]]),
-            TiffByteOrder::BigEndian => u16::from_be_bytes([b[0], b[1]]),
-        })
-    }
-
-    fn u32_at(&self, offset: usize) -> Option<u32> {
-        self.data.get(offset..offset + 4).map(|b| match self.order {
-            TiffByteOrder::LittleEndian => u32::from_le_bytes([b[0], b[1], b[2], b[3]]),
-            TiffByteOrder::BigEndian => u32::from_be_bytes([b[0], b[1], b[2], b[3]]),
-        })
-    }
-
-    fn u64_at(&self, offset: usize) -> Option<u64> {
-        self.data.get(offset..offset + 8).map(|b| match self.order {
-            TiffByteOrder::LittleEndian => {
-                u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
-            }
-            TiffByteOrder::BigEndian => {
-                u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]])
-            }
-        })
-    }
-
-    fn i16_at(&self, offset: usize) -> Option<i16> {
-        self.data.get(offset..offset + 2).map(|b| match self.order {
-            TiffByteOrder::LittleEndian => i16::from_le_bytes([b[0], b[1]]),
-            TiffByteOrder::BigEndian => i16::from_be_bytes([b[0], b[1]]),
-        })
-    }
-
-    fn i32_at(&self, offset: usize) -> Option<i32> {
-        self.data.get(offset..offset + 4).map(|b| match self.order {
-            TiffByteOrder::LittleEndian => i32::from_le_bytes([b[0], b[1], b[2], b[3]]),
-            TiffByteOrder::BigEndian => i32::from_be_bytes([b[0], b[1], b[2], b[3]]),
-        })
-    }
-
-    fn f32_at(&self, offset: usize) -> Option<f32> {
-        self.u32_at(offset).map(f32::from_bits)
-    }
-
-    fn f64_at(&self, offset: usize) -> Option<f64> {
-        self.u64_at(offset).map(f64::from_bits)
-    }
-
-    fn rational_at(&self, offset: usize) -> Option<f64> {
-        let num = self.u32_at(offset)?;
-        let den = self.u32_at(offset + 4)?;
-        if den != 0 {
-            Some(num as f64 / den as f64)
-        } else {
-            None
-        }
-    }
-
-    fn srational_at(&self, offset: usize) -> Option<f64> {
-        let num = self.i32_at(offset)?;
-        let den = self.i32_at(offset + 4)?;
-        if den != 0 {
-            Some(num as f64 / den as f64)
-        } else {
-            None
-        }
-    }
-
-    fn len(&self) -> usize {
-        self.data.len()
+/// Convert TiffByteOrder to the crate's ByteOrder type
+fn tiff_to_byte_order(order: TiffByteOrder) -> ByteOrder {
+    match order {
+        TiffByteOrder::LittleEndian => ByteOrder::Little,
+        TiffByteOrder::BigEndian => ByteOrder::Big,
     }
 }
 
@@ -285,13 +187,8 @@ fn extract_file_level_metadata(root_atoms: &[Atom], metadata: &mut MetadataMap) 
 
             // Minor version (4 bytes)
             if ftyp.data.len() >= 8 {
-                let version_bytes = &ftyp.data[4..8];
-                let minor_version = u32::from_be_bytes([
-                    version_bytes[0],
-                    version_bytes[1],
-                    version_bytes[2],
-                    version_bytes[3],
-                ]);
+                let r = EndianReader::big_endian(ftyp.data);
+                let minor_version = r.u32_at(4).unwrap_or(0);
                 let version_str = format!(
                     "{}.{}.{}",
                     (minor_version >> 16) & 0xFF,
@@ -350,7 +247,7 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
         return Ok(());
     }
 
-    let r = BigEndianReader(mvhd.data);
+    let r = EndianReader::big_endian(mvhd.data);
     let version = mvhd.data[0];
 
     // Parse time fields based on version (v0: 32-bit, v1: 64-bit)
@@ -502,7 +399,7 @@ fn extract_track_header(
         return Ok(());
     }
 
-    let r = BigEndianReader(tkhd.data);
+    let r = EndianReader::big_endian(tkhd.data);
     let version = tkhd.data[0];
     let flags = [tkhd.data[1], tkhd.data[2], tkhd.data[3]];
 
@@ -611,7 +508,7 @@ fn extract_media_header(
         return Ok(());
     }
 
-    let r = BigEndianReader(mdhd.data);
+    let r = EndianReader::big_endian(mdhd.data);
     let version = mdhd.data[0];
 
     // Use track index for tag names if we have multiple tracks
@@ -706,7 +603,7 @@ fn extract_sample_description(
         return Ok(());
     }
 
-    let r = BigEndianReader(stsd.data);
+    let r = EndianReader::big_endian(stsd.data);
 
     // Skip version/flags (4 bytes)
     let entry_count = r.u32_at(4).unwrap_or(0);
@@ -750,7 +647,7 @@ fn extract_sample_description(
                     "sowt" => "PCM (little-endian)",
                     "twos" => "PCM (big-endian)",
                     "alaw" => "A-law",
-                    "ulaw" => "µ-law",
+                    "ulaw" => "u-law",
                     "vp08" => "VP8",
                     "vp09" => "VP9",
                     "av01" => "AV1",
@@ -766,9 +663,10 @@ fn extract_sample_description(
             if entry_data.len() >= 86 {
                 // Check if this looks like a video sample description
                 // Video sample descriptions have width/height at specific offsets
+                let entry_reader = EndianReader::big_endian(entry_data);
 
                 // Width (2 bytes at offset 32)
-                if let Some(width) = BigEndianReader(entry_data).u16_at(32) {
+                if let Some(width) = entry_reader.u16_at(32) {
                     if width > 0 && width < 10000 {
                         // Sanity check
                         metadata.insert(
@@ -779,7 +677,7 @@ fn extract_sample_description(
                 }
 
                 // Height (2 bytes at offset 34)
-                if let Some(height) = BigEndianReader(entry_data).u16_at(34) {
+                if let Some(height) = entry_reader.u16_at(34) {
                     if height > 0 && height < 10000 {
                         // Sanity check
                         metadata.insert(
@@ -790,7 +688,7 @@ fn extract_sample_description(
                 }
 
                 // Bit depth (2 bytes at offset 82)
-                if let Some(depth) = BigEndianReader(entry_data).u16_at(82) {
+                if let Some(depth) = entry_reader.u16_at(82) {
                     metadata.insert(
                         format!("QuickTime:BitDepth{}", track_suffix),
                         TagValue::Integer(depth as i64),
@@ -801,9 +699,10 @@ fn extract_sample_description(
             // For audio sample descriptions
             if entry_data.len() >= 36 {
                 // Audio sample descriptions have channel count and sample rate
+                let entry_reader = EndianReader::big_endian(entry_data);
 
                 // Channel count (2 bytes at offset 24)
-                if let Some(channels) = BigEndianReader(entry_data).u16_at(24) {
+                if let Some(channels) = entry_reader.u16_at(24) {
                     if channels > 0 && channels <= 32 {
                         // Sanity check
                         metadata.insert(
@@ -814,7 +713,7 @@ fn extract_sample_description(
                 }
 
                 // Sample size (2 bytes at offset 26)
-                if let Some(sample_size) = BigEndianReader(entry_data).u16_at(26) {
+                if let Some(sample_size) = entry_reader.u16_at(26) {
                     if sample_size > 0 && sample_size <= 64 {
                         // Sanity check
                         metadata.insert(
@@ -825,7 +724,7 @@ fn extract_sample_description(
                 }
 
                 // Sample rate (fixed-point 16.16 at offset 32)
-                if let Some(sample_rate_fixed) = BigEndianReader(entry_data).u32_at(32) {
+                if let Some(sample_rate_fixed) = entry_reader.u32_at(32) {
                     let sample_rate = (sample_rate_fixed >> 16) as f64;
                     if (8000.0..=192000.0).contains(&sample_rate) {
                         // Sanity check
@@ -1151,7 +1050,9 @@ fn extract_mp4_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), S
             let atom_type_bytes = item.atom_type.as_bytes();
 
             // Try to interpret as a big-endian integer
-            let key_index = u32::from_be_bytes(*atom_type_bytes);
+            let key_index = EndianReader::big_endian(atom_type_bytes)
+                .u32_at(0)
+                .unwrap_or(0);
 
             if let Some(data_atom) = item.find_child("data") {
                 if let Some(value) = extract_itunes_data_value(data_atom.data) {
@@ -1228,7 +1129,8 @@ fn parse_mp4_keys(data: &[u8]) -> Result<HashMap<u32, String>, String> {
         return Ok(keys);
     }
 
-    let entry_count = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
+    let r = EndianReader::big_endian(data);
+    let entry_count = r.u32_at(4).unwrap_or(0);
     let mut offset = 8;
     let mut index = 1; // Keys are 1-indexed
 
@@ -1237,12 +1139,7 @@ fn parse_mp4_keys(data: &[u8]) -> Result<HashMap<u32, String>, String> {
             break;
         }
 
-        let key_size = u32::from_be_bytes([
-            data[offset],
-            data[offset + 1],
-            data[offset + 2],
-            data[offset + 3],
-        ]) as usize;
+        let key_size = r.u32_at(offset).unwrap_or(0) as usize;
 
         if key_size < 8 || offset + key_size > data.len() {
             break;
@@ -1272,7 +1169,8 @@ fn extract_string_value(data: &[u8]) -> Option<String> {
         return None;
     }
 
-    let size = u16::from_be_bytes([data[0], data[1]]) as usize;
+    let r = EndianReader::big_endian(data);
+    let size = r.u16_at(0)? as usize;
     // Skip language code (2 bytes)
     let text_start = 4;
 
@@ -1295,7 +1193,8 @@ fn extract_itunes_data_value(data: &[u8]) -> Option<TagValue> {
         return None;
     }
 
-    let type_indicator = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+    let r = EndianReader::big_endian(data);
+    let type_indicator = r.u32_at(0)?;
     let value_data = &data[8..];
 
     match type_indicator {
@@ -1311,17 +1210,11 @@ fn extract_itunes_data_value(data: &[u8]) -> Option<TagValue> {
         }
         21 => {
             // Signed integer (1, 2, 3, or 4 bytes)
+            let vr = EndianReader::big_endian(value_data);
             match value_data.len() {
                 1 => Some(TagValue::Integer(value_data[0] as i64)),
-                2 => Some(TagValue::Integer(
-                    i16::from_be_bytes([value_data[0], value_data[1]]) as i64,
-                )),
-                4 => Some(TagValue::Integer(i32::from_be_bytes([
-                    value_data[0],
-                    value_data[1],
-                    value_data[2],
-                    value_data[3],
-                ]) as i64)),
+                2 => vr.i16_at(0).map(|v| TagValue::Integer(v as i64)),
+                4 => vr.i32_at(0).map(|v| TagValue::Integer(v as i64)),
                 _ => None,
             }
         }
@@ -1344,9 +1237,10 @@ fn decode_utf16(data: &[u8]) -> Option<String> {
         return None;
     }
 
-    let utf16_chars: Vec<u16> = data
-        .chunks_exact(2)
-        .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
+    // Use EndianReader to read each u16 in big-endian order
+    let r = EndianReader::big_endian(data);
+    let utf16_chars: Vec<u16> = (0..data.len() / 2)
+        .filter_map(|i| r.u16_at(i * 2))
         .collect();
 
     String::from_utf16(&utf16_chars).ok()
@@ -1439,7 +1333,7 @@ fn find_exif_item_id(children: &[Atom], metadata: &mut MetadataMap) -> Option<u1
         return None;
     }
 
-    let r = BigEndianReader(iinf.data);
+    let r = EndianReader::big_endian(iinf.data);
     let version = iinf.data[0];
 
     let (entry_count, entries_offset) = if version == 0 {
@@ -1459,7 +1353,8 @@ fn find_exif_item_id(children: &[Atom], metadata: &mut MetadataMap) -> Option<u1
     let (_, infe_atoms) = super::atom_parser::parse_atoms(&iinf.data[entries_offset..]).ok()?;
     for infe in infe_atoms.iter().filter(|a| a.atom_type.matches("infe")) {
         if infe.data.len() >= 12 {
-            let item_id = u16::from_be_bytes([infe.data[4], infe.data[5]]);
+            let infe_reader = EndianReader::big_endian(infe.data);
+            let item_id = infe_reader.u16_at(4).unwrap_or(0);
             if &infe.data[8..12] == b"Exif" {
                 return Some(item_id);
             }
@@ -1480,7 +1375,7 @@ fn parse_iloc_locations(children: &[Atom]) -> HashMap<u16, (u64, u64)> {
         return locations;
     }
 
-    let r = BigEndianReader(iloc.data);
+    let r = EndianReader::big_endian(iloc.data);
     let version = iloc.data[0];
     let offset_size = ((iloc.data[4] >> 4) & 0x0F) as usize;
     let length_size = (iloc.data[4] & 0x0F) as usize;
@@ -1542,7 +1437,7 @@ fn parse_iloc_locations(children: &[Atom]) -> HashMap<u16, (u64, u64)> {
 fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
     for atom in children {
         if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
-            let r = BigEndianReader(atom.data);
+            let r = EndianReader::big_endian(atom.data);
             if let (Some(width), Some(height)) = (r.u32_at(4), r.u32_at(8)) {
                 if !metadata.contains_key("HEIF:ImageWidth") {
                     metadata.insert(
@@ -1616,23 +1511,13 @@ fn read_variable_size(data: &[u8], pos: &mut usize, size: usize) -> u64 {
         return 0;
     }
 
+    let r = EndianReader::big_endian(data);
     let value = match size {
         0 => 0u64,
         1 => data[*pos] as u64,
-        2 => u16::from_be_bytes([data[*pos], data[*pos + 1]]) as u64,
-        4 => {
-            u32::from_be_bytes([data[*pos], data[*pos + 1], data[*pos + 2], data[*pos + 3]]) as u64
-        }
-        8 => u64::from_be_bytes([
-            data[*pos],
-            data[*pos + 1],
-            data[*pos + 2],
-            data[*pos + 3],
-            data[*pos + 4],
-            data[*pos + 5],
-            data[*pos + 6],
-            data[*pos + 7],
-        ]),
+        2 => r.u16_at(*pos).unwrap_or(0) as u64,
+        4 => r.u32_at(*pos).unwrap_or(0) as u64,
+        8 => r.u64_at(*pos).unwrap_or(0),
         _ => 0,
     };
     *pos += size;
@@ -1683,25 +1568,18 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
         _ => return Err("Invalid TIFF byte order marker".to_string()),
     };
 
+    // Create EndianReader with detected byte order
+    let r = EndianReader::new(tiff_data, tiff_to_byte_order(byte_order));
+
     // Verify TIFF magic number (0x002A)
-    let magic = match byte_order {
-        TiffByteOrder::LittleEndian => u16::from_le_bytes([tiff_data[2], tiff_data[3]]),
-        TiffByteOrder::BigEndian => u16::from_be_bytes([tiff_data[2], tiff_data[3]]),
-    };
+    let magic = r.u16_at(2).ok_or("Failed to read TIFF magic number")?;
 
     if magic != 0x002A {
         return Err(format!("Invalid TIFF magic number: 0x{:04X}", magic));
     }
 
     // Read IFD0 offset
-    let ifd_offset = match byte_order {
-        TiffByteOrder::LittleEndian => {
-            u32::from_le_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
-        }
-        TiffByteOrder::BigEndian => {
-            u32::from_be_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]])
-        }
-    };
+    let ifd_offset = r.u32_at(4).ok_or("Failed to read IFD0 offset")?;
 
     // Create a reader for the TIFF data
     let exif_reader = HeifExifDataReader::new(tiff_data.to_vec());
@@ -1715,31 +1593,22 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
         .map_err(|e| format!("Failed to parse IFD0: {}", e))?;
 
     for (tag_id, field_type, value_count, raw_bytes) in &ifd0_tags {
+        // Create reader for raw bytes with detected byte order
+        let raw_reader = EndianReader::new(raw_bytes, tiff_to_byte_order(byte_order));
+
         // Check for ExifIFD pointer (tag 0x8769)
         if *tag_id == 0x8769 && raw_bytes.len() >= 4 {
-            let offset = match byte_order {
-                TiffByteOrder::LittleEndian => {
-                    u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-                TiffByteOrder::BigEndian => {
-                    u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-            };
-            exif_ifd_offset = Some(offset as u64);
+            if let Some(offset) = raw_reader.u32_at(0) {
+                exif_ifd_offset = Some(offset as u64);
+            }
             continue;
         }
 
         // Check for GPS Sub-IFD pointer (tag 0x8825)
         if *tag_id == 0x8825 && raw_bytes.len() >= 4 {
-            let offset = match byte_order {
-                TiffByteOrder::LittleEndian => {
-                    u32::from_le_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-                TiffByteOrder::BigEndian => {
-                    u32::from_be_bytes([raw_bytes[0], raw_bytes[1], raw_bytes[2], raw_bytes[3]])
-                }
-            };
-            gps_ifd_offset = Some(offset as u64);
+            if let Some(offset) = raw_reader.u32_at(0) {
+                gps_ifd_offset = Some(offset as u64);
+            }
             continue;
         }
 
@@ -1785,8 +1654,8 @@ fn raw_bytes_to_tag_value(
 ) -> TagValue {
     use crate::parsers::common::exif_types::ExifType;
 
-    // Create local EndianReader with the TIFF byte order
-    let r = EndianReader::new(bytes, byte_order);
+    // Create EndianReader with the TIFF byte order (converted to crate's ByteOrder)
+    let r = EndianReader::new(bytes, tiff_to_byte_order(byte_order));
 
     let Some(exif_type) = ExifType::from_u16(field_type) else {
         return TagValue::Binary(bytes.to_vec());
@@ -1822,13 +1691,13 @@ fn raw_bytes_to_tag_value(
             .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
         ExifType::Rational if r.len() >= 8 => {
             if value_count == 1 {
-                // Local EndianReader::rational_at already returns f64
-                r.rational_at(0)
+                // Use helper function to compute rational as f64
+                rational_to_f64(&r, 0)
                     .map(TagValue::Float)
                     .unwrap_or_else(|| TagValue::Binary(bytes.to_vec()))
             } else {
                 let values: Vec<_> = (0..value_count as usize)
-                    .filter_map(|i| r.rational_at(i * 8).map(|v| format!("{}", v)))
+                    .filter_map(|i| rational_to_f64(&r, i * 8).map(|v| format!("{}", v)))
                     .collect();
                 TagValue::String(values.join(" "))
             }
@@ -1856,8 +1725,8 @@ fn raw_bytes_to_tag_value(
             .map(|v| TagValue::Integer(v as i64))
             .unwrap_or_else(|| TagValue::Binary(bytes.to_vec())),
         ExifType::SRational if r.len() >= 8 => {
-            // Local EndianReader::srational_at already returns f64
-            r.srational_at(0)
+            // Use helper function to compute signed rational as f64
+            srational_to_f64(&r, 0)
                 .map(TagValue::Float)
                 .unwrap_or_else(|| TagValue::Binary(bytes.to_vec()))
         }

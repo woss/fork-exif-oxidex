@@ -339,6 +339,7 @@ fn is_standalone_marker(marker: u16) -> bool {
 mod tests {
     use super::*;
     use crate::core::tag_value::TagValue;
+    use crate::io::EndianReader;
     use crate::test_support::TestReader;
 
     /// Creates a minimal valid JPEG with EXIF
@@ -440,7 +441,8 @@ mod tests {
         assert_eq!(&output[0..2], &[0xFF, 0xE1]);
 
         // Check length (2 + 9 = 11)
-        assert_eq!(u16::from_be_bytes([output[2], output[3]]), 11);
+        let reader = EndianReader::big_endian(&output);
+        assert_eq!(reader.u16_at(2).unwrap_or(0), 11);
 
         // Check data
         assert_eq!(&output[4..13], data);

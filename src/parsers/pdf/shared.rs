@@ -6,6 +6,7 @@
 
 use crate::core::FileReader;
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use nom::{
     bytes::complete::{tag, take_while1},
     character::complete::{digit1, multispace0},
@@ -306,15 +307,10 @@ fn decode_utf16be_hex(hex_str: &str) -> Option<String> {
         .collect();
 
     let bytes = bytes.ok()?;
-    let u16_vec: Vec<u16> = bytes
-        .chunks(2)
-        .filter_map(|chunk| {
-            if chunk.len() == 2 {
-                Some(u16::from_be_bytes([chunk[0], chunk[1]]))
-            } else {
-                None
-            }
-        })
+    let reader = EndianReader::big_endian(&bytes);
+    let u16_vec: Vec<u16> = (0..bytes.len())
+        .step_by(2)
+        .filter_map(|offset| reader.u16_at(offset))
         .collect();
 
     String::from_utf16(&u16_vec).ok()
