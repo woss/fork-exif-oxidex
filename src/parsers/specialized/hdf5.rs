@@ -56,9 +56,21 @@ impl HDF5Parser {
         let sb_data = reader.read(8, 24)?;
         let sb = EndianReader::little_endian(sb_data);
 
-        Self::insert_int(metadata, "FreeSpaceVersion", sb.u8_at(1).unwrap_or(0) as i64);
-        Self::insert_int(metadata, "RootGroupVersion", sb.u8_at(2).unwrap_or(0) as i64);
-        Self::insert_int(metadata, "SharedHeaderVersion", sb.u8_at(4).unwrap_or(0) as i64);
+        Self::insert_int(
+            metadata,
+            "FreeSpaceVersion",
+            sb.u8_at(1).unwrap_or(0) as i64,
+        );
+        Self::insert_int(
+            metadata,
+            "RootGroupVersion",
+            sb.u8_at(2).unwrap_or(0) as i64,
+        );
+        Self::insert_int(
+            metadata,
+            "SharedHeaderVersion",
+            sb.u8_at(4).unwrap_or(0) as i64,
+        );
 
         let offset_size = sb.u8_at(5).unwrap_or(0);
         Self::insert_int(metadata, "OffsetSize", offset_size as i64);

@@ -1,11 +1,14 @@
 //! Web Open Font Format (WOFF) parser
 //!
 //! Implements comprehensive metadata extraction from WOFF font files.
+//!
+//! WOFF files use big-endian byte order for all multi-byte fields.
 
 #![allow(dead_code)]
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use flate2::read::ZlibDecoder;
 use std::io::Read;
 
@@ -70,50 +73,21 @@ impl WOFFParser {
         }
 
         let header_data = reader.read(0, 44)?;
+        let r = EndianReader::big_endian(header_data);
 
         let header = WOFFHeader {
-            num_tables: u16::from_be_bytes([header_data[12], header_data[13]]),
-            total_sfnt_size: u32::from_be_bytes([
-                header_data[16],
-                header_data[17],
-                header_data[18],
-                header_data[19],
-            ]),
-            major_version: u16::from_be_bytes([header_data[20], header_data[21]]),
-            minor_version: u16::from_be_bytes([header_data[22], header_data[23]]),
-            meta_offset: u32::from_be_bytes([
-                header_data[24],
-                header_data[25],
-                header_data[26],
-                header_data[27],
-            ]),
-            meta_length: u32::from_be_bytes([
-                header_data[28],
-                header_data[29],
-                header_data[30],
-                header_data[31],
-            ]),
-            meta_orig_length: u32::from_be_bytes([
-                header_data[32],
-                header_data[33],
-                header_data[34],
-                header_data[35],
-            ]),
+            num_tables: r.u16_at(12).unwrap_or(0),
+            total_sfnt_size: r.u32_at(16).unwrap_or(0),
+            major_version: r.u16_at(20).unwrap_or(0),
+            minor_version: r.u16_at(22).unwrap_or(0),
+            meta_offset: r.u32_at(24).unwrap_or(0),
+            meta_length: r.u32_at(28).unwrap_or(0),
+            meta_orig_length: r.u32_at(32).unwrap_or(0),
         };
 
         // Extract privOffset and privLength
-        let priv_offset = u32::from_be_bytes([
-            header_data[36],
-            header_data[37],
-            header_data[38],
-            header_data[39],
-        ]);
-        let priv_length = u32::from_be_bytes([
-            header_data[40],
-            header_data[41],
-            header_data[42],
-            header_data[43],
-        ]);
+        let priv_offset = r.u32_at(36).unwrap_or(0);
+        let priv_length = r.u32_at(40).unwrap_or(0);
 
         Ok((header, priv_offset, priv_length))
     }
@@ -125,27 +99,13 @@ impl WOFFParser {
         }
 
         let entry_data = reader.read(offset, 20)?;
+        let r = EndianReader::big_endian(entry_data);
 
         Ok(WOFFTableEntry {
             tag: [entry_data[0], entry_data[1], entry_data[2], entry_data[3]],
-            offset: u32::from_be_bytes([
-                entry_data[4],
-                entry_data[5],
-                entry_data[6],
-                entry_data[7],
-            ]),
-            comp_length: u32::from_be_bytes([
-                entry_data[8],
-                entry_data[9],
-                entry_data[10],
-                entry_data[11],
-            ]),
-            orig_length: u32::from_be_bytes([
-                entry_data[12],
-                entry_data[13],
-                entry_data[14],
-                entry_data[15],
-            ]),
+            offset: r.u32_at(4).unwrap_or(0),
+            comp_length: r.u32_at(8).unwrap_or(0),
+            orig_length: r.u32_at(12).unwrap_or(0),
         })
     }
 
@@ -208,8 +168,9 @@ impl WOFFParser {
         if data.len() < 6 {
             return Vec::new();
         }
-        let count = u16::from_be_bytes([data[2], data[3]]);
-        let str_offset = u16::from_be_bytes([data[4], data[5]]) as usize;
+        let r = EndianReader::big_endian(data);
+        let count = r.u16_at(2).unwrap_or(0);
+        let str_offset = r.u16_at(4).unwrap_or(0) as usize;
 
         (0..count.min(20))
             .filter_map(|i| {
@@ -217,9 +178,9 @@ impl WOFFParser {
                 if rec + 12 > data.len() {
                     return None;
                 }
-                let id = u16::from_be_bytes([data[rec + 6], data[rec + 7]]);
-                let len = u16::from_be_bytes([data[rec + 8], data[rec + 9]]) as usize;
-                let off = u16::from_be_bytes([data[rec + 10], data[rec + 11]]) as usize;
+                let id = r.u16_at(rec + 6)?;
+                let len = r.u16_at(rec + 8)? as usize;
+                let off = r.u16_at(rec + 10)? as usize;
                 let start = str_offset + off;
                 if start + len > data.len() {
                     return None;

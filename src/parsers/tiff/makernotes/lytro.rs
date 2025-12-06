@@ -24,6 +24,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -204,10 +205,9 @@ impl MakerNoteParser for LytroParser {
             return Ok(());
         }
 
-        let num_entries = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([parse_data[0], parse_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([parse_data[0], parse_data[1]]),
-        } as usize;
+        // Read number of entries using EndianReader
+        let reader = EndianReader::new(parse_data, byte_order.to_io_byte_order());
+        let num_entries = reader.u16_at(0).unwrap_or(0) as usize;
         if num_entries == 0 || num_entries > 200 {
             return Ok(());
         }
@@ -218,37 +218,13 @@ impl MakerNoteParser for LytroParser {
                 break;
             }
             let entry_data = &parse_data[offset..offset + 12];
+            let entry_reader = EndianReader::new(entry_data, byte_order.to_io_byte_order());
 
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[0], entry_data[1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[0], entry_data[1]]),
-            };
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[2], entry_data[3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[2], entry_data[3]]),
-            };
-            let count = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-            };
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-            };
+            // Parse IFD entry fields using EndianReader
+            let tag = entry_reader.u16_at(0).unwrap_or(0);
+            let field_type = entry_reader.u16_at(2).unwrap_or(0);
+            let count = entry_reader.u32_at(4).unwrap_or(0);
+            let value_offset = entry_reader.u32_at(8).unwrap_or(0);
 
             let entry = IfdEntry {
                 tag_id: tag,

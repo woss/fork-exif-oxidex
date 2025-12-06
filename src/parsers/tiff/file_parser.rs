@@ -151,9 +151,9 @@ pub fn parse_tiff_header(reader: &dyn FileReader) -> Result<TiffHeader> {
     let endian_reader = EndianReader::new(header, byte_order.to_io_byte_order());
 
     // Parse magic number (bytes 2-3) - should be 42
-    let magic = endian_reader.u16_at(2).ok_or_else(|| {
-        ExifToolError::parse_error("Failed to read TIFF magic number")
-    })?;
+    let magic = endian_reader
+        .u16_at(2)
+        .ok_or_else(|| ExifToolError::parse_error("Failed to read TIFF magic number"))?;
 
     if magic != 42 {
         return Err(ExifToolError::parse_error(format!(
@@ -163,9 +163,9 @@ pub fn parse_tiff_header(reader: &dyn FileReader) -> Result<TiffHeader> {
     }
 
     // Parse first IFD offset (bytes 4-7)
-    let first_ifd_offset = endian_reader.u32_at(4).ok_or_else(|| {
-        ExifToolError::parse_error("Failed to read first IFD offset")
-    })?;
+    let first_ifd_offset = endian_reader
+        .u32_at(4)
+        .ok_or_else(|| ExifToolError::parse_error("Failed to read first IFD offset"))?;
 
     Ok(TiffHeader {
         byte_order,

@@ -22,6 +22,7 @@
 
 use crate::const_decoder;
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
     combinator::map,
@@ -375,15 +376,9 @@ impl MakerNoteParser for OlympusParser {
             return Ok(());
         }
 
-        // Read IFD offset (2 bytes at position 10-11)
-        let ifd_offset = match byte_order {
-            ByteOrder::LittleEndian => {
-                u16::from_le_bytes([data[ifd_offset_pos], data[ifd_offset_pos + 1]]) as usize
-            }
-            ByteOrder::BigEndian => {
-                u16::from_be_bytes([data[ifd_offset_pos], data[ifd_offset_pos + 1]]) as usize
-            }
-        };
+        // Read IFD offset (2 bytes at position 10-11) using EndianReader
+        let reader = EndianReader::new(data, byte_order.to_io_byte_order());
+        let ifd_offset = reader.u16_at(ifd_offset_pos).unwrap_or(0) as usize;
 
         // IFD offset is relative to position 8 (after "OLYMPUS\0")
         let abs_ifd_offset = 8 + ifd_offset;
@@ -394,11 +389,9 @@ impl MakerNoteParser for OlympusParser {
 
         let ifd_data = &data[abs_ifd_offset..];
 
-        // Parse IFD entry count
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([ifd_data[0], ifd_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([ifd_data[0], ifd_data[1]]),
-        };
+        // Parse IFD entry count using EndianReader
+        let ifd_reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
+        let entry_count = ifd_reader.u16_at(0).unwrap_or(0);
 
         // Parse IFD entries
         let entries_start = &ifd_data[2..];

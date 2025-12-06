@@ -7,6 +7,7 @@
 #![allow(unused_imports)]
 
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
     parse_ifd_entries, IfdParserConfig,
@@ -314,8 +315,10 @@ pub fn is_canon_makernote(data: &[u8]) -> bool {
     // Valid IFD has at least 2 bytes for entry count
     // Try both little-endian and big-endian interpretations
     if data.len() >= 2 {
-        let entry_count_le = u16::from_le_bytes([data[0], data[1]]);
-        let entry_count_be = u16::from_be_bytes([data[0], data[1]]);
+        let le_reader = EndianReader::little_endian(data);
+        let be_reader = EndianReader::big_endian(data);
+        let entry_count_le = le_reader.u16_at(0).unwrap_or(0);
+        let entry_count_be = be_reader.u16_at(0).unwrap_or(0);
 
         // Reasonable entry count (Canon typically has 1-100 entries)
         // Accept if either byte order yields a reasonable count

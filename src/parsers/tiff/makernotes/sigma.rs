@@ -13,6 +13,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -60,7 +61,8 @@ pub fn is_sigma_makernote(data: &[u8]) -> bool {
 
     // Some Sigma cameras may have no header, check for valid IFD entry count
     if data.len() >= 2 {
-        let entry_count = u16::from_le_bytes([data[0], data[1]]);
+        let reader = EndianReader::little_endian(data);
+        let entry_count = reader.u16_at(0).unwrap_or(0);
         // Reasonable entry count: 1-150 entries
         if entry_count > 0 && entry_count < 150 {
             return true;

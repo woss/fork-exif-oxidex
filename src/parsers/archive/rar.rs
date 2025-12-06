@@ -223,7 +223,8 @@ impl RARParser {
     /// Reads a 32-bit little-endian integer from RAR5 data
     fn read_rar5_u32(data: &[u8], offset: usize) -> Result<(u32, usize)> {
         let reader = EndianReader::little_endian(data);
-        let value = reader.u32_at(offset)
+        let value = reader
+            .u32_at(offset)
             .ok_or_else(|| ExifToolError::parse_error("Unexpected end of RAR5 header"))?;
         Ok((value, offset + 4))
     }

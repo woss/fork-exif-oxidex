@@ -15,6 +15,7 @@
 #![allow(unused_imports)]
 
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
     combinator::map,
@@ -128,7 +129,8 @@ pub fn is_leica_makernote(data: &[u8]) -> bool {
     // Some Leica cameras may have minimal or no header
     // Check if first two bytes could be a valid IFD entry count
     if data.len() >= 2 {
-        let entry_count = u16::from_le_bytes([data[0], data[1]]);
+        let reader = EndianReader::little_endian(data);
+        let entry_count = reader.u16_at(0).unwrap_or(0);
         // Reasonable entry count: 1-150 entries
         if entry_count > 0 && entry_count < 150 {
             return true;
@@ -330,10 +332,9 @@ impl MakerNoteParser for LeicaMakerNoteParser {
             return Err("Insufficient data for IFD entry count".to_string());
         }
 
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([ifd_data[0], ifd_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([ifd_data[0], ifd_data[1]]),
-        };
+        // Parse IFD entry count using EndianReader
+        let ifd_reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
+        let entry_count = ifd_reader.u16_at(0).unwrap_or(0);
 
         // Validate entry count is reasonable
         if entry_count == 0 || entry_count > 200 {
@@ -355,41 +356,13 @@ impl MakerNoteParser for LeicaMakerNoteParser {
         for i in 0..entry_count {
             let entry_offset = 2 + (i as usize * 12);
             let entry_data = &ifd_data[entry_offset..entry_offset + 12];
+            let entry_reader = EndianReader::new(entry_data, byte_order.to_io_byte_order());
 
-            // Parse IFD entry fields
-            let tag_id = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[0], entry_data[1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[0], entry_data[1]]),
-            };
-
-            let format = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([entry_data[2], entry_data[3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([entry_data[2], entry_data[3]]),
-            };
-
-            let component_count = match byte_order {
-                ByteOrder::LittleEndian => {
-                    u32::from_le_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-                ByteOrder::BigEndian => {
-                    u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]])
-                }
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    entry_data[8],
-                    entry_data[9],
-                    entry_data[10],
-                    entry_data[11],
-                ]),
-            };
+            // Parse IFD entry fields using EndianReader
+            let tag_id = entry_reader.u16_at(0).unwrap_or(0);
+            let format = entry_reader.u16_at(2).unwrap_or(0);
+            let component_count = entry_reader.u32_at(4).unwrap_or(0);
+            let value_offset = entry_reader.u32_at(8).unwrap_or(0);
 
             // Create IfdEntry for this tag
             let entry = IfdEntry {

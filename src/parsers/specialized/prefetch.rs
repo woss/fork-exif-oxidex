@@ -105,14 +105,14 @@ impl PrefetchParser {
     /// Reads the version from prefetch header (offset 0, 4 bytes)
     fn read_version(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(0, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads the file size from header (offset 12, 4 bytes)
     fn read_file_size(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(12, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -138,7 +138,7 @@ impl PrefetchParser {
     /// Reads the path hash from header (offset 76, 4 bytes)
     fn read_path_hash(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(76, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -150,7 +150,7 @@ impl PrefetchParser {
         // For all versions 17-30, file info section starts at offset 84
         // Run count is at offset 144 (0x90)
         let data = reader.read(144, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -166,7 +166,7 @@ impl PrefetchParser {
             _ => 128,                            // Default to newer format
         };
         let data = reader.read(offset, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
@@ -187,7 +187,7 @@ impl PrefetchParser {
                 break;
             }
             let data = reader.read(offset, 8)?;
-            let r = EndianReader::little_endian(&data);
+            let r = EndianReader::little_endian(data);
             let ft = r.u64_at(0).unwrap_or(0);
             // Stop at zero values (unused slots)
             if ft == 0 {

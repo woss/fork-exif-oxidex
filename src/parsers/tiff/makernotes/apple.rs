@@ -22,6 +22,7 @@
 #![allow(unused_imports)]
 
 use crate::const_decoder;
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
     parse_ifd_entries, IfdParserConfig,
@@ -256,7 +257,8 @@ impl MakerNoteParser for AppleParser {
 
         // Also accept if it looks like valid IFD data
         if data.len() >= 2 {
-            let entry_count = u16::from_le_bytes([data[0], data[1]]);
+            let reader = EndianReader::little_endian(data);
+            let entry_count = reader.u16_at(0).unwrap_or(0);
             if entry_count > 0 && entry_count < 500 {
                 return true;
             }

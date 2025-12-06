@@ -382,8 +382,8 @@ fn extract_movie_header(mvhd: &Atom, metadata: &mut MetadataMap) -> Result<(), S
 
     // Add both legacy CreateDate/ModifyDate and new MediaCreateDate/MediaModifyDate
     // Use shared timestamp utility for dates after 1970, fallback to legacy for older dates
-    let create_date_str = mac_time_to_iso8601(creation_time)
-        .unwrap_or_else(|| format_mac_time_legacy(creation_time));
+    let create_date_str =
+        mac_time_to_iso8601(creation_time).unwrap_or_else(|| format_mac_time_legacy(creation_time));
     let modify_date_str = mac_time_to_iso8601(modification_time)
         .unwrap_or_else(|| format_mac_time_legacy(modification_time));
 
@@ -537,8 +537,8 @@ fn extract_track_header(
 
     // Add track-specific timestamp tags
     // Use shared timestamp utility for dates after 1970, fallback to legacy for older dates
-    let create_date_str = mac_time_to_iso8601(creation_time)
-        .unwrap_or_else(|| format_mac_time_legacy(creation_time));
+    let create_date_str =
+        mac_time_to_iso8601(creation_time).unwrap_or_else(|| format_mac_time_legacy(creation_time));
     let modify_date_str = mac_time_to_iso8601(modification_time)
         .unwrap_or_else(|| format_mac_time_legacy(modification_time));
 
@@ -645,8 +645,8 @@ fn extract_media_header(
 
     // Media timestamps
     // Use shared timestamp utility for dates after 1970, fallback to legacy for older dates
-    let create_date_str = mac_time_to_iso8601(creation_time)
-        .unwrap_or_else(|| format_mac_time_legacy(creation_time));
+    let create_date_str =
+        mac_time_to_iso8601(creation_time).unwrap_or_else(|| format_mac_time_legacy(creation_time));
     let modify_date_str = mac_time_to_iso8601(modification_time)
         .unwrap_or_else(|| format_mac_time_legacy(modification_time));
 

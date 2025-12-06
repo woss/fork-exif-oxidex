@@ -148,8 +148,12 @@ pub fn exif_datetime_to_unix(datetime: &str) -> Option<i64> {
     let bytes = datetime.as_bytes();
 
     // Validate separators: colons at positions 4, 7, 13, 16; space at 10
-    if bytes[4] != b':' || bytes[7] != b':' || bytes[10] != b' ' ||
-       bytes[13] != b':' || bytes[16] != b':' {
+    if bytes[4] != b':'
+        || bytes[7] != b':'
+        || bytes[10] != b' '
+        || bytes[13] != b':'
+        || bytes[16] != b':'
+    {
         return None;
     }
 
@@ -164,7 +168,14 @@ pub fn exif_datetime_to_unix(datetime: &str) -> Option<i64> {
 }
 
 /// Converts date/time components to Unix timestamp.
-fn datetime_to_unix(year: i32, month: u32, day: u32, hour: u32, minute: u32, second: u32) -> Option<i64> {
+fn datetime_to_unix(
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    minute: u32,
+    second: u32,
+) -> Option<i64> {
     // Validate ranges
     if !(1970..=9999).contains(&year)
         || !(1..=12).contains(&month)
@@ -213,7 +224,10 @@ mod tests {
     #[test]
     fn test_filetime_to_iso8601() {
         let filetime_1970 = 116444736000000000u64;
-        assert_eq!(filetime_to_iso8601(filetime_1970), Some("1970-01-01T00:00:00Z".to_string()));
+        assert_eq!(
+            filetime_to_iso8601(filetime_1970),
+            Some("1970-01-01T00:00:00Z".to_string())
+        );
     }
 
     #[test]
@@ -229,7 +243,10 @@ mod tests {
     #[test]
     fn test_mac_time_to_iso8601() {
         let mac_1970 = MAC_UNIX_DIFF as u64;
-        assert_eq!(mac_time_to_iso8601(mac_1970), Some("1970-01-01T00:00:00Z".to_string()));
+        assert_eq!(
+            mac_time_to_iso8601(mac_1970),
+            Some("1970-01-01T00:00:00Z".to_string())
+        );
     }
 
     #[test]

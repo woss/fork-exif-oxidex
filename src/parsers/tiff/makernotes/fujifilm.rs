@@ -11,6 +11,7 @@
 #![allow(unused_imports)]
 
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
     combinator::map,
@@ -308,15 +309,9 @@ impl MakerNoteParser for FujifilmParser {
         // - Bytes 8-11: IFD offset (4 bytes, always 0x0000000C = 12)
         // - Byte 12+: IFD data starts
 
-        // Read IFD offset (should be 12, but we'll use it anyway)
-        let ifd_offset = match byte_order {
-            ByteOrder::LittleEndian => {
-                u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize
-            }
-            ByteOrder::BigEndian => {
-                u32::from_be_bytes([data[8], data[9], data[10], data[11]]) as usize
-            }
-        };
+        // Read IFD offset (should be 12, but we'll use it anyway) using EndianReader
+        let reader = EndianReader::new(data, byte_order.to_io_byte_order());
+        let ifd_offset = reader.u32_at(8).unwrap_or(0) as usize;
 
         // Fujifilm offsets are relative to the MakerNote start
         if ifd_offset >= data.len() {
@@ -325,15 +320,13 @@ impl MakerNoteParser for FujifilmParser {
 
         let ifd_data = &data[ifd_offset..];
 
-        // Parse IFD entry count
+        // Parse IFD entry count using EndianReader
         if ifd_data.len() < 2 {
             return Ok(());
         }
 
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([ifd_data[0], ifd_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([ifd_data[0], ifd_data[1]]),
-        };
+        let ifd_reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
+        let entry_count = ifd_reader.u16_at(0).unwrap_or(0);
 
         // Parse IFD entries
         let entries_start = &ifd_data[2..];

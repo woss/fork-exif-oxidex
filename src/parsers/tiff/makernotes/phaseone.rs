@@ -30,6 +30,7 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -162,8 +163,10 @@ pub fn is_phaseone_makernote(data: &[u8]) -> bool {
     // Phase One often has no header, just IFD data
     // Check if first two bytes could be a valid entry count
     if data.len() >= 2 {
-        let entry_count_le = u16::from_le_bytes([data[0], data[1]]);
-        let entry_count_be = u16::from_be_bytes([data[0], data[1]]);
+        let le_reader = EndianReader::little_endian(data);
+        let be_reader = EndianReader::big_endian(data);
+        let entry_count_le = le_reader.u16_at(0).unwrap_or(0);
+        let entry_count_be = be_reader.u16_at(0).unwrap_or(0);
 
         // Reasonable entry count: 1-100 entries (Phase One typically has fewer tags)
         if (entry_count_le > 0 && entry_count_le < 100)

@@ -351,12 +351,12 @@ pub fn parse_ihdr_chunk(data: &[u8]) -> Result<(u32, u32, u8, u8, u8, u8, u8)> {
     }
 
     let reader = crate::io::EndianReader::big_endian(data);
-    let width = reader.u32_at(0).ok_or_else(|| {
-        ExifToolError::parse_error("IHDR chunk: failed to read width")
-    })?;
-    let height = reader.u32_at(4).ok_or_else(|| {
-        ExifToolError::parse_error("IHDR chunk: failed to read height")
-    })?;
+    let width = reader
+        .u32_at(0)
+        .ok_or_else(|| ExifToolError::parse_error("IHDR chunk: failed to read width"))?;
+    let height = reader
+        .u32_at(4)
+        .ok_or_else(|| ExifToolError::parse_error("IHDR chunk: failed to read height"))?;
     let bit_depth = data[8];
     let color_type = data[9];
     let compression = data[10];
@@ -749,9 +749,9 @@ pub fn parse_exif_chunk(data: &[u8]) -> Result<IfdEntries> {
     }
 
     // Read IFD offset
-    let ifd_offset = reader.u32_at(4).ok_or_else(|| {
-        ExifToolError::parse_error("eXIf chunk too small to read IFD offset")
-    })?;
+    let ifd_offset = reader
+        .u32_at(4)
+        .ok_or_else(|| ExifToolError::parse_error("eXIf chunk too small to read IFD offset"))?;
 
     // Create an in-memory reader for the EXIF data
     let exif_reader = ExifDataReader::new(data.to_vec());

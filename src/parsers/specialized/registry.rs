@@ -73,7 +73,7 @@ impl RegistryParser {
     /// Incremented at the beginning of a write operation.
     fn read_primary_sequence(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(4, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -82,7 +82,7 @@ impl RegistryParser {
     /// Incremented at the end of a write operation. Equals primary when clean shutdown.
     fn read_secondary_sequence(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(8, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -91,21 +91,21 @@ impl RegistryParser {
     /// Windows FILETIME format: 100-nanosecond intervals since 1601-01-01.
     fn read_last_written(reader: &dyn FileReader) -> Result<u64> {
         let data = reader.read(12, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads major version (offset 20, 4 bytes)
     fn read_major_version(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(20, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads minor version (offset 24, 4 bytes)
     fn read_minor_version(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(24, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -114,7 +114,7 @@ impl RegistryParser {
     /// 0 = normal hive, 1 = transaction log
     fn read_hive_type(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(28, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -123,7 +123,7 @@ impl RegistryParser {
     /// Offset to the root key cell in the hive bins data.
     fn read_root_cell_offset(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(36, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -132,7 +132,7 @@ impl RegistryParser {
     /// Total size of the hive bins data section.
     fn read_data_size(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(40, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -174,8 +174,7 @@ impl RegistryParser {
         if filetime == 0 {
             return "1601-01-01T00:00:00Z".to_string();
         }
-        filetime_to_iso8601(filetime)
-            .unwrap_or_else(|| format!("Invalid (FILETIME: {})", filetime))
+        filetime_to_iso8601(filetime).unwrap_or_else(|| format!("Invalid (FILETIME: {})", filetime))
     }
 
     /// Decodes hive type value to human-readable string
@@ -529,10 +528,7 @@ mod tests {
     #[test]
     fn test_convert_filetime() {
         // Test zero FILETIME
-        assert_eq!(
-            RegistryParser::convert_filetime(0),
-            "1601-01-01T00:00:00Z"
-        );
+        assert_eq!(RegistryParser::convert_filetime(0), "1601-01-01T00:00:00Z");
 
         // Test a known FILETIME value
         // 130000000000000000 corresponds to approximately 2013

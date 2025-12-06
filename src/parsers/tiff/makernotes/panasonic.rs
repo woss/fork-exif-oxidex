@@ -22,6 +22,7 @@
 #![allow(unused_imports)]
 
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
     combinator::map,
@@ -359,11 +360,9 @@ impl MakerNoteParser for PanasonicParser {
 
         let ifd_data = &data[ifd_offset..];
 
-        // Parse IFD entry count
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([ifd_data[0], ifd_data[1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([ifd_data[0], ifd_data[1]]),
-        };
+        // Parse IFD entry count using EndianReader
+        let reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
+        let entry_count = reader.u16_at(0).unwrap_or(0);
 
         // Parse IFD entries
         let entries_start = &ifd_data[2..];

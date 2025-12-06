@@ -3,6 +3,8 @@
 //! Supports both Four Thirds (E-series DSLRs) and Micro Four Thirds (OM-D, PEN) cameras.
 //! Based on ExifTool's Olympus.pm module.
 
+use crate::io::EndianReader;
+
 use super::super::shared::{
     array_schemas::*, generic_decoders::ON_OFF_I32, tag_registry::TagRegistry,
 };
@@ -137,7 +139,8 @@ pub fn process_equipment_with_lens(
     byte_order: super::super::super::ifd_parser::ByteOrder,
     tags: &mut std::collections::HashMap<String, String>,
 ) {
-    use super::super::super::ifd_parser::ByteOrder;
+    // Create EndianReader for the array data
+    let reader = EndianReader::new(array, byte_order.to_io_byte_order());
 
     // Serial number (8 bytes starting at offset 2)
     if array.len() >= 10 {
@@ -166,10 +169,7 @@ pub fn process_equipment_with_lens(
 
     // Lens type (2 bytes at offset 16) - uses lens database
     if array.len() >= 18 {
-        let lens_id = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[16], array[17]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[16], array[17]]),
-        };
+        let lens_id = reader.u16_at(16).unwrap_or(0);
 
         if lens_id != 0 {
             if let Some(lens_name) = lens_db.lookup(lens_id) {
@@ -196,10 +196,7 @@ pub fn process_equipment_with_lens(
 
     // Max aperture at min focal (2 bytes at offset 52)
     if array.len() >= 54 {
-        let max_ap_min = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[52], array[53]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[52], array[53]]),
-        };
+        let max_ap_min = reader.u16_at(52).unwrap_or(0);
         if max_ap_min > 0 {
             let f_stop = (max_ap_min as f32) / 10.0;
             tags.insert(
@@ -211,10 +208,7 @@ pub fn process_equipment_with_lens(
 
     // Max aperture at max focal (2 bytes at offset 54)
     if array.len() >= 56 {
-        let max_ap_max = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[54], array[55]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[54], array[55]]),
-        };
+        let max_ap_max = reader.u16_at(54).unwrap_or(0);
         if max_ap_max > 0 {
             let f_stop = (max_ap_max as f32) / 10.0;
             tags.insert(
@@ -226,10 +220,7 @@ pub fn process_equipment_with_lens(
 
     // Min focal length (2 bytes at offset 56)
     if array.len() >= 58 {
-        let min_focal = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[56], array[57]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[56], array[57]]),
-        };
+        let min_focal = reader.u16_at(56).unwrap_or(0);
         if min_focal > 0 {
             tags.insert(
                 format!("{}:MinFocalLength", prefix),
@@ -240,10 +231,7 @@ pub fn process_equipment_with_lens(
 
     // Max focal length (2 bytes at offset 58)
     if array.len() >= 60 {
-        let max_focal = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([array[58], array[59]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([array[58], array[59]]),
-        };
+        let max_focal = reader.u16_at(58).unwrap_or(0);
         if max_focal > 0 {
             tags.insert(
                 format!("{}:MaxFocalLength", prefix),

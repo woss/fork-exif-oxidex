@@ -1081,9 +1081,18 @@ fn read_uint(reader: &dyn FileReader, offset: u64, size: usize) -> Result<u64> {
         2 => er.u16_at(0).map(|v| v as u64),
         3 => {
             // 3-byte value: read as u32 with leading zero
-            let b0 = er.u8_at(0).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 0"))? as u32;
-            let b1 = er.u8_at(1).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 1"))? as u32;
-            let b2 = er.u8_at(2).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 2"))? as u32;
+            let b0 = er
+                .u8_at(0)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read byte 0"))?
+                as u32;
+            let b1 = er
+                .u8_at(1)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read byte 1"))?
+                as u32;
+            let b2 = er
+                .u8_at(2)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read byte 2"))?
+                as u32;
             Some(((b0 << 16) | (b1 << 8) | b2) as u64)
         }
         4 => er.u32_at(0).map(|v| v as u64),
@@ -1091,7 +1100,9 @@ fn read_uint(reader: &dyn FileReader, offset: u64, size: usize) -> Result<u64> {
             // Variable-length 5-7 bytes: manual read
             let mut value = 0u64;
             for i in 0..size {
-                let byte = er.u8_at(i).ok_or_else(|| ExifToolError::parse_error("Failed to read byte"))?;
+                let byte = er
+                    .u8_at(i)
+                    .ok_or_else(|| ExifToolError::parse_error("Failed to read byte"))?;
                 value = (value << 8) | byte as u64;
             }
             Some(value)

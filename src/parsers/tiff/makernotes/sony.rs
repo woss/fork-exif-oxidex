@@ -26,6 +26,7 @@
 #![allow(unused_imports)]
 
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
     combinator::map,
@@ -652,8 +653,10 @@ pub fn is_sony_makernote(data: &[u8]) -> bool {
     }
 
     // Check if it looks like an IFD (starts with entry count)
-    let entry_count_le = u16::from_le_bytes([data[0], data[1]]);
-    let entry_count_be = u16::from_be_bytes([data[0], data[1]]);
+    let le_reader = EndianReader::little_endian(data);
+    let be_reader = EndianReader::big_endian(data);
+    let entry_count_le = le_reader.u16_at(0).unwrap_or(0);
+    let entry_count_be = be_reader.u16_at(0).unwrap_or(0);
 
     // Reasonable entry count (Sony typically has 1-200 entries)
     let is_reasonable = |count: u16| (1..=200).contains(&count);
@@ -699,10 +702,8 @@ fn parse_sony_makernote_impl(
         return Ok(HashMap::new());
     }
 
-    let entry_count = match byte_order {
-        ByteOrder::LittleEndian => u16::from_le_bytes([ifd_data[0], ifd_data[1]]),
-        ByteOrder::BigEndian => u16::from_be_bytes([ifd_data[0], ifd_data[1]]),
-    };
+    let reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
+    let entry_count = reader.u16_at(0).unwrap_or(0);
 
     // Parse IFD entries
     let entries_start = &ifd_data[2..];

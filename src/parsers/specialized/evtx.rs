@@ -106,70 +106,70 @@ impl EVTXParser {
     /// Reads first chunk number (offset 8, 8 bytes)
     fn read_first_chunk(reader: &dyn FileReader) -> Result<u64> {
         let data = reader.read(8, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads last chunk number (offset 16, 8 bytes)
     fn read_last_chunk(reader: &dyn FileReader) -> Result<u64> {
         let data = reader.read(16, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads next record identifier (offset 24, 8 bytes)
     fn read_next_record_id(reader: &dyn FileReader) -> Result<u64> {
         let data = reader.read(24, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads header size (offset 32, 4 bytes) - should be 128
     fn read_header_size(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(32, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads minor version (offset 36, 2 bytes)
     fn read_minor_version(reader: &dyn FileReader) -> Result<u16> {
         let data = reader.read(36, 2)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads major version (offset 38, 2 bytes)
     fn read_major_version(reader: &dyn FileReader) -> Result<u16> {
         let data = reader.read(38, 2)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads header block size (offset 40, 2 bytes) - should be 4096
     fn read_header_block_size(reader: &dyn FileReader) -> Result<u16> {
         let data = reader.read(40, 2)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads chunk count (offset 42, 2 bytes)
     fn read_chunk_count(reader: &dyn FileReader) -> Result<u16> {
         let data = reader.read(42, 2)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Reads flags (offset 76, 4 bytes)
     fn read_flags(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(76, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
     /// Reads checksum (offset 120, 4 bytes)
     fn read_checksum(reader: &dyn FileReader) -> Result<u32> {
         let data = reader.read(120, 4)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u32_at(0).unwrap_or(0))
     }
 
@@ -199,28 +199,28 @@ impl EVTXParser {
     /// Reads first event record ID from chunk (offset 8, 8 bytes)
     fn read_chunk_first_record_id(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
         let data = reader.read(chunk_offset + 8, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads last event record ID from chunk (offset 16, 8 bytes)
     fn read_chunk_last_record_id(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
         let data = reader.read(chunk_offset + 16, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads first event record timestamp from chunk (offset 24, 8 bytes FILETIME)
     fn read_chunk_first_timestamp(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
         let data = reader.read(chunk_offset + 24, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 
     /// Reads last event record timestamp from chunk (offset 32, 8 bytes FILETIME)
     fn read_chunk_last_timestamp(reader: &dyn FileReader, chunk_offset: u64) -> Result<u64> {
         let data = reader.read(chunk_offset + 32, 8)?;
-        let r = EndianReader::little_endian(&data);
+        let r = EndianReader::little_endian(data);
         Ok(r.u64_at(0).unwrap_or(0))
     }
 

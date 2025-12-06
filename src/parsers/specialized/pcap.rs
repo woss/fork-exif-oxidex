@@ -200,9 +200,9 @@ impl PCAPParser {
 
         // Create EndianReader based on detected byte order
         let r = if little_endian {
-            EndianReader::little_endian(&header)
+            EndianReader::little_endian(header)
         } else {
-            EndianReader::big_endian(&header)
+            EndianReader::big_endian(header)
         };
 
         // Parse version
@@ -342,9 +342,9 @@ impl PCAPParser {
 
             // Create EndianReader for packet header
             let r = if little_endian {
-                EndianReader::little_endian(&pkt_header)
+                EndianReader::little_endian(pkt_header)
             } else {
-                EndianReader::big_endian(&pkt_header)
+                EndianReader::big_endian(pkt_header)
             };
 
             // Extract timestamp seconds
@@ -398,9 +398,9 @@ impl PCAPParser {
 
             // Create EndianReader for block header
             let r = if little_endian {
-                EndianReader::little_endian(&block_header)
+                EndianReader::little_endian(block_header)
             } else {
-                EndianReader::big_endian(&block_header)
+                EndianReader::big_endian(block_header)
             };
 
             let block_type = r.u32_at(0).unwrap();
@@ -439,9 +439,9 @@ impl PCAPParser {
                             // IDB header: link_type (2) + reserved (2) + snaplen (4) = 8 bytes after block header
                             if idb_data.len() > 16 {
                                 let r = if little_endian {
-                                    EndianReader::little_endian(&idb_data)
+                                    EndianReader::little_endian(idb_data)
                                 } else {
-                                    EndianReader::big_endian(&idb_data)
+                                    EndianReader::big_endian(idb_data)
                                 };
 
                                 let link_type = r.u16_at(8).unwrap();
@@ -485,9 +485,9 @@ impl PCAPParser {
                         if let Ok(epb_data) = reader.read(offset, 32.min(block_length as usize)) {
                             if epb_data.len() >= 20 {
                                 let r = if little_endian {
-                                    EndianReader::little_endian(&epb_data)
+                                    EndianReader::little_endian(epb_data)
                                 } else {
-                                    EndianReader::big_endian(&epb_data)
+                                    EndianReader::big_endian(epb_data)
                                 };
 
                                 // Timestamp is at offset 8 (after block header)
@@ -523,9 +523,9 @@ impl PCAPParser {
                     if let Ok(isb_data) = reader.read(offset, block_length as usize) {
                         if isb_data.len() >= 24 {
                             let r = if little_endian {
-                                EndianReader::little_endian(&isb_data)
+                                EndianReader::little_endian(isb_data)
                             } else {
-                                EndianReader::big_endian(&isb_data)
+                                EndianReader::big_endian(isb_data)
                             };
 
                             let isb_starttime_high = r.u32_at(12).unwrap();

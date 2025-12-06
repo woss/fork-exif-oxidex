@@ -677,13 +677,10 @@ impl FormatParser for LNKParser {
         let mut current_offset = LNK_HEADER_SIZE as u64;
 
         // Skip LinkTargetIDList if present
-        if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0 {
-            if current_offset + 2 <= reader.size() {
-                if let Ok(id_list_bytes) = reader.read(current_offset, 2) {
-                    if let Some(id_list_size) = EndianReader::little_endian(id_list_bytes).u16_at(0)
-                    {
-                        current_offset += 2 + id_list_size as u64;
-                    }
+        if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0 && current_offset + 2 <= reader.size() {
+            if let Ok(id_list_bytes) = reader.read(current_offset, 2) {
+                if let Some(id_list_size) = EndianReader::little_endian(id_list_bytes).u16_at(0) {
+                    current_offset += 2 + id_list_size as u64;
                 }
             }
         }

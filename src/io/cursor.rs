@@ -34,7 +34,11 @@ impl<'a> Cursor<'a> {
     /// Creates a new cursor with the specified byte order.
     #[inline]
     pub fn new(data: &'a [u8], order: ByteOrder) -> Self {
-        Self { data, pos: 0, order }
+        Self {
+            data,
+            pos: 0,
+            order,
+        }
     }
 
     /// Creates a big-endian cursor.

@@ -2,11 +2,14 @@
 //!
 //! Implements comprehensive metadata extraction from TrueType font files,
 //! including name table records, timestamps, and font properties.
+//!
+//! TTF files use big-endian byte order for all multi-byte fields.
 
 #![allow(dead_code)]
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// TTF signature: 0x00 0x01 0x00 0x00 or "true"
 const TTF_SIGNATURE_1: &[u8] = &[0x00, 0x01, 0x00, 0x00];
@@ -68,10 +71,8 @@ impl TTFParser {
         }
 
         let num_tables_bytes = reader.read(4, 2)?;
-        Ok(u16::from_be_bytes([
-            num_tables_bytes[0],
-            num_tables_bytes[1],
-        ]))
+        let r = EndianReader::big_endian(num_tables_bytes);
+        Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Parses the table directory to find all tables
@@ -86,15 +87,10 @@ impl TTFParser {
             }
 
             let entry_data = reader.read(entry_offset, 16)?;
+            let r = EndianReader::big_endian(entry_data);
             let tag = [entry_data[0], entry_data[1], entry_data[2], entry_data[3]];
-            let offset =
-                u32::from_be_bytes([entry_data[8], entry_data[9], entry_data[10], entry_data[11]]);
-            let length = u32::from_be_bytes([
-                entry_data[12],
-                entry_data[13],
-                entry_data[14],
-                entry_data[15],
-            ]);
+            let offset = r.u32_at(8).unwrap_or(0);
+            let length = r.u32_at(12).unwrap_or(0);
 
             tables.push(TableEntry {
                 tag,
@@ -119,7 +115,8 @@ impl TTFParser {
         }
 
         let header = reader.read(offset, 6)?;
-        let count = u16::from_be_bytes([header[2], header[3]]);
+        let r = EndianReader::big_endian(header);
+        let count = r.u16_at(2).unwrap_or(0);
 
         let mut records = Vec::new();
         let records_start = offset + 6;
@@ -131,13 +128,14 @@ impl TTFParser {
             }
 
             let record_data = reader.read(record_offset, 12)?;
+            let rec_r = EndianReader::big_endian(record_data);
             records.push(NameRecord {
-                platform_id: u16::from_be_bytes([record_data[0], record_data[1]]),
-                encoding_id: u16::from_be_bytes([record_data[2], record_data[3]]),
-                language_id: u16::from_be_bytes([record_data[4], record_data[5]]),
-                name_id: u16::from_be_bytes([record_data[6], record_data[7]]),
-                length: u16::from_be_bytes([record_data[8], record_data[9]]),
-                offset: u16::from_be_bytes([record_data[10], record_data[11]]),
+                platform_id: rec_r.u16_at(0).unwrap_or(0),
+                encoding_id: rec_r.u16_at(2).unwrap_or(0),
+                language_id: rec_r.u16_at(4).unwrap_or(0),
+                name_id: rec_r.u16_at(6).unwrap_or(0),
+                length: rec_r.u16_at(8).unwrap_or(0),
+                offset: rec_r.u16_at(10).unwrap_or(0),
             });
         }
 
@@ -193,7 +191,8 @@ impl TTFParser {
         }
 
         let header = reader.read(offset, 6)?;
-        let string_offset = u16::from_be_bytes([header[4], header[5]]);
+        let r = EndianReader::big_endian(header);
+        let string_offset = r.u16_at(4).unwrap_or(0);
         let records = Self::parse_name_table(reader, table)?;
 
         // Map of name IDs to metadata keys
@@ -282,7 +281,8 @@ impl TTFParser {
 
         // Read units per em (offset 18)
         let units_data = reader.read(offset + 18, 2)?;
-        let units_per_em = u16::from_be_bytes([units_data[0], units_data[1]]);
+        let r = EndianReader::big_endian(units_data);
+        let units_per_em = r.u16_at(0).unwrap_or(0);
         metadata.insert(
             "UnitsPerEm".to_string(),
             TagValue::String(units_per_em.to_string()),
@@ -291,36 +291,22 @@ impl TTFParser {
         // Read created timestamp (offset 20, 8 bytes)
         if offset + 28 <= reader.size() {
             let created_data = reader.read(offset + 20, 8)?;
-            let created = i64::from_be_bytes([
-                created_data[0],
-                created_data[1],
-                created_data[2],
-                created_data[3],
-                created_data[4],
-                created_data[5],
-                created_data[6],
-                created_data[7],
-            ]);
-            if let Some(created_str) = Self::mac_timestamp_to_iso(created) {
-                metadata.insert("FontCreated".to_string(), TagValue::String(created_str));
+            let created_r = EndianReader::big_endian(created_data);
+            if let Some(created) = created_r.i64_at(0) {
+                if let Some(created_str) = Self::mac_timestamp_to_iso(created) {
+                    metadata.insert("FontCreated".to_string(), TagValue::String(created_str));
+                }
             }
         }
 
         // Read modified timestamp (offset 28, 8 bytes)
         if offset + 36 <= reader.size() {
             let modified_data = reader.read(offset + 28, 8)?;
-            let modified = i64::from_be_bytes([
-                modified_data[0],
-                modified_data[1],
-                modified_data[2],
-                modified_data[3],
-                modified_data[4],
-                modified_data[5],
-                modified_data[6],
-                modified_data[7],
-            ]);
-            if let Some(modified_str) = Self::mac_timestamp_to_iso(modified) {
-                metadata.insert("FontModified".to_string(), TagValue::String(modified_str));
+            let modified_r = EndianReader::big_endian(modified_data);
+            if let Some(modified) = modified_r.i64_at(0) {
+                if let Some(modified_str) = Self::mac_timestamp_to_iso(modified) {
+                    metadata.insert("FontModified".to_string(), TagValue::String(modified_str));
+                }
             }
         }
 

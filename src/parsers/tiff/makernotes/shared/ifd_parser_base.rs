@@ -115,7 +115,8 @@ where
     // Read number of IFD entries (2 bytes at start of IFD)
     let entry_count = reader
         .u16_at(0)
-        .ok_or_else(|| "Failed to read IFD entry count".to_string())? as usize;
+        .ok_or_else(|| "Failed to read IFD entry count".to_string())?
+        as usize;
 
     // Validate entry count to avoid processing corrupted data
     if entry_count == 0 || entry_count > config.max_entries {

@@ -22,6 +22,7 @@
 #![allow(unused_imports)]
 
 use crate::const_decoder;
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
@@ -364,11 +365,9 @@ impl MakerNoteParser for GoogleParser {
             return Err("Invalid IFD offset".to_string());
         }
 
-        // Read number of IFD entries
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => u16::from_le_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-            ByteOrder::BigEndian => u16::from_be_bytes([data[ifd_offset], data[ifd_offset + 1]]),
-        };
+        // Read number of IFD entries using EndianReader
+        let reader = EndianReader::new(data, byte_order.to_io_byte_order());
+        let entry_count = reader.u16_at(ifd_offset).unwrap_or(0);
 
         if entry_count == 0 || entry_count > 500 {
             return Err(format!(
@@ -386,46 +385,14 @@ impl MakerNoteParser for GoogleParser {
                 break;
             }
 
-            // Parse IFD entry manually
-            let tag = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset], data[offset + 1]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset], data[offset + 1]]),
-            };
+            // Parse IFD entry using EndianReader
+            let entry_data = &data[offset..offset + entry_size];
+            let entry_reader = EndianReader::new(entry_data, byte_order.to_io_byte_order());
 
-            let field_type = match byte_order {
-                ByteOrder::LittleEndian => u16::from_le_bytes([data[offset + 2], data[offset + 3]]),
-                ByteOrder::BigEndian => u16::from_be_bytes([data[offset + 2], data[offset + 3]]),
-            };
-
-            let count = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 4],
-                    data[offset + 5],
-                    data[offset + 6],
-                    data[offset + 7],
-                ]),
-            };
-
-            let value_offset = match byte_order {
-                ByteOrder::LittleEndian => u32::from_le_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-                ByteOrder::BigEndian => u32::from_be_bytes([
-                    data[offset + 8],
-                    data[offset + 9],
-                    data[offset + 10],
-                    data[offset + 11],
-                ]),
-            };
+            let tag = entry_reader.u16_at(0).unwrap_or(0);
+            let field_type = entry_reader.u16_at(2).unwrap_or(0);
+            let count = entry_reader.u32_at(4).unwrap_or(0);
+            let value_offset = entry_reader.u32_at(8).unwrap_or(0);
 
             let entry = IfdEntry {
                 tag_id: tag,
@@ -450,7 +417,8 @@ impl MakerNoteParser for GoogleParser {
 
         // Also accept if it looks like valid IFD data
         if data.len() >= 2 {
-            let entry_count = u16::from_le_bytes([data[0], data[1]]);
+            let reader = EndianReader::little_endian(data);
+            let entry_count = reader.u16_at(0).unwrap_or(0);
             if entry_count > 0 && entry_count < 500 {
                 return true;
             }

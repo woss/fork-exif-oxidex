@@ -25,6 +25,7 @@
 #![allow(unused_imports)]
 
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
     combinator::map,
@@ -378,7 +379,8 @@ pub fn is_pentax_makernote(data: &[u8]) -> bool {
     // Some Pentax cameras have no header, just start with IFD
     // We'll validate by checking if first two bytes form a reasonable entry count
     if data.len() >= 2 {
-        let entry_count = u16::from_le_bytes([data[0], data[1]]);
+        let reader = EndianReader::little_endian(data);
+        let entry_count = reader.u16_at(0).unwrap_or(0);
         // Reasonable entry count: 1-200 entries
         if entry_count > 0 && entry_count < 200 {
             return true;
@@ -436,21 +438,12 @@ impl MakerNoteParser for PentaxParser {
 
         let ifd_data = &data[ifd_offset..];
 
-        // Parse IFD entry count
-        let entry_count = match byte_order {
-            ByteOrder::LittleEndian => {
-                if ifd_data.len() < 2 {
-                    return Ok(());
-                }
-                u16::from_le_bytes([ifd_data[0], ifd_data[1]])
-            }
-            ByteOrder::BigEndian => {
-                if ifd_data.len() < 2 {
-                    return Ok(());
-                }
-                u16::from_be_bytes([ifd_data[0], ifd_data[1]])
-            }
-        };
+        // Parse IFD entry count using EndianReader
+        if ifd_data.len() < 2 {
+            return Ok(());
+        }
+        let reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
+        let entry_count = reader.u16_at(0).unwrap_or(0);
 
         // Sanity check on entry count
         if entry_count == 0 || entry_count > 200 {

@@ -2,11 +2,14 @@
 //!
 //! Implements metadata extraction from WOFF2 font files.
 //! WOFF2 uses Brotli compression and table transformations.
+//!
+//! WOFF2 files use big-endian byte order for all multi-byte fields.
 
 #![allow(dead_code)]
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// WOFF2 signature: "wOF2"
 const WOFF2_SIGNATURE: &[u8] = b"wOF2";
@@ -36,60 +39,21 @@ impl WOFF2Parser {
         }
 
         let header_data = reader.read(0, WOFF2_HEADER_SIZE as usize)?;
+        let r = EndianReader::big_endian(header_data);
 
         Ok(WOFF2Header {
             flavor: Self::parse_flavor(&header_data[4..8]),
-            length: u32::from_be_bytes([
-                header_data[8],
-                header_data[9],
-                header_data[10],
-                header_data[11],
-            ]),
-            num_tables: u16::from_be_bytes([header_data[12], header_data[13]]),
-            total_sfnt_size: u32::from_be_bytes([
-                header_data[16],
-                header_data[17],
-                header_data[18],
-                header_data[19],
-            ]),
-            total_compressed_size: u32::from_be_bytes([
-                header_data[20],
-                header_data[21],
-                header_data[22],
-                header_data[23],
-            ]),
-            major_version: u16::from_be_bytes([header_data[24], header_data[25]]),
-            minor_version: u16::from_be_bytes([header_data[26], header_data[27]]),
-            meta_offset: u32::from_be_bytes([
-                header_data[28],
-                header_data[29],
-                header_data[30],
-                header_data[31],
-            ]),
-            meta_length: u32::from_be_bytes([
-                header_data[32],
-                header_data[33],
-                header_data[34],
-                header_data[35],
-            ]),
-            meta_orig_length: u32::from_be_bytes([
-                header_data[36],
-                header_data[37],
-                header_data[38],
-                header_data[39],
-            ]),
-            priv_offset: u32::from_be_bytes([
-                header_data[40],
-                header_data[41],
-                header_data[42],
-                header_data[43],
-            ]),
-            priv_length: u32::from_be_bytes([
-                header_data[44],
-                header_data[45],
-                header_data[46],
-                header_data[47],
-            ]),
+            length: r.u32_at(8).unwrap_or(0),
+            num_tables: r.u16_at(12).unwrap_or(0),
+            total_sfnt_size: r.u32_at(16).unwrap_or(0),
+            total_compressed_size: r.u32_at(20).unwrap_or(0),
+            major_version: r.u16_at(24).unwrap_or(0),
+            minor_version: r.u16_at(26).unwrap_or(0),
+            meta_offset: r.u32_at(28).unwrap_or(0),
+            meta_length: r.u32_at(32).unwrap_or(0),
+            meta_orig_length: r.u32_at(36).unwrap_or(0),
+            priv_offset: r.u32_at(40).unwrap_or(0),
+            priv_length: r.u32_at(44).unwrap_or(0),
         })
     }
 

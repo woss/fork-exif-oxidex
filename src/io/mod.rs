@@ -32,8 +32,8 @@ pub mod file_reader;
 pub mod mmap_reader;
 
 // Binary reading utilities
-pub mod endian_reader;
 pub mod cursor;
+pub mod endian_reader;
 pub mod timestamp;
 
 // Re-export for convenient access

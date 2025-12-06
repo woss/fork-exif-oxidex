@@ -2,11 +2,14 @@
 //!
 //! Implements comprehensive metadata extraction from OpenType font files.
 //! OTF uses the same SFNT structure as TTF, with "OTTO" signature indicating CFF outlines.
+//!
+//! OTF files use big-endian byte order for all multi-byte fields.
 
 #![allow(dead_code)]
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::io::EndianReader;
 
 /// OTF signature: "OTTO"
 const OTF_SIGNATURE: &[u8] = b"OTTO";
@@ -46,10 +49,8 @@ impl OTFParser {
         }
 
         let num_tables_bytes = reader.read(4, 2)?;
-        Ok(u16::from_be_bytes([
-            num_tables_bytes[0],
-            num_tables_bytes[1],
-        ]))
+        let r = EndianReader::big_endian(num_tables_bytes);
+        Ok(r.u16_at(0).unwrap_or(0))
     }
 
     /// Parses the SFNT table directory
@@ -60,20 +61,14 @@ impl OTFParser {
         for i in 0..num_tables {
             let entry_offset = dir_offset + (i as u64 * TABLE_ENTRY_SIZE as u64);
             let entry_data = reader.read(entry_offset, TABLE_ENTRY_SIZE)?;
+            let r = EndianReader::big_endian(entry_data);
 
             let mut tag = [0u8; 4];
             tag.copy_from_slice(&entry_data[0..4]);
 
-            let checksum =
-                u32::from_be_bytes([entry_data[4], entry_data[5], entry_data[6], entry_data[7]]);
-            let offset =
-                u32::from_be_bytes([entry_data[8], entry_data[9], entry_data[10], entry_data[11]]);
-            let length = u32::from_be_bytes([
-                entry_data[12],
-                entry_data[13],
-                entry_data[14],
-                entry_data[15],
-            ]);
+            let checksum = r.u32_at(4).unwrap_or(0);
+            let offset = r.u32_at(8).unwrap_or(0);
+            let length = r.u32_at(12).unwrap_or(0);
 
             tables.push(TableEntry {
                 tag,
@@ -99,22 +94,24 @@ impl OTFParser {
     ) -> Result<()> {
         let offset = table.offset as u64;
         let header = reader.read(offset, 6)?;
+        let header_r = EndianReader::big_endian(header);
 
-        let _format = u16::from_be_bytes([header[0], header[1]]);
-        let count = u16::from_be_bytes([header[2], header[3]]);
-        let string_offset = u16::from_be_bytes([header[4], header[5]]) as u64;
+        let _format = header_r.u16_at(0).unwrap_or(0);
+        let count = header_r.u16_at(2).unwrap_or(0);
+        let string_offset = header_r.u16_at(4).unwrap_or(0) as u64;
 
         // Parse name records
         for i in 0..count {
             let record_offset = offset + 6 + (i as u64 * 12);
             let record = reader.read(record_offset, 12)?;
+            let record_r = EndianReader::big_endian(record);
 
-            let platform_id = u16::from_be_bytes([record[0], record[1]]);
-            let encoding_id = u16::from_be_bytes([record[2], record[3]]);
-            let _language_id = u16::from_be_bytes([record[4], record[5]]);
-            let name_id = u16::from_be_bytes([record[6], record[7]]);
-            let length = u16::from_be_bytes([record[8], record[9]]) as usize;
-            let name_offset = u16::from_be_bytes([record[10], record[11]]) as u64;
+            let platform_id = record_r.u16_at(0).unwrap_or(0);
+            let encoding_id = record_r.u16_at(2).unwrap_or(0);
+            let _language_id = record_r.u16_at(4).unwrap_or(0);
+            let name_id = record_r.u16_at(6).unwrap_or(0);
+            let length = record_r.u16_at(8).unwrap_or(0) as usize;
+            let name_offset = record_r.u16_at(10).unwrap_or(0) as u64;
 
             // Prefer Windows Unicode (platform 3, encoding 1)
             if platform_id != 3 || encoding_id != 1 {
@@ -124,7 +121,7 @@ impl OTFParser {
             let str_offset = offset + string_offset + name_offset;
             let str_data = reader.read(str_offset, length)?;
 
-            // Decode UTF-16BE
+            // Decode UTF-16BE (NOTE: decode_utf16be uses from_be_bytes intentionally for text decoding)
             let decoded = Self::decode_utf16be(str_data);
 
             // Map nameID to metadata field
@@ -166,7 +163,8 @@ impl OTFParser {
 
         // UnitsPerEm at offset 18 (2 bytes)
         let units_data = reader.read(offset + 18, 2)?;
-        let units_per_em = u16::from_be_bytes([units_data[0], units_data[1]]);
+        let units_r = EndianReader::big_endian(units_data);
+        let units_per_em = units_r.u16_at(0).unwrap_or(0);
         metadata.insert(
             "UnitsPerEm".to_string(),
             TagValue::String(units_per_em.to_string()),
@@ -174,39 +172,25 @@ impl OTFParser {
 
         // Created timestamp at offset 20 (8 bytes, seconds since 1904-01-01)
         let created_data = reader.read(offset + 20, 8)?;
-        let created = i64::from_be_bytes([
-            created_data[0],
-            created_data[1],
-            created_data[2],
-            created_data[3],
-            created_data[4],
-            created_data[5],
-            created_data[6],
-            created_data[7],
-        ]);
-        if created > 0 {
-            let unix_timestamp = created - EPOCH_DELTA;
-            if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
-                metadata.insert("CreatedDate".to_string(), TagValue::String(timestamp_str));
+        let created_r = EndianReader::big_endian(created_data);
+        if let Some(created) = created_r.i64_at(0) {
+            if created > 0 {
+                let unix_timestamp = created - EPOCH_DELTA;
+                if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
+                    metadata.insert("CreatedDate".to_string(), TagValue::String(timestamp_str));
+                }
             }
         }
 
         // Modified timestamp at offset 28 (8 bytes)
         let modified_data = reader.read(offset + 28, 8)?;
-        let modified = i64::from_be_bytes([
-            modified_data[0],
-            modified_data[1],
-            modified_data[2],
-            modified_data[3],
-            modified_data[4],
-            modified_data[5],
-            modified_data[6],
-            modified_data[7],
-        ]);
-        if modified > 0 {
-            let unix_timestamp = modified - EPOCH_DELTA;
-            if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
-                metadata.insert("ModifiedDate".to_string(), TagValue::String(timestamp_str));
+        let modified_r = EndianReader::big_endian(modified_data);
+        if let Some(modified) = modified_r.i64_at(0) {
+            if modified > 0 {
+                let unix_timestamp = modified - EPOCH_DELTA;
+                if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
+                    metadata.insert("ModifiedDate".to_string(), TagValue::String(timestamp_str));
+                }
             }
         }
 

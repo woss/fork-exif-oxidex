@@ -828,12 +828,14 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
 
     // Read JPEG offset and length (big-endian)
     let reader = crate::io::EndianReader::big_endian(data);
-    let jpeg_offset = reader.u32_at(84).ok_or_else(|| {
-        ExifToolError::parse_error("RAF: failed to read JPEG offset")
-    })? as usize;
-    let jpeg_length = reader.u32_at(88).ok_or_else(|| {
-        ExifToolError::parse_error("RAF: failed to read JPEG length")
-    })? as usize;
+    let jpeg_offset = reader
+        .u32_at(84)
+        .ok_or_else(|| ExifToolError::parse_error("RAF: failed to read JPEG offset"))?
+        as usize;
+    let jpeg_length = reader
+        .u32_at(88)
+        .ok_or_else(|| ExifToolError::parse_error("RAF: failed to read JPEG length"))?
+        as usize;
 
     // Validate JPEG offset and length
     if jpeg_offset >= data.len() {
