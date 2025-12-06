@@ -385,4 +385,75 @@ mod tests {
         cursor.seek(0);
         assert_eq!(cursor.read_i64(), Some(-1));
     }
+
+    #[test]
+    fn test_u64_read() {
+        let data = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
+        let mut cursor = Cursor::big_endian(&data);
+
+        assert_eq!(cursor.read_u64(), Some(0x0102030405060708));
+        assert_eq!(cursor.position(), 8);
+    }
+
+    #[test]
+    fn test_len_and_is_empty() {
+        let data = [0x01, 0x02, 0x03];
+        let cursor = Cursor::big_endian(&data);
+
+        assert_eq!(cursor.len(), 3);
+        assert!(!cursor.is_empty());
+
+        let empty: &[u8] = &[];
+        let cursor = Cursor::big_endian(empty);
+        assert!(cursor.is_empty());
+    }
+
+    #[test]
+    fn test_data_accessor() {
+        let data = [0x01, 0x02, 0x03];
+        let cursor = Cursor::big_endian(&data);
+
+        assert_eq!(cursor.data(), &data);
+    }
+
+    #[test]
+    fn test_vint_three_bytes() {
+        // 0x20_00_01 = 0010_0000 0000_0000 0000_0001 -> value = 1
+        let data = [0x20, 0x00, 0x01];
+        let mut cursor = Cursor::big_endian(&data);
+        assert_eq!(cursor.read_vint(), Some((1, 3)));
+    }
+
+    #[test]
+    fn test_vint_four_bytes() {
+        // 0x10_00_00_01 -> value = 1
+        let data = [0x10, 0x00, 0x00, 0x01];
+        let mut cursor = Cursor::big_endian(&data);
+        assert_eq!(cursor.read_vint(), Some((1, 4)));
+    }
+
+    #[test]
+    fn test_vint_invalid_zero() {
+        // 0x00 is invalid VINT
+        let data = [0x00];
+        let mut cursor = Cursor::big_endian(&data);
+        assert_eq!(cursor.read_vint(), None);
+    }
+
+    #[test]
+    fn test_vint_truncated() {
+        // Two-byte vint but only 1 byte available
+        let data = [0x40]; // Needs 2 bytes
+        let mut cursor = Cursor::big_endian(&data);
+        assert_eq!(cursor.read_vint(), None);
+    }
+
+    #[test]
+    fn test_skip_saturating() {
+        let data = [0x01, 0x02];
+        let mut cursor = Cursor::big_endian(&data);
+
+        cursor.skip(100); // Skip way past end
+        assert_eq!(cursor.remaining(), 0);
+    }
 }

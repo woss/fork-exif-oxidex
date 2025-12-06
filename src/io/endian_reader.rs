@@ -341,4 +341,59 @@ mod tests {
         assert_eq!(reader.len(), 0);
         assert!(reader.is_empty());
     }
+
+    #[test]
+    fn test_byte_order_accessor() {
+        let data = [0x01, 0x02];
+        let be = EndianReader::big_endian(&data);
+        let le = EndianReader::little_endian(&data);
+
+        assert_eq!(be.byte_order(), ByteOrder::Big);
+        assert_eq!(le.byte_order(), ByteOrder::Little);
+    }
+
+    #[test]
+    fn test_data_accessor() {
+        let data = [0x01, 0x02, 0x03];
+        let reader = EndianReader::big_endian(&data);
+
+        assert_eq!(reader.data(), &data);
+    }
+
+    #[test]
+    fn test_reads_at_various_offsets() {
+        let data = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
+        let reader = EndianReader::big_endian(&data);
+
+        // Test reading at different offsets
+        assert_eq!(reader.u16_at(2), Some(0x0203));
+        assert_eq!(reader.u32_at(4), Some(0x04050607));
+        assert_eq!(reader.u16_at(6), Some(0x0607));
+    }
+
+    #[test]
+    fn test_little_endian_rationals() {
+        // 3/4 in little-endian
+        let data = [0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00];
+        let reader = EndianReader::little_endian(&data);
+
+        assert_eq!(reader.rational_at(0), Some((3, 4)));
+    }
+
+    #[test]
+    fn test_invalid_utf8_string() {
+        let data = [0xFF, 0xFE, 0x00]; // Invalid UTF-8
+        let reader = EndianReader::big_endian(&data);
+
+        assert_eq!(reader.str_at(0, 2), None);
+    }
+
+    #[test]
+    fn test_cstr_at_end_of_buffer() {
+        let data = b"NoNull";
+        let reader = EndianReader::big_endian(data);
+
+        // Should return full string when no null found
+        assert_eq!(reader.cstr_at(0, 10), Some("NoNull"));
+    }
 }

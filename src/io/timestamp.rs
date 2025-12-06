@@ -277,4 +277,80 @@ mod tests {
             assert_eq!(result, expected, "Failed for unix={}", unix);
         }
     }
+
+    #[test]
+    fn test_filetime_various_dates() {
+        // Test that a recent FILETIME converts to a reasonable date
+        // 2020-01-01 00:00:00 UTC = Unix 1577836800
+        // FILETIME = (1577836800 + 11644473600) * 10_000_000
+        let unix_2020 = 1577836800i64;
+        let filetime_2020 = ((unix_2020 + FILETIME_UNIX_DIFF) * 10_000_000) as u64;
+        let result = filetime_to_iso8601(filetime_2020);
+        assert!(result.is_some());
+        assert!(result.unwrap().starts_with("2020-01-01"));
+    }
+
+    #[test]
+    fn test_mac_time_various_dates() {
+        // 2020-01-01 00:00:00 as Mac time (seconds since 1904-01-01)
+        let mac_2020 = 3_660_595_200u64; // Approximate
+        let result = mac_time_to_iso8601(mac_2020);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_exif_datetime_edge_cases() {
+        // Minimum valid date
+        assert!(exif_datetime_to_unix("1970:01:01 00:00:00").is_some());
+
+        // Invalid month
+        assert_eq!(exif_datetime_to_unix("2024:13:01 00:00:00"), None);
+
+        // Invalid day
+        assert_eq!(exif_datetime_to_unix("2024:01:32 00:00:00"), None);
+
+        // Invalid hour
+        assert_eq!(exif_datetime_to_unix("2024:01:01 25:00:00"), None);
+
+        // Too short
+        assert_eq!(exif_datetime_to_unix("2024:01:01"), None);
+    }
+
+    #[test]
+    fn test_leap_year_handling() {
+        // Feb 29 on leap year (2024)
+        let unix = exif_datetime_to_unix("2024:02:29 12:00:00");
+        assert!(unix.is_some());
+
+        // Verify the date converts back correctly
+        if let Some(ts) = unix {
+            let iso = unix_to_iso8601(ts);
+            assert!(iso.contains("2024-02-29"));
+        }
+    }
+
+    #[test]
+    fn test_end_of_year() {
+        // Dec 31, 23:59:59
+        let unix = exif_datetime_to_unix("2024:12:31 23:59:59");
+        assert!(unix.is_some());
+
+        if let Some(ts) = unix {
+            let iso = unix_to_iso8601(ts);
+            assert!(iso.contains("2024-12-31"));
+            assert!(iso.contains("23:59:59"));
+        }
+    }
+
+    #[test]
+    fn test_datetime_to_unix_invalid_ranges() {
+        // Year before 1970
+        assert_eq!(super::datetime_to_unix(1969, 12, 31, 23, 59, 59), None);
+
+        // Month 0
+        assert_eq!(super::datetime_to_unix(2024, 0, 1, 0, 0, 0), None);
+
+        // Day 0
+        assert_eq!(super::datetime_to_unix(2024, 1, 0, 0, 0, 0), None);
+    }
 }
