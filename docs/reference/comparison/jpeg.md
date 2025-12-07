@@ -14,26 +14,6 @@ title: JPEG Compatibility
 - **Missing Tags:** 3346
 - **Extra Tags:** 162
 - **Value Differences:** 160
-- **⚠️ Regressions:** 12
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileSize` |
-| `File:FileType` |
-| `File:FileTypeExtension` |
-| `File:MIMEType` |
-| `IPTC:Country-PrimaryLocationCode` |
-| `XMP:CountryCode` |
-| `XMP:Rating` |
 
 ## Value Differences
 
@@ -257,7 +237,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `IPTC:Unknown-1-0` |  |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |
-| `IPTC:Unknown-2-117` | <hellostamp> <gid>0-0-7fffffff-0</gid> <md5>0-0-0-... |
+| `IPTC:Unknown-2-117` | ‹hellostamp› ‹gid›0-0-7fffffff-0‹/gid› ‹md5›0-0-0-... |
 | `IPTC:Unknown-2-221` | 0:0:5:003344 |
 
 *...and 112 more extra tags*

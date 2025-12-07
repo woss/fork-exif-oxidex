@@ -14,23 +14,6 @@ title: PDF Compatibility
 - **Missing Tags:** 103
 - **Extra Tags:** 19
 - **Value Differences:** 1
-- **⚠️ Regressions:** 9
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileSize` |
-| `File:FileType` |
-| `File:FileTypeExtension` |
-| `File:MIMEType` |
 
 ## Value Differences
 

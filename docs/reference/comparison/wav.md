@@ -14,22 +14,6 @@ title: WAV Compatibility
 - **Missing Tags:** 8
 - **Extra Tags:** 1
 - **Value Differences:** 1
-- **⚠️ Regressions:** 8
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileSize` |
-| `File:FileType` |
-| `File:FileTypeExtension` |
 
 ## Value Differences
 

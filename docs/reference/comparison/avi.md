@@ -14,22 +14,6 @@ title: AVI Compatibility
 - **Missing Tags:** 102
 - **Extra Tags:** 22
 - **Value Differences:** 1
-- **⚠️ Regressions:** 8
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileType` |
-| `File:FileTypeExtension` |
-| `File:MIMEType` |
 
 ## Value Differences
 

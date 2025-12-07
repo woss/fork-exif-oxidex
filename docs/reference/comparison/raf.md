@@ -14,20 +14,6 @@ title: RAF Compatibility
 - **Missing Tags:** 54
 - **Extra Tags:** 8
 - **Value Differences:** 11
-- **⚠️ Regressions:** 6
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileTypeExtension` |
 
 ## Value Differences
 

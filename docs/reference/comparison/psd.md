@@ -14,20 +14,6 @@ title: PSD Compatibility
 - **Missing Tags:** 76
 - **Extra Tags:** 1
 - **Value Differences:** 3
-- **⚠️ Regressions:** 6
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileTypeExtension` |
 
 ## Value Differences
 
@@ -35,9 +21,9 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `XMP:Creator` | Phil Harvey | <rdf:Seq>    <rdf:li>Phil Harvey</rdf:li... |
-| `XMP:Description` | This is a teeny weeny white square | <rdf:Alt>    <rdf:li xml:lang='x-default... |
-| `XMP:Title` | Test Picture | <rdf:Alt>    <rdf:li xml:lang='x-default... |
+| `XMP:Creator` | Phil Harvey | ‹rdf:Seq›    ‹rdf:li›Phil Harvey‹/rdf:li... |
+| `XMP:Description` | This is a teeny weeny white square | ‹rdf:Alt›    ‹rdf:li xml:lang='x-default... |
+| `XMP:Title` | Test Picture | ‹rdf:Alt›    ‹rdf:li xml:lang='x-default... |
 
 ## Missing Tags
 

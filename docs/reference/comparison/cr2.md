@@ -14,21 +14,6 @@ title: CR2 Compatibility
 - **Missing Tags:** 282
 - **Extra Tags:** 19
 - **Value Differences:** 28
-- **⚠️ Regressions:** 7
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileSize` |
-| `File:FileTypeExtension` |
 
 ## Value Differences
 
@@ -52,7 +37,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:AutoISO` | 100 | 2069 |
 | `MakerNotes:BaseISO` | 400 | 2087 |
 | `MakerNotes:CanonModelID` | EOS Digital Rebel XT / 350D / Kiss Digit... | 2147484041 |
-| `MakerNotes:FirmwareVersion` | 1.0.0 | DJMI***3:A>949VO |
+| `MakerNotes:FirmwareVersion` | 1.0.0 | DJMI***3:A›949VO |
 | `MakerNotes:FocalLength` | 55 mm | 2069 mm |
 | `MakerNotes:FocalType` | Zoom | 2087 |
 | `MakerNotes:FocusMode` | One-shot AF | Unknown (516) |

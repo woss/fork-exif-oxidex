@@ -14,21 +14,6 @@ title: NEF Compatibility
 - **Missing Tags:** 165
 - **Extra Tags:** 33
 - **Value Differences:** 13
-- **⚠️ Regressions:** 7
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileSize` |
-| `File:FileTypeExtension` |
 
 ## Value Differences
 

@@ -14,23 +14,6 @@ title: TIFF Compatibility
 - **Missing Tags:** 29
 - **Extra Tags:** 8
 - **Value Differences:** 17
-- **⚠️ Regressions:** 9
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileSize` |
-| `File:FileType` |
-| `File:FileTypeExtension` |
-| `File:MIMEType` |
 
 ## Value Differences
 

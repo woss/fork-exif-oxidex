@@ -14,22 +14,6 @@ title: WEBP Compatibility
 - **Missing Tags:** 11
 - **Extra Tags:** 6
 - **Value Differences:** 0
-- **⚠️ Regressions:** 8
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `File:Directory` |
-| `File:FileInodeChangeDate` |
-| `File:FileModifyDate` |
-| `File:FileName` |
-| `File:FilePermissions` |
-| `File:FileSize` |
-| `File:FileTypeExtension` |
-| `File:MIMEType` |
 
 ## Missing Tags
 
@@ -60,7 +44,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `WebP:HasXMP` | Yes |
 | `WebP:ImageHeight` | 1 |
 | `WebP:ImageWidth` | 1 |
-| `XMP:RawXMP` | <?xpacket begin='﻿' id='W5M0MpCehiHzreSzNTczkc9d'?... |
+| `XMP:RawXMP` | ‹?xpacket begin='﻿' id='W5M0MpCehiHzreSzNTczkc9d'?... |
 
 ---
 
