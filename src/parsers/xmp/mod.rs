@@ -32,10 +32,12 @@
 //! ```
 
 pub mod history_parser;
+pub mod namespace_mapping;
 pub mod namespace_resolver;
 pub mod rdf_parser;
 
 // Re-export main parsing function for convenience
 pub use history_parser::{parse_xmp_history, XmpHistoryEntry};
+pub use namespace_mapping::namespace_to_family;
 pub use namespace_resolver::NamespaceResolver;
 pub use rdf_parser::parse_xmp;

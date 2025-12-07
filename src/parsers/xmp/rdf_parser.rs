@@ -263,26 +263,43 @@ fn register_namespaces_from_element(
     Ok(())
 }
 
-/// Formats a tag name with namespace-specific "XMP-prefix:" output to match Perl ExifTool.
+/// Formats a tag name to match ExifTool's XMP output conventions.
 ///
-/// XMP properties are returned with namespace-specific prefixes:
-/// - xmp:Creator → XMP-xmp:Creator
-/// - dc:title → XMP-dc:Title (Dublin Core uses Title-case)
-/// - exif:Make → XMP-exif:Make
-fn format_tag_name(qname: &str, _resolver: &NamespaceResolver) -> String {
+/// ExifTool uses a simplified "XMP:" prefix for most common XMP properties,
+/// regardless of their namespace. This function uses namespace URI resolution
+/// to determine the correct family prefix.
+///
+/// XMP properties are returned with these prefixes:
+/// - dc:title → XMP:Title (Dublin Core uses simplified XMP: prefix and Title-case)
+/// - dc:rights → XMP:Rights (Dublin Core uses simplified XMP: prefix and Title-case)
+/// - xmp:Creator → XMP:Creator (Core XMP uses simplified XMP: prefix)
+/// - exif:Make → XMP-exif:Make (EXIF namespace uses XMP-exif: prefix)
+/// - tiff:Model → XMP-tiff:Model (TIFF namespace uses XMP-tiff: prefix)
+fn format_tag_name(qname: &str, resolver: &NamespaceResolver) -> String {
+    use super::namespace_mapping::namespace_to_family;
+
     let mut local_name = NamespaceResolver::extract_local_name(qname).to_string();
 
     // Extract namespace prefix from the qualified name
     if let Some(prefix) = NamespaceResolver::extract_prefix(qname) {
+        // Resolve the namespace URI from the prefix
+        let family_prefix = if let Some(namespace_uri) = resolver.resolve_prefix(prefix) {
+            // Use namespace mapping to get ExifTool family prefix
+            namespace_to_family(namespace_uri).unwrap_or("XMP")
+        } else {
+            // Unknown namespace - use generic XMP prefix
+            "XMP"
+        };
+
         // Dublin Core (dc) namespace uses Title-case for property names
-        // Convert first letter to uppercase for dc: elements to match Perl ExifTool
+        // Convert first letter to uppercase for dc: elements to match ExifTool
         if prefix == "dc" && !local_name.is_empty() {
             // Capitalize first letter
             local_name = capitalize_first_letter(&local_name);
         }
 
-        // Use "XMP-{prefix}:{localName}" format to match Perl ExifTool exactly
-        format!("XMP-{}:{}", prefix, local_name)
+        // Format with the appropriate family prefix
+        format!("{}:{}", family_prefix, local_name)
     } else {
         // No namespace prefix - use generic "XMP:" prefix
         format!("XMP:{}", local_name)
@@ -322,17 +339,17 @@ mod tests {
             result.len()
         );
 
-        // Check that Creator and Rating are present with namespace-specific prefixes
+        // Check that Creator and Rating are present with simplified XMP: prefix
         let creators: Vec<_> = result
             .iter()
-            .filter(|(name, _)| name == "XMP-xmp:Creator")
+            .filter(|(name, _)| name == "XMP:Creator")
             .collect();
         assert_eq!(creators.len(), 1);
         assert_eq!(creators[0].1, "John Doe");
 
         let ratings: Vec<_> = result
             .iter()
-            .filter(|(name, _)| name == "XMP-xmp:Rating")
+            .filter(|(name, _)| name == "XMP:Rating")
             .collect();
         assert_eq!(ratings.len(), 1);
         assert_eq!(ratings[0].1, "5");
@@ -366,27 +383,27 @@ mod tests {
         // Verify properties from all 3 namespaces (xmp, dc, exif)
         let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
 
-        // Check for xmp properties with namespace-specific prefixes
+        // Check for xmp properties with simplified XMP: prefix
         assert!(
-            prop_names.iter().any(|n| n == "XMP-xmp:Creator"),
-            "Missing XMP-xmp:Creator"
+            prop_names.iter().any(|n| n == "XMP:Creator"),
+            "Missing XMP:Creator"
         );
         assert!(
-            prop_names.iter().any(|n| n == "XMP-xmp:ModifyDate"),
-            "Missing XMP-xmp:ModifyDate"
-        );
-
-        // Check for dc properties (Dublin Core uses Title-case)
-        assert!(
-            prop_names.iter().any(|n| n == "XMP-dc:Title"),
-            "Missing XMP-dc:Title (dc:title)"
-        );
-        assert!(
-            prop_names.iter().any(|n| n == "XMP-dc:Rights"),
-            "Missing XMP-dc:Rights (dc:rights)"
+            prop_names.iter().any(|n| n == "XMP:ModifyDate"),
+            "Missing XMP:ModifyDate"
         );
 
-        // Check for exif properties
+        // Check for dc properties (Dublin Core uses simplified XMP: prefix and Title-case)
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Title"),
+            "Missing XMP:Title (dc:title)"
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Rights"),
+            "Missing XMP:Rights (dc:rights)"
+        );
+
+        // Check for exif properties (EXIF namespace uses XMP-exif: prefix)
         assert!(
             prop_names.iter().any(|n| n == "XMP-exif:Make"),
             "Missing XMP-exif:Make (exif:Make)"
@@ -459,8 +476,8 @@ mod tests {
 
         // Should have simple properties but not the complex Bag structure
         let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
-        assert!(prop_names.iter().any(|n| n == "XMP-dc:Creator"));
-        assert!(prop_names.iter().any(|n| n == "XMP-dc:Title"));
+        assert!(prop_names.iter().any(|n| n == "XMP:Creator"));
+        assert!(prop_names.iter().any(|n| n == "XMP:Title"));
 
         // The Bag contents should not be present as individual items
         assert!(!prop_names.iter().any(|n| n.contains("keyword")));
@@ -483,7 +500,7 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(
             result[0],
-            ("XMP-xmp:Creator".to_string(), "John Doe".to_string())
+            ("XMP:Creator".to_string(), "John Doe".to_string())
         );
     }
 
@@ -531,13 +548,13 @@ mod tests {
         // Should handle properties from both Description blocks
         let creators: Vec<_> = result
             .iter()
-            .filter(|(name, _)| name == "XMP-xmp:Creator")
+            .filter(|(name, _)| name == "XMP:Creator")
             .collect();
         assert_eq!(creators.len(), 1);
 
         let titles: Vec<_> = result
             .iter()
-            .filter(|(name, _)| name == "XMP-dc:Title")
+            .filter(|(name, _)| name == "XMP:Title")
             .collect();
         assert_eq!(titles.len(), 1);
     }
