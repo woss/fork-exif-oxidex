@@ -46,6 +46,50 @@ fn tiff_to_byte_order(order: TiffByteOrder) -> ByteOrder {
     }
 }
 
+/// Extract metadata from a single track atom
+///
+/// Returns Err if required container atoms (mdia, minf, stbl) are missing.
+/// Callers should ignore errors to preserve original behavior of skipping
+/// incomplete tracks rather than failing the entire extraction.
+fn extract_track_metadata(
+    trak: &Atom,
+    metadata: &mut MetadataMap,
+    index: usize,
+) -> Result<(), String> {
+    // Extract track header - optional
+    if let Some(tkhd) = trak.find_child("tkhd") {
+        let _ = extract_track_header(&tkhd, metadata, index);
+    }
+
+    // Media container - required for further extraction
+    // Uses ok_or_else() to convert Option to Result, enabling ? operator
+    let mdia = trak
+        .find_child("mdia")
+        .ok_or_else(|| "missing mdia atom".to_string())?;
+
+    // Extract media header - optional
+    if let Some(mdhd) = mdia.find_child("mdhd") {
+        let _ = extract_media_header(&mdhd, metadata, index);
+    }
+
+    // Media information - required for sample table access
+    let minf = mdia
+        .find_child("minf")
+        .ok_or_else(|| "missing minf atom".to_string())?;
+
+    // Sample table - required for sample descriptions
+    let stbl = minf
+        .find_child("stbl")
+        .ok_or_else(|| "missing stbl atom".to_string())?;
+
+    // Extract sample description - optional
+    if let Some(stsd) = stbl.find_child("stsd") {
+        let _ = extract_sample_description(&stsd, metadata, index);
+    }
+
+    Ok(())
+}
+
 /// Extract all metadata from QuickTime/MP4 atoms
 pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
     let mut metadata = MetadataMap::with_capacity(50);
@@ -73,25 +117,9 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
                 .collect();
 
             for (index, trak) in trak_atoms.iter().enumerate() {
-                if let Some(tkhd) = trak.find_child("tkhd") {
-                    let _ = extract_track_header(&tkhd, &mut metadata, index);
-                }
-
-                // Extract media header (mdhd) from trak→mdia→mdhd
-                if let Some(mdia) = trak.find_child("mdia") {
-                    if let Some(mdhd) = mdia.find_child("mdhd") {
-                        let _ = extract_media_header(&mdhd, &mut metadata, index);
-                    }
-
-                    // Extract sample description (stsd) from trak→mdia→minf→stbl→stsd
-                    if let Some(minf) = mdia.find_child("minf") {
-                        if let Some(stbl) = minf.find_child("stbl") {
-                            if let Some(stsd) = stbl.find_child("stsd") {
-                                let _ = extract_sample_description(&stsd, &mut metadata, index);
-                            }
-                        }
-                    }
-                }
+                // Ignore errors - missing atoms in a track should not prevent
+                // processing other tracks (preserves original behavior)
+                let _ = extract_track_metadata(trak, &mut metadata, index);
             }
         }
 
