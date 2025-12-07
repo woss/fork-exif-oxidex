@@ -9,11 +9,11 @@ title: NEF Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 2.6%
-- **Matched Tags:** 6
+- **Coverage:** 3.0%
+- **Matched Tags:** 7
 - **Missing Tags:** 222
-- **Extra Tags:** 69
-- **Value Differences:** 4
+- **Extra Tags:** 68
+- **Value Differences:** 3
 
 ## Value Differences
 
@@ -21,8 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:51+00:00 | 2025:12:07 10:07:44+00:00 |
-| `File:FileSize` | 6.2 kB | 6 kB |
+| `File:FileAccessDate` | 2025:12:07 11:13:36+00:00 | 2025:12:07 11:12:15+00:00 |
 | `File:FileType` | NEF | NikonNEF |
 | `File:MIMEType` | image/x-nikon-nef | application/octet-stream |
 
@@ -142,7 +141,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | Tag | Value |
 |-----|-------|
 | `ExifIFD:0x8822` | 3 |
-| `ExifIFD:0x927C` | [Binary data] |
 | `ExifIFD:CFAPattern` | [Binary data] |
 | `ExifIFD:ColorSpace` | 1 |
 | `ExifIFD:CreateDate` | 2004:06:09 16:02:35 |
@@ -191,8 +189,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `NEF:RAWBitDepth` | 12 |
 | `NEF:RAWCompression` | Nikon Lossless Compressed |
 | `NEF:RAWImageSize` | 3040x2014 |
+| `SubIFD0:0x0201` | 1120 |
 
-*...and 19 more extra tags*
+*...and 18 more extra tags*
 
 ---
 

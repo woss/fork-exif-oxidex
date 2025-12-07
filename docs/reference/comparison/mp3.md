@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:50+00:00 | 2025:12:07 10:07:44+00:00 |
+| `File:FileAccessDate` | 2025:12:07 11:13:36+00:00 | 2025:12:07 11:12:15+00:00 |
 
 ## Missing Tags
 

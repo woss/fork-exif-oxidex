@@ -9,11 +9,20 @@ title: RW2 Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 3.8%
-- **Matched Tags:** 7
+- **Coverage:** 3.2%
+- **Matched Tags:** 6
 - **Missing Tags:** 176
 - **Extra Tags:** 50
-- **Value Differences:** 3
+- **Value Differences:** 4
+- **⚠️ Regressions:** 1
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:FileSize` |
 
 ## Value Differences
 
@@ -21,7 +30,8 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:51+00:00 | 2025:12:07 10:07:44+00:00 |
+| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
+| `File:FileSize` | 12 kB | 12.3 kB |
 | `File:FileType` | RW2 | PanasonicRW2 |
 | `File:MIMEType` | image/x-panasonic-rw2 | application/octet-stream |
 

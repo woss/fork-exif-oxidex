@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:52+00:00 | 2025:12:07 10:07:44+00:00 |
+| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
 | `File:FileType` | XMP | Unknown |
 | `File:MIMEType` | application/rdf+xml | application/octet-stream |
 
@@ -141,13 +141,13 @@ Tags OxiDex extracts that ExifTool doesn't:
 | Tag | Value |
 |-----|-------|
 | `UNKNOWN:ByteOrderMark` | No |
-| `UNKNOWN:FileSize` | 918 |
+| `UNKNOWN:FileSize` | 4721 |
 | `UNKNOWN:FileType` | TXT |
-| `UNKNOWN:LineCount` | 26 |
+| `UNKNOWN:LineCount` | 157 |
 | `UNKNOWN:MIMEEncoding` | utf-8 |
 | `UNKNOWN:MIMEType` | text/plain |
 | `UNKNOWN:Newlines` | Unix LF |
-| `UNKNOWN:WordCount` | 36 |
+| `UNKNOWN:WordCount` | 198 |
 
 ---
 

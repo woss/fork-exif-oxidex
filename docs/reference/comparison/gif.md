@@ -9,11 +9,11 @@ title: GIF Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 16.3%
-- **Matched Tags:** 8
+- **Coverage:** 18.4%
+- **Matched Tags:** 9
 - **Missing Tags:** 39
 - **Extra Tags:** 12
-- **Value Differences:** 2
+- **Value Differences:** 1
 
 ## Value Differences
 
@@ -21,8 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:45+00:00 | 2025:12:07 10:07:44+00:00 |
-| `File:FileSize` | 2.3 kB | 2 kB |
+| `File:FileAccessDate` | 2025:12:07 11:13:31+00:00 | 2025:12:07 11:12:15+00:00 |
 
 ## Missing Tags
 

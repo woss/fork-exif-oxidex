@@ -21,9 +21,9 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:44+00:00 | 2025:12:07 10:07:44+00:00 |
-| `File:FileSize` | 1672 bytes | 1 kB |
-| `RIFF:FrameRate` | 24 | 24.00 |
+| `File:FileAccessDate` | 2025:12:07 11:13:29+00:00 | 2025:12:07 11:12:15+00:00 |
+| `File:FileSize` | 1262 bytes | 1.3 kB |
+| `RIFF:FrameRate` | 15 | 15.00 |
 
 ## Missing Tags
 
@@ -31,17 +31,17 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:Duration` | 25.00 s |
-| `Composite:ImageSize` | 1280x720 |
+| `Composite:Duration` | 15.53 s |
+| `Composite:ImageSize` | 320x240 |
 | `Composite:LensID` | smc PENTAX-DA L 18-55mm F3.5-5.6 |
-| `Composite:Megapixels` | 0.922 |
+| `Composite:Megapixels` | 0.077 |
 | `ExifTool:ExifToolVersion` | 13.43 |
 | `File:BMPVersion` | Windows V3 |
 | `File:BitDepth` | 24 |
 | `File:Compression` | MJPG |
-| `File:ImageHeight` | 720 |
-| `File:ImageLength` | 2764800 |
-| `File:ImageWidth` | 1280 |
+| `File:ImageHeight` | 240 |
+| `File:ImageLength` | 230400 |
+| `File:ImageWidth` | 320 |
 | `File:NumColors` | Use BitDepth |
 | `File:NumImportantColors` | All |
 | `File:PixelsPerMeterX` | 0 |
@@ -126,11 +126,11 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:WhiteBalance` | Flash |
 | `MakerNotes:WhiteBalanceSet` | Auto |
 | `RIFF:AudioCodec` |  |
-| `RIFF:AudioSampleCount` | 800000 |
-| `RIFF:AudioSampleRate` | 32000 |
-| `RIFF:AvgBytesPerSec` | 64000 |
-| `RIFF:BitsPerSample` | 16 |
-| `RIFF:DateTimeOriginal` | 2009:10:27 12:14:00 |
+| `RIFF:AudioSampleCount` | 171240 |
+| `RIFF:AudioSampleRate` | 11024 |
+| `RIFF:AvgBytesPerSec` | 11024 |
+| `RIFF:BitsPerSample` | 8 |
+| `RIFF:DateTimeOriginal` | 2003:03:10 15:04:43 |
 
 *...and 18 more missing tags*
 
@@ -140,28 +140,28 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `RIFF:Duration` | 25.00 |
+| `RIFF:Duration` | 15.53 |
 | `RIFF:Stream1:BitDepth` | 24 |
 | `RIFF:Stream1:CodecFourCC` | mjpg |
 | `RIFF:Stream1:Compression` | MJPG |
-| `RIFF:Stream1:Duration` | 25.000 |
-| `RIFF:Stream1:FrameRate` | 24.000 |
-| `RIFF:Stream1:ImageHeight` | 720 |
-| `RIFF:Stream1:ImageWidth` | 1280 |
-| `RIFF:Stream1:StreamLength` | 600 |
+| `RIFF:Stream1:Duration` | 15.533 |
+| `RIFF:Stream1:FrameRate` | 15.000 |
+| `RIFF:Stream1:ImageHeight` | 240 |
+| `RIFF:Stream1:ImageWidth` | 320 |
+| `RIFF:Stream1:StreamLength` | 233 |
 | `RIFF:Stream1:StreamType` | Video |
 | `RIFF:Stream2:AudioFormat` | PCM |
 | `RIFF:Stream2:AudioFormatTag` | 1 |
-| `RIFF:Stream2:AvgBytesPerSec` | 64000 |
-| `RIFF:Stream2:Bitrate` | 512 kbps |
-| `RIFF:Stream2:BitsPerSample` | 16 |
+| `RIFF:Stream2:AvgBytesPerSec` | 11024 |
+| `RIFF:Stream2:Bitrate` | 88 kbps |
+| `RIFF:Stream2:BitsPerSample` | 8 |
 | `RIFF:Stream2:CodecFourCC` |  |
-| `RIFF:Stream2:Duration` | 25.000 |
+| `RIFF:Stream2:Duration` | 15.533 |
 | `RIFF:Stream2:NumChannels` | 1 |
-| `RIFF:Stream2:SampleRate` | 32000 |
-| `RIFF:Stream2:StreamLength` | 800000 |
+| `RIFF:Stream2:SampleRate` | 11024 |
+| `RIFF:Stream2:StreamLength` | 171240 |
 | `RIFF:Stream2:StreamType` | Audio |
-| `RIFF:TotalFrames` | 600 |
+| `RIFF:TotalFrames` | 233 |
 
 ---
 

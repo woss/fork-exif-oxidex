@@ -4,20 +4,33 @@ title: ExifTool Compatibility Report
 
 # ExifTool Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 32.1%
+**Overall Coverage:** 6.0% | **⚠️ Regressions:** 2
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [JPEG](./jpeg.md) | 26 | 12.7% | 110 | 17 | 27 | 0 |
-| [MP4](./mp4.md) | 3 | 68.3% | 8 | 15 | 5 | 0 |
-| [PDF](./pdf.md) | 2 | 77.3% | 1 | 7 | 4 | 0 |
-| [PNG](./png.md) | 4 | 54.0% | 26 | 33 | 3 | 0 |
-| [RAW](./raw.md) | 2 | 29.4% | 7 | 8 | 5 | 0 |
-| [TIFF](./tiff.md) | 7 | 14.0% | 33 | 61 | 4 | 0 |
+| [AVI](./avi.md) | 2 | 8.3% | 118 | 22 | 3 | 0 |
+| [CR2](./cr2.md) | 2 | 1.8% | 374 | 75 | 3 | 0 |
+| [DNG](./dng.md) | 1 | 2.0% | 289 | 97 | 4 | 0 |
+| [GIF](./gif.md) | 1 | 18.4% | 39 | 12 | 1 | 0 |
+| [HEIC](./heic.md) | 1 | 25.6% | 23 | 1 | 6 | 0 |
+| [JPEG](./jpeg.md) | 41 | 4.0% | 1256 | 140 | 52 | ⚠️ 1 |
+| [MKV](./mkv.md) | 1 | 41.5% | 21 | 13 | 3 | 0 |
+| [MP3](./mp3.md) | 1 | 22.5% | 30 | 16 | 1 | 0 |
+| [MP4](./mp4.md) | 1 | 0.0% | 99 | 0 | 0 | 0 |
+| [NEF](./nef.md) | 1 | 3.0% | 222 | 68 | 3 | 0 |
+| [PDF](./pdf.md) | 2 | 12.0% | 108 | 19 | 2 | 0 |
+| [PNG](./png.md) | 1 | 72.0% | 6 | 1 | 1 | 0 |
+| [PSD](./psd.md) | 1 | 5.7% | 93 | 25 | 7 | 0 |
+| [RAF](./raf.md) | 1 | 4.5% | 122 | 52 | 4 | 0 |
+| [RW2](./rw2.md) | 1 | 3.2% | 176 | 50 | 4 | ⚠️ 1 |
+| [TIFF](./tiff.md) | 2 | 8.7% | 94 | 66 | 1 | 0 |
+| [WAV](./wav.md) | 1 | 44.0% | 11 | 1 | 3 | 0 |
+| [WEBP](./webp.md) | 1 | 26.7% | 20 | 13 | 2 | 0 |
+| [XMP](./xmp.md) | 10 | 4.1% | 160 | 8 | 3 | 0 |
 
 ---
 

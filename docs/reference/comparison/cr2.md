@@ -9,11 +9,11 @@ title: CR2 Compatibility
 ## Summary
 
 - **Files Tested:** 2
-- **Coverage:** 1.6%
-- **Matched Tags:** 6
+- **Coverage:** 1.8%
+- **Matched Tags:** 7
 - **Missing Tags:** 374
-- **Extra Tags:** 52
-- **Value Differences:** 4
+- **Extra Tags:** 75
+- **Value Differences:** 3
 
 ## Value Differences
 
@@ -21,8 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:44+00:00 | 2025:12:07 10:07:44+00:00 |
-| `File:FileSize` | 8.7 kB | 8 kB |
+| `File:FileAccessDate` | 2025:12:07 11:13:30+00:00 | 2025:12:07 11:12:15+00:00 |
 | `File:FileType` | CR2 | CanonCR2 |
 | `File:MIMEType` | image/x-canon-cr2 | application/octet-stream |
 
@@ -142,8 +141,31 @@ Tags OxiDex extracts that ExifTool doesn't:
 | Tag | Value |
 |-----|-------|
 | `CR2:ImageLayerCount` | 1 |
+| `Canon:AFPointsInFocus` | 87 |
+| `Canon:AFPointsSelected` | 102 |
+| `Canon:AutoISO` | 2069 |
+| `Canon:BaseISO` | 2087 |
+| `Canon:CanonModelID` | 2147484041 |
+| `Canon:DriveMode` | Unknown (4023) |
+| `Canon:ExposureMode` | Unknown (248) |
+| `Canon:FirmwareVersion` | DJMI***3:A>949VO |
+| `Canon:FlashMode` | Unknown (-10) |
+| `Canon:FocalLength` | 2069 mm |
+| `Canon:FocalType` | 2087 |
+| `Canon:FocusMode` | Unknown (516) |
+| `Canon:ISO` | 196 |
+| `Canon:ImageType` | 7FK;)C.31:2 |
+| `Canon:MacroMode` | Unknown (4312) |
+| `Canon:MeasuredEV` | 257 |
+| `Canon:MeteringMode` | Unknown (3051) |
+| `Canon:OwnerName` | =EHK/)' |
+| `Canon:Quality` | Unknown (565) |
+| `Canon:SerialNumber` |  |
+| `Canon:ShutterCount` | 3932262 |
+| `Canon:SubjectDistance` | 46 mm |
+| `Canon:TargetAperture` | 256 |
+| `Canon:TargetShutterSpeed` | 257 |
 | `ExifIFD:0x8822` | 3 |
-| `ExifIFD:0x927C` | [Binary data] |
 | `ExifIFD:ApertureValue` | 393216/65536 |
 | `ExifIFD:ColorSpace` | 1 |
 | `ExifIFD:ComponentsConfiguration` | [Binary data] |
@@ -168,31 +190,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `ExifIFD:MeteringMode` | 1 |
 | `ExifIFD:SceneCaptureType` | 0 |
 | `ExifIFD:ShutterSpeedValue` | [Binary data] |
-| `ExifIFD:UserComment` | [Binary data] |
-| `ExifIFD:WhiteBalance` | 0 |
-| `IFD0:0xC5D8` | 1 |
-| `IFD0:0xC5D9` | 2 |
-| `IFD0:BitsPerSample` | 8 |
-| `IFD0:CR2CFAPattern` | 1 |
-| `IFD0:Compression` | 6 |
-| `IFD0:ImageHeight` | 256 |
-| `IFD0:ImageWidth` | 384 |
-| `IFD0:Make` | Canon |
-| `IFD0:Model` | Canon EOS 350D DIGITAL |
-| `IFD0:ModifyDate` | 2005:08:03 18:59:18 |
-| `IFD0:Orientation` | 1 |
-| `IFD0:PhotometricInterpretation` | 2 |
-| `IFD0:PlanarConfiguration` | 1 |
-| `IFD0:RawImageSegmentation` | 1 |
-| `IFD0:ResolutionUnit` | 2 |
-| `IFD0:RowsPerStrip` | 256 |
-| `IFD0:SamplesPerPixel` | 3 |
-| `IFD0:StripByteCounts` | 16 |
-| `IFD0:StripOffsets` | 8648 |
-| `IFD0:XResolution` | 72/1 |
-| `IFD0:YResolution` | 72/1 |
 
-*...and 2 more extra tags*
+*...and 25 more extra tags*
 
 ---
 

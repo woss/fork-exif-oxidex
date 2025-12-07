@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:52+00:00 | 2025:12:07 10:07:44+00:00 |
+| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
 | `File:MIMEType` | audio/x-wav | audio/wav |
 | `RIFF:DateCreated` | 2005:08:08 | 2005-08-08 |
 

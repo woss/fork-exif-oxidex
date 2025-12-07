@@ -4,16 +4,16 @@ title: TIFF Compatibility
 
 # TIFF Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
-- **Files Tested:** 7
-- **Coverage:** 14.0%
-- **Matched Tags:** 6
-- **Missing Tags:** 33
-- **Extra Tags:** 61
-- **Value Differences:** 4
+- **Files Tested:** 2
+- **Coverage:** 8.7%
+- **Matched Tags:** 9
+- **Missing Tags:** 94
+- **Extra Tags:** 66
+- **Value Differences:** 1
 
 ## Value Differences
 
@@ -21,10 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 05:02:49-06:00 | 2025:12:07 11:02:35-06:00 |
-| `File:FileInodeChangeDate` | 2025:11:23 00:10:44-06:00 | 2025:11:23 06:10:44-06:00 |
-| `File:FileModifyDate` | 2025:11:19 04:42:18-06:00 | 2025:11:19 10:42:18-06:00 |
-| `File:FileSize` | 180 kB | 180.3 kB |
+| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
 
 ## Missing Tags
 
@@ -32,39 +29,100 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:Aperture` | 2.8 |
-| `Composite:ImageSize` | 200x150 |
-| `Composite:Megapixels` | 0.03 |
-| `Composite:ShutterSpeed` | 1/100 |
-| `EXIF:Artist` | LZW Compressed |
-| `EXIF:BitsPerSample` | 16 16 16 |
+| `Composite:ImageSize` | 25x24 |
+| `Composite:Megapixels` | 0.0006 |
+| `EXIF:BitsPerSample` | 8 |
+| `EXIF:ColorMap` | (Binary data 1536 bytes, use -b option to extract) |
 | `EXIF:Compression` | Uncompressed |
-| `EXIF:ExposureTime` | 1/100 |
-| `EXIF:ExtraSamples` | Unassociated Alpha |
-| `EXIF:FNumber` | 2.8 |
-| `EXIF:FillOrder` | Normal |
-| `EXIF:ImageHeight` | 150 |
-| `EXIF:ImageWidth` | 200 |
+| `EXIF:ImageDescription` | The picture caption |
+| `EXIF:ImageHeight` | 24 |
+| `EXIF:ImageWidth` | 25 |
 | `EXIF:Make` | Canon |
-| `EXIF:Model` | Test Camera |
-| `EXIF:Orientation` | Horizontal (normal) |
-| `EXIF:PageNumber` | 0 1 |
-| `EXIF:PhotometricInterpretation` | RGB |
+| `EXIF:Model` | Canon EOS DIGITAL REBEL |
+| `EXIF:ModelTransform` | 33.4179196429669 35.8363313794284 0 691955.1656840... |
+| `EXIF:ModifyDate` | 2004:02:20 08:07:49 |
+| `EXIF:PhotometricInterpretation` | RGB Palette |
 | `EXIF:PlanarConfiguration` | Chunky |
-| `EXIF:Predictor` | Horizontal differencing |
-| `EXIF:PrimaryChromaticities` | 0.6399999857 0.3300000131 0.3000000119 0.600000023... |
-| `EXIF:RowsPerStrip` | 150 |
+| `EXIF:Predictor` | None |
+| `EXIF:ResolutionUnit` | inches |
+| `EXIF:RowsPerStrip` | 24 |
 | `EXIF:SamplesPerPixel` | 3 |
-| `EXIF:Software` | exiftool-rs test |
-| `EXIF:StripByteCounts` | 180000 |
-| `EXIF:StripOffsets` | 8 |
-| `EXIF:SubfileType` | Single page of multi-page image |
-| `EXIF:WhitePoint` | 0.3127000034 0.3289999962 |
+| `EXIF:Software` | GraphicConverter |
+| `EXIF:StripByteCounts` | 600 |
+| `EXIF:StripOffsets` | 2060 |
+| `EXIF:SubfileType` | Full-resolution image |
 | `EXIF:XResolution` | 72 |
 | `EXIF:YResolution` | 72 |
-| `ExifTool:ExifToolVersion` | 13.36 |
+| `ExifTool:ExifToolVersion` | 13.43 |
+| `File:CurrentIPTCDigest` | 82a5301def77e837ceb56158abd65512 |
 | `File:ExifByteOrder` | Big-endian (Motorola, MM) |
-| `File:PageCount` | 3 |
+| `GeoTiff:GTModelType` | Projected |
+| `GeoTiff:GTRasterType` | Pixel Is Area |
+| `GeoTiff:GeoTiffVersion` | 1.1.0 |
+| `GeoTiff:GeogCitation` | Hough UTM zone 17N |
+| `GeoTiff:GeogGeodeticDatum` | User Defined |
+| `GeoTiff:GeogSemiMajorAxis` | 6378270 |
+| `GeoTiff:GeogSemiMinorAxis` | 6356794.343479 |
+| `GeoTiff:GeographicType` | User Defined |
+| `GeoTiff:PCSCitation` | Hough UTM zone 17N |
+| `GeoTiff:ProjectedCSType` | User Defined |
+| `GeoTiff:Projection` | UTM zone 17N |
+| `ICC_Profile:BlueMatrixColumn` | 0.14307 0.06061 0.7141 |
+| `ICC_Profile:BlueTRC` | (Binary data 2060 bytes, use -b option to extract) |
+| `ICC_Profile:CMMFlags` | Not Embedded, Independent |
+| `ICC_Profile:ColorSpaceData` | RGB  |
+| `ICC_Profile:ConnectionSpaceIlluminant` | 0.9642 1 0.82491 |
+| `ICC_Profile:DeviceAttributes` | Reflective, Glossy, Positive, Color |
+| `ICC_Profile:DeviceManufacturer` | Hewlett-Packard |
+| `ICC_Profile:DeviceMfgDesc` | IEC http://www.iec.ch |
+| `ICC_Profile:DeviceModel` | sRGB |
+| `ICC_Profile:DeviceModelDesc` | IEC 61966-2.1 Default RGB colour space - sRGB |
+| `ICC_Profile:GreenMatrixColumn` | 0.38515 0.71687 0.09708 |
+| `ICC_Profile:GreenTRC` | (Binary data 2060 bytes, use -b option to extract) |
+| `ICC_Profile:Luminance` | 76.03647 80 87.12462 |
+| `ICC_Profile:MeasurementBacking` | 0 0 0 |
+| `ICC_Profile:MeasurementFlare` | 0.999% |
+| `ICC_Profile:MeasurementGeometry` | Unknown |
+| `ICC_Profile:MeasurementIlluminant` | D65 |
+| `ICC_Profile:MeasurementObserver` | CIE 1931 |
+| `ICC_Profile:MediaBlackPoint` | 0 0 0 |
+| `ICC_Profile:MediaWhitePoint` | 0.95045 1 1.08905 |
+| `ICC_Profile:PrimaryPlatform` | Microsoft Corporation |
+| `ICC_Profile:ProfileCMMType` | Linotronic |
+| `ICC_Profile:ProfileClass` | Display Device Profile |
+| `ICC_Profile:ProfileConnectionSpace` | XYZ  |
+| `ICC_Profile:ProfileCopyright` | Copyright (c) 1998 Hewlett-Packard Company |
+| `ICC_Profile:ProfileCreator` | Hewlett-Packard |
+| `ICC_Profile:ProfileDateTime` | 1998:02:09 06:49:00 |
+| `ICC_Profile:ProfileDescription` | sRGB IEC61966-2.1 |
+| `ICC_Profile:ProfileFileSignature` | acsp |
+| `ICC_Profile:ProfileID` | 0 |
+| `ICC_Profile:ProfileVersion` | 2.1.0 |
+| `ICC_Profile:RedMatrixColumn` | 0.43607 0.22249 0.01392 |
+| `ICC_Profile:RedTRC` | (Binary data 2060 bytes, use -b option to extract) |
+| `ICC_Profile:RenderingIntent` | Perceptual |
+| `ICC_Profile:Technology` | Cathode Ray Tube Display |
+| `ICC_Profile:ViewingCondDesc` | Reference Viewing Condition in IEC61966-2.1 |
+| `ICC_Profile:ViewingCondIlluminant` | 19.6445 20.3718 16.8089 |
+| `ICC_Profile:ViewingCondIlluminantType` | D50 |
+| `ICC_Profile:ViewingCondSurround` | 3.92889 4.07439 3.36179 |
+| `IPTC:ApplicationRecordVersion` | 2 |
+| `IPTC:By-line` | I'm the author |
+| `IPTC:By-lineTitle` | On top |
+| `IPTC:Caption-Abstract` | The picture caption |
+| `IPTC:City` | Kingston |
+| `IPTC:CopyrightNotice` | Copyright notice |
+| `IPTC:Country-PrimaryLocationName` | Canada |
+| `IPTC:Credit` | Phil Harvey |
+| `IPTC:DateCreated` | 2004:02:20 |
+| `IPTC:Headline` | headline |
+| `IPTC:Keywords` | ["exiftool","test","picture"] |
+| `IPTC:ObjectName` | This is the title |
+| `IPTC:OriginalTransmissionReference` | no reference |
+| `IPTC:Province-State` | Ontario |
+| `IPTC:Source` | My camera |
+| `IPTC:SpecialInstructions` | no instructions |
+| `IPTC:Writer-Editor` | I wrote it |
 
 ## Extra Tags
 
@@ -72,58 +130,58 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `ExifIFD:ExposureTime` | 1/100 |
-| `ExifIFD:FNumber` | 28/10 |
-| `IFD0:Artist` | LZW Compressed |
-| `IFD0:BitsPerSample` | 16 16 16 |
+| `IFD0:0x83BB` | 469893120 33554972 41418771 1416127776 1885954932 ... |
+| `IFD0:0x85D8` | [Binary data] |
+| `IFD0:0x87AF` | 1 1 0 10 1024 0 1 1 1025 0 1 1 2048 0 1 32767 2049... |
+| `IFD0:BitsPerSample` | 8 |
+| `IFD0:ColorMap` | 65535 64923 64312 63701 63090 62479 61868 61257 60... |
 | `IFD0:Compression` | 1 |
-| `IFD0:ExtraSamples` | 2 |
-| `IFD0:FillOrder` | 1 |
-| `IFD0:ImageHeight` | 150 |
-| `IFD0:ImageWidth` | 200 |
+| `IFD0:GeoTiffAsciiParams` | Hough UTM zone 17N¦ |
+| `IFD0:GeoTiffDoubleParams` | [Binary data] |
+| `IFD0:ICC_Profile` | [Binary data] |
+| `IFD0:ImageDescription` | The picture caption |
+| `IFD0:ImageHeight` | 24 |
+| `IFD0:ImageWidth` | 25 |
 | `IFD0:Make` | Canon |
-| `IFD0:Model` | Test Camera |
-| `IFD0:Orientation` | 1 |
-| `IFD0:PageNumber` | 0 1 |
-| `IFD0:PhotometricInterpretation` | 2 |
+| `IFD0:Model` | Canon EOS DIGITAL REBEL |
+| `IFD0:ModifyDate` | 2004-02-20T08:07:49+00:00 |
+| `IFD0:PhotometricInterpretation` | 3 |
 | `IFD0:PlanarConfiguration` | 1 |
-| `IFD0:Predictor` | 2 |
-| `IFD0:PrimaryChromaticities` | 0.6399999857 0.3300000131 0.3000000119 0.600000023... |
-| `IFD0:RowsPerStrip` | 150 |
+| `IFD0:Predictor` | 1 |
+| `IFD0:ResolutionUnit` | 2 |
+| `IFD0:RowsPerStrip` | 24 |
 | `IFD0:SamplesPerPixel` | 3 |
-| `IFD0:Software` | exiftool-rs test |
-| `IFD0:StripByteCounts` | 180000 |
-| `IFD0:StripOffsets` | 8 |
-| `IFD0:SubfileType` | 2 |
-| `IFD0:WhitePoint` | 0.3127000034 0.3289999962 |
-| `IFD0:XResolution` | 72/1 |
-| `IFD0:YResolution` | 72/1 |
-| `IFD1:BitsPerSample` | 16 16 16 16 |
-| `IFD1:Compression` | 1 |
-| `IFD1:ExtraSamples` | 2 |
-| `IFD1:FillOrder` | 1 |
-| `IFD1:ImageHeight` | 120 |
-| `IFD1:ImageWidth` | 160 |
-| `IFD1:Model` | TestModel |
-| `IFD1:Orientation` | 1 |
-| `IFD1:PageNumber` | 1 3 |
-| `IFD1:PhotometricInterpretation` | 2 |
-| `IFD1:PlanarConfiguration` | 1 |
-| `IFD1:PrimaryChromaticities` | 0.6399999857 0.3300000131 0.3000000119 0.600000023... |
-| `IFD1:RowsPerStrip` | 120 |
-| `IFD1:SamplesPerPixel` | 4 |
-| `IFD1:StripByteCounts` | 153600 |
-| `IFD1:StripOffsets` | 153890 |
-| `IFD1:SubfileType` | 2 |
-| `IFD1:WhitePoint` | 0.3127000034 0.3289999962 |
-| `IFD2:BitsPerSample` | 16 16 16 16 |
-| `IFD2:Compression` | 1 |
-| `IFD2:ExtraSamples` | 2 |
-| `IFD2:FillOrder` | 1 |
-| `IFD2:ImageHeight` | 120 |
-| `IFD2:ImageWidth` | 160 |
+| `IFD0:Software` | GraphicConverter |
+| `IFD0:StripByteCounts` | 600 |
+| `IFD0:StripOffsets` | 2060 |
+| `IFD0:SubfileType` | 0 |
+| `IFD0:XResolution` | 720000/10000 |
+| `IFD0:YResolution` | 720000/10000 |
+| `Profile:BlueMatrixColumn` | 0.14306640625 0.06060791015625 0.7140960693359375 |
+| `Profile:BlueToneReproductionCurve` | (Binary data 2060 bytes, use -b option to extract) |
+| `Profile:CMMFlags` | Not Embedded, Independent |
+| `Profile:ColorSpaceData` | RGB |
+| `Profile:ConnectionSpaceIlluminant` | 0.964202880859375 1 0.8249053955078125 |
+| `Profile:DeviceAttributes` | Reflective, Glossy, Positive, Color |
+| `Profile:DeviceManufacturer` | IEC  |
+| `Profile:DeviceMfgDesc` | IEC http://www.iec.ch |
+| `Profile:DeviceModel` | sRGB |
+| `Profile:DeviceModelDesc` | IEC 61966-2.1 Default RGB colour space - sRGB |
+| `Profile:GreenMatrixColumn` | 0.3851470947265625 0.7168731689453125 0.0970764160... |
+| `Profile:GreenToneReproductionCurve` | (Binary data 2060 bytes, use -b option to extract) |
+| `Profile:Luminance` | 76.03646850585938 80 87.12461853027344 |
+| `Profile:MeasurementBacking` | 0 0 0 |
+| `Profile:MeasurementFlare` | 0.99945068359375% |
+| `Profile:MeasurementGeometry` | Unknown |
+| `Profile:MeasurementIlluminant` | D65 |
+| `Profile:MeasurementObserver` | CIE 1931 |
+| `Profile:MediaBlackPoint` | 0 0 0 |
+| `Profile:MediaWhitePoint` | 0.9504547119140625 1 1.08905029296875 |
+| `Profile:PrimaryPlatform` | Microsoft Corporation |
+| `Profile:ProfileCMMType` | Lino |
+| `Profile:ProfileClass` | Display Device Profile |
 
-*...and 11 more extra tags*
+*...and 16 more extra tags*
 
 ---
 

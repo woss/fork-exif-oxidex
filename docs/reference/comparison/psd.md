@@ -21,8 +21,8 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 10:08:51+00:00 | 2025:12:07 10:07:44+00:00 |
-| `File:FileSize` | 17 kB | 16 kB |
+| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
+| `File:FileSize` | 17 kB | 17.4 kB |
 | `File:FileType` | PSD | Unknown |
 | `File:MIMEType` | application/vnd.adobe.photoshop | application/octet-stream |
 | `XMP:Creator` | Phil Harvey | <rdf:Seq>    <rdf:li>Phil Harvey</rdf:li... |
