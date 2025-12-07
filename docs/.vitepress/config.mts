@@ -1,4 +1,21 @@
 import { defineConfig } from 'vitepress'
+import fs from 'node:fs'
+import path from 'node:path'
+
+// Dynamically generate sidebar items for comparison formats
+function getComparisonFormats() {
+  const comparisonDir = path.resolve(__dirname, '../reference/comparison')
+  const files = fs.readdirSync(comparisonDir)
+
+  return files
+    .filter(file => file.endsWith('.md') && file !== 'index.md')
+    .map(file => {
+      const name = file.replace('.md', '')
+      const displayName = name.toUpperCase()
+      return { text: displayName, link: `/reference/comparison/${name}` }
+    })
+    .sort((a, b) => a.text.localeCompare(b.text))
+}
 
 export default defineConfig({
   title: 'OxiDex',
@@ -57,8 +74,10 @@ export default defineConfig({
         },
         {
           text: 'Compatibility',
+          collapsed: true,
           items: [
-            { text: 'ExifTool Comparison', link: '/reference/comparison/' }
+            { text: 'Overview', link: '/reference/comparison/' },
+            ...getComparisonFormats()
           ]
         },
         {
@@ -201,7 +220,11 @@ export default defineConfig({
       light: 'github-light',
       dark: 'github-dark'
     },
-    lineNumbers: true
+    lineNumbers: true,
+    languageAlias: {
+      'rust,ignore': 'rust',
+      'rust,no_run': 'rust'
+    }
   },
 
   ignoreDeadLinks: [

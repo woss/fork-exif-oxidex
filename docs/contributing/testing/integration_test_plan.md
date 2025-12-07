@@ -485,7 +485,7 @@ git lfs install
 
 **Configure `.gitattributes`** (place in repository root):
 
-```gitattributes
+```ini
 # Track binary image files with Git LFS
 tests/fixtures/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 tests/fixtures/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
