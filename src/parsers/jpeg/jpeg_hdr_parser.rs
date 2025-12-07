@@ -78,7 +78,7 @@ fn parse_jpeg_hdr_generic(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
     );
 
     // Try to extract version information
-    if data.len() >= 2 {
+    if !data.is_empty() {
         let reader = EndianReader::big_endian(data);
         if let Some(version_byte) = reader.u8_at(0) {
             if version_byte > 0 {

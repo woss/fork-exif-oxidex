@@ -322,8 +322,9 @@ fn test_write_metadata_with_integer_tags() {
     write_metadata(temp_path, &metadata).expect("Failed to write metadata");
 
     // Verify integer tags were written correctly
+    // Note: Stream 1 tag normalization converts ExifIFD: to EXIF:
     let updated_metadata = read_metadata(temp_path).expect("Failed to read metadata");
-    assert_eq!(updated_metadata.get_integer("ExifIFD:ISO"), Some(400));
+    assert_eq!(updated_metadata.get_integer("EXIF:ISO"), Some(400));
     assert_eq!(updated_metadata.get_integer("IFD0:Orientation"), Some(1));
 }
 

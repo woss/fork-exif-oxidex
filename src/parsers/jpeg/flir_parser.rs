@@ -33,7 +33,7 @@ pub fn parse_flir_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
 
     // Try to extract camera model from segment
     // In FLIR FFF, the camera model is often at a fixed offset
-    if data.len() > 32 {
+    if data.len() >= 32 {
         // Attempt to read camera model string from offset 16-32
         if let Ok(model) = std::str::from_utf8(&data[16..32]) {
             let model = model.trim_end_matches('\x00').trim();
