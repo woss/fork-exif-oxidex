@@ -147,23 +147,56 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn detect_formats(samples_path: &PathBuf) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let mut formats = Vec::new();
+    use std::collections::HashSet;
+    let mut formats = HashSet::new();
 
     if samples_path.is_dir() {
         for entry in std::fs::read_dir(samples_path)? {
             let entry = entry?;
             let path = entry.path();
+
+            // Check subdirectories (organized by format)
             if path.is_dir() {
                 if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                    // Skip hidden directories
                     if !name.starts_with('.') {
-                        formats.push(name.to_uppercase());
+                        formats.insert(name.to_uppercase());
                     }
+                }
+            }
+            // Check files by extension (ExifTool test images)
+            else if path.is_file() {
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    let format = match ext.to_lowercase().as_str() {
+                        "jpg" | "jpeg" => "JPEG",
+                        "png" => "PNG",
+                        "tif" | "tiff" => "TIFF",
+                        "gif" => "GIF",
+                        "webp" => "WEBP",
+                        "heic" | "heif" => "HEIC",
+                        "mp4" | "m4v" | "mov" => "MP4",
+                        "avi" => "AVI",
+                        "mkv" => "MKV",
+                        "mp3" => "MP3",
+                        "wav" => "WAV",
+                        "pdf" => "PDF",
+                        "psd" => "PSD",
+                        "cr2" | "cr3" => "CR2",
+                        "nef" => "NEF",
+                        "arw" => "ARW",
+                        "dng" => "DNG",
+                        "raf" => "RAF",
+                        "orf" => "ORF",
+                        "rw2" => "RW2",
+                        "xmp" => "XMP",
+                        _ => continue,
+                    };
+                    formats.insert(format.to_string());
                 }
             }
         }
     }
 
-    formats.sort();
-    Ok(formats)
+    let mut sorted: Vec<_> = formats.into_iter().collect();
+    sorted.sort();
+    Ok(sorted)
 }

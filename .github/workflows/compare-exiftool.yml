@@ -72,7 +72,7 @@ jobs:
             --exiftool ~/exiftool/exiftool \
             --samples ~/exiftool/t/images \
             --baseline docs/reference/comparison/baseline.json \
-            --output docs/reference/comparison \
+            --output docs/reference/comparison/comparison.json \
             --markdown-dir docs/reference/comparison \
             --exiftool-version "${{ steps.exiftool-version.outputs.version }}" \
             --oxidex-version "${{ steps.oxidex-version.outputs.version }}"
