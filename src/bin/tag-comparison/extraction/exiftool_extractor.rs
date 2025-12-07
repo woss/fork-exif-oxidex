@@ -38,18 +38,19 @@ impl ExifToolExtractor {
             return Ok(cached.clone());
         }
 
+        // Try format subdirectory first (e.g., samples/jpeg/)
         let format_path = fixture_path.join(format.to_lowercase());
-        if !format_path.exists() {
-            return Ok(Vec::new());
-        }
-
-        // Find all fixture files for this format
-        let files: Vec<PathBuf> = WalkDir::new(&format_path)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| e.path().is_file())
-            .map(|e| e.path().to_path_buf())
-            .collect();
+        let files: Vec<PathBuf> = if format_path.exists() {
+            WalkDir::new(&format_path)
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|e| e.path().is_file())
+                .map(|e| e.path().to_path_buf())
+                .collect()
+        } else {
+            // Fall back to finding files by extension in the samples directory
+            Self::find_files_by_extension(fixture_path, format)?
+        };
 
         if files.is_empty() {
             return Ok(Vec::new());
@@ -101,6 +102,7 @@ impl ExifToolExtractor {
     ) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
         let output = Command::new(&self.exiftool_path)
             .arg("-json")
+            .arg("-G") // Include group name prefix (e.g., "EXIF:Make")
             .arg(file_path)
             .output()?;
 
@@ -158,6 +160,64 @@ impl ExifToolExtractor {
             (family.to_string(), name[1..].to_string()) // Skip the ':'
         } else {
             ("UNKNOWN".to_string(), exiftool_name.to_string())
+        }
+    }
+
+    /// Find files by extension when format subdirectory doesn't exist
+    fn find_files_by_extension(
+        fixture_path: &Path,
+        format: &str,
+    ) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+        let extensions = Self::format_to_extensions(format);
+        if extensions.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let files: Vec<PathBuf> = WalkDir::new(fixture_path)
+            .max_depth(2) // Don't go too deep
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| {
+                if !e.path().is_file() {
+                    return false;
+                }
+                if let Some(ext) = e.path().extension().and_then(|e| e.to_str()) {
+                    extensions.contains(&ext.to_lowercase().as_str())
+                } else {
+                    false
+                }
+            })
+            .map(|e| e.path().to_path_buf())
+            .collect();
+
+        Ok(files)
+    }
+
+    /// Map format name to file extensions
+    fn format_to_extensions(format: &str) -> Vec<&'static str> {
+        match format.to_uppercase().as_str() {
+            "JPEG" => vec!["jpg", "jpeg"],
+            "PNG" => vec!["png"],
+            "TIFF" => vec!["tif", "tiff"],
+            "GIF" => vec!["gif"],
+            "WEBP" => vec!["webp"],
+            "HEIC" => vec!["heic", "heif"],
+            "MP4" => vec!["mp4", "m4v", "mov"],
+            "AVI" => vec!["avi"],
+            "MKV" => vec!["mkv"],
+            "MP3" => vec!["mp3"],
+            "WAV" => vec!["wav"],
+            "PDF" => vec!["pdf"],
+            "PSD" => vec!["psd"],
+            "CR2" => vec!["cr2", "cr3"],
+            "NEF" => vec!["nef"],
+            "ARW" => vec!["arw"],
+            "DNG" => vec!["dng"],
+            "RAF" => vec!["raf"],
+            "ORF" => vec!["orf"],
+            "RW2" => vec!["rw2"],
+            "XMP" => vec!["xmp"],
+            _ => vec![],
         }
     }
 }

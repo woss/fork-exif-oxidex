@@ -36,18 +36,19 @@ impl OxiDexExtractor {
             return Ok(cached.clone());
         }
 
+        // Try format subdirectory first (e.g., samples/jpeg/)
         let format_path = self.fixture_path.join(format.to_lowercase());
-        if !format_path.exists() {
-            return Ok(Vec::new());
-        }
-
-        // Find all fixture files for this format
-        let files: Vec<PathBuf> = WalkDir::new(&format_path)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| e.path().is_file())
-            .map(|e| e.path().to_path_buf())
-            .collect();
+        let files: Vec<PathBuf> = if format_path.exists() {
+            WalkDir::new(&format_path)
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|e| e.path().is_file())
+                .map(|e| e.path().to_path_buf())
+                .collect()
+        } else {
+            // Fall back to finding files by extension in the samples directory
+            self.find_files_by_extension(format)?
+        };
 
         if files.is_empty() {
             return Ok(Vec::new());
@@ -150,6 +151,64 @@ impl OxiDexExtractor {
     fn calculate_frequency(&self, _tag_name: &str, _file_count: usize) -> usize {
         // Frequency is calculated in extract_format_tags
         0
+    }
+
+    /// Find files by extension when format subdirectory doesn't exist
+    fn find_files_by_extension(
+        &self,
+        format: &str,
+    ) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+        let extensions = Self::format_to_extensions(format);
+        if extensions.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let files: Vec<PathBuf> = WalkDir::new(&self.fixture_path)
+            .max_depth(2) // Don't go too deep
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| {
+                if !e.path().is_file() {
+                    return false;
+                }
+                if let Some(ext) = e.path().extension().and_then(|e| e.to_str()) {
+                    extensions.contains(&ext.to_lowercase().as_str())
+                } else {
+                    false
+                }
+            })
+            .map(|e| e.path().to_path_buf())
+            .collect();
+
+        Ok(files)
+    }
+
+    /// Map format name to file extensions
+    fn format_to_extensions(format: &str) -> Vec<&'static str> {
+        match format.to_uppercase().as_str() {
+            "JPEG" => vec!["jpg", "jpeg"],
+            "PNG" => vec!["png"],
+            "TIFF" => vec!["tif", "tiff"],
+            "GIF" => vec!["gif"],
+            "WEBP" => vec!["webp"],
+            "HEIC" => vec!["heic", "heif"],
+            "MP4" => vec!["mp4", "m4v", "mov"],
+            "AVI" => vec!["avi"],
+            "MKV" => vec!["mkv"],
+            "MP3" => vec!["mp3"],
+            "WAV" => vec!["wav"],
+            "PDF" => vec!["pdf"],
+            "PSD" => vec!["psd"],
+            "CR2" => vec!["cr2", "cr3"],
+            "NEF" => vec!["nef"],
+            "ARW" => vec!["arw"],
+            "DNG" => vec!["dng"],
+            "RAF" => vec!["raf"],
+            "ORF" => vec!["orf"],
+            "RW2" => vec!["rw2"],
+            "XMP" => vec!["xmp"],
+            _ => vec![],
+        }
     }
 }
 
