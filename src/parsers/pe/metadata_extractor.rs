@@ -74,38 +74,22 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
 
     // Decode characteristic bit flags into human-readable strings
     // Reference: Microsoft PE/COFF specification IMAGE_FILE_HEADER.Characteristics
-    let mut flags = Vec::new();
+    use crate::core::decode_flags;
 
-    if (header.characteristics & 0x0001) != 0 {
-        flags.push("No relocs");
-    }
-    if (header.characteristics & 0x0002) != 0 {
-        flags.push("Executable");
-    }
-    if (header.characteristics & 0x0004) != 0 {
-        flags.push("No line numbers");
-    }
-    if (header.characteristics & 0x0008) != 0 {
-        flags.push("No symbols");
-    }
-    if (header.characteristics & 0x0020) != 0 {
-        flags.push("Large address aware");
-    }
-    if (header.characteristics & 0x0100) != 0 {
-        flags.push("32-bit");
-    }
-    if (header.characteristics & 0x0200) != 0 {
-        flags.push("Bytes reversed lo");
-    }
-    if (header.characteristics & 0x1000) != 0 {
-        flags.push("System file");
-    }
-    if (header.characteristics & 0x2000) != 0 {
-        flags.push("DLL");
-    }
-    if (header.characteristics & 0x4000) != 0 {
-        flags.push("Bytes reversed hi");
-    }
+    const COFF_CHARACTERISTICS: &[(u32, &str)] = &[
+        (0x0001, "No relocs"),
+        (0x0002, "Executable"),
+        (0x0004, "No line numbers"),
+        (0x0008, "No symbols"),
+        (0x0020, "Large address aware"),
+        (0x0100, "32-bit"),
+        (0x0200, "Bytes reversed lo"),
+        (0x1000, "System file"),
+        (0x2000, "DLL"),
+        (0x4000, "Bytes reversed hi"),
+    ];
+
+    let flags = decode_flags(header.characteristics as u32, COFF_CHARACTERISTICS);
 
     // Insert decoded characteristics as comma-separated string
     if !flags.is_empty() {
@@ -254,42 +238,24 @@ pub fn extract_optional_metadata(
     );
 
     // Decode DLL characteristic bit flags
-    let mut dll_flags = Vec::new();
-
     // Reference: Microsoft PE/COFF specification IMAGE_OPTIONAL_HEADER.DllCharacteristics
-    if (nt_header.dll_characteristics & 0x0020) != 0 {
-        dll_flags.push("High entropy VA");
-    }
-    if (nt_header.dll_characteristics & 0x0040) != 0 {
-        dll_flags.push("Dynamic base");
-    }
-    if (nt_header.dll_characteristics & 0x0080) != 0 {
-        dll_flags.push("Force integrity");
-    }
-    if (nt_header.dll_characteristics & 0x0100) != 0 {
-        dll_flags.push("NX compatible");
-    }
-    if (nt_header.dll_characteristics & 0x0200) != 0 {
-        dll_flags.push("No isolation");
-    }
-    if (nt_header.dll_characteristics & 0x0400) != 0 {
-        dll_flags.push("No SEH");
-    }
-    if (nt_header.dll_characteristics & 0x0800) != 0 {
-        dll_flags.push("No bind");
-    }
-    if (nt_header.dll_characteristics & 0x1000) != 0 {
-        dll_flags.push("AppContainer");
-    }
-    if (nt_header.dll_characteristics & 0x2000) != 0 {
-        dll_flags.push("WDM driver");
-    }
-    if (nt_header.dll_characteristics & 0x4000) != 0 {
-        dll_flags.push("Control flow guard");
-    }
-    if (nt_header.dll_characteristics & 0x8000) != 0 {
-        dll_flags.push("Terminal server aware");
-    }
+    use crate::core::decode_flags;
+
+    const DLL_CHARACTERISTICS: &[(u32, &str)] = &[
+        (0x0020, "High entropy VA"),
+        (0x0040, "Dynamic base"),
+        (0x0080, "Force integrity"),
+        (0x0100, "NX compatible"),
+        (0x0200, "No isolation"),
+        (0x0400, "No SEH"),
+        (0x0800, "No bind"),
+        (0x1000, "AppContainer"),
+        (0x2000, "WDM driver"),
+        (0x4000, "Control flow guard"),
+        (0x8000, "Terminal server aware"),
+    ];
+
+    let dll_flags = decode_flags(nt_header.dll_characteristics as u32, DLL_CHARACTERISTICS);
 
     if !dll_flags.is_empty() {
         metadata.insert(
