@@ -88,6 +88,12 @@ fn extract_track_metadata(
         let _ = extract_sample_description(&stsd, metadata, index);
     }
 
+    // Extract video frame rate from stts (sample-to-time) atom
+    // VideoFrameRate = MediaTimeScale * SampleCount / TotalDuration
+    if let Some(stts) = stbl.find_child("stts") {
+        let _ = extract_video_frame_rate(&stts, metadata, index);
+    }
+
     Ok(())
 }
 
@@ -660,18 +666,39 @@ fn extract_sample_description(
 
             // Format/Codec ID (4 bytes)
             if let Ok(format) = std::str::from_utf8(&entry_data[4..8]) {
+                let format_trimmed = format.trim();
                 metadata.insert(
                     format!("QuickTime:CompressorID{}", track_suffix),
-                    TagValue::String(format.to_string()),
+                    TagValue::String(format_trimmed.to_string()),
+                );
+
+                // Determine if this is an audio or video codec
+                let is_audio_codec = matches!(
+                    format_trimmed,
+                    "mp4a"
+                        | "sowt"
+                        | "twos"
+                        | "alaw"
+                        | "ulaw"
+                        | "raw "
+                        | "lpcm"
+                        | "ac-3"
+                        | "ec-3"
+                        | "aac "
+                        | "alac"
+                        | "samr"
+                        | "sawb"
+                        | "Qclp"
+                        | "mp3 "
                 );
 
                 // Map common codec IDs to readable names
-                let codec_name = match format {
+                let codec_name = match format_trimmed {
                     "avc1" | "avc3" => "H.264/AVC",
                     "hvc1" | "hev1" => "H.265/HEVC",
                     "mp4v" => "MPEG-4 Video",
                     "mp4a" => "MPEG-4 Audio (AAC)",
-                    "jpeg" => "JPEG",
+                    "jpeg" => "Photo - JPEG",
                     "raw " => "Uncompressed",
                     "sowt" => "PCM (little-endian)",
                     "twos" => "PCM (big-endian)",
@@ -680,12 +707,24 @@ fn extract_sample_description(
                     "vp08" => "VP8",
                     "vp09" => "VP9",
                     "av01" => "AV1",
-                    _ => format,
+                    "alac" => "Apple Lossless",
+                    "ac-3" => "AC-3",
+                    "ec-3" => "E-AC-3",
+                    "lpcm" => "Linear PCM",
+                    _ => format_trimmed,
                 };
                 metadata.insert(
                     format!("QuickTime:CompressorName{}", track_suffix),
                     TagValue::String(codec_name.to_string()),
                 );
+
+                // For audio codecs, also output AudioFormat (ExifTool convention)
+                if is_audio_codec {
+                    metadata.insert(
+                        format!("QuickTime:AudioFormat{}", track_suffix),
+                        TagValue::String(format_trimmed.to_string()),
+                    );
+                }
             }
 
             // For video sample descriptions
@@ -698,8 +737,13 @@ fn extract_sample_description(
                 if let Some(width) = entry_reader.u16_at(32) {
                     if width > 0 && width < 10000 {
                         // Sanity check
+                        // Output both ImageWidth (ExifTool convention) and legacy VideoWidth
                         metadata.insert(
-                            format!("QuickTime:VideoWidth{}", track_suffix),
+                            format!("QuickTime:ImageWidth{}", track_suffix),
+                            TagValue::Integer(width as i64),
+                        );
+                        metadata.insert(
+                            format!("QuickTime:SourceImageWidth{}", track_suffix),
                             TagValue::Integer(width as i64),
                         );
                     }
@@ -709,8 +753,13 @@ fn extract_sample_description(
                 if let Some(height) = entry_reader.u16_at(34) {
                     if height > 0 && height < 10000 {
                         // Sanity check
+                        // Output both ImageHeight (ExifTool convention) and legacy VideoHeight
                         metadata.insert(
-                            format!("QuickTime:VideoHeight{}", track_suffix),
+                            format!("QuickTime:ImageHeight{}", track_suffix),
+                            TagValue::Integer(height as i64),
+                        );
+                        metadata.insert(
+                            format!("QuickTime:SourceImageHeight{}", track_suffix),
                             TagValue::Integer(height as i64),
                         );
                     }
@@ -722,6 +771,26 @@ fn extract_sample_description(
                         format!("QuickTime:BitDepth{}", track_suffix),
                         TagValue::Integer(depth as i64),
                     );
+                }
+
+                // Horizontal and vertical resolution (fixed-point 16.16 at offsets 36 and 40)
+                if let Some(xres_fixed) = entry_reader.u32_at(36) {
+                    let xres = (xres_fixed >> 16) as i64;
+                    if xres > 0 && xres <= 10000 {
+                        metadata.insert(
+                            format!("QuickTime:XResolution{}", track_suffix),
+                            TagValue::Integer(xres),
+                        );
+                    }
+                }
+                if let Some(yres_fixed) = entry_reader.u32_at(40) {
+                    let yres = (yres_fixed >> 16) as i64;
+                    if yres > 0 && yres <= 10000 {
+                        metadata.insert(
+                            format!("QuickTime:YResolution{}", track_suffix),
+                            TagValue::Integer(yres),
+                        );
+                    }
                 }
             }
 
@@ -762,6 +831,73 @@ fn extract_sample_description(
                             TagValue::String(format!("{:.0} Hz", sample_rate)),
                         );
                     }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Extract video frame rate from stts (sample-to-time table) atom
+///
+/// The stts atom contains entries that describe sample duration. For constant
+/// frame rate video, there's typically one entry covering all samples.
+/// VideoFrameRate = MediaTimeScale / SampleDelta
+///
+/// Note: This only extracts frame rate for video tracks (requires MediaTimeScale
+/// to be present from mdhd).
+fn extract_video_frame_rate(
+    stts: &Atom,
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    // stts atom format:
+    // 1 byte version
+    // 3 bytes flags
+    // 4 bytes entry count
+    // For each entry:
+    //   4 bytes sample count
+    //   4 bytes sample delta (duration)
+    if stts.data.len() < 16 {
+        return Ok(());
+    }
+
+    let r = EndianReader::big_endian(stts.data);
+    let entry_count = r.u32_at(4).unwrap_or(0);
+
+    if entry_count == 0 {
+        return Ok(());
+    }
+
+    // Read first entry - for constant frame rate video, this covers all samples
+    let _sample_count = r.u32_at(8).unwrap_or(0);
+    let sample_delta = r.u32_at(12).unwrap_or(0);
+
+    if sample_delta == 0 {
+        return Ok(());
+    }
+
+    // Get the MediaTimeScale from metadata to calculate frame rate
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    let timescale_key = format!("QuickTime:MediaTimeScale{}", track_suffix);
+    if let Some(timescale_value) = metadata.get(&timescale_key) {
+        if let Some(timescale) = timescale_value.as_integer() {
+            if timescale > 0 {
+                let frame_rate = timescale as f64 / sample_delta as f64;
+                // Only output if this looks like a reasonable frame rate (1-240 fps)
+                if (1.0..=240.0).contains(&frame_rate) {
+                    // Round to reasonable precision for display
+                    let frame_rate_rounded = (frame_rate * 100.0).round() / 100.0;
+                    metadata.insert(
+                        format!("QuickTime:VideoFrameRate{}", track_suffix),
+                        TagValue::Float(frame_rate_rounded),
+                    );
                 }
             }
         }
@@ -953,7 +1089,10 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                 if let Ok(atom_str) = std::str::from_utf8(atom_bytes) {
                     // Try to use the tag mapping first
                     if let Some(exiftool_tag) = atom_to_exiftool_tag(atom_str) {
-                        metadata.insert(exiftool_tag.to_string(), TagValue::new_string(value.clone()));
+                        metadata.insert(
+                            exiftool_tag.to_string(),
+                            TagValue::new_string(value.clone()),
+                        );
                     }
                 }
 
@@ -1783,6 +1922,7 @@ fn raw_bytes_to_tag_value(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parsers::quicktime::FourCC;
 
     #[test]
     fn test_extract_string_value() {
@@ -1961,5 +2101,76 @@ mod tests {
             "QuickTime:Software"
         );
         assert_eq!(map_apple_key_to_tag("unknown.key"), "QuickTime:unknown.key");
+    }
+
+    #[test]
+    fn test_extract_video_frame_rate() {
+        // Create a minimal stts atom with:
+        // - version/flags: 0
+        // - entry count: 1
+        // - sample count: 30
+        // - sample delta: 1001 (for ~29.97 fps at 30000 timescale)
+        let stts_data = [
+            0x00, 0x00, 0x00, 0x00, // version/flags
+            0x00, 0x00, 0x00, 0x01, // entry count = 1
+            0x00, 0x00, 0x00, 0x1E, // sample count = 30
+            0x00, 0x00, 0x03, 0xE9, // sample delta = 1001
+        ];
+
+        let stts = Atom {
+            atom_type: FourCC::from_string("stts").unwrap(),
+            data: &stts_data,
+        };
+
+        let mut metadata = MetadataMap::new();
+        // Set MediaTimeScale to 30000 (common for 29.97 fps video)
+        metadata.insert(
+            "QuickTime:MediaTimeScale".to_string(),
+            TagValue::Integer(30000),
+        );
+
+        let result = extract_video_frame_rate(&stts, &mut metadata, 0);
+        assert!(result.is_ok());
+
+        // Should have VideoFrameRate = 30000 / 1001 = ~29.97
+        assert!(metadata.contains_key("QuickTime:VideoFrameRate"));
+        if let Some(TagValue::Float(fps)) = metadata.get("QuickTime:VideoFrameRate") {
+            assert!((fps - 29.97).abs() < 0.01);
+        } else {
+            panic!("Expected float value for VideoFrameRate");
+        }
+    }
+
+    #[test]
+    fn test_extract_video_frame_rate_30fps() {
+        // Test exact 30 fps (timescale 600, delta 20)
+        let stts_data = [
+            0x00, 0x00, 0x00, 0x00, // version/flags
+            0x00, 0x00, 0x00, 0x01, // entry count = 1
+            0x00, 0x00, 0x00, 0x64, // sample count = 100
+            0x00, 0x00, 0x00, 0x14, // sample delta = 20
+        ];
+
+        let stts = Atom {
+            atom_type: FourCC::from_string("stts").unwrap(),
+            data: &stts_data,
+        };
+
+        let mut metadata = MetadataMap::new();
+        // Set MediaTimeScale to 600 (common QuickTime timescale)
+        metadata.insert(
+            "QuickTime:MediaTimeScale".to_string(),
+            TagValue::Integer(600),
+        );
+
+        let result = extract_video_frame_rate(&stts, &mut metadata, 0);
+        assert!(result.is_ok());
+
+        // Should have VideoFrameRate = 600 / 20 = 30.0
+        if let Some(TagValue::Float(fps)) = metadata.get("QuickTime:VideoFrameRate") {
+            assert!((fps - 30.0).abs() < 0.01);
+        } else {
+            panic!("Expected float value for VideoFrameRate");
+        }
     }
 }

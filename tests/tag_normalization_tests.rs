@@ -31,29 +31,34 @@ fn test_ifd1_unchanged() {
 }
 
 #[test]
-fn test_gps_unchanged() {
-    assert_eq!(
-        normalize_tag_family("GPS:GPSLatitude"),
-        "GPS:GPSLatitude"
-    );
+fn test_gps_to_exif() {
+    // GPS tags are normalized to EXIF family to match ExifTool conventions
+    assert_eq!(normalize_tag_family("GPS:GPSLatitude"), "EXIF:GPSLatitude");
     assert_eq!(
         normalize_tag_family("GPS:GPSLongitude"),
-        "GPS:GPSLongitude"
+        "EXIF:GPSLongitude"
     );
-    assert_eq!(normalize_tag_family("GPS:GPSAltitude"), "GPS:GPSAltitude");
+    assert_eq!(normalize_tag_family("GPS:GPSAltitude"), "EXIF:GPSAltitude");
+    assert_eq!(
+        normalize_tag_family("GPS:GPSAltitudeRef"),
+        "EXIF:GPSAltitudeRef"
+    );
+    assert_eq!(
+        normalize_tag_family("GPS:GPSDateStamp"),
+        "EXIF:GPSDateStamp"
+    );
+    assert_eq!(normalize_tag_family("GPS:GPSDOP"), "EXIF:GPSDOP");
+    assert_eq!(
+        normalize_tag_family("GPS:GPSTimeStamp"),
+        "EXIF:GPSTimeStamp"
+    );
 }
 
 #[test]
 fn test_makernotes_unchanged() {
     // Canon
-    assert_eq!(
-        normalize_tag_family("Canon:LensModel"),
-        "Canon:LensModel"
-    );
-    assert_eq!(
-        normalize_tag_family("Canon:MacroMode"),
-        "Canon:MacroMode"
-    );
+    assert_eq!(normalize_tag_family("Canon:LensModel"), "Canon:LensModel");
+    assert_eq!(normalize_tag_family("Canon:MacroMode"), "Canon:MacroMode");
 
     // Nikon
     assert_eq!(
@@ -63,10 +68,7 @@ fn test_makernotes_unchanged() {
     assert_eq!(normalize_tag_family("Nikon:LensType"), "Nikon:LensType");
 
     // Sony
-    assert_eq!(
-        normalize_tag_family("Sony:SonyModelID"),
-        "Sony:SonyModelID"
-    );
+    assert_eq!(normalize_tag_family("Sony:SonyModelID"), "Sony:SonyModelID");
 
     // Fujifilm
     assert_eq!(
@@ -144,17 +146,14 @@ fn test_normalize_metadata_map_mixed_families() {
 
     let normalized = oxidex::core::tag_normalization::normalize_metadata_map(&map);
 
-    // ExifIFD should be normalized to EXIF
+    // ExifIFD and GPS should be normalized to EXIF
     assert_eq!(normalized.get_string("EXIF:Make"), Some("Canon"));
     assert_eq!(normalized.get_string("EXIF:Model"), Some("EOS R5"));
+    assert_eq!(normalized.get_string("EXIF:GPSLatitude"), Some("37.7749"));
 
-    // IFD0, GPS, and Canon should remain unchanged
+    // IFD0 and Canon should remain unchanged
     assert_eq!(normalized.get_string("IFD0:Software"), Some("OxiDex"));
-    assert_eq!(normalized.get_string("GPS:GPSLatitude"), Some("37.7749"));
-    assert_eq!(
-        normalized.get_string("Canon:LensModel"),
-        Some("EF 24-70mm")
-    );
+    assert_eq!(normalized.get_string("Canon:LensModel"), Some("EF 24-70mm"));
     assert_eq!(normalized.get_integer("File:FileSize"), Some(1024000));
 
     // Verify we have the same number of tags
@@ -175,10 +174,7 @@ fn test_normalize_preserves_all_value_types() {
     map.insert("ExifIFD:Make", TagValue::new_string("Canon"));
     map.insert("ExifIFD:ISO", TagValue::new_integer(400));
     map.insert("ExifIFD:FNumber", TagValue::new_float(2.8));
-    map.insert(
-        "ExifIFD:ExposureTime",
-        TagValue::new_rational(1, 125),
-    );
+    map.insert("ExifIFD:ExposureTime", TagValue::new_rational(1, 125));
     map.insert(
         "ExifIFD:ThumbnailImage",
         TagValue::new_binary(vec![0xFF, 0xD8, 0xFF, 0xE0]),

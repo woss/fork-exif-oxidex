@@ -67,12 +67,17 @@ static ATOM_TO_TAG: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::ne
     m.insert("stsd_depth", "QuickTime:BitDepth");
     m.insert("stsd_xres", "QuickTime:XResolution");
     m.insert("stsd_yres", "QuickTime:YResolution");
+    m.insert("stsd_sourcewidth", "QuickTime:SourceImageWidth");
+    m.insert("stsd_sourceheight", "QuickTime:SourceImageHeight");
 
     // Sample description atoms (stsd) - audio
     m.insert("stsd_channels", "QuickTime:AudioChannels");
     m.insert("stsd_samplerate", "QuickTime:AudioSampleRate");
     m.insert("stsd_bitspersample", "QuickTime:AudioBitsPerSample");
     m.insert("stsd_audioformat", "QuickTime:AudioFormat");
+
+    // Sample-to-time atoms (stts) - video frame rate
+    m.insert("stts_framerate", "QuickTime:VideoFrameRate");
 
     m
 });
@@ -116,12 +121,18 @@ mod tests {
 
     #[test]
     fn test_mvhd_create_mapping() {
-        assert_eq!(atom_to_exiftool_tag("mvhd_create"), Some("QuickTime:CreateDate"));
+        assert_eq!(
+            atom_to_exiftool_tag("mvhd_create"),
+            Some("QuickTime:CreateDate")
+        );
     }
 
     #[test]
     fn test_mvhd_duration_mapping() {
-        assert_eq!(atom_to_exiftool_tag("mvhd_duration"), Some("QuickTime:Duration"));
+        assert_eq!(
+            atom_to_exiftool_tag("mvhd_duration"),
+            Some("QuickTime:Duration")
+        );
     }
 
     #[test]
@@ -131,7 +142,10 @@ mod tests {
 
     #[test]
     fn test_stsd_codec_mapping() {
-        assert_eq!(atom_to_exiftool_tag("stsd_codec"), Some("QuickTime:CompressorID"));
+        assert_eq!(
+            atom_to_exiftool_tag("stsd_codec"),
+            Some("QuickTime:CompressorID")
+        );
     }
 
     #[test]
