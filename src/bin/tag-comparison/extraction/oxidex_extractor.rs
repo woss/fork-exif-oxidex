@@ -123,6 +123,7 @@ impl OxiDexExtractor {
             };
 
             // Convert TagValue to string
+            // Note: value is &TagValue, so we match on the reference
             let value_str = match value {
                 oxidex::core::TagValue::String(s) => s.clone(),
                 oxidex::core::TagValue::Integer(i) => i.to_string(),

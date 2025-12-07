@@ -91,8 +91,7 @@ export default defineConfig({
             { text: 'Multi-Crate Tags', link: '/architecture/multi-crate-tags' },
             { text: 'Parser Shared Infrastructure', link: '/architecture/parser-shared-infrastructure' },
             { text: 'Parser Migration Guide', link: '/architecture/parser-migration-guide' },
-            { text: 'OxiDex Tags Shared', link: '/architecture/oxidex-tags-shared' },
-            { text: 'GitHub Pages Setup', link: '/architecture/github-pages-setup' }
+            { text: 'OxiDex Tags Shared', link: '/architecture/oxidex-tags-shared' }
           ]
         }
       ],

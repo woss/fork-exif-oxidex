@@ -40,27 +40,10 @@ features:
     details: Native binaries for Windows, Linux (x86_64/ARM64), and macOS (Intel/Apple Silicon)
   - icon: 📊
     title: ExifTool Compatibility
-    details: Automated tag-by-tag comparison with ExifTool v13.43 - track coverage, find gaps, detect regressions
+    details: Automated tag-by-tag comparison with ExifTool - track coverage across 19 formats, updated on every parser change
+    link: /reference/comparison/
+    linkText: View Report
 ---
-
-## ExifTool Compatibility Report
-
-Real-time comparison of OxiDex vs ExifTool tag extraction, updated automatically on every parser change:
-
-| Format | Coverage | Status |
-|--------|----------|--------|
-| **PNG** | 68.0% | 🟢 High |
-| **WAV** | 44.0% | 🟡 Medium |
-| **MKV** | 41.5% | 🟡 Medium |
-| **WEBP** | 26.7% | 🟡 Medium |
-| **HEIC** | 25.6% | 🟡 Medium |
-| **MP3** | 22.5% | 🟡 Medium |
-| **GIF** | 16.3% | 🟠 Low |
-| **Overall** | **5.1%** | 🔴 In Progress |
-
-The report shows matched tags, missing tags, extra tags, and value differences for 19 formats.
-
-[View Full Compatibility Report →](/reference/comparison/)
 
 ## Quick Example
 
