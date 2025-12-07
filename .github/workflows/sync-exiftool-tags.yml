@@ -75,7 +75,7 @@ jobs:
           rm -rf target/*/build/oxidex-*/out/exiftool-source
 
           echo "Building to download and parse ExifTool v${{ steps.check.outputs.exiftool_version }} from official source..."
-          cargo build --release 2>&1 | tee build.log
+          cargo build --release
 
           echo "Saving ExifTool version..."
           echo "${{ steps.check.outputs.latest_full }}" > .exiftool-version
