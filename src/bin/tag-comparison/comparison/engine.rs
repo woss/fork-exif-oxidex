@@ -13,6 +13,7 @@ impl ComparisonEngine {
     /// * `oxidex_tags` - Tags extracted from OxiDex
     /// * `exiftool_tags` - Tags extracted from ExifTool
     /// * `format` - Format name (e.g., "JPEG")
+    /// * `files_tested` - Number of files processed during extraction
     /// * `previous` - Previous comparison for regression detection (optional)
     ///
     /// # Returns
@@ -21,9 +22,10 @@ impl ComparisonEngine {
         oxidex_tags: Vec<TagInfo>,
         exiftool_tags: Vec<TagInfo>,
         format: &str,
+        files_tested: usize,
         previous: Option<&FormatComparison>,
     ) -> FormatComparison {
-        let mut comparison = FormatComparison::new(format.to_string(), 0);
+        let mut comparison = FormatComparison::new(format.to_string(), files_tested);
         comparison.total_exiftool_tags = exiftool_tags.len();
 
         // Build lookup map for efficient OxiDex tag lookup by key
@@ -145,7 +147,7 @@ mod tests {
             TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
         assert_eq!(result.matched_tags.len(), 2);
         assert_eq!(result.missing_in_oxidex.len(), 0);
         assert_eq!(result.extra_in_oxidex.len(), 0);
@@ -163,7 +165,7 @@ mod tests {
             TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
         assert_eq!(result.matched_tags.len(), 1);
         assert_eq!(result.missing_in_oxidex.len(), 1);
         assert_eq!(result.extra_in_oxidex.len(), 0);
@@ -186,7 +188,7 @@ mod tests {
             TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
         assert_eq!(result.matched_tags.len(), 2);
         assert_eq!(result.missing_in_oxidex.len(), 0);
         assert_eq!(result.extra_in_oxidex.len(), 1);
@@ -201,7 +203,7 @@ mod tests {
             TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
         assert_eq!(result.matched_tags.len(), 0);
         assert_eq!(result.missing_in_oxidex.len(), 2);
         assert_eq!(result.extra_in_oxidex.len(), 0);
@@ -217,7 +219,7 @@ mod tests {
         )];
         let exiftool_tags = vec![];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
         assert_eq!(result.matched_tags.len(), 0);
         assert_eq!(result.missing_in_oxidex.len(), 0);
         assert_eq!(result.extra_in_oxidex.len(), 1);
@@ -239,7 +241,8 @@ mod tests {
         let mut previous = FormatComparison::new("JPEG".to_string(), 2);
         previous.matched_tags = vec!["EXIF:Make".to_string(), "EXIF:Model".to_string()];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", Some(&previous));
+        let result =
+            ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 2, Some(&previous));
 
         // Should have 1 regression (Model is missing)
         assert_eq!(result.regressions.len(), 1);
@@ -267,7 +270,7 @@ mod tests {
             "Canon".to_string(),
         )];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
 
         // No regressions when there's no previous baseline
         assert_eq!(result.regressions.len(), 0);
@@ -288,7 +291,8 @@ mod tests {
         let mut previous = FormatComparison::new("JPEG".to_string(), 1);
         previous.matched_tags = vec!["EXIF:Make".to_string()];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", Some(&previous));
+        let result =
+            ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, Some(&previous));
 
         // No regressions - we still have Make, and we added Model
         assert_eq!(result.regressions.len(), 0);
@@ -314,7 +318,7 @@ mod tests {
             ), // Different value
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
 
         // Make should match perfectly
         assert_eq!(result.matched_tags.len(), 1);
@@ -366,7 +370,8 @@ mod tests {
         let mut previous = FormatComparison::new("JPEG".to_string(), 1);
         previous.matched_tags = vec!["EXIF:Make".to_string(), "EXIF:DateTime".to_string()];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", Some(&previous));
+        let result =
+            ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, Some(&previous));
 
         // Matched: Make
         assert_eq!(result.matched_tags.len(), 1);

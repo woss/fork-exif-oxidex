@@ -93,8 +93,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Extract OxiDex tags
         let mut oxidex_extractor = OxiDexExtractor::new(args.samples.clone());
         match oxidex_extractor.extract_format_tags(&format).await {
-            Ok(oxidex_tags) => {
-                println!("  OxiDex found {} tags", oxidex_tags.len());
+            Ok(oxidex_result) => {
+                println!(
+                    "  OxiDex found {} tags from {} files",
+                    oxidex_result.tags.len(),
+                    oxidex_result.files_processed
+                );
 
                 // Extract ExifTool tags
                 let mut exiftool_extractor = ExifToolExtractor::new(args.exiftool.clone());
@@ -102,15 +106,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .extract_format_tags(&format, &args.samples)
                     .await
                 {
-                    Ok(exiftool_tags) => {
-                        println!("  ExifTool found {} tags", exiftool_tags.len());
+                    Ok(exiftool_result) => {
+                        println!(
+                            "  ExifTool found {} tags from {} files",
+                            exiftool_result.tags.len(),
+                            exiftool_result.files_processed
+                        );
+
+                        // Use the max files processed from both extractors
+                        let files_tested = oxidex_result
+                            .files_processed
+                            .max(exiftool_result.files_processed);
 
                         // Compare with baseline for regression detection
                         let previous = baseline.as_ref().and_then(|b| b.by_format.get(&format));
                         let comparison = ComparisonEngine::compare(
-                            oxidex_tags,
-                            exiftool_tags,
+                            oxidex_result.tags,
+                            exiftool_result.tags,
                             &format,
+                            files_tested,
                             previous,
                         );
                         println!("  Result: {}", comparison.summary());

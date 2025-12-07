@@ -1,5 +1,6 @@
 //! OxiDex tag extractor - Extract tags by running OxiDex on test fixtures
 
+use super::ExtractionResult;
 use crate::models::TagInfo;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -8,7 +9,7 @@ use walkdir::WalkDir;
 /// Extract tags from OxiDex by processing test fixtures
 pub struct OxiDexExtractor {
     fixture_path: PathBuf,
-    cache: HashMap<String, Vec<TagInfo>>,
+    cache: HashMap<String, ExtractionResult>,
 }
 
 impl OxiDexExtractor {
@@ -26,11 +27,11 @@ impl OxiDexExtractor {
     /// * `format` - Format name (e.g., "JPEG", "PNG")
     ///
     /// # Returns
-    /// Vector of TagInfo representing all unique tags found in fixtures
+    /// ExtractionResult with tags and file count
     pub async fn extract_format_tags(
         &mut self,
         format: &str,
-    ) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
+    ) -> Result<ExtractionResult, Box<dyn std::error::Error>> {
         // Check cache first
         if let Some(cached) = self.cache.get(format) {
             return Ok(cached.clone());
@@ -50,8 +51,13 @@ impl OxiDexExtractor {
             self.find_files_by_extension(format)?
         };
 
+        let files_processed = files.len();
+
         if files.is_empty() {
-            return Ok(Vec::new());
+            return Ok(ExtractionResult {
+                tags: Vec::new(),
+                files_processed: 0,
+            });
         }
 
         // Extract tags from each file
@@ -79,13 +85,18 @@ impl OxiDexExtractor {
         }
 
         // Convert to final format
-        let mut result: Vec<TagInfo> = all_tags
+        let mut tags: Vec<TagInfo> = all_tags
             .into_values()
             .map(|(tag_info, _count)| tag_info)
             .collect();
 
         // Sort by key for consistency
-        result.sort_by(|a, b| a.key().cmp(&b.key()));
+        tags.sort_by(|a, b| a.key().cmp(&b.key()));
+
+        let result = ExtractionResult {
+            tags: tags.clone(),
+            files_processed,
+        };
 
         // Cache the result
         self.cache.insert(format.to_string(), result.clone());
