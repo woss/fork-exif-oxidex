@@ -40,6 +40,7 @@
 //! # }
 //! ```
 
+use crate::core::value_formatter::format_file_size as fmt_file_size;
 use crate::core::{MetadataMap, TagValue};
 use crate::error::Result;
 use std::fs;
@@ -114,7 +115,7 @@ pub fn extract_file_metadata(path: &Path) -> Result<MetadataMap> {
 
     // File size (human-readable format)
     let file_size = file_metadata.len();
-    let size_str = format_file_size(file_size);
+    let size_str = fmt_file_size(file_size);
     metadata.insert("File:FileSize".to_string(), TagValue::new_string(size_str));
 
     // File modification date/time
@@ -210,23 +211,8 @@ pub fn extract_file_metadata(path: &Path) -> Result<MetadataMap> {
     Ok(metadata)
 }
 
-/// Formats a file size in bytes to a human-readable string.
-///
-/// Examples:
-/// - 1024 bytes → "1024 bytes"
-/// - 10240 bytes → "10 kB"
-/// - 1048576 bytes → "1.0 MB"
-fn format_file_size(bytes: u64) -> String {
-    if bytes < 1024 {
-        format!("{} bytes", bytes)
-    } else if bytes < 1024 * 1024 {
-        format!("{} kB", bytes / 1024)
-    } else if bytes < 1024 * 1024 * 1024 {
-        format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
-    } else {
-        format!("{:.2} GB", bytes as f64 / (1024.0 * 1024.0 * 1024.0))
-    }
-}
+// File size formatting moved to core::value_formatter module
+// to ensure consistency with ExifTool (decimal units: 1 kB = 1000 bytes)
 
 /// Formats a SystemTime to ExifTool-compatible date format.
 ///
@@ -444,14 +430,7 @@ fn get_mime_type(extension: &str) -> &'static str {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_format_file_size() {
-        assert_eq!(format_file_size(512), "512 bytes");
-        assert_eq!(format_file_size(1024), "1 kB");
-        assert_eq!(format_file_size(10240), "10 kB");
-        assert_eq!(format_file_size(1048576), "1.0 MB");
-        assert_eq!(format_file_size(1073741824), "1.00 GB");
-    }
+    // File size tests moved to core::value_formatter module
 
     #[test]
     fn test_get_file_type() {

@@ -3,6 +3,7 @@
 //! This module handles parsing of IPTC data in JPEG APP13 segments.
 //! IPTC data is stored in Adobe Photoshop Image Resource Blocks (8BIM).
 
+use crate::core::value_formatter::{format_iptc_date, format_iptc_time};
 use crate::error::Result;
 use crate::parsers::jpeg::segment_parser::Segment;
 use nom::{
@@ -272,7 +273,22 @@ pub fn extract_iptc_from_segments(segments: &[Segment]) -> Result<Vec<(String, S
                                         record.record_number,
                                         record.dataset_number,
                                     );
-                                    let value = decode_iptc_string(&record.data);
+                                    let mut value = decode_iptc_string(&record.data);
+
+                                    // Apply formatting for specific dataset types
+                                    if record.record_number == 2 {
+                                        match record.dataset_number {
+                                            55 => {
+                                                // DateCreated: YYYYMMDD -> YYYY:MM:DD
+                                                value = format_iptc_date(&value);
+                                            }
+                                            60 => {
+                                                // TimeCreated: HHMMSS±HHMM -> HH:MM:SS±HH:MM
+                                                value = format_iptc_time(&value);
+                                            }
+                                            _ => {}
+                                        }
+                                    }
 
                                     all_iptc_tags.push((tag_name, value));
                                 }
