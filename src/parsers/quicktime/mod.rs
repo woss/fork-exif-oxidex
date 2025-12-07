@@ -46,6 +46,7 @@ use crate::core::{FileReader, MetadataMap};
 
 mod atom_parser;
 mod metadata_extractor;
+pub mod tag_mapping;
 
 pub use atom_parser::{Atom, FourCC};
 
