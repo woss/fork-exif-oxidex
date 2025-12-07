@@ -29,7 +29,7 @@
 
 #![allow(dead_code)]
 
-use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
+use crate::core::{decode_flags, FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 
@@ -180,43 +180,21 @@ impl LNKParser {
     ///
     /// Vector of attribute flag names
     fn decode_file_attributes(attributes: u32) -> Vec<&'static str> {
-        let mut flags = Vec::new();
+        const FILE_ATTRIBUTES: &[(u32, &str)] = &[
+            (0x0001, "ReadOnly"),
+            (0x0002, "Hidden"),
+            (0x0004, "System"),
+            (0x0010, "Directory"),
+            (0x0020, "Archive"),
+            (0x0080, "Normal"),
+            (0x0100, "Temporary"),
+            (0x0800, "Compressed"),
+            (0x1000, "Offline"),
+            (0x2000, "NotIndexed"),
+            (0x4000, "Encrypted"),
+        ];
 
-        if attributes & 0x0001 != 0 {
-            flags.push("ReadOnly");
-        }
-        if attributes & 0x0002 != 0 {
-            flags.push("Hidden");
-        }
-        if attributes & 0x0004 != 0 {
-            flags.push("System");
-        }
-        if attributes & 0x0010 != 0 {
-            flags.push("Directory");
-        }
-        if attributes & 0x0020 != 0 {
-            flags.push("Archive");
-        }
-        if attributes & 0x0080 != 0 {
-            flags.push("Normal");
-        }
-        if attributes & 0x0100 != 0 {
-            flags.push("Temporary");
-        }
-        if attributes & 0x0800 != 0 {
-            flags.push("Compressed");
-        }
-        if attributes & 0x1000 != 0 {
-            flags.push("Offline");
-        }
-        if attributes & 0x2000 != 0 {
-            flags.push("NotIndexed");
-        }
-        if attributes & 0x4000 != 0 {
-            flags.push("Encrypted");
-        }
-
-        flags
+        decode_flags(attributes, FILE_ATTRIBUTES)
     }
 
     /// Reads timestamps from the Shell Link Header
@@ -569,28 +547,17 @@ impl FormatParser for LNKParser {
         }
 
         // Check for common link flag bits
-        let mut link_flags_desc = Vec::new();
-        if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0 {
-            link_flags_desc.push("HasLinkTargetIDList");
-        }
-        if link_flags & FLAG_HAS_LINK_INFO != 0 {
-            link_flags_desc.push("HasLinkInfo");
-        }
-        if link_flags & FLAG_HAS_NAME != 0 {
-            link_flags_desc.push("HasName");
-        }
-        if link_flags & FLAG_HAS_RELATIVE_PATH != 0 {
-            link_flags_desc.push("HasRelativePath");
-        }
-        if link_flags & FLAG_HAS_WORKING_DIR != 0 {
-            link_flags_desc.push("HasWorkingDir");
-        }
-        if link_flags & FLAG_HAS_ARGUMENTS != 0 {
-            link_flags_desc.push("HasArguments");
-        }
-        if link_flags & FLAG_HAS_ICON_LOCATION != 0 {
-            link_flags_desc.push("HasIconLocation");
-        }
+        const LINK_FLAGS: &[(u32, &str)] = &[
+            (FLAG_HAS_LINK_TARGET_ID_LIST, "HasLinkTargetIDList"),
+            (FLAG_HAS_LINK_INFO, "HasLinkInfo"),
+            (FLAG_HAS_NAME, "HasName"),
+            (FLAG_HAS_RELATIVE_PATH, "HasRelativePath"),
+            (FLAG_HAS_WORKING_DIR, "HasWorkingDir"),
+            (FLAG_HAS_ARGUMENTS, "HasArguments"),
+            (FLAG_HAS_ICON_LOCATION, "HasIconLocation"),
+        ];
+
+        let link_flags_desc = decode_flags(link_flags, LINK_FLAGS);
 
         if !link_flags_desc.is_empty() {
             metadata.insert(
