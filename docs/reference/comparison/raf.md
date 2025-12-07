@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:39:46+00:00 | 2025:12:07 09:38:31+00:00 |
+| `File:FileAccessDate` | 2025:12:07 09:52:06+00:00 | 2025:12:07 09:50:52+00:00 |
 | `File:FileSize` | 38 kB | 37 kB |
 | `File:FileType` | RAF | FujifilmRAF |
 | `File:MIMEType` | image/x-fujifilm-raf | application/octet-stream |

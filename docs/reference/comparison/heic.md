@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:39:40+00:00 | 2025:12:07 09:38:31+00:00 |
+| `File:FileAccessDate` | 2025:12:07 09:52:00+00:00 | 2025:12:07 09:50:52+00:00 |
 | `File:FileTypeExtension` | heif | heic |
 | `QuickTime:CompatibleBrands` | ["mif1","heic","hevc"] | [String("mif1"), String("heic"), String(... |
 | `QuickTime:HandlerType` | Picture | pict |

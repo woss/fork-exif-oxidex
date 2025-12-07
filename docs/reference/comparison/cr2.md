@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:39:39+00:00 | 2025:12:07 09:38:31+00:00 |
+| `File:FileAccessDate` | 2025:12:07 09:52:00+00:00 | 2025:12:07 09:50:52+00:00 |
 | `File:FileSize` | 8.7 kB | 8 kB |
 | `File:FileType` | CR2 | CanonCR2 |
 | `File:MIMEType` | image/x-canon-cr2 | application/octet-stream |

@@ -31,8 +31,8 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `Composite:ShutterSpeed` | 1/38 |
 | `ExifTool:ExifToolVersion` | 13.43 |
 | `File:Directory` | /home/runner/exiftool/t/images |
-| `File:FileAccessDate` | 2025:12:07 09:39:45+00:00 |
-| `File:FileInodeChangeDate` | 2025:12:07 09:38:31+00:00 |
+| `File:FileAccessDate` | 2025:12:07 09:52:06+00:00 |
+| `File:FileInodeChangeDate` | 2025:12:07 09:50:52+00:00 |
 | `File:FileModifyDate` | 2025:12:04 15:14:32+00:00 |
 | `File:FileName` | QuickTime.mov |
 | `File:FilePermissions` | -rw-r--r-- |
