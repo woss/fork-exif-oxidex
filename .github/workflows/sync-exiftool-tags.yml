@@ -80,6 +80,13 @@ jobs:
           echo "Saving ExifTool version..."
           echo "${{ steps.check.outputs.latest_full }}" > .exiftool-version
 
+      - name: Clean up build artifacts
+        if: steps.check.outputs.version_changed == 'true'
+        run: |
+          echo "Removing build artifacts that should not be committed..."
+          rm -f build.log
+          echo "✅ Build artifacts cleaned up"
+
       - name: Count tags and analyze changes
         if: steps.check.outputs.version_changed == 'true'
         id: count
