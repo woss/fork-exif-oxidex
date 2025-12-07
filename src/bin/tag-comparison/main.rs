@@ -75,7 +75,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("  ExifTool found {} tags", exiftool_tags.len());
 
                         // Compare
-                        let comparison = ComparisonEngine::compare(oxidex_tags, exiftool_tags, &format);
+                        let previous = None; // TODO: Load from baseline
+                        let comparison = ComparisonEngine::compare(oxidex_tags, exiftool_tags, &format, previous);
                         println!("  Result: {}", comparison.summary());
 
                         report.add_format(format, comparison);

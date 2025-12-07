@@ -10,28 +10,29 @@ pub struct TagInfo {
     pub name: String,
     /// Tag family (e.g., "EXIF", "XMP", "IPTC", "MakerNote")
     pub family: String,
+    /// Tag value as string
+    pub value: String,
     /// Optional tag ID in hex format (e.g., "0x010F")
     pub tag_id: Option<String>,
-    /// Frequency: how many files contain this tag (0-100%)
-    pub frequency: usize,
-    /// Human-readable description of the tag
-    pub description: String,
+    /// Source file this tag was extracted from
+    pub source_file: Option<String>,
 }
 
 impl TagInfo {
     /// Create a new TagInfo
-    pub fn new(
-        name: String,
-        family: String,
-        frequency: usize,
-    ) -> Self {
+    pub fn new(name: String, family: String, value: String) -> Self {
         Self {
             name,
             family,
+            value,
             tag_id: None,
-            frequency,
-            description: String::new(),
+            source_file: None,
         }
+    }
+
+    /// Unique key for this tag (family:name)
+    pub fn key(&self) -> String {
+        format!("{}:{}", self.family, self.name)
     }
 
     /// Set the tag ID
@@ -40,11 +41,24 @@ impl TagInfo {
         self
     }
 
-    /// Set the description
-    pub fn with_description(mut self, description: String) -> Self {
-        self.description = description;
+    /// Set the source file
+    pub fn with_source_file(mut self, source_file: String) -> Self {
+        self.source_file = Some(source_file);
         self
     }
+}
+
+/// Represents a difference in extracted value for the same tag
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValueDifference {
+    /// Tag family:name
+    pub tag_key: String,
+    /// Value from ExifTool
+    pub exiftool_value: String,
+    /// Value from OxiDex
+    pub oxidex_value: String,
+    /// Source file where difference was found
+    pub source_file: String,
 }
 
 /// Comparison results for a single file format
@@ -52,12 +66,18 @@ impl TagInfo {
 pub struct FormatComparison {
     /// Format name (e.g., "JPEG", "PNG", "TIFF")
     pub format: String,
+    /// Number of test files processed
+    pub files_tested: usize,
     /// List of matched tag names
     pub matched_tags: Vec<String>,
     /// Tags found in ExifTool but missing in OxiDex
     pub missing_in_oxidex: Vec<TagInfo>,
     /// Tags found in OxiDex but not in ExifTool
     pub extra_in_oxidex: Vec<TagInfo>,
+    /// Tags with different values
+    pub value_differences: Vec<ValueDifference>,
+    /// Tags that were present in baseline but now missing (regressions)
+    pub regressions: Vec<String>,
     /// Coverage percentage (matched / total_exiftool)
     pub coverage_percentage: f64,
     /// Total number of tags in ExifTool for this format
@@ -68,14 +88,17 @@ pub struct FormatComparison {
 
 impl FormatComparison {
     /// Create a new FormatComparison result
-    pub fn new(format: String, total_exiftool_tags: usize) -> Self {
+    pub fn new(format: String, files_tested: usize) -> Self {
         Self {
             format,
+            files_tested,
             matched_tags: Vec::new(),
             missing_in_oxidex: Vec::new(),
             extra_in_oxidex: Vec::new(),
+            value_differences: Vec::new(),
+            regressions: Vec::new(),
             coverage_percentage: 0.0,
-            total_exiftool_tags,
+            total_exiftool_tags: 0,
             timestamp: chrono::Utc::now().to_rfc3339(),
         }
     }
@@ -107,10 +130,16 @@ impl FormatComparison {
 pub struct ComparisonReport {
     /// When this report was generated
     pub generated_at: String,
+    /// ExifTool version used for comparison
+    pub exiftool_version: String,
+    /// OxiDex version used for comparison
+    pub oxidex_version: String,
     /// Comparisons indexed by format name
     pub by_format: HashMap<String, FormatComparison>,
     /// Overall coverage across all formats
     pub overall_coverage: f64,
+    /// Total regressions across all formats
+    pub total_regressions: usize,
     /// Summary text
     pub summary: String,
 }
@@ -120,8 +149,11 @@ impl ComparisonReport {
     pub fn new() -> Self {
         Self {
             generated_at: chrono::Utc::now().to_rfc3339(),
+            exiftool_version: String::new(),
+            oxidex_version: String::new(),
             by_format: HashMap::new(),
             overall_coverage: 0.0,
+            total_regressions: 0,
             summary: String::new(),
         }
     }
@@ -135,6 +167,7 @@ impl ComparisonReport {
     pub fn calculate_overall_coverage(&mut self) {
         if self.by_format.is_empty() {
             self.overall_coverage = 0.0;
+            self.total_regressions = 0;
             self.summary = "No formats analyzed".to_string();
             return;
         }
@@ -149,6 +182,12 @@ impl ComparisonReport {
             .by_format
             .values()
             .map(|c| c.total_exiftool_tags)
+            .sum();
+
+        self.total_regressions = self
+            .by_format
+            .values()
+            .map(|c| c.regressions.len())
             .sum();
 
         if total_tags == 0 {
@@ -184,36 +223,48 @@ mod tests {
 
     #[test]
     fn test_tag_info_creation() {
-        let tag = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50);
+        let tag = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
         assert_eq!(tag.name, "Make");
         assert_eq!(tag.family, "EXIF");
-        assert_eq!(tag.frequency, 50);
+        assert_eq!(tag.value, "Canon");
         assert_eq!(tag.tag_id, None);
+        assert_eq!(tag.source_file, None);
+    }
+
+    #[test]
+    fn test_tag_info_key() {
+        let tag = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
+        assert_eq!(tag.key(), "EXIF:Make");
     }
 
     #[test]
     fn test_tag_info_with_builder() {
-        let tag = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50)
+        let tag = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string())
             .with_tag_id("0x010F".to_string())
-            .with_description("Camera manufacturer".to_string());
+            .with_source_file("test.jpg".to_string());
 
         assert_eq!(tag.name, "Make");
+        assert_eq!(tag.value, "Canon");
         assert_eq!(tag.tag_id, Some("0x010F".to_string()));
-        assert_eq!(tag.description, "Camera manufacturer");
+        assert_eq!(tag.source_file, Some("test.jpg".to_string()));
     }
 
     #[test]
     fn test_format_comparison_creation() {
-        let comp = FormatComparison::new("JPEG".to_string(), 100);
+        let comp = FormatComparison::new("JPEG".to_string(), 5);
         assert_eq!(comp.format, "JPEG");
-        assert_eq!(comp.total_exiftool_tags, 100);
+        assert_eq!(comp.files_tested, 5);
+        assert_eq!(comp.total_exiftool_tags, 0);
         assert_eq!(comp.matched_tags.len(), 0);
+        assert_eq!(comp.value_differences.len(), 0);
+        assert_eq!(comp.regressions.len(), 0);
         assert_eq!(comp.coverage_percentage, 0.0);
     }
 
     #[test]
     fn test_format_comparison_coverage_calculation() {
-        let mut comp = FormatComparison::new("JPEG".to_string(), 100);
+        let mut comp = FormatComparison::new("JPEG".to_string(), 5);
+        comp.total_exiftool_tags = 100;
         comp.matched_tags = vec![
             "Make".to_string(),
             "Model".to_string(),
@@ -226,14 +277,16 @@ mod tests {
 
     #[test]
     fn test_format_comparison_coverage_zero_tags() {
-        let mut comp = FormatComparison::new("JPEG".to_string(), 0);
+        let mut comp = FormatComparison::new("JPEG".to_string(), 5);
+        comp.total_exiftool_tags = 0;
         comp.calculate_coverage();
         assert_eq!(comp.coverage_percentage, 0.0);
     }
 
     #[test]
     fn test_format_comparison_summary() {
-        let mut comp = FormatComparison::new("JPEG".to_string(), 100);
+        let mut comp = FormatComparison::new("JPEG".to_string(), 5);
+        comp.total_exiftool_tags = 100;
         comp.matched_tags = vec!["Make".to_string(), "Model".to_string()];
         comp.calculate_coverage();
 
@@ -248,12 +301,15 @@ mod tests {
         let report = ComparisonReport::new();
         assert_eq!(report.by_format.len(), 0);
         assert_eq!(report.overall_coverage, 0.0);
+        assert_eq!(report.total_regressions, 0);
+        assert_eq!(report.exiftool_version, "");
+        assert_eq!(report.oxidex_version, "");
     }
 
     #[test]
     fn test_comparison_report_add_format() {
         let mut report = ComparisonReport::new();
-        let comp = FormatComparison::new("JPEG".to_string(), 100);
+        let comp = FormatComparison::new("JPEG".to_string(), 5);
         report.add_format("JPEG".to_string(), comp);
 
         assert_eq!(report.by_format.len(), 1);
@@ -263,7 +319,8 @@ mod tests {
     #[test]
     fn test_comparison_report_overall_coverage_single_format() {
         let mut report = ComparisonReport::new();
-        let mut comp = FormatComparison::new("JPEG".to_string(), 100);
+        let mut comp = FormatComparison::new("JPEG".to_string(), 5);
+        comp.total_exiftool_tags = 100;
         comp.matched_tags = (0..50).map(|i| format!("Tag{}", i)).collect();
         comp.calculate_coverage();
         report.add_format("JPEG".to_string(), comp);
@@ -278,12 +335,14 @@ mod tests {
         let mut report = ComparisonReport::new();
 
         // Format 1: 50/100 = 50%
-        let mut comp1 = FormatComparison::new("JPEG".to_string(), 100);
+        let mut comp1 = FormatComparison::new("JPEG".to_string(), 5);
+        comp1.total_exiftool_tags = 100;
         comp1.matched_tags = (0..50).map(|i| format!("Tag{}", i)).collect();
         comp1.calculate_coverage();
 
         // Format 2: 30/50 = 60%
-        let mut comp2 = FormatComparison::new("PNG".to_string(), 50);
+        let mut comp2 = FormatComparison::new("PNG".to_string(), 3);
+        comp2.total_exiftool_tags = 50;
         comp2.matched_tags = (0..30).map(|i| format!("Tag{}", i)).collect();
         comp2.calculate_coverage();
 
@@ -299,9 +358,9 @@ mod tests {
     #[test]
     fn test_comparison_report_format_names() {
         let mut report = ComparisonReport::new();
-        report.add_format("PNG".to_string(), FormatComparison::new("PNG".to_string(), 100));
-        report.add_format("JPEG".to_string(), FormatComparison::new("JPEG".to_string(), 100));
-        report.add_format("TIFF".to_string(), FormatComparison::new("TIFF".to_string(), 100));
+        report.add_format("PNG".to_string(), FormatComparison::new("PNG".to_string(), 3));
+        report.add_format("JPEG".to_string(), FormatComparison::new("JPEG".to_string(), 5));
+        report.add_format("TIFF".to_string(), FormatComparison::new("TIFF".to_string(), 2));
 
         let names = report.format_names();
         assert_eq!(names, vec!["JPEG", "PNG", "TIFF"]); // Sorted order
@@ -316,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_tag_info_serialization() {
-        let tag = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50);
+        let tag = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
         let json = serde_json::to_string(&tag).unwrap();
         let deserialized: TagInfo = serde_json::from_str(&json).unwrap();
         assert_eq!(tag, deserialized);
@@ -324,7 +383,8 @@ mod tests {
 
     #[test]
     fn test_format_comparison_serialization() {
-        let mut comp = FormatComparison::new("JPEG".to_string(), 100);
+        let mut comp = FormatComparison::new("JPEG".to_string(), 5);
+        comp.total_exiftool_tags = 100;
         comp.matched_tags = vec!["Make".to_string(), "Model".to_string()];
         comp.calculate_coverage();
 
@@ -332,5 +392,39 @@ mod tests {
         let deserialized: FormatComparison = serde_json::from_str(&json).unwrap();
         assert_eq!(comp.format, deserialized.format);
         assert_eq!(comp.matched_tags, deserialized.matched_tags);
+    }
+
+    #[test]
+    fn test_value_difference() {
+        let diff = ValueDifference {
+            tag_key: "EXIF:Make".to_string(),
+            exiftool_value: "Canon".to_string(),
+            oxidex_value: "CANON".to_string(),
+            source_file: "test.jpg".to_string(),
+        };
+        assert_eq!(diff.tag_key, "EXIF:Make");
+        assert_eq!(diff.exiftool_value, "Canon");
+        assert_eq!(diff.oxidex_value, "CANON");
+    }
+
+    #[test]
+    fn test_comparison_report_with_regressions() {
+        let mut report = ComparisonReport::new();
+
+        let mut comp1 = FormatComparison::new("JPEG".to_string(), 5);
+        comp1.total_exiftool_tags = 100;
+        comp1.matched_tags = vec!["EXIF:Make".to_string()];
+        comp1.regressions = vec!["EXIF:Model".to_string(), "EXIF:DateTime".to_string()];
+
+        let mut comp2 = FormatComparison::new("PNG".to_string(), 3);
+        comp2.total_exiftool_tags = 50;
+        comp2.matched_tags = vec!["PNG:Width".to_string()];
+        comp2.regressions = vec!["PNG:Height".to_string()];
+
+        report.add_format("JPEG".to_string(), comp1);
+        report.add_format("PNG".to_string(), comp2);
+        report.calculate_overall_coverage();
+
+        assert_eq!(report.total_regressions, 3); // 2 + 1
     }
 }

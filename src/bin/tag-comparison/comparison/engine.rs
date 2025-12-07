@@ -13,6 +13,7 @@ impl ComparisonEngine {
     /// * `oxidex_tags` - Tags extracted from OxiDex
     /// * `exiftool_tags` - Tags extracted from ExifTool
     /// * `format` - Format name (e.g., "JPEG")
+    /// * `previous` - Previous comparison for regression detection (optional)
     ///
     /// # Returns
     /// FormatComparison with matched/missing/extra analysis
@@ -20,8 +21,10 @@ impl ComparisonEngine {
         oxidex_tags: Vec<TagInfo>,
         exiftool_tags: Vec<TagInfo>,
         format: &str,
+        _previous: Option<&FormatComparison>,
     ) -> FormatComparison {
-        let mut comparison = FormatComparison::new(format.to_string(), exiftool_tags.len());
+        let mut comparison = FormatComparison::new(format.to_string(), 0);
+        comparison.total_exiftool_tags = exiftool_tags.len();
         let mut oxidex_matched = HashSet::new();
         let mut exiftool_matched = HashSet::new();
 
@@ -29,7 +32,7 @@ impl ComparisonEngine {
         for (ox_idx, ox_tag) in oxidex_tags.iter().enumerate() {
             for (et_idx, et_tag) in exiftool_tags.iter().enumerate() {
                 if Self::tags_match(&ox_tag, &et_tag) {
-                    comparison.matched_tags.push(ox_tag.name.clone());
+                    comparison.matched_tags.push(ox_tag.key());
                     oxidex_matched.insert(ox_idx);
                     exiftool_matched.insert(et_idx);
                     break;
@@ -82,44 +85,44 @@ mod tests {
 
     #[test]
     fn test_tags_match_identical() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50);
-        let tag2 = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50);
+        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
+        let tag2 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
         assert!(ComparisonEngine::tags_match(&tag1, &tag2));
     }
 
     #[test]
     fn test_tags_dont_match_different_names() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50);
-        let tag2 = TagInfo::new("Model".to_string(), "EXIF".to_string(), 50);
+        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
+        let tag2 = TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string());
         assert!(!ComparisonEngine::tags_match(&tag1, &tag2));
     }
 
     #[test]
     fn test_tags_dont_match_different_families() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50);
-        let tag2 = TagInfo::new("Make".to_string(), "XMP".to_string(), 50);
+        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
+        let tag2 = TagInfo::new("Make".to_string(), "XMP".to_string(), "Canon".to_string());
         assert!(!ComparisonEngine::tags_match(&tag1, &tag2));
     }
 
     #[test]
     fn test_tags_case_sensitive() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), 50);
-        let tag2 = TagInfo::new("make".to_string(), "EXIF".to_string(), 50);
+        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
+        let tag2 = TagInfo::new("make".to_string(), "EXIF".to_string(), "Canon".to_string());
         assert!(!ComparisonEngine::tags_match(&tag1, &tag2));
     }
 
     #[test]
     fn test_compare_all_matched() {
         let oxidex_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), 100),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
+            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
         let exiftool_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), 100),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
+            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG");
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
         assert_eq!(result.matched_tags.len(), 2);
         assert_eq!(result.missing_in_oxidex.len(), 0);
         assert_eq!(result.extra_in_oxidex.len(), 0);
@@ -129,15 +132,15 @@ mod tests {
     #[test]
     fn test_compare_partial_match() {
         let oxidex_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
             // Model is missing
         ];
         let exiftool_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), 100),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
+            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG");
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
         assert_eq!(result.matched_tags.len(), 1);
         assert_eq!(result.missing_in_oxidex.len(), 1);
         assert_eq!(result.extra_in_oxidex.len(), 0);
@@ -147,16 +150,16 @@ mod tests {
     #[test]
     fn test_compare_with_extra_tags() {
         let oxidex_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), 100),
-            TagInfo::new("CustomTag".to_string(), "EXIF".to_string(), 50),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
+            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
+            TagInfo::new("CustomTag".to_string(), "EXIF".to_string(), "Custom".to_string()),
         ];
         let exiftool_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), 100),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
+            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG");
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
         assert_eq!(result.matched_tags.len(), 2);
         assert_eq!(result.missing_in_oxidex.len(), 0);
         assert_eq!(result.extra_in_oxidex.len(), 1);
@@ -167,11 +170,11 @@ mod tests {
     fn test_compare_empty_oxidex() {
         let oxidex_tags = vec![];
         let exiftool_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), 100),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
+            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
         ];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG");
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
         assert_eq!(result.matched_tags.len(), 0);
         assert_eq!(result.missing_in_oxidex.len(), 2);
         assert_eq!(result.extra_in_oxidex.len(), 0);
@@ -181,11 +184,11 @@ mod tests {
     #[test]
     fn test_compare_empty_exiftool() {
         let oxidex_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), 100),
+            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
         ];
         let exiftool_tags = vec![];
 
-        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG");
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
         assert_eq!(result.matched_tags.len(), 0);
         assert_eq!(result.missing_in_oxidex.len(), 0);
         assert_eq!(result.extra_in_oxidex.len(), 1);

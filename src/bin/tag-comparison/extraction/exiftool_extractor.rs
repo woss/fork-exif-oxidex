@@ -75,18 +75,14 @@ impl ExifToolExtractor {
             }
         }
 
-        // Convert to final format with frequency
+        // Convert to final format
         let mut result: Vec<TagInfo> = all_tags
             .into_values()
-            .map(|(mut tag_info, count)| {
-                let frequency = (count as f64 / files.len() as f64 * 100.0) as usize;
-                tag_info.frequency = frequency;
-                tag_info
-            })
+            .map(|(tag_info, _count)| tag_info)
             .collect();
 
-        // Sort by name for consistency
-        result.sort_by(|a, b| a.name.cmp(&b.name));
+        // Sort by key for consistency
+        result.sort_by(|a, b| a.key().cmp(&b.key()));
 
         // Cache the result
         self.cache.insert(format.to_string(), result.clone());
@@ -127,8 +123,15 @@ impl ExifToolExtractor {
                     for (key, value) in obj.iter() {
                         let (family, name) = self.parse_tag_name(key);
                         if family != "UNKNOWN" {
-                            let mut tag_info = TagInfo::new(name, family, 0);
-                            tag_info = tag_info.with_description(value.to_string());
+                            let value_str = match value {
+                                serde_json::Value::String(s) => s.clone(),
+                                serde_json::Value::Number(n) => n.to_string(),
+                                serde_json::Value::Bool(b) => b.to_string(),
+                                serde_json::Value::Array(_) => value.to_string(),
+                                serde_json::Value::Object(_) => value.to_string(),
+                                serde_json::Value::Null => "null".to_string(),
+                            };
+                            let tag_info = TagInfo::new(name, family, value_str);
                             tags.push(tag_info);
                         }
                     }
