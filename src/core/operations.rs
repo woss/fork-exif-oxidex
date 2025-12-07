@@ -471,8 +471,13 @@ pub(crate) fn parse_jpeg_metadata(reader: &dyn FileReader) -> Result<MetadataMap
     process_xmp_segments(&segments, &mut metadata);
     process_iptc_segments(&segments, &mut metadata);
     process_icc_segments(&segments, &mut metadata);
+    // TODO: Stream 2 - Add process_jpeg_hdr_segments when implemented
 
-    Ok(metadata)
+    // Normalize tag families to match ExifTool conventions (ExifIFD: -> EXIF:)
+    use crate::core::tag_normalization::normalize_metadata_map;
+    let normalized = normalize_metadata_map(&metadata);
+
+    Ok(normalized)
 }
 
 // ============================================================================
