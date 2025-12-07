@@ -1,8 +1,8 @@
 //! OxiDex tag extractor - Extract tags by running OxiDex on test fixtures
 
 use crate::models::TagInfo;
-use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 /// Extract tags from OxiDex by processing test fixtures
@@ -27,7 +27,10 @@ impl OxiDexExtractor {
     ///
     /// # Returns
     /// Vector of TagInfo representing all unique tags found in fixtures
-    pub async fn extract_format_tags(&mut self, format: &str) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
+    pub async fn extract_format_tags(
+        &mut self,
+        format: &str,
+    ) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
         // Check cache first
         if let Some(cached) = self.cache.get(format) {
             return Ok(cached.clone());
@@ -64,7 +67,11 @@ impl OxiDexExtractor {
                     }
                 }
                 Err(e) => {
-                    eprintln!("Warning: Failed to extract tags from {}: {}", file_path.display(), e);
+                    eprintln!(
+                        "Warning: Failed to extract tags from {}: {}",
+                        file_path.display(),
+                        e
+                    );
                     // Continue processing other files
                 }
             }
@@ -86,7 +93,10 @@ impl OxiDexExtractor {
     }
 
     /// Extract tags from a single file using OxiDex
-    fn extract_tags_from_file(&self, file_path: &Path) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
+    fn extract_tags_from_file(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
         // Use the oxidex API to read metadata
         let metadata = oxidex::core::operations::read_metadata(file_path)?;
 
@@ -116,7 +126,10 @@ impl OxiDexExtractor {
                 oxidex::core::TagValue::String(s) => s.clone(),
                 oxidex::core::TagValue::Integer(i) => i.to_string(),
                 oxidex::core::TagValue::Float(f) => f.to_string(),
-                oxidex::core::TagValue::Rational { numerator, denominator } => {
+                oxidex::core::TagValue::Rational {
+                    numerator,
+                    denominator,
+                } => {
                     format!("{}/{}", numerator, denominator)
                 }
                 oxidex::core::TagValue::Binary(_) => "[Binary data]".to_string(),

@@ -1,8 +1,8 @@
 //! ExifTool tag extractor - Extract tags by running exiftool -json on fixtures
 
 use crate::models::TagInfo;
-use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
 
@@ -69,7 +69,11 @@ impl ExifToolExtractor {
                     }
                 }
                 Err(e) => {
-                    eprintln!("Warning: Failed to extract tags from {}: {}", file_path.display(), e);
+                    eprintln!(
+                        "Warning: Failed to extract tags from {}: {}",
+                        file_path.display(),
+                        e
+                    );
                     // Continue processing other files
                 }
             }
@@ -91,7 +95,10 @@ impl ExifToolExtractor {
     }
 
     /// Run exiftool on a file and parse JSON output
-    fn run_exiftool_on_file(&self, file_path: &Path) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
+    fn run_exiftool_on_file(
+        &self,
+        file_path: &Path,
+    ) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
         let output = Command::new(&self.exiftool_path)
             .arg("-json")
             .arg(file_path)
@@ -208,6 +215,8 @@ mod tests {
         let tags = extractor.parse_exiftool_json(&json);
         assert_eq!(tags.len(), 3);
         assert!(tags.iter().any(|t| t.name == "Make" && t.family == "EXIF"));
-        assert!(tags.iter().any(|t| t.name == "Creator" && t.family == "XMP"));
+        assert!(tags
+            .iter()
+            .any(|t| t.name == "Creator" && t.family == "XMP"));
     }
 }

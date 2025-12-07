@@ -1,8 +1,8 @@
 //! Markdown report generation
 
 use crate::models::{ComparisonReport, FormatComparison};
-use std::path::Path;
 use std::io::Write;
+use std::path::Path;
 
 /// Generate all markdown reports
 pub fn generate_markdown_reports(
@@ -48,14 +48,19 @@ fn generate_index(
     ));
 
     if report.total_regressions > 0 {
-        content.push_str(&format!(" | **⚠️ Regressions:** {}", report.total_regressions));
+        content.push_str(&format!(
+            " | **⚠️ Regressions:** {}",
+            report.total_regressions
+        ));
     }
     content.push_str("\n\n");
 
     // Summary table
     content.push_str("## Coverage by Format\n\n");
-    content.push_str("| Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |\n");
-    content.push_str("|--------|-------|----------|---------|-------|-------------|-------------|\n");
+    content
+        .push_str("| Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |\n");
+    content
+        .push_str("|--------|-------|----------|---------|-------|-------------|-------------|\n");
 
     let mut formats: Vec<_> = report.by_format.iter().collect();
     formats.sort_by(|a, b| a.0.cmp(b.0));
@@ -114,15 +119,36 @@ fn generate_format_page(
 
     // Stats summary
     content.push_str("## Summary\n\n");
-    content.push_str(&format!("- **Files Tested:** {}\n", comparison.files_tested));
-    content.push_str(&format!("- **Coverage:** {:.1}%\n", comparison.coverage_percentage));
-    content.push_str(&format!("- **Matched Tags:** {}\n", comparison.matched_tags.len()));
-    content.push_str(&format!("- **Missing Tags:** {}\n", comparison.missing_in_oxidex.len()));
-    content.push_str(&format!("- **Extra Tags:** {}\n", comparison.extra_in_oxidex.len()));
-    content.push_str(&format!("- **Value Differences:** {}\n", comparison.value_differences.len()));
+    content.push_str(&format!(
+        "- **Files Tested:** {}\n",
+        comparison.files_tested
+    ));
+    content.push_str(&format!(
+        "- **Coverage:** {:.1}%\n",
+        comparison.coverage_percentage
+    ));
+    content.push_str(&format!(
+        "- **Matched Tags:** {}\n",
+        comparison.matched_tags.len()
+    ));
+    content.push_str(&format!(
+        "- **Missing Tags:** {}\n",
+        comparison.missing_in_oxidex.len()
+    ));
+    content.push_str(&format!(
+        "- **Extra Tags:** {}\n",
+        comparison.extra_in_oxidex.len()
+    ));
+    content.push_str(&format!(
+        "- **Value Differences:** {}\n",
+        comparison.value_differences.len()
+    ));
 
     if !comparison.regressions.is_empty() {
-        content.push_str(&format!("- **⚠️ Regressions:** {}\n", comparison.regressions.len()));
+        content.push_str(&format!(
+            "- **⚠️ Regressions:** {}\n",
+            comparison.regressions.len()
+        ));
     }
     content.push_str("\n");
 
@@ -147,7 +173,10 @@ fn generate_format_page(
         for diff in comparison.value_differences.iter().take(50) {
             let et_val = truncate(&diff.exiftool_value, 40);
             let ox_val = truncate(&diff.oxidex_value, 40);
-            content.push_str(&format!("| `{}` | {} | {} |\n", diff.tag_key, et_val, ox_val));
+            content.push_str(&format!(
+                "| `{}` | {} | {} |\n",
+                diff.tag_key, et_val, ox_val
+            ));
         }
         if comparison.value_differences.len() > 50 {
             content.push_str(&format!(
@@ -211,6 +240,9 @@ fn truncate(s: &str, max_len: usize) -> String {
     if s.len() <= max_len {
         s.replace('|', "\\|").replace('\n', " ")
     } else {
-        format!("{}...", &s[..max_len].replace('|', "\\|").replace('\n', " "))
+        format!(
+            "{}...",
+            &s[..max_len].replace('|', "\\|").replace('\n', " ")
+        )
     }
 }

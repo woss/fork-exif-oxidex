@@ -5,13 +5,13 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-mod models;
-mod extraction;
 mod comparison;
+mod extraction;
+mod models;
 
+use comparison::{generate_markdown_reports, ComparisonEngine};
+use extraction::{ExifToolExtractor, OxiDexExtractor};
 use models::ComparisonReport;
-use extraction::{OxiDexExtractor, ExifToolExtractor};
-use comparison::{ComparisonEngine, generate_markdown_reports};
 
 #[derive(Parser, Debug)]
 #[command(name = "tag-comparison")]
@@ -98,13 +98,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 // Extract ExifTool tags
                 let mut exiftool_extractor = ExifToolExtractor::new(args.exiftool.clone());
-                match exiftool_extractor.extract_format_tags(&format, &args.samples).await {
+                match exiftool_extractor
+                    .extract_format_tags(&format, &args.samples)
+                    .await
+                {
                     Ok(exiftool_tags) => {
                         println!("  ExifTool found {} tags", exiftool_tags.len());
 
                         // Compare with baseline for regression detection
                         let previous = baseline.as_ref().and_then(|b| b.by_format.get(&format));
-                        let comparison = ComparisonEngine::compare(oxidex_tags, exiftool_tags, &format, previous);
+                        let comparison = ComparisonEngine::compare(
+                            oxidex_tags,
+                            exiftool_tags,
+                            &format,
+                            previous,
+                        );
                         println!("  Result: {}", comparison.summary());
 
                         report.add_format(format, comparison);
@@ -131,7 +139,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Generate markdown reports
     println!("\n📝 Generating markdown reports...");
     generate_markdown_reports(&report, &args.markdown_dir)?;
-    println!("✅ Markdown reports saved to: {}", args.markdown_dir.display());
+    println!(
+        "✅ Markdown reports saved to: {}",
+        args.markdown_dir.display()
+    );
 
     // Save updated baseline
     if let Some(baseline_path) = &args.baseline {

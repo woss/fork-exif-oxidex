@@ -1,6 +1,6 @@
 //! Tag comparison engine - Match and compare tags between OxiDex and ExifTool
 
-use crate::models::{TagInfo, FormatComparison, ValueDifference};
+use crate::models::{FormatComparison, TagInfo, ValueDifference};
 use std::collections::{HashMap, HashSet};
 
 /// Comparison engine for analyzing tag differences
@@ -27,10 +27,8 @@ impl ComparisonEngine {
         comparison.total_exiftool_tags = exiftool_tags.len();
 
         // Build lookup map for efficient OxiDex tag lookup by key
-        let oxidex_by_key: HashMap<String, &TagInfo> = oxidex_tags
-            .iter()
-            .map(|t| (t.key(), t))
-            .collect();
+        let oxidex_by_key: HashMap<String, &TagInfo> =
+            oxidex_tags.iter().map(|t| (t.key(), t)).collect();
 
         // Track which ExifTool tags were matched
         let mut matched_exiftool_keys = HashSet::new();
@@ -177,7 +175,11 @@ mod tests {
         let oxidex_tags = vec![
             TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
             TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string()),
-            TagInfo::new("CustomTag".to_string(), "EXIF".to_string(), "Custom".to_string()),
+            TagInfo::new(
+                "CustomTag".to_string(),
+                "EXIF".to_string(),
+                "Custom".to_string(),
+            ),
         ];
         let exiftool_tags = vec![
             TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
@@ -208,9 +210,11 @@ mod tests {
 
     #[test]
     fn test_compare_empty_exiftool() {
-        let oxidex_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
-        ];
+        let oxidex_tags = vec![TagInfo::new(
+            "Make".to_string(),
+            "EXIF".to_string(),
+            "Canon".to_string(),
+        )];
         let exiftool_tags = vec![];
 
         let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
@@ -252,12 +256,16 @@ mod tests {
 
     #[test]
     fn test_regression_detection_no_previous() {
-        let oxidex_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
-        ];
-        let exiftool_tags = vec![
-            TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
-        ];
+        let oxidex_tags = vec![TagInfo::new(
+            "Make".to_string(),
+            "EXIF".to_string(),
+            "Canon".to_string(),
+        )];
+        let exiftool_tags = vec![TagInfo::new(
+            "Make".to_string(),
+            "EXIF".to_string(),
+            "Canon".to_string(),
+        )];
 
         let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
 
@@ -291,11 +299,19 @@ mod tests {
     fn test_value_difference_detection() {
         let oxidex_tags = vec![
             TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), "EOS 5D".to_string()), // Different value
+            TagInfo::new(
+                "Model".to_string(),
+                "EXIF".to_string(),
+                "EOS 5D".to_string(),
+            ), // Different value
         ];
         let exiftool_tags = vec![
             TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D Mark II".to_string()), // Different value
+            TagInfo::new(
+                "Model".to_string(),
+                "EXIF".to_string(),
+                "5D Mark II".to_string(),
+            ), // Different value
         ];
 
         let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", None);
@@ -319,14 +335,30 @@ mod tests {
     fn test_complex_comparison_with_all_categories() {
         let oxidex_tags = vec![
             TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()), // Match
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), "EOS 5D".to_string()), // Value diff
-            TagInfo::new("CustomTag".to_string(), "EXIF".to_string(), "Custom".to_string()), // Extra
-            // DateTime is missing - will be a regression
+            TagInfo::new(
+                "Model".to_string(),
+                "EXIF".to_string(),
+                "EOS 5D".to_string(),
+            ), // Value diff
+            TagInfo::new(
+                "CustomTag".to_string(),
+                "EXIF".to_string(),
+                "Custom".to_string(),
+            ), // Extra
+                                                                                       // DateTime is missing - will be a regression
         ];
         let exiftool_tags = vec![
             TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string()),
-            TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D Mark II".to_string()),
-            TagInfo::new("DateTime".to_string(), "EXIF".to_string(), "2025:12:07 10:00:00".to_string()),
+            TagInfo::new(
+                "Model".to_string(),
+                "EXIF".to_string(),
+                "5D Mark II".to_string(),
+            ),
+            TagInfo::new(
+                "DateTime".to_string(),
+                "EXIF".to_string(),
+                "2025:12:07 10:00:00".to_string(),
+            ),
             TagInfo::new("ISO".to_string(), "EXIF".to_string(), "400".to_string()), // Missing in oxidex
         ];
 

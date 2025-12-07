@@ -1,7 +1,7 @@
 //! Data models for tag comparison and reporting
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Information about a single metadata tag
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -172,23 +172,11 @@ impl ComparisonReport {
             return;
         }
 
-        let total_matched: usize = self
-            .by_format
-            .values()
-            .map(|c| c.matched_tags.len())
-            .sum();
+        let total_matched: usize = self.by_format.values().map(|c| c.matched_tags.len()).sum();
 
-        let total_tags: usize = self
-            .by_format
-            .values()
-            .map(|c| c.total_exiftool_tags)
-            .sum();
+        let total_tags: usize = self.by_format.values().map(|c| c.total_exiftool_tags).sum();
 
-        self.total_regressions = self
-            .by_format
-            .values()
-            .map(|c| c.regressions.len())
-            .sum();
+        self.total_regressions = self.by_format.values().map(|c| c.regressions.len()).sum();
 
         if total_tags == 0 {
             self.overall_coverage = 0.0;
@@ -358,9 +346,18 @@ mod tests {
     #[test]
     fn test_comparison_report_format_names() {
         let mut report = ComparisonReport::new();
-        report.add_format("PNG".to_string(), FormatComparison::new("PNG".to_string(), 3));
-        report.add_format("JPEG".to_string(), FormatComparison::new("JPEG".to_string(), 5));
-        report.add_format("TIFF".to_string(), FormatComparison::new("TIFF".to_string(), 2));
+        report.add_format(
+            "PNG".to_string(),
+            FormatComparison::new("PNG".to_string(), 3),
+        );
+        report.add_format(
+            "JPEG".to_string(),
+            FormatComparison::new("JPEG".to_string(), 5),
+        );
+        report.add_format(
+            "TIFF".to_string(),
+            FormatComparison::new("TIFF".to_string(), 2),
+        );
 
         let names = report.format_names();
         assert_eq!(names, vec!["JPEG", "PNG", "TIFF"]); // Sorted order
