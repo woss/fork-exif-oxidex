@@ -949,6 +949,15 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
         // QuickTime user data atoms start with © character (0xA9)
         if atom_bytes[0] == 0xA9 {
             if let Some(value) = extract_string_value(atom.data) {
+                // Convert atom bytes to string for mapping lookup
+                if let Ok(atom_str) = std::str::from_utf8(atom_bytes) {
+                    // Try to use the tag mapping first
+                    if let Some(exiftool_tag) = atom_to_exiftool_tag(atom_str) {
+                        metadata.insert(exiftool_tag.to_string(), TagValue::new_string(value.clone()));
+                    }
+                }
+
+                // Also keep the legacy UserData and QuickTime tags for backward compatibility
                 let suffix = match atom_bytes {
                     b"\xa9nam" => Some("Title"),
                     b"\xa9ART" => Some("Artist"),
