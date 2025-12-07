@@ -368,3 +368,141 @@ docs-coverage:
     @echo "Regenerating tag coverage analysis..."
     uv run scripts/generate_tag_coverage.py --output docs/reference/tag-coverage-analysis.md
     @echo "Tag coverage report updated"
+
+# ExifTool Comparison
+# -------------------
+
+# Run tag comparison against ExifTool's full test suite
+# Downloads ExifTool to /tmp, runs comparison, then cleans up
+compare-exiftool:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+
+    cleanup() {
+        echo "🧹 Cleaning up..."
+        rm -rf "$EXIFTOOL_DIR"
+        rm -f /tmp/exiftool-*.tar.gz
+    }
+    trap cleanup EXIT
+
+    echo "📥 Fetching latest ExifTool version..."
+    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    echo "   Version: $VERSION"
+
+    echo "📦 Downloading ExifTool $VERSION..."
+    curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
+        -o "/tmp/exiftool-$VERSION.tar.gz" --progress-bar
+
+    echo "📂 Extracting to $EXIFTOOL_DIR..."
+    mkdir -p "$EXIFTOOL_DIR"
+    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+
+    TEST_FILES=$(find "$EXIFTOOL_DIR/t/images" -type f 2>/dev/null | wc -l | tr -d ' ')
+    echo "   Found $TEST_FILES test files"
+
+    echo "🔨 Building tag-comparison tool..."
+    cargo build --release --bin tag-comparison
+
+    OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+    echo "🔍 Running comparison..."
+    echo "   ExifTool: v$VERSION"
+    echo "   OxiDex:   v$OXIDEX_VERSION"
+    echo ""
+
+    ./target/release/tag-comparison \
+        --exiftool "$EXIFTOOL_DIR/exiftool" \
+        --samples "$EXIFTOOL_DIR/t/images" \
+        --exiftool-version "$VERSION" \
+        --oxidex-version "$OXIDEX_VERSION"
+
+    echo ""
+    echo "✅ Comparison complete!"
+
+# Run comparison and update docs (like CI does)
+compare-exiftool-update:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+
+    cleanup() {
+        echo "🧹 Cleaning up..."
+        rm -rf "$EXIFTOOL_DIR"
+        rm -f /tmp/exiftool-*.tar.gz
+    }
+    trap cleanup EXIT
+
+    echo "📥 Fetching latest ExifTool version..."
+    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    echo "   Version: $VERSION"
+
+    echo "📦 Downloading ExifTool $VERSION..."
+    curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
+        -o "/tmp/exiftool-$VERSION.tar.gz" --progress-bar
+
+    echo "📂 Extracting to $EXIFTOOL_DIR..."
+    mkdir -p "$EXIFTOOL_DIR"
+    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+
+    TEST_FILES=$(find "$EXIFTOOL_DIR/t/images" -type f 2>/dev/null | wc -l | tr -d ' ')
+    echo "   Found $TEST_FILES test files"
+
+    echo "🔨 Building tag-comparison tool..."
+    cargo build --release --bin tag-comparison
+
+    OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+    echo "🔍 Running comparison and updating docs..."
+    echo "   ExifTool: v$VERSION"
+    echo "   OxiDex:   v$OXIDEX_VERSION"
+    echo ""
+
+    ./target/release/tag-comparison \
+        --exiftool "$EXIFTOOL_DIR/exiftool" \
+        --samples "$EXIFTOOL_DIR/t/images" \
+        --baseline docs/reference/comparison/baseline.json \
+        --output docs/reference/comparison/comparison.json \
+        --markdown-dir docs/reference/comparison \
+        --exiftool-version "$VERSION" \
+        --oxidex-version "$OXIDEX_VERSION"
+
+    echo ""
+    echo "✅ Comparison complete! Docs updated in docs/reference/comparison/"
+
+# Run comparison for a specific format only
+compare-exiftool-format format:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+
+    cleanup() {
+        rm -rf "$EXIFTOOL_DIR"
+        rm -f /tmp/exiftool-*.tar.gz
+    }
+    trap cleanup EXIT
+
+    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    echo "📦 Downloading ExifTool $VERSION..."
+    curl -sL "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
+        -o "/tmp/exiftool-$VERSION.tar.gz"
+
+    mkdir -p "$EXIFTOOL_DIR"
+    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+
+    cargo build --release --bin tag-comparison 2>/dev/null
+
+    OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+    echo "🔍 Running {{format}} comparison (ExifTool v$VERSION, OxiDex v$OXIDEX_VERSION)..."
+    echo ""
+
+    ./target/release/tag-comparison \
+        --exiftool "$EXIFTOOL_DIR/exiftool" \
+        --samples "$EXIFTOOL_DIR/t/images" \
+        --format "{{format}}" \
+        --exiftool-version "$VERSION" \
+        --oxidex-version "$OXIDEX_VERSION"
