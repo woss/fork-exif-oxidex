@@ -8,7 +8,7 @@ title: CR2 Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 2
 - **Coverage:** 1.6%
 - **Matched Tags:** 6
 - **Missing Tags:** 374
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:00+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:44+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileSize` | 8.7 kB | 8 kB |
 | `File:FileType` | CR2 | CanonCR2 |
 | `File:MIMEType` | image/x-canon-cr2 | application/octet-stream |

@@ -8,7 +8,7 @@ title: TIFF Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 2
 - **Coverage:** 7.7%
 - **Matched Tags:** 8
 - **Missing Tags:** 94
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:07+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:51+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileSize` | 4.9 kB | 4 kB |
 
 ## Missing Tags

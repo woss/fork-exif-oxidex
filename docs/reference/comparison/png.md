@@ -8,7 +8,7 @@ title: PNG Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 1
 - **Coverage:** 68.0%
 - **Matched Tags:** 17
 - **Missing Tags:** 7
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:06+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:51+00:00 | 2025:12:07 10:07:44+00:00 |
 
 ## Missing Tags
 

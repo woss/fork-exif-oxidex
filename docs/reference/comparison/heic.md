@@ -8,7 +8,7 @@ title: HEIC Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 1
 - **Coverage:** 25.6%
 - **Matched Tags:** 10
 - **Missing Tags:** 23
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:00+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:45+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileTypeExtension` | heif | heic |
 | `QuickTime:CompatibleBrands` | ["mif1","heic","hevc"] | [String("mif1"), String("heic"), String(... |
 | `QuickTime:HandlerType` | Picture | pict |

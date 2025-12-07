@@ -8,7 +8,7 @@ title: MP4 Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 1
 - **Coverage:** 0.0%
 - **Matched Tags:** 0
 - **Missing Tags:** 99
@@ -31,8 +31,8 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `Composite:ShutterSpeed` | 1/38 |
 | `ExifTool:ExifToolVersion` | 13.43 |
 | `File:Directory` | /home/runner/exiftool/t/images |
-| `File:FileAccessDate` | 2025:12:07 09:52:06+00:00 |
-| `File:FileInodeChangeDate` | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:51+00:00 |
+| `File:FileInodeChangeDate` | 2025:12:07 10:07:44+00:00 |
 | `File:FileModifyDate` | 2025:12:04 15:14:32+00:00 |
 | `File:FileName` | QuickTime.mov |
 | `File:FilePermissions` | -rw-r--r-- |

@@ -8,7 +8,7 @@ title: JPEG Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 41
 - **Coverage:** 2.2%
 - **Matched Tags:** 30
 - **Missing Tags:** 1325
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:00+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:45+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileSize` | 2.1 kB | 2 kB |
 | `IPTC:City` |   |  |
 | `IPTC:DateCreated` | 2002:06:20 | 20020620 |

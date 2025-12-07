@@ -8,7 +8,7 @@ title: DNG Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 1
 - **Coverage:** 2.0%
 - **Matched Tags:** 6
 - **Missing Tags:** 289
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:00+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:45+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileSize` | 14 kB | 13 kB |
 | `File:FileType` | DNG | AdobeDNG |
 | `File:MIMEType` | image/x-adobe-dng | application/octet-stream |

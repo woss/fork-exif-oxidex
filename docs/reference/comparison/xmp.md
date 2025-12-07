@@ -8,7 +8,7 @@ title: XMP Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 10
 - **Coverage:** 4.1%
 - **Matched Tags:** 7
 - **Missing Tags:** 160
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:07+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:52+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileType` | XMP | Unknown |
 | `File:MIMEType` | application/rdf+xml | application/octet-stream |
 

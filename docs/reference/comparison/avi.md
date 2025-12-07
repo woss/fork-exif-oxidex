@@ -8,7 +8,7 @@ title: AVI Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 2
 - **Coverage:** 8.3%
 - **Matched Tags:** 11
 - **Missing Tags:** 118
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:51:59+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:44+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileSize` | 1672 bytes | 1 kB |
 | `RIFF:FrameRate` | 24 | 24.00 |
 

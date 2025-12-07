@@ -8,7 +8,7 @@ title: PDF Compatibility
 
 ## Summary
 
-- **Files Tested:** 0
+- **Files Tested:** 2
 - **Coverage:** 8.0%
 - **Matched Tags:** 10
 - **Missing Tags:** 113
@@ -21,7 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 09:52:06+00:00 | 2025:12:07 09:50:52+00:00 |
+| `File:FileAccessDate` | 2025:12:07 10:08:51+00:00 | 2025:12:07 10:07:44+00:00 |
 | `File:FileSize` | 2.2 kB | 2 kB |
 
 ## Missing Tags
