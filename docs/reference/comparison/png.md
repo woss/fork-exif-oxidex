@@ -1,19 +1,19 @@
 ---
-title: png Compatibility
+title: PNG Compatibility
 ---
 
-# png Compatibility Report
+# PNG Compatibility Report
 
 **Generated:** 2025-12-07 | **ExifTool:** vunknown | **OxiDex:** vunknown
 
 ## Summary
 
 - **Files Tested:** 4
-- **Coverage:** 52.4%
-- **Matched Tags:** 33
+- **Coverage:** 54.0%
+- **Matched Tags:** 34
 - **Missing Tags:** 26
 - **Extra Tags:** 33
-- **Value Differences:** 4
+- **Value Differences:** 3
 
 ## Value Differences
 
@@ -21,10 +21,9 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 04:33:32-06:00 | 2025:12:07 10:30:46-06:00 |
+| `File:FileAccessDate` | 2025:12:07 05:02:49-06:00 | 2025:12:07 11:02:34-06:00 |
 | `File:FileInodeChangeDate` | 2025:11:23 00:10:46-06:00 | 2025:11:23 06:10:46-06:00 |
 | `File:FileModifyDate` | 2025:11:19 04:42:18-06:00 | 2025:11:19 10:42:18-06:00 |
-| `File:FileSize` | 3.5 kB | 3 kB |
 
 ## Missing Tags
 

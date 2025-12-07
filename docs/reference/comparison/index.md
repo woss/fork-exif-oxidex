@@ -6,13 +6,18 @@ title: ExifTool Compatibility Report
 
 **Generated:** 2025-12-07 | **ExifTool:** vunknown | **OxiDex:** vunknown
 
-**Overall Coverage:** 7.0%
+**Overall Coverage:** 32.1%
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [jpeg](./jpeg.md) | 26 | 7.0% | 143 | 50 | 3 | 0 |
+| [JPEG](./jpeg.md) | 26 | 12.7% | 110 | 17 | 27 | 0 |
+| [MP4](./mp4.md) | 3 | 68.3% | 8 | 15 | 5 | 0 |
+| [PDF](./pdf.md) | 2 | 77.3% | 1 | 7 | 4 | 0 |
+| [PNG](./png.md) | 4 | 54.0% | 26 | 33 | 3 | 0 |
+| [RAW](./raw.md) | 2 | 29.4% | 7 | 8 | 5 | 0 |
+| [TIFF](./tiff.md) | 7 | 14.0% | 33 | 61 | 4 | 0 |
 
 ---
 
