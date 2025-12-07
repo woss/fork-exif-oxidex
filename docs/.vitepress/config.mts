@@ -56,6 +56,12 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Compatibility',
+          items: [
+            { text: 'ExifTool Comparison', link: '/reference/comparison/' }
+          ]
+        },
+        {
           text: 'Formats',
           items: [
             { text: 'Overview', link: '/reference/formats/' },
