@@ -9,11 +9,11 @@ title: MKV Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 41.5%
-- **Matched Tags:** 17
-- **Missing Tags:** 21
+- **Coverage:** 28.6%
+- **Matched Tags:** 8
+- **Missing Tags:** 18
 - **Extra Tags:** 13
-- **Value Differences:** 3
+- **Value Differences:** 2
 
 ## Value Differences
 
@@ -21,7 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:36+00:00 | 2025:12:07 11:12:15+00:00 |
 | `Matroska:DateTimeOriginal` | 2010:02:03 21:17:48Z | 1265231868 |
 | `Matroska:Duration` | 0:02:29 | 148.608 |
 
@@ -31,9 +30,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:ImageSize` | 704x576 |
-| `Composite:Megapixels` | 0.406 |
-| `ExifTool:ExifToolVersion` | 13.43 |
 | `Matroska:AudioCodecID` | A_MPEG/L3 |
 | `Matroska:CodecDecodeAll` | Yes |
 | `Matroska:DefaultDuration` | 24 ms |

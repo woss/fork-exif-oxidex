@@ -308,3 +308,33 @@ pub fn process_icc_segments(segments: &[Segment], metadata: &mut MetadataMap) {
         }
     }
 }
+
+/// Processes SOF (Start of Frame) segments and extracts File-level dimension metadata.
+///
+/// SOF segments contain image dimensions, color information, and encoding details
+/// extracted from the JPEG frame header.
+///
+/// # Arguments
+///
+/// * `segments` - Parsed JPEG segments
+/// * `metadata` - MetadataMap to populate with File-level tags
+pub fn process_sof_segments(segments: &[Segment], metadata: &mut MetadataMap) {
+    // SOF markers range from 0xFFC0 to 0xFFCF (excluding 0xFFC4, 0xFFC8, 0xFFCC)
+    const SOF_MARKERS: [u16; 13] = [
+        0xFFC0, 0xFFC1, 0xFFC2, 0xFFC3, 0xFFC5, 0xFFC6, 0xFFC7, 0xFFC9, 0xFFCA, 0xFFCB, 0xFFCD,
+        0xFFCE, 0xFFCF,
+    ];
+
+    for segment in segments.iter() {
+        if SOF_MARKERS.contains(&segment.marker) {
+            // Parse SOF segment using the app_parsers module
+            let _ = crate::parsers::jpeg::app_parsers::parse_sof_segment(
+                segment.marker,
+                segment.data,
+                metadata,
+            );
+            // Only process the first SOF segment found
+            break;
+        }
+    }
+}

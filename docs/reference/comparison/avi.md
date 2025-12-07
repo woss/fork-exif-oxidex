@@ -9,11 +9,11 @@ title: AVI Compatibility
 ## Summary
 
 - **Files Tested:** 2
-- **Coverage:** 8.3%
-- **Matched Tags:** 11
-- **Missing Tags:** 118
+- **Coverage:** 2.8%
+- **Matched Tags:** 3
+- **Missing Tags:** 102
 - **Extra Tags:** 22
-- **Value Differences:** 3
+- **Value Differences:** 1
 
 ## Value Differences
 
@@ -21,8 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:29+00:00 | 2025:12:07 11:12:15+00:00 |
-| `File:FileSize` | 1262 bytes | 1.3 kB |
 | `RIFF:FrameRate` | 15 | 15.00 |
 
 ## Missing Tags
@@ -31,22 +29,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:Duration` | 15.53 s |
-| `Composite:ImageSize` | 320x240 |
-| `Composite:LensID` | smc PENTAX-DA L 18-55mm F3.5-5.6 |
-| `Composite:Megapixels` | 0.077 |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:BMPVersion` | Windows V3 |
-| `File:BitDepth` | 24 |
-| `File:Compression` | MJPG |
-| `File:ImageHeight` | 240 |
-| `File:ImageLength` | 230400 |
-| `File:ImageWidth` | 320 |
-| `File:NumColors` | Use BitDepth |
-| `File:NumImportantColors` | All |
-| `File:PixelsPerMeterX` | 0 |
-| `File:PixelsPerMeterY` | 0 |
-| `File:Planes` | 1 |
 | `MakerNotes:AEAperture` | 3.8 |
 | `MakerNotes:AEApertureSteps` | 0 |
 | `MakerNotes:AEBXv` | 0 |
@@ -131,8 +113,24 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `RIFF:AvgBytesPerSec` | 11024 |
 | `RIFF:BitsPerSample` | 8 |
 | `RIFF:DateTimeOriginal` | 2003:03:10 15:04:43 |
+| `RIFF:Encoding` | Microsoft PCM |
+| `RIFF:FrameCount` | 233 |
+| `RIFF:MaxDataRate` | 206 kB/s |
+| `RIFF:NumChannels` | 1 |
+| `RIFF:Quality` | 10000 |
+| `RIFF:SampleRate` | 11024 |
+| `RIFF:SampleSize` | Variable |
+| `RIFF:Software` | CanonMVI01 |
+| `RIFF:StreamCount` | 2 |
+| `RIFF:StreamType` | Video |
+| `RIFF:TotalFrameCount` | 600 |
+| `RIFF:VideoFrameCount` | 233 |
+| `RIFF:VideoFrameRate` | 15 |
+| `XMP:Album` | No Album |
+| `XMP:AltTapeName` | An Alternate Scene Name |
+| `XMP:Creator` | Phil Harvey |
 
-*...and 18 more missing tags*
+*...and 2 more missing tags*
 
 ## Extra Tags
 

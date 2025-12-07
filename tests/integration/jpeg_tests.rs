@@ -609,11 +609,7 @@ fn test_jpeg_xmp_extraction_end_to_end() {
         .iter()
         .filter(|(name, _)| name == "XMP:Title")
         .collect();
-    assert_eq!(
-        title_tags.len(),
-        1,
-        "Should have exactly one XMP:Title tag"
-    );
+    assert_eq!(title_tags.len(), 1, "Should have exactly one XMP:Title tag");
     assert_eq!(
         title_tags[0].1, "Sample Photo",
         "XMP:Title should be 'Sample Photo'"
@@ -1019,10 +1015,7 @@ fn test_xmp_flows_to_metadata_map_via_read_metadata() {
     let rating = metadata.get("XMP:Rating").unwrap();
     println!("  ✓ XMP:Rating: {:?}", rating);
 
-    assert!(
-        metadata.contains_key("XMP:Title"),
-        "Missing XMP:Title tag"
-    );
+    assert!(metadata.contains_key("XMP:Title"), "Missing XMP:Title tag");
     let title = metadata.get("XMP:Title").unwrap();
     assert!(
         format!("{:?}", title).contains("Sample Photo"),

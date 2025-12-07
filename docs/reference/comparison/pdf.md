@@ -9,11 +9,11 @@ title: PDF Compatibility
 ## Summary
 
 - **Files Tested:** 2
-- **Coverage:** 12.0%
-- **Matched Tags:** 15
-- **Missing Tags:** 108
+- **Coverage:** 5.5%
+- **Matched Tags:** 6
+- **Missing Tags:** 103
 - **Extra Tags:** 19
-- **Value Differences:** 2
+- **Value Differences:** 1
 
 ## Value Differences
 
@@ -21,7 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
 | `XMP:Subject` | ["ExifTool","Test","XMP"] | ExifToolTestXMP |
 
 ## Missing Tags
@@ -30,9 +29,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:Aperture` | 3.5 |
-| `Composite:LightValue` | 9.6 |
-| `Composite:ShutterSpeed` | 1/64 |
 | `EXIF:ApertureValue` | 3.5 |
 | `EXIF:Artist` | Phil Harvey |
 | `EXIF:BrightnessValue` | 2 |
@@ -74,8 +70,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `EXIF:XResolution` | 72 |
 | `EXIF:YCbCrPositioning` | Co-sited |
 | `EXIF:YResolution` | 72 |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:ExifByteOrder` | Little-endian (Intel, II) |
 | `IPTC:ApplicationRecordVersion` | 2 |
 | `IPTC:By-line` | Phil Harvey |
 | `IPTC:By-lineTitle` | My Position |
@@ -130,8 +124,13 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `XMP:DocumentID` | adobe:docid:photoshop:cbcc2a62-f127-11d9-ac4d-e8be... |
 | `XMP:Headline` | No headline |
 | `XMP:Instructions` | What instructions |
+| `XMP:JobRefName` | My Job |
+| `XMP:Source` | I'm the source |
+| `XMP:State` | Ont |
+| `XMP:SupplementalCategories` | ["amazing","image","utilities"] |
+| `XMP:TransmissionReference` | What is a transmission reference |
 
-*...and 8 more missing tags*
+*...and 3 more missing tags*
 
 ## Extra Tags
 

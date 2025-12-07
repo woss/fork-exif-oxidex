@@ -9,19 +9,11 @@ title: MP3 Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 22.5%
-- **Matched Tags:** 9
-- **Missing Tags:** 30
+- **Coverage:** 0.0%
+- **Matched Tags:** 0
+- **Missing Tags:** 26
 - **Extra Tags:** 16
-- **Value Differences:** 1
-
-## Value Differences
-
-Tags where ExifTool and OxiDex extract different values:
-
-| Tag | ExifTool | OxiDex |
-|-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:36+00:00 | 2025:12:07 11:12:15+00:00 |
+- **Value Differences:** 0
 
 ## Missing Tags
 
@@ -29,10 +21,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:DateTimeOriginal` | 2005 |
-| `Composite:Duration` | 0.00 s (approx) |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:ID3Size` | 391 |
 | `ID3:Album` | Phil's Greatest Hits |
 | `ID3:Artist` | Phil Harvey |
 | `ID3:Comment` | My Comments |

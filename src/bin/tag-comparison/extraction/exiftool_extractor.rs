@@ -132,6 +132,21 @@ impl ExifToolExtractor {
         Ok(tags)
     }
 
+    /// Check if a tag family should be skipped in comparison
+    /// These are pseudo-tags computed by ExifTool, not actual extracted metadata
+    fn should_skip_family(family: &str) -> bool {
+        matches!(
+            family,
+            // Composite tags are calculated/derived from other tags
+            "Composite"
+            // ExifTool version info
+            | "ExifTool"
+            // File system metadata (varies by environment)
+            | "System"
+            | "File"
+        )
+    }
+
     /// Parse ExifTool JSON output into TagInfo
     fn parse_exiftool_json(&self, json: &serde_json::Value) -> Vec<TagInfo> {
         let mut tags = Vec::new();
@@ -142,7 +157,8 @@ impl ExifToolExtractor {
                 if let Some(obj) = file_data.as_object() {
                     for (key, value) in obj.iter() {
                         let (family, name) = self.parse_tag_name(key);
-                        if family != "UNKNOWN" {
+                        // Skip pseudo-tags and computed values
+                        if family != "UNKNOWN" && !Self::should_skip_family(&family) {
                             let value_str = match value {
                                 serde_json::Value::String(s) => s.clone(),
                                 serde_json::Value::Number(n) => n.to_string(),

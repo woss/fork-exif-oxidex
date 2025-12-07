@@ -506,3 +506,207 @@ compare-exiftool-format format:
         --format "{{format}}" \
         --exiftool-version "$VERSION" \
         --oxidex-version "$OXIDEX_VERSION"
+
+# Run comparison against ExifTool sample database (camera manufacturer samples)
+# Downloads from exiftool.org/sample_images.html - 7,106 camera models from 109 manufacturers
+compare-exiftool-samples:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+    SAMPLES_DIR="/tmp/exiftool-samples-$$"
+
+    cleanup() {
+        echo "🧹 Cleaning up..."
+        rm -rf "$EXIFTOOL_DIR" "$SAMPLES_DIR"
+        rm -f /tmp/exiftool-*.tar.gz /tmp/sample-*.tar.gz
+    }
+    trap cleanup EXIT
+
+    echo "📥 Fetching latest ExifTool version..."
+    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    echo "   Version: $VERSION"
+
+    echo "📦 Downloading ExifTool $VERSION..."
+    curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
+        -o "/tmp/exiftool-$VERSION.tar.gz" --progress-bar
+
+    echo "📂 Extracting ExifTool..."
+    mkdir -p "$EXIFTOOL_DIR"
+    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+
+    echo "📥 Downloading ExifTool sample database..."
+    mkdir -p "$SAMPLES_DIR"
+
+    # Download key manufacturer samples (most common cameras)
+    # Total ~55 MB for these major manufacturers
+    # Note: Sample images are at exiftool.org root, not in subdirectory
+    MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
+    for mfr in $MANUFACTURERS; do
+        echo "   Downloading $mfr samples..."
+        if curl -sL "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$SAMPLES_DIR" 2>/dev/null || true
+            rm -f "/tmp/sample-$mfr.tar.gz"
+        fi
+    done
+
+    SAMPLE_COUNT=$(find "$SAMPLES_DIR" -type f \( -name "*.jpg" -o -name "*.JPG" -o -name "*.jpeg" -o -name "*.JPEG" -o -name "*.tif" -o -name "*.TIF" -o -name "*.cr2" -o -name "*.CR2" -o -name "*.nef" -o -name "*.NEF" -o -name "*.arw" -o -name "*.ARW" -o -name "*.raf" -o -name "*.RAF" -o -name "*.dng" -o -name "*.DNG" -o -name "*.heic" -o -name "*.HEIC" \) 2>/dev/null | wc -l | tr -d ' ')
+    echo "   Downloaded $SAMPLE_COUNT sample images"
+
+    echo "🔨 Building tag-comparison tool..."
+    cargo build --release --bin tag-comparison
+
+    OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+    echo "🔍 Running comparison against sample database..."
+    echo "   ExifTool: v$VERSION"
+    echo "   OxiDex:   v$OXIDEX_VERSION"
+    echo ""
+
+    ./target/release/tag-comparison \
+        --exiftool "$EXIFTOOL_DIR/exiftool" \
+        --samples "$SAMPLES_DIR" \
+        --exiftool-version "$VERSION" \
+        --oxidex-version "$OXIDEX_VERSION"
+
+    echo ""
+    echo "✅ Sample database comparison complete!"
+
+# Run comparison against both test suite AND sample database (comprehensive)
+compare-exiftool-full:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+    COMBINED_DIR="/tmp/exiftool-combined-$$"
+
+    cleanup() {
+        echo "🧹 Cleaning up..."
+        rm -rf "$EXIFTOOL_DIR" "$COMBINED_DIR"
+        rm -f /tmp/exiftool-*.tar.gz /tmp/sample-*.tar.gz
+    }
+    trap cleanup EXIT
+
+    echo "📥 Fetching latest ExifTool version..."
+    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    echo "   Version: $VERSION"
+
+    echo "📦 Downloading ExifTool $VERSION..."
+    curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
+        -o "/tmp/exiftool-$VERSION.tar.gz" --progress-bar
+
+    echo "📂 Extracting ExifTool..."
+    mkdir -p "$EXIFTOOL_DIR"
+    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+
+    # Create combined samples directory
+    mkdir -p "$COMBINED_DIR"
+
+    # Copy ExifTool test images
+    echo "📋 Copying ExifTool test images..."
+    cp -r "$EXIFTOOL_DIR/t/images"/* "$COMBINED_DIR/" 2>/dev/null || true
+
+    # Download sample database
+    # Note: Sample images are at exiftool.org root, not in subdirectory
+    echo "📥 Downloading ExifTool sample database..."
+    MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
+    for mfr in $MANUFACTURERS; do
+        echo "   Downloading $mfr samples..."
+        if curl -sL "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
+            rm -f "/tmp/sample-$mfr.tar.gz"
+        fi
+    done
+
+    TOTAL_FILES=$(find "$COMBINED_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+    echo "   Total files for comparison: $TOTAL_FILES"
+
+    echo "🔨 Building tag-comparison tool..."
+    cargo build --release --bin tag-comparison
+
+    OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+    echo "🔍 Running comprehensive comparison..."
+    echo "   ExifTool: v$VERSION"
+    echo "   OxiDex:   v$OXIDEX_VERSION"
+    echo ""
+
+    ./target/release/tag-comparison \
+        --exiftool "$EXIFTOOL_DIR/exiftool" \
+        --samples "$COMBINED_DIR" \
+        --exiftool-version "$VERSION" \
+        --oxidex-version "$OXIDEX_VERSION"
+
+    echo ""
+    echo "✅ Comprehensive comparison complete!"
+
+# Run full comparison and update docs (for CI)
+compare-exiftool-full-update:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+    COMBINED_DIR="/tmp/exiftool-combined-$$"
+
+    cleanup() {
+        echo "🧹 Cleaning up..."
+        rm -rf "$EXIFTOOL_DIR" "$COMBINED_DIR"
+        rm -f /tmp/exiftool-*.tar.gz /tmp/sample-*.tar.gz
+    }
+    trap cleanup EXIT
+
+    echo "📥 Fetching latest ExifTool version..."
+    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    echo "   Version: $VERSION"
+
+    echo "📦 Downloading ExifTool $VERSION..."
+    curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
+        -o "/tmp/exiftool-$VERSION.tar.gz" --progress-bar
+
+    echo "📂 Extracting ExifTool..."
+    mkdir -p "$EXIFTOOL_DIR"
+    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+
+    # Create combined samples directory
+    mkdir -p "$COMBINED_DIR"
+
+    # Copy ExifTool test images
+    echo "📋 Copying ExifTool test images..."
+    cp -r "$EXIFTOOL_DIR/t/images"/* "$COMBINED_DIR/" 2>/dev/null || true
+
+    # Download sample database
+    # Note: Sample images are at exiftool.org root, not in subdirectory
+    echo "📥 Downloading ExifTool sample database..."
+    MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
+    for mfr in $MANUFACTURERS; do
+        echo "   Downloading $mfr samples..."
+        if curl -sL "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
+            rm -f "/tmp/sample-$mfr.tar.gz"
+        fi
+    done
+
+    TOTAL_FILES=$(find "$COMBINED_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+    echo "   Total files for comparison: $TOTAL_FILES"
+
+    echo "🔨 Building tag-comparison tool..."
+    cargo build --release --bin tag-comparison
+
+    OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+    echo "🔍 Running comprehensive comparison and updating docs..."
+    echo "   ExifTool: v$VERSION"
+    echo "   OxiDex:   v$OXIDEX_VERSION"
+    echo ""
+
+    ./target/release/tag-comparison \
+        --exiftool "$EXIFTOOL_DIR/exiftool" \
+        --samples "$COMBINED_DIR" \
+        --baseline docs/reference/comparison/baseline.json \
+        --output docs/reference/comparison/comparison.json \
+        --markdown-dir docs/reference/comparison \
+        --exiftool-version "$VERSION" \
+        --oxidex-version "$OXIDEX_VERSION"
+
+    echo ""
+    echo "✅ Comprehensive comparison complete! Docs updated in docs/reference/comparison/"

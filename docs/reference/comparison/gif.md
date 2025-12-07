@@ -9,19 +9,11 @@ title: GIF Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 18.4%
-- **Matched Tags:** 9
-- **Missing Tags:** 39
-- **Extra Tags:** 12
-- **Value Differences:** 1
-
-## Value Differences
-
-Tags where ExifTool and OxiDex extract different values:
-
-| Tag | ExifTool | OxiDex |
-|-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:31+00:00 | 2025:12:07 11:12:15+00:00 |
+- **Coverage:** 0.0%
+- **Matched Tags:** 0
+- **Missing Tags:** 35
+- **Extra Tags:** 0
+- **Value Differences:** 0
 
 ## Missing Tags
 
@@ -29,10 +21,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:ImageSize` | 8x8 |
-| `Composite:Megapixels` | 0.000064 |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:Comment` | SCANNERMAKER: CanonSCANNER: Canon EOS DIGITAL REBE... |
 | `GIF:BackgroundColor` | 0 |
 | `GIF:BitsPerPixel` | 8 |
 | `GIF:ColorResolutionDepth` | 8 |
@@ -68,25 +56,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `ICC_Profile:RenderingIntent` | Perceptual |
 | `XMP:Title` | GIF with XMP |
 | `XMP:XMPToolkit` | Image::ExifTool 7.27 |
-
-## Extra Tags
-
-Tags OxiDex extracts that ExifTool doesn't:
-
-| Tag | Value |
-|-----|-------|
-| `UNKNOWN:BackgroundColorIndex` | 0 |
-| `UNKNOWN:ColorResolution` | 8 |
-| `UNKNOWN:Comment` | SCANNERMAKER: CanonSCANNER: Canon EOS DIGITAL REBE... |
-| `UNKNOWN:FileSize` | 2321 |
-| `UNKNOWN:FileType` | GIF |
-| `UNKNOWN:FrameCount` | 1 |
-| `UNKNOWN:GIFVersion` | 89a |
-| `UNKNOWN:GlobalColorTableSize` | 256 |
-| `UNKNOWN:HasGlobalColorTable` | yes |
-| `UNKNOWN:ImageHeight` | 8 |
-| `UNKNOWN:ImageWidth` | 8 |
-| `UNKNOWN:PixelAspectRatio` | 49 |
 
 ---
 

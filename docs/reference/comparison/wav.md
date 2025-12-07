@@ -9,11 +9,11 @@ title: WAV Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 44.0%
-- **Matched Tags:** 11
-- **Missing Tags:** 11
+- **Coverage:** 25.0%
+- **Matched Tags:** 3
+- **Missing Tags:** 8
 - **Extra Tags:** 1
-- **Value Differences:** 3
+- **Value Differences:** 1
 
 ## Value Differences
 
@@ -21,8 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
-| `File:MIMEType` | audio/x-wav | audio/wav |
 | `RIFF:DateCreated` | 2005:08:08 | 2005-08-08 |
 
 ## Missing Tags
@@ -31,9 +29,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:DateTimeOriginal` | 2005:08:08 16:23:35 |
-| `Composite:Duration` | 0.03 s |
-| `ExifTool:ExifToolVersion` | 13.43 |
 | `RIFF:AvgBytesPerSec` | 7872 |
 | `RIFF:Encoding` | Microsoft PCM |
 | `RIFF:ExifVersion` | 0220 |

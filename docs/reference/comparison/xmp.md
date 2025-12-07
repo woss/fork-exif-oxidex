@@ -9,21 +9,11 @@ title: XMP Compatibility
 ## Summary
 
 - **Files Tested:** 10
-- **Coverage:** 4.1%
-- **Matched Tags:** 7
-- **Missing Tags:** 160
-- **Extra Tags:** 8
-- **Value Differences:** 3
-
-## Value Differences
-
-Tags where ExifTool and OxiDex extract different values:
-
-| Tag | ExifTool | OxiDex |
-|-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
-| `File:FileType` | XMP | Unknown |
-| `File:MIMEType` | application/rdf+xml | application/octet-stream |
+- **Coverage:** 0.0%
+- **Matched Tags:** 0
+- **Missing Tags:** 148
+- **Extra Tags:** 0
+- **Value Differences:** 0
 
 ## Missing Tags
 
@@ -31,18 +21,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:Aperture` | 2.8 |
-| `Composite:CircleOfConfusion` | 0.005 mm |
-| `Composite:FOV` | 54.1 deg |
-| `Composite:Flash` | Off, Did not fire |
-| `Composite:FocalLength35efl` | 5.8 mm (35 mm equivalent: 35.3 mm) |
-| `Composite:HyperfocalDistance` | 2.43 m |
-| `Composite:ImageSize` | 1x1 |
-| `Composite:LensID` | 18.0-55.0mm |
-| `Composite:Megapixels` | 1e-6 |
-| `Composite:ScaleFactor35efl` | 6.1 |
-| `Composite:ShutterSpeed` | 0.4 |
-| `ExifTool:ExifToolVersion` | 13.43 |
 | `XMP:About` | http://www.w3.org/TR/rdf-syntax-grammar |
 | `XMP:AboutCvTermCvId` | [1,2,3] |
 | `XMP:AboutCvTermName` | ["one","two","three"] |
@@ -131,23 +109,20 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `XMP:MaxApertureValue` | 2.8 |
 | `XMP:MediaSummaryCode` | PLUS V0121 (LDF Version 1.21) U004 (4 Media Usages... |
 | `XMP:MetadataDate` | 2016:05:18 12:54:01-05:00 |
+| `XMP:MeteringMode` | Multi-segment |
+| `XMP:Model` | Canon DIGITAL IXUS 40 |
+| `XMP:ModifyDate` | 2005:11:21 17:07:14+01:00 |
+| `XMP:NativeDigest` | 36864,40960,40961,37121,37122,40962,40963,37510,40... |
+| `XMP:Orientation` | Horizontal (normal) |
+| `XMP:PLUSVersion` | 1.2.0 |
+| `XMP:PhotometricInterpretation` | RGB |
+| `XMP:ProgrammerExclamation` | doh! |
+| `XMP:ProgrammerFood` | cookies |
+| `XMP:ProgrammerFullName` | Phil Harvey |
+| `XMP:ProgrammerHomePage` | https://exiftool.org/ |
+| `XMP:ProgrammerState` | confusion |
 
-*...and 60 more missing tags*
-
-## Extra Tags
-
-Tags OxiDex extracts that ExifTool doesn't:
-
-| Tag | Value |
-|-----|-------|
-| `UNKNOWN:ByteOrderMark` | No |
-| `UNKNOWN:FileSize` | 4721 |
-| `UNKNOWN:FileType` | TXT |
-| `UNKNOWN:LineCount` | 157 |
-| `UNKNOWN:MIMEEncoding` | utf-8 |
-| `UNKNOWN:MIMEType` | text/plain |
-| `UNKNOWN:Newlines` | Unix LF |
-| `UNKNOWN:WordCount` | 198 |
+*...and 48 more missing tags*
 
 ---
 

@@ -8,21 +8,12 @@ title: JPEG Compatibility
 
 ## Summary
 
-- **Files Tested:** 41
-- **Coverage:** 4.0%
-- **Matched Tags:** 54
-- **Missing Tags:** 1256
-- **Extra Tags:** 140
-- **Value Differences:** 52
-- **⚠️ Regressions:** 1
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `IPTC:SupplementalCategories` |
+- **Files Tested:** 3514
+- **Coverage:** 5.1%
+- **Matched Tags:** 162
+- **Missing Tags:** 2873
+- **Extra Tags:** 157
+- **Value Differences:** 147
 
 ## Value Differences
 
@@ -30,58 +21,58 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:ApertureValue` | 2.8 | 297/100 |
-| `EXIF:BrightnessValue` | 2 | 200/100 |
+| `EXIF:BrightnessValue` | 3.617254236 | 3.617254 |
 | `EXIF:CFAPattern` | [Green,Blue][Red,Green] | [Binary data] |
-| `EXIF:ColorSpace` | sRGB | 1 |
-| `EXIF:CompositeImage` | Composite Image Captured While Shooting | 3 |
-| `EXIF:CompressedBitsPerPixel` | 8 | 8/1 |
-| `EXIF:Contrast` | Normal | 0 |
-| `EXIF:CreateDate` | 2003:12:18 13:51:33 | 2003-12-18T13:51:33+00:00 |
-| `EXIF:CustomRendered` | Normal | 0 |
-| `EXIF:DateTimeOriginal` | 2003:12:18 13:51:33 | 2003-12-18T13:51:33+00:00 |
+| `EXIF:CompositeImage` | General Composite Image | 2 |
+| `EXIF:CompositeImageExposureTimes` | 0 3.4 0 0.4 0 0.4 0 0 | [Binary data] |
+| `EXIF:Compression` | JPEG (old-style) | Uncompressed |
+| `EXIF:CustomRendered` | Portrait HDR | 7 |
 | `EXIF:DeviceSettingDescription` | (Binary data 4 bytes, use -b option to e... | [Binary data] |
-| `EXIF:DigitalZoomRatio` | 1 | 1024/1024 |
-| `EXIF:ExposureCompensation` | 0 | 0/10 |
-| `EXIF:ExposureIndex` | 3.614421976e-10 | 1/-1528273184 |
-| `EXIF:ExposureMode` | Auto bracket | 2 |
-| `EXIF:FNumber` | 7.1 | 71/10 |
-| `EXIF:FileSource` | Digital Camera | [Binary data] |
-| `EXIF:Flash` | Off, Did not fire | 16 |
-| `EXIF:FlashpixVersion` | 0100 | [Binary data] |
-| `EXIF:FocalLength` | 12.5 mm | 125/10 |
-| `EXIF:FocalLengthIn35mmFormat` | 15 mm | 15 |
-| `EXIF:FocalPlaneResolutionUnit` | inches | 2 |
-| `EXIF:FocalPlaneXResolution` | 3512.195122 | 3888000/1107 |
-| `EXIF:FocalPlaneYResolution` | 3521.73913 | 2592000/736 |
-| `EXIF:GainControl` | None | 0 |
-| `EXIF:Gamma` | 2.2 | 22/10 |
-| `EXIF:LensInfo` | 3.99mm f/1.8 | 4 mm f/1.8 |
-| `EXIF:LightSource` | Unknown | 0 |
-| `EXIF:MaxApertureValue` | 2.0 | 33/16 |
-| `EXIF:MeteringMode` | Multi-segment | 5 |
-| `EXIF:Saturation` | Normal | 0 |
-| `EXIF:SceneCaptureType` | Standard | 0 |
+| `EXIF:DigitalZoomRatio` | 1.001988072 | 1.001988 |
+| `EXIF:FocalLengthIn35mmFormat` | 31 mm | 31 |
+| `EXIF:GPSAltitude` | 27.99831776 m | 28.0 m |
+| `EXIF:GPSAltitudeRef` | Above Sea Level | [Binary data] |
+| `EXIF:GPSAreaInformation` |  | [Binary data] |
+| `EXIF:GPSDestBearing` | 358.8270572 | 358.83 |
+| `EXIF:GPSDestBearingRef` | True North | T |
+| `EXIF:GPSDestDistance` | undef | inf |
+| `EXIF:GPSDestDistanceRef` | Unknown () |  |
+| `EXIF:GPSDestLatitudeRef` | North | N |
+| `EXIF:GPSDestLongitudeRef` | East | E |
+| `EXIF:GPSDifferential` | No Correction | 0 |
+| `EXIF:GPSHPositioningError` | 4.372127182 m | 4.37 m |
+| `EXIF:GPSImgDirection` | 358.8270572 | 358.83 |
+| `EXIF:GPSImgDirectionRef` | True North | T |
+| `EXIF:GPSLatitude` | 46 deg 8' 36.00" | 46 deg 8' 0.00" |
+| `EXIF:GPSLatitudeRef` | North | N |
+| `EXIF:GPSLongitude` | 122 deg 56' 47.40" | 122 deg 56' 0.00" |
+| `EXIF:GPSLongitudeRef` | West | W |
+| `EXIF:GPSMeasureMode` | 3-Dimensional Measurement | 3 |
+| `EXIF:GPSSpeed` | 0.2700000107 | 0.27 |
+| `EXIF:GPSSpeedRef` | km/h | K |
+| `EXIF:GPSStatus` | Measurement Active | A |
+| `EXIF:GPSTimeStamp` | 21:02:23.81 | 21.0000000000 2.0000000000 23.8100000000 |
+| `EXIF:GPSTrack` | 20 | 20.00 |
+| `EXIF:GPSTrackRef` | True North | T |
+| `EXIF:ImageHeight` | 60 | 960 |
+| `EXIF:ImageWidth` | 80 | 720 |
+| `EXIF:LensInfo` | 3.3mm f/2.4 | 3 mm f/2.4 |
+| `EXIF:LensSerialNumber` | 20147348 | 20147348  |
+| `EXIF:OffsetSchema` | 4046 | 3457089536 |
+| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
+| `EXIF:PanasonicTitle2` | 9999:99:99 00:00:00 | [Binary data] |
+| `EXIF:PhotometricInterpretation` | Linear Raw | 34892 |
+| `EXIF:PrimaryChromaticities` | 0.64 0.33 0.3 0.6 0.15 0.06 | 0.6400000000 0.3300000000 0.3000000000 0... |
+| `EXIF:Rating` | 1 | 16777216 |
+| `EXIF:RatingPercent` | 20 | 335544320 |
+| `EXIF:ReferenceBlackWhite` | 0 255 128 255 128 255 | 0.0000000000 255.0000000000 128.00000000... |
+| `EXIF:RelatedImageHeight` | 2048 | 2736 |
+| `EXIF:RelatedImageWidth` | 3072 | 3648 |
 | `EXIF:SceneType` | Directly photographed | [Binary data] |
-| `EXIF:SensingMethod` | One-chip color area | 2 |
-| `EXIF:Sharpness` | Normal | 0 |
-| `EXIF:ShutterSpeedValue` | 1/1024 | 10/1 |
-| `EXIF:SubjectDistance` | 0 m | 0/1 |
-| `EXIF:SubjectDistanceRange` | Unknown | 0 |
-| `EXIF:UserComment` |  | [Binary data] |
-| `EXIF:WhiteBalance` | Auto | 0 |
-| `File:FileAccessDate` | 2025:12:07 11:13:31+00:00 | 2025:12:07 11:12:15+00:00 |
-| `IPTC:SupplementalCategories` | ["amazing","image","utilities"] | utilities |
-| `IPTC:Urgency` | 8 (least urgent) | 8 |
-| `XMP:Creator` | Phil Harvey | WRONG1of2-XMP-CreatorWRONG2of2-XMP-Creat... |
-| `XMP:Description` | UTF-16 (big-endian) encoded XMP | WRONG-XMP-Description |
-| `XMP:HasExtendedXMP` | 22971CCA47F8A8E11D0A48E790AF56C7 | 04B9E48040A30A6308713BD1E4223B41 |
-| `XMP:ModifyDate` | 2003:03:03 03:33:33.333+03:00 | 2003-03-03T03:33:33.333+03:00 |
-| `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:0, FrameN... | 0:0:0:-00001 |
-| `XMP:Rights` | Copyright 2004 Phil Harvey | RIGHT-XMP-Copyright |
-| `XMP:Subject` | ["ExifTool","Test","XMP"] | RIGHT1of2-XMP-KeywordsRIGHT2of2-XMP-Keyw... |
+| `EXIF:SensitivityType` | Recommended Exposure Index | 2 |
+| `EXIF:UserComment` | GCM_TAG | [Binary data] |
 
-*...and 2 more differences*
+*...and 97 more differences*
 
 ## Missing Tags
 
@@ -90,6 +81,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | Tag | Sample Value |
 |-----|-------------|
 | `APP0:InterleavedField` | Not Interleaved |
+| `APP0:OcadRevision` | 14797 |
+| `APP10:HDRGainCurve` | (Binary data 1160 bytes, use -b option to extract) |
+| `APP10:HDRGainCurveSize` | 152 |
 | `APP11:Alpha` | 1.0 |
 | `APP11:Beta` | 1.0 |
 | `APP11:CorrectionMethod` | 0 |
@@ -186,11 +180,8 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP1:RawValueRange` | 1980 |
 | `APP1:RawValueRangeMax` | 61986 |
 | `APP1:RawValueRangeMin` | 7630 |
-| `APP1:ReflectedApparentTemperature` | 20.0 C |
-| `APP1:RelativeHumidity` | 50.0 % |
-| `APP1:UnderflowColor` | 41 110 240 |
 
-*...and 1156 more missing tags*
+*...and 2773 more missing tags*
 
 ## Extra Tags
 
@@ -198,58 +189,58 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `Canon:AFImageHeight` | 5332 |
-| `Canon:AFImageWidth` | 26010 |
-| `Canon:AFPointsInFocus` | 28773 |
-| `Canon:AFPointsSelected` | -18732 |
-| `Canon:AutoISO` | 0 |
-| `Canon:BaseISO` | 0 |
-| `Canon:CanonModelID` | 2147484009 |
-| `Canon:DriveMode` | Single |
-| `Canon:ExposureMode` | Unknown (1024) |
-| `Canon:FileNumber` | 660 |
-| `Canon:FirmwareVersion` | � |
-| `Canon:FlashMode` | Off |
-| `Canon:FocalLength` | 670 mm |
-| `Canon:FocalType` | 1024 |
-| `Canon:FocusMode` | One-shot AF |
-| `Canon:ISO` | 0 |
-| `Canon:ImageType` | � |
-| `Canon:LensID` | 510 |
-| `Canon:MacroMode` | Macro |
-| `Canon:MeasuredEV` | 0 |
-| `Canon:MeteringMode` | Unknown (0) |
-| `Canon:OwnerName` | �� |
-| `Canon:Quality` | Unknown (0) |
-| `Canon:SerialNumber` | D |
-| `Canon:ShutterCount` | 28115372 |
-| `Canon:SubjectDistance` | 670 mm |
-| `Canon:TargetAperture` | 0 |
-| `Canon:TargetShutterSpeed` | 0 |
+| `Composite:Aperture` | 2.4 |
+| `Composite:ISO` | 125 |
+| `Composite:ImageSize` | 720x960 |
+| `Composite:Megapixels` | 0.691 |
+| `Composite:ShutterSpeed` | 1/60 |
+| `EXIF:0x0000` | 0.0.1.24 |
+| `EXIF:0x004B` | 1 |
+| `EXIF:0x0103` | 6 |
+| `EXIF:0x012D` | 13976 116 0 0 16808 0 57868 164 0 0 4248 112 16792... |
+| `EXIF:0x0201` | 188 |
+| `EXIF:0x0202` | 0 |
+| `EXIF:0x0220` | 0 |
+| `EXIF:0x0221` | 0 |
+| `EXIF:0x0222` | 0 |
+| `EXIF:0x0223` | 0 |
+| `EXIF:0x0224` | 0 |
+| `EXIF:0x0225` |  |
+| `EXIF:0x827D` | K520C-01044 |
+| `EXIF:0x83BB` | [Binary data] |
 | `EXIF:0x8822` | 2 |
+| `EXIF:0x882A` | 2 |
+| `EXIF:0x920C` | 311 |
+| `EXIF:0x920D` | 6 |
 | `EXIF:0x927C` | [Binary data] |
-| `EXIF:InteropOffset` | 2282 |
+| `EXIF:0x9284` | 160 |
+| `EXIF:0x9285` | 103 |
+| `EXIF:0x9287` | 4294967186 |
+| `EXIF:0x9288` | 4294967195 |
+| `EXIF:0x9289` | 4294967189 |
+| `EXIF:0x9CA1` | [Binary data] |
+| `EXIF:0x9CA2` | MBAAAEAFCAAAAAAAADAAAAAAAYUgAAAAAAAAAAAAAAAAAAAAAA... |
+| `EXIF:0xC4A5` | [Binary data] |
+| `EXIF:0xDD01` |  |
+| `EXIF:0xDD02` |  |
+| `EXIF:0xDD03` |  |
+| `EXIF:ICC_Profile` | [Binary data] |
+| `EXIF:InteropOffset` | 1830 |
+| `EXIF:PanasonicTitle` | [Binary data] |
 | `FLIR:CameraModel` | d |
 | `FLIR:RecordType` | 17990 |
-| `GPS:GPSAltitude` | 4.0 m |
-| `GPS:GPSAltitudeRef` | [Binary data] |
-| `GPS:GPSDOP` | 260/100 |
-| `GPS:GPSDateStamp` | 2017:10:03 |
-| `GPS:GPSDestBearing` | 0/0 |
-| `GPS:GPSDestBearingRef` |  |
-| `GPS:GPSDestDistance` | 0/0 |
-| `GPS:GPSDestDistanceRef` |  |
-| `GPS:GPSDifferential` | 0 |
-| `GPS:GPSHPositioningError` | 165.00 m |
-| `GPS:GPSImgDirection` | 20.00 |
-| `GPS:GPSImgDirectionRef` | T |
-| `GPS:GPSLatitude` | 40 deg 39' 30.31" |
-| `GPS:GPSLatitudeRef` | N |
-| `GPS:GPSLongitude` | 73 deg 59' 36.08" |
-| `GPS:GPSLongitudeRef` | W |
-| `GPS:GPSMapDatum` | WGS-84 |
+| `IPTC:Unknown-1-0` |  |
+| `IPTC:Unknown-1-90` | %G |
+| `IPTC:Unknown-2-0` |  |
+| `IPTC:Unknown-2-117` | <hellostamp> <gid>0-0-7fffffff-0</gid> <md5>0-0-0-... |
+| `IPTC:Unknown-2-221` | 0:0:0:000620 |
+| `IPTC:Unknown-2-62` | 20230114 |
+| `IPTC:Unknown-2-63` | 141924 |
+| `IPTC:Unknown-2-65` | Microsoft Windows Photo Viewer 6.1.7600.16385 |
+| `IPTC:Unknown-2-70` | 2.5.0 |
+| `JFIF:ThumbnailType` | Thumbnail JPEG |
 
-*...and 90 more extra tags*
+*...and 107 more extra tags*
 
 ---
 

@@ -349,55 +349,78 @@ pub fn parse_sof_segment(
     // Sample precision (1 byte)
     let precision = data[0];
     metadata.insert(
-        "JPEG:BitsPerSample".to_string(),
+        "File:BitsPerSample".to_string(),
         TagValue::Integer(precision as i64),
     );
 
     // Image height (2 bytes)
     let height = reader.u16_at(1).unwrap_or(0);
     metadata.insert(
-        "JPEG:ImageHeight".to_string(),
+        "File:ImageHeight".to_string(),
         TagValue::Integer(height as i64),
     );
 
     // Image width (2 bytes)
     let width = reader.u16_at(3).unwrap_or(0);
     metadata.insert(
-        "JPEG:ImageWidth".to_string(),
+        "File:ImageWidth".to_string(),
         TagValue::Integer(width as i64),
     );
 
     // Number of components (1 byte)
     let num_components = data[5];
     metadata.insert(
-        "JPEG:ColorComponents".to_string(),
+        "File:ColorComponents".to_string(),
         TagValue::Integer(num_components as i64),
     );
 
-    // Encoding process
+    // Encoding process - match ExifTool's format with coding suffix
     let encoding = match marker {
-        0xFFC0 => "Baseline DCT",
-        0xFFC1 => "Extended Sequential DCT",
-        0xFFC2 => "Progressive DCT",
-        0xFFC3 => "Lossless",
-        0xFFC5 => "Differential Sequential DCT",
-        0xFFC6 => "Differential Progressive DCT",
-        0xFFC7 => "Differential Lossless",
-        0xFFC9 => "Extended Sequential DCT (Arithmetic)",
-        0xFFCA => "Progressive DCT (Arithmetic)",
-        0xFFCB => "Lossless (Arithmetic)",
-        0xFFCD => "Differential Sequential DCT (Arithmetic)",
-        0xFFCE => "Differential Progressive DCT (Arithmetic)",
-        0xFFCF => "Differential Lossless (Arithmetic)",
+        0xFFC0 => "Baseline DCT, Huffman coding",
+        0xFFC1 => "Extended Sequential DCT, Huffman coding",
+        0xFFC2 => "Progressive DCT, Huffman coding",
+        0xFFC3 => "Lossless, Huffman coding",
+        0xFFC5 => "Differential Sequential DCT, Huffman coding",
+        0xFFC6 => "Differential Progressive DCT, Huffman coding",
+        0xFFC7 => "Differential Lossless, Huffman coding",
+        0xFFC9 => "Extended Sequential DCT, Arithmetic coding",
+        0xFFCA => "Progressive DCT, Arithmetic coding",
+        0xFFCB => "Lossless, Arithmetic coding",
+        0xFFCD => "Differential Sequential DCT, Arithmetic coding",
+        0xFFCE => "Differential Progressive DCT, Arithmetic coding",
+        0xFFCF => "Differential Lossless, Arithmetic coding",
         _ => "Unknown",
     };
     metadata.insert(
-        "JPEG:EncodingProcess".to_string(),
+        "File:EncodingProcess".to_string(),
         TagValue::String(encoding.to_string()),
     );
 
-    // Parse component details
+    // Parse component details to extract YCbCrSubSampling
     let mut offset = 6;
+
+    // First component (Y) determines the subsampling base
+    if offset + 3 <= data.len() && num_components >= 3 {
+        let sampling_factors = data[offset + 1];
+        let y_h_sampling = (sampling_factors >> 4) & 0x0F;
+        let y_v_sampling = sampling_factors & 0x0F;
+
+        // Format as "YCbCr4:2:0 (h v)" matching ExifTool's output
+        let subsampling_name = match (y_h_sampling, y_v_sampling) {
+            (2, 2) => format!("YCbCr4:2:0 ({} {})", y_h_sampling, y_v_sampling),
+            (2, 1) => format!("YCbCr4:2:2 ({} {})", y_h_sampling, y_v_sampling),
+            (1, 1) => format!("YCbCr4:4:4 ({} {})", y_h_sampling, y_v_sampling),
+            _ => format!("YCbCr ({} {})", y_h_sampling, y_v_sampling),
+        };
+
+        metadata.insert(
+            "File:YCbCrSubSampling".to_string(),
+            TagValue::String(subsampling_name),
+        );
+    }
+
+    // Also keep JPEG: prefixed tags for component details
+    offset = 6;
     for i in 0..num_components {
         if offset + 3 > data.len() {
             break;
@@ -542,12 +565,17 @@ mod tests {
         let result = parse_sof_segment(0xFFC0, &data, &mut metadata);
 
         assert!(result.is_ok());
-        assert_eq!(metadata.get_integer("JPEG:ImageHeight"), Some(480));
-        assert_eq!(metadata.get_integer("JPEG:ImageWidth"), Some(640));
-        assert_eq!(metadata.get_integer("JPEG:ColorComponents"), Some(3));
+        assert_eq!(metadata.get_integer("File:ImageHeight"), Some(480));
+        assert_eq!(metadata.get_integer("File:ImageWidth"), Some(640));
+        assert_eq!(metadata.get_integer("File:BitsPerSample"), Some(8));
+        assert_eq!(metadata.get_integer("File:ColorComponents"), Some(3));
         assert_eq!(
-            metadata.get_string("JPEG:EncodingProcess"),
-            Some("Baseline DCT")
+            metadata.get_string("File:EncodingProcess"),
+            Some("Baseline DCT, Huffman coding")
+        );
+        assert_eq!(
+            metadata.get_string("File:YCbCrSubSampling"),
+            Some("YCbCr4:2:0 (2 2)")
         );
         assert_eq!(metadata.get_string("JPEG:ComponentID_1"), Some("Y"));
     }

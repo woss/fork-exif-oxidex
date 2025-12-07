@@ -18,31 +18,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get ExifTool version
-        id: exiftool-version
-        run: |
-          VERSION=$(curl -s https://exiftool.org/ver.txt)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "ExifTool latest version: $VERSION"
-
-      - name: Cache ExifTool + test images
-        uses: actions/cache@v4
-        id: cache-exiftool
-        with:
-          path: ~/exiftool
-          key: exiftool-${{ steps.exiftool-version.outputs.version }}
-
-      - name: Download ExifTool release
-        if: steps.cache-exiftool.outputs.cache-hit != 'true'
-        run: |
-          VERSION=${{ steps.exiftool-version.outputs.version }}
-          echo "Downloading ExifTool $VERSION..."
-          curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" -o exiftool.tar.gz
-          tar -xzf exiftool.tar.gz
-          mv "exiftool-$VERSION" ~/exiftool
-          echo "ExifTool downloaded to ~/exiftool"
-          echo "Test images: $(find ~/exiftool/t/images -type f | wc -l) files"
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -55,27 +30,11 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build OxiDex and comparison tool
-        run: |
-          cargo build --release
-          cargo build --release --bin tag-comparison
+      - name: Install just
+        uses: extractions/setup-just@v2
 
-      - name: Get OxiDex version
-        id: oxidex-version
-        run: |
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Run comparison
-        run: |
-          ./target/release/tag-comparison \
-            --exiftool ~/exiftool/exiftool \
-            --samples ~/exiftool/t/images \
-            --baseline docs/reference/comparison/baseline.json \
-            --output docs/reference/comparison/comparison.json \
-            --markdown-dir docs/reference/comparison \
-            --exiftool-version "${{ steps.exiftool-version.outputs.version }}" \
-            --oxidex-version "${{ steps.oxidex-version.outputs.version }}"
+      - name: Run full ExifTool comparison
+        run: just compare-exiftool-full-update
 
       - name: Commit reports
         run: |
@@ -85,9 +44,11 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
+            EXIFTOOL_VERSION=$(curl -s https://exiftool.org/ver.txt)
+            OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
             git commit -m "docs: update ExifTool compatibility report
 
-          ExifTool: v${{ steps.exiftool-version.outputs.version }}
-          OxiDex: v${{ steps.oxidex-version.outputs.version }}"
+          ExifTool: v$EXIFTOOL_VERSION
+          OxiDex: v$OXIDEX_VERSION"
             git push
           fi

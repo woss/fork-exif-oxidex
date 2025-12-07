@@ -9,11 +9,11 @@ title: HEIC Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 25.6%
-- **Matched Tags:** 10
-- **Missing Tags:** 23
+- **Coverage:** 8.3%
+- **Matched Tags:** 2
+- **Missing Tags:** 18
 - **Extra Tags:** 1
-- **Value Differences:** 6
+- **Value Differences:** 4
 
 ## Value Differences
 
@@ -21,9 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:31+00:00 | 2025:12:07 11:12:15+00:00 |
-| `File:FileTypeExtension` | heif | heic |
-| `QuickTime:CompatibleBrands` | ["mif1","heic","hevc"] | [String("mif1"), String("heic"), String(... |
+| `QuickTime:CompatibleBrands` | ["mif1","heic","hevc"] | mif1 heic hevc |
 | `QuickTime:HandlerType` | Picture | pict |
 | `QuickTime:MajorBrand` | High Efficiency Image Format still image... | mif1 |
 | `QuickTime:MediaDataOffset` | 605 | 579 |
@@ -34,11 +32,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:ImageSize` | 1596x1064 |
-| `Composite:Megapixels` | 1.7 |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:ImageHeight` | 1064 |
-| `File:ImageWidth` | 1596 |
 | `QuickTime:AverageFrameRate` | 0 |
 | `QuickTime:BitDepthChroma` | 8 |
 | `QuickTime:BitDepthLuma` | 8 |

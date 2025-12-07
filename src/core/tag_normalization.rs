@@ -6,10 +6,8 @@
 //!
 //! # Mapping Rules
 //!
-//! - `ExifIFD:` -> `EXIF:`
-//! - `GPS:` -> `EXIF:` (GPS tags are part of EXIF in ExifTool output)
 //! - `Profile:` -> `ICC_Profile:` (with name normalization for TRC tags)
-//! - `IFD0:`, `IFD1:` remain unchanged (these are separate IFD directories)
+//! - `ExifIFD:`, `IFD0:`, `IFD1:`, `GPS:` remain unchanged (to match Perl ExifTool output)
 //! - Manufacturer names (`Canon:`, `Nikon:`, `Sony:`, etc.) remain unchanged
 
 use std::collections::HashMap;
@@ -18,11 +16,10 @@ use std::sync::LazyLock;
 /// Family prefix mappings from OxiDex to ExifTool conventions
 static FAMILY_MAPPINGS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
     let mut m = HashMap::new();
-    // EXIF IFD mapping - this is the main normalization
-    m.insert("ExifIFD", "EXIF");
-    // GPS IFD mapping - ExifTool includes GPS tags in EXIF family
-    // This aligns with ExifTool's output where GPS tags appear as EXIF:GPSLatitude etc.
-    m.insert("GPS", "EXIF");
+    // ExifIFD remains unchanged - Perl ExifTool outputs ExifIFD:xxx
+    m.insert("ExifIFD", "ExifIFD");
+    // GPS IFD remains unchanged - Perl ExifTool outputs GPS tags as GPS:xxx
+    m.insert("GPS", "GPS");
     // InteropIFD mapping (unchanged)
     m.insert("InteropIFD", "InteropIFD");
     // IFD0 and IFD1 remain unchanged but are included for documentation
@@ -84,14 +81,14 @@ pub fn normalize_tag_name(family: &str, name: &str) -> String {
 /// * `tag_key` - Full tag key like "ExifIFD:Make"
 ///
 /// # Returns
-/// Normalized key like "EXIF:Make"
+/// Normalized key like "ExifIFD:Make" or "ICC_Profile:BlueTRC"
 ///
 /// # Examples
 ///
 /// ```
 /// use oxidex::core::tag_normalization::normalize_tag_family;
 ///
-/// assert_eq!(normalize_tag_family("ExifIFD:Make"), "EXIF:Make");
+/// assert_eq!(normalize_tag_family("ExifIFD:Make"), "ExifIFD:Make");
 /// assert_eq!(normalize_tag_family("IFD0:Make"), "IFD0:Make");
 /// assert_eq!(normalize_tag_family("Canon:LensModel"), "Canon:LensModel");
 /// assert_eq!(normalize_tag_family("Profile:BlueToneReproductionCurve"), "ICC_Profile:BlueTRC");
@@ -129,7 +126,7 @@ pub fn normalize_tag_family(tag_key: &str) -> String {
 /// map.insert("IFD0:Model", TagValue::new_string("EOS R5"));
 ///
 /// let normalized = normalize_metadata_map(&map);
-/// assert_eq!(normalized.get_string("EXIF:Make"), Some("Canon"));
+/// assert_eq!(normalized.get_string("ExifIFD:Make"), Some("Canon"));
 /// assert_eq!(normalized.get_string("IFD0:Model"), Some("EOS R5"));
 /// ```
 pub fn normalize_metadata_map(map: &crate::core::MetadataMap) -> crate::core::MetadataMap {
@@ -147,12 +144,13 @@ mod tests {
     use crate::core::{MetadataMap, TagValue};
 
     #[test]
-    fn test_exififd_normalization() {
-        assert_eq!(normalize_tag_family("ExifIFD:Make"), "EXIF:Make");
-        assert_eq!(normalize_tag_family("ExifIFD:Model"), "EXIF:Model");
+    fn test_exififd_unchanged() {
+        // ExifIFD remains unchanged to match Perl ExifTool output
+        assert_eq!(normalize_tag_family("ExifIFD:Make"), "ExifIFD:Make");
+        assert_eq!(normalize_tag_family("ExifIFD:Model"), "ExifIFD:Model");
         assert_eq!(
             normalize_tag_family("ExifIFD:DateTimeOriginal"),
-            "EXIF:DateTimeOriginal"
+            "ExifIFD:DateTimeOriginal"
         );
     }
 
@@ -168,23 +166,11 @@ mod tests {
     }
 
     #[test]
-    fn test_gps_to_exif() {
-        // GPS tags are normalized to EXIF family to match ExifTool conventions
-        assert_eq!(normalize_tag_family("GPS:GPSLatitude"), "EXIF:GPSLatitude");
-        assert_eq!(
-            normalize_tag_family("GPS:GPSLongitude"),
-            "EXIF:GPSLongitude"
-        );
-        assert_eq!(normalize_tag_family("GPS:GPSAltitude"), "EXIF:GPSAltitude");
-        assert_eq!(
-            normalize_tag_family("GPS:GPSAltitudeRef"),
-            "EXIF:GPSAltitudeRef"
-        );
-        assert_eq!(
-            normalize_tag_family("GPS:GPSDateStamp"),
-            "EXIF:GPSDateStamp"
-        );
-        assert_eq!(normalize_tag_family("GPS:GPSDOP"), "EXIF:GPSDOP");
+    fn test_gps_unchanged() {
+        // GPS tags remain unchanged - Perl ExifTool outputs GPS:xxx
+        assert_eq!(normalize_tag_family("GPS:GPSLatitude"), "GPS:GPSLatitude");
+        assert_eq!(normalize_tag_family("GPS:GPSLongitude"), "GPS:GPSLongitude");
+        assert_eq!(normalize_tag_family("GPS:GPSAltitude"), "GPS:GPSAltitude");
     }
 
     #[test]
@@ -220,12 +206,12 @@ mod tests {
 
         let normalized = normalize_metadata_map(&map);
 
-        // ExifIFD and GPS should be normalized to EXIF
-        assert_eq!(normalized.get_string("EXIF:Make"), Some("Canon"));
-        assert_eq!(normalized.get_string("EXIF:Model"), Some("EOS R5"));
-        assert_eq!(normalized.get_string("EXIF:GPSLatitude"), Some("37.7749"));
+        // ExifIFD remains unchanged
+        assert_eq!(normalized.get_string("ExifIFD:Make"), Some("Canon"));
+        assert_eq!(normalized.get_string("ExifIFD:Model"), Some("EOS R5"));
 
-        // IFD0 and Canon should remain unchanged
+        // GPS, IFD0 and Canon should remain unchanged
+        assert_eq!(normalized.get_string("GPS:GPSLatitude"), Some("37.7749"));
         assert_eq!(normalized.get_string("IFD0:Software"), Some("OxiDex"));
         assert_eq!(normalized.get_string("Canon:LensModel"), Some("EF 24-70mm"));
 
@@ -249,8 +235,8 @@ mod tests {
 
         let normalized = normalize_metadata_map(&map);
 
-        assert_eq!(normalized.get_integer("EXIF:ISO"), Some(400));
-        assert_eq!(normalized.get_float("EXIF:FNumber"), Some(2.8));
+        assert_eq!(normalized.get_integer("ExifIFD:ISO"), Some(400));
+        assert_eq!(normalized.get_float("ExifIFD:FNumber"), Some(2.8));
     }
 
     #[test]

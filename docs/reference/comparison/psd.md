@@ -9,11 +9,11 @@ title: PSD Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 5.7%
-- **Matched Tags:** 6
-- **Missing Tags:** 93
-- **Extra Tags:** 25
-- **Value Differences:** 7
+- **Coverage:** 13.2%
+- **Matched Tags:** 12
+- **Missing Tags:** 76
+- **Extra Tags:** 1
+- **Value Differences:** 3
 
 ## Value Differences
 
@@ -21,10 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:37+00:00 | 2025:12:07 11:12:15+00:00 |
-| `File:FileSize` | 17 kB | 17.4 kB |
-| `File:FileType` | PSD | Unknown |
-| `File:MIMEType` | application/vnd.adobe.photoshop | application/octet-stream |
 | `XMP:Creator` | Phil Harvey | <rdf:Seq>    <rdf:li>Phil Harvey</rdf:li... |
 | `XMP:Description` | This is a teeny weeny white square | <rdf:Alt>    <rdf:li xml:lang='x-default... |
 | `XMP:Title` | Test Picture | <rdf:Alt>    <rdf:li xml:lang='x-default... |
@@ -35,26 +31,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:ImageSize` | 8x8 |
-| `Composite:Megapixels` | 0.000064 |
-| `EXIF:Artist` | Phil Harvey |
-| `EXIF:ColorSpace` | Uncalibrated |
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:Copyright` | Free for all |
-| `EXIF:ExifImageHeight` | 8 |
-| `EXIF:ExifImageWidth` | 8 |
-| `EXIF:ImageDescription` | This is a teeny weeny white square |
-| `EXIF:ModifyDate` | 2005:07:18 08:27:14 |
-| `EXIF:Orientation` | Horizontal (normal) |
-| `EXIF:ResolutionUnit` | inches |
-| `EXIF:Software` | Adobe Photoshop 7.0 |
 | `EXIF:ThumbnailLength` | 0 |
 | `EXIF:ThumbnailOffset` | 390 |
-| `EXIF:XResolution` | 72 |
-| `EXIF:YResolution` | 72 |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:CurrentIPTCDigest` | b765e54396f2885e9a76ff4ad665b190 |
-| `File:ExifByteOrder` | Big-endian (Motorola, MM) |
 | `ICC_Profile:BlueMatrixColumn` | 0.14896 0.07225 0.69312 |
 | `ICC_Profile:BlueTRC` | (Binary data 14 bytes, use -b option to extract) |
 | `ICC_Profile:CMMFlags` | Not Embedded, Independent |
@@ -135,31 +114,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `ExifIFD:ColorSpace` | 65535 |
-| `ExifIFD:ExifImageHeight` | 8 |
-| `ExifIFD:ExifImageWidth` | 8 |
-| `IFD0:Artist` | Phil Harvey |
-| `IFD0:Copyright` | Free for all |
-| `IFD0:ExifOffset` | 252 |
-| `IFD0:ImageDescription` | This is a teeny weeny white square |
-| `IFD0:ModifyDate` | 2005:07:18 08:27:14 |
-| `IFD0:Orientation` | 1 |
-| `IFD0:ResolutionUnit` | 2 |
-| `IFD0:Software` | Adobe Photoshop 7.0 |
-| `IFD0:XResolution` | 72 |
-| `IFD0:YResolution` | 72 |
-| `UNKNOWN:BitDepth` | 8 |
-| `UNKNOWN:ColorMode` | RGB |
-| `UNKNOWN:FileSize` | 17369 |
-| `UNKNOWN:FileType` | PSD |
-| `UNKNOWN:HasICCProfile` | Yes |
-| `UNKNOWN:ImageHeight` | 8 |
-| `UNKNOWN:ImageWidth` | 8 |
-| `UNKNOWN:NumChannels` | 3 |
-| `UNKNOWN:PSDVersion` | 1 |
-| `UNKNOWN:ResolutionUnit` | inch |
-| `UNKNOWN:XResolution` | 72.00 |
-| `UNKNOWN:YResolution` | 72.00 |
+| `EXIF:ExifOffset` | 252 |
 
 ---
 

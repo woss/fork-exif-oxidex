@@ -37,7 +37,10 @@ static NAMESPACE_TO_FAMILY: LazyLock<HashMap<&'static str, &'static str>> = Lazy
     m.insert("http://ns.adobe.com/exif/1.0/", "XMP-exif");
     m.insert("http://ns.adobe.com/tiff/1.0/", "XMP-tiff");
     m.insert("http://ns.adobe.com/photoshop/1.0/", "XMP-photoshop");
-    m.insert("http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/", "XMP-iptcCore");
+    m.insert(
+        "http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/",
+        "XMP-iptcCore",
+    );
     m.insert("http://iptc.org/std/Iptc4xmpExt/2008-02-29/", "XMP-iptcExt");
     m.insert("http://ns.useplus.org/ldf/xmp/1.0/", "XMP-plus");
 
@@ -137,9 +140,6 @@ mod tests {
 
     #[test]
     fn test_unknown_namespace_returns_none() {
-        assert_eq!(
-            namespace_to_family("http://example.com/unknown/"),
-            None
-        );
+        assert_eq!(namespace_to_family("http://example.com/unknown/"), None);
     }
 }

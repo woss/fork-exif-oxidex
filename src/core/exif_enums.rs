@@ -213,7 +213,8 @@ pub static ORIENTATION: LazyLock<HashMap<u32, &'static str>> = LazyLock::new(|| 
 ///
 /// assert_eq!(decode_flash(0), "No Flash");
 /// assert_eq!(decode_flash(1), "Fired");
-/// assert_eq!(decode_flash(0x19), "Fired, Auto"); // fired + auto mode
+/// assert_eq!(decode_flash(0x18), "Auto, Did not fire"); // auto mode, not fired
+/// assert_eq!(decode_flash(0x19), "Auto, Fired"); // auto mode, fired
 /// ```
 pub fn decode_flash(value: u32) -> String {
     // Extract individual bit fields from the flash bitmap
@@ -223,13 +224,56 @@ pub fn decode_flash(value: u32) -> String {
     let function = (value >> 5) & 0x01; // Bit 5: flash function present
     let red_eye = (value >> 6) & 0x01; // Bit 6: red-eye reduction
 
+    // Special case: no flash function
+    if function == 1 {
+        return "No flash function".to_string();
+    }
+
     let mut parts = Vec::new();
 
-    // Primary status: fired or not
-    if fired {
-        parts.push("Fired");
-    } else {
-        parts.push("No Flash");
+    // Flash mode first (if known), then fired status
+    // This matches ExifTool's format: "Mode, Fired/Did not fire"
+    match mode {
+        1 => {
+            // Compulsory flash mode (On)
+            parts.push("On");
+            if fired {
+                parts.push("Fired");
+            } else {
+                parts.push("Did not fire");
+            }
+        }
+        2 => {
+            // Compulsory suppression mode (Off)
+            parts.push("Off");
+            if fired {
+                parts.push("Fired");
+            } else {
+                parts.push("Did not fire");
+            }
+        }
+        3 => {
+            // Auto mode
+            parts.push("Auto");
+            if fired {
+                parts.push("Fired");
+            } else {
+                parts.push("Did not fire");
+            }
+        }
+        _ => {
+            // Unknown mode (0) - just show fired status
+            if fired {
+                parts.push("Fired");
+            } else {
+                parts.push("No Flash");
+            }
+        }
+    }
+
+    // Red-eye reduction mode
+    if red_eye == 1 {
+        parts.push("Red-eye reduction");
     }
 
     // Strobe return detection status (only meaningful if flash was fired)
@@ -237,24 +281,6 @@ pub fn decode_flash(value: u32) -> String {
         2 => parts.push("Return not detected"),
         3 => parts.push("Return detected"),
         _ => {} // 0 = no strobe return detection function, 1 = reserved
-    }
-
-    // Flash mode setting
-    match mode {
-        1 => parts.push("On"),
-        2 => parts.push("Off"),
-        3 => parts.push("Auto"),
-        _ => {} // 0 = unknown
-    }
-
-    // Flash function availability
-    if function == 1 {
-        parts.push("No flash function");
-    }
-
-    // Red-eye reduction mode
-    if red_eye == 1 {
-        parts.push("Red-eye reduction");
     }
 
     parts.join(", ")
@@ -508,41 +534,55 @@ mod tests {
 
     #[test]
     fn test_flash_decoding() {
-        // Basic states
+        // Basic states (unknown mode)
         assert_eq!(decode_flash(0), "No Flash");
         assert_eq!(decode_flash(1), "Fired");
 
         // Flash with auto mode (bits 3-4 = 0b11 = 3, shifted left 3 = 0x18)
+        // 0x18 = 0b00011000 = not fired + auto mode (bits 3-4)
+        assert_eq!(decode_flash(0x18), "Auto, Did not fire");
         // 0x19 = 0b00011001 = fired (bit 0) + auto mode (bits 3-4)
-        assert_eq!(decode_flash(0x19), "Fired, Auto");
+        assert_eq!(decode_flash(0x19), "Auto, Fired");
 
         // Flash off mode (bits 3-4 = 0b10 = 2, shifted left 3 = 0x10)
         // 0x10 = 0b00010000 = not fired + off mode
-        assert_eq!(decode_flash(0x10), "No Flash, Off");
+        assert_eq!(decode_flash(0x10), "Off, Did not fire");
+        // 0x14 = 0b00010100 = not fired + off mode + return not detected
+        assert_eq!(decode_flash(0x14), "Off, Did not fire, Return not detected");
 
         // Flash on mode (bits 3-4 = 0b01 = 1, shifted left 3 = 0x08)
+        // 0x08 = 0b00001000 = not fired + on mode
+        assert_eq!(decode_flash(0x08), "On, Did not fire");
         // 0x09 = 0b00001001 = fired + on mode
-        assert_eq!(decode_flash(0x09), "Fired, On");
+        assert_eq!(decode_flash(0x09), "On, Fired");
 
-        // Return detected (bits 1-2 = 0b11 = 3)
+        // Return detected (bits 1-2 = 0b11 = 3) - unknown mode
         // 0x07 = 0b00000111 = fired + return detected
         assert_eq!(decode_flash(0x07), "Fired, Return detected");
 
-        // Return not detected (bits 1-2 = 0b10 = 2)
+        // Return not detected (bits 1-2 = 0b10 = 2) - unknown mode
         // 0x05 = 0b00000101 = fired + return not detected
         assert_eq!(decode_flash(0x05), "Fired, Return not detected");
 
         // No flash function (bit 5)
         // 0x20 = 0b00100000 = no flash function
-        assert_eq!(decode_flash(0x20), "No Flash, No flash function");
+        assert_eq!(decode_flash(0x20), "No flash function");
 
-        // Red-eye reduction (bit 6)
+        // Red-eye reduction (bit 6) - unknown mode
         // 0x41 = 0b01000001 = fired + red-eye reduction
         assert_eq!(decode_flash(0x41), "Fired, Red-eye reduction");
 
-        // Complex: fired + auto + red-eye
+        // Complex: auto + fired + red-eye
         // 0x59 = 0b01011001 = fired + auto + red-eye
-        assert_eq!(decode_flash(0x59), "Fired, Auto, Red-eye reduction");
+        assert_eq!(decode_flash(0x59), "Auto, Fired, Red-eye reduction");
+
+        // Complex: auto + fired + return detected
+        // 0x1F = 0b00011111 = fired + auto + return detected
+        assert_eq!(decode_flash(0x1F), "Auto, Fired, Return detected");
+
+        // Complex: on + red-eye
+        // 0x49 = 0b01001001 = fired + on + red-eye
+        assert_eq!(decode_flash(0x49), "On, Fired, Red-eye reduction");
     }
 
     #[test]

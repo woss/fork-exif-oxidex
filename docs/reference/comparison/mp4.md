@@ -11,7 +11,7 @@ title: MP4 Compatibility
 - **Files Tested:** 1
 - **Coverage:** 0.0%
 - **Matched Tags:** 0
-- **Missing Tags:** 99
+- **Missing Tags:** 80
 - **Extra Tags:** 0
 - **Value Differences:** 0
 
@@ -21,25 +21,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:Aperture` | 4.0 |
-| `Composite:AvgBitrate` | 0 bps |
-| `Composite:FocalLength35efl` | 18.9 mm |
-| `Composite:ImageSize` | 320x240 |
-| `Composite:LightValue` | 10.3 |
-| `Composite:Megapixels` | 0.077 |
-| `Composite:Rotation` | 0 |
-| `Composite:ShutterSpeed` | 1/38 |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:Directory` | /home/runner/exiftool/t/images |
-| `File:FileAccessDate` | 2025:12:07 11:13:36+00:00 |
-| `File:FileInodeChangeDate` | 2025:12:07 11:12:15+00:00 |
-| `File:FileModifyDate` | 2025:12:04 15:14:32+00:00 |
-| `File:FileName` | QuickTime.mov |
-| `File:FilePermissions` | -rw-r--r-- |
-| `File:FileSize` | 3.9 kB |
-| `File:FileType` | MOV |
-| `File:FileTypeExtension` | mov |
-| `File:MIMEType` | video/quicktime |
 | `MakerNotes:ExposureCompensation` | 0 |
 | `MakerNotes:ExposureTime` | 1/38 |
 | `MakerNotes:FNumber` | 4.0 |

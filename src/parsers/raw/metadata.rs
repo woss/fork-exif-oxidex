@@ -289,7 +289,8 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                             // Make tag in EXIF IFD
                             if *tag_id == 0x010F && *field_type == 2 {
                                 let make_str = String::from_utf8_lossy(bytes);
-                                exif_make = Some(make_str.trim_end_matches('\0').trim().to_string());
+                                exif_make =
+                                    Some(make_str.trim_end_matches('\0').trim().to_string());
                             }
 
                             let tag_name = lookup_tag_name(*tag_id, "ExifIFD");

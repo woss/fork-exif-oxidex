@@ -9,11 +9,11 @@ title: CR2 Compatibility
 ## Summary
 
 - **Files Tested:** 2
-- **Coverage:** 1.8%
-- **Matched Tags:** 7
-- **Missing Tags:** 374
-- **Extra Tags:** 75
-- **Value Differences:** 3
+- **Coverage:** 5.5%
+- **Matched Tags:** 19
+- **Missing Tags:** 282
+- **Extra Tags:** 19
+- **Value Differences:** 42
 
 ## Value Differences
 
@@ -21,9 +21,48 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `File:FileAccessDate` | 2025:12:07 11:13:30+00:00 | 2025:12:07 11:12:15+00:00 |
-| `File:FileType` | CR2 | CanonCR2 |
-| `File:MIMEType` | image/x-canon-cr2 | application/octet-stream |
+| `EXIF:ApertureValue` | 3.5 | 8.0 |
+| `EXIF:BitsPerSample` | 8 8 8 | 8 |
+| `EXIF:CR2CFAPattern` | [Red,Green][Green,Blue] | 1 |
+| `EXIF:ComponentsConfiguration` | Y, Cb, Cr, - | [Binary data] |
+| `EXIF:CreateDate` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
+| `EXIF:DateTimeOriginal` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
+| `EXIF:ExifImageHeight` | 4000 | 2304 |
+| `EXIF:ExifImageWidth` | 6000 | 3456 |
+| `EXIF:ExifVersion` | 0231 | 0221 |
+| `EXIF:ExposureCompensation` | 0 | [Binary data] |
+| `EXIF:ExposureTime` | 1/80 | 0.066667 |
+| `EXIF:FNumber` | 3.5 | 8 |
+| `EXIF:Flash` | No Flash | Off, Did not fire |
+| `EXIF:FocalLength` | 15.0 mm | 55.0 mm |
+| `EXIF:FocalPlaneXResolution` | 6514.65798 | 3954.23341 |
+| `EXIF:FocalPlaneYResolution` | 6734.006734 | 3958.762887 |
+| `EXIF:ISO` | 12800 | 400 |
+| `EXIF:ImageHeight` | 4000 | 256 |
+| `EXIF:ImageWidth` | 6000 | 384 |
+| `EXIF:MeteringMode` | Multi-segment | Average |
+| `EXIF:Model` | Canon EOS M50 | Canon EOS 350D DIGITAL |
+| `EXIF:ModifyDate` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
+| `EXIF:PhotometricInterpretation` | RGB | 2 |
+| `EXIF:RawImageSegmentation` | 1 1758 1758 | 1 |
+| `EXIF:ShutterSpeedValue` | 1/83 | [Binary data] |
+| `MakerNotes:AFPointsInFocus` | 0 | 87 |
+| `MakerNotes:AFPointsSelected` | 0 | 102 |
+| `MakerNotes:AutoISO` | 100 | 2069 |
+| `MakerNotes:BaseISO` | 12800 | 2087 |
+| `MakerNotes:CanonModelID` | EOS M50 / Kiss M | 2147484041 |
+| `MakerNotes:FirmwareVersion` | 1.0.0 | DJMI***3:A>949VO |
+| `MakerNotes:FocalLength` | 15 mm | 2069 mm |
+| `MakerNotes:FocalType` | Zoom | 2087 |
+| `MakerNotes:FocusMode` | One-shot AF (Live View) | Unknown (516) |
+| `MakerNotes:ISO` | 12800 | 196 |
+| `MakerNotes:MacroMode` | Normal | Unknown (4312) |
+| `MakerNotes:MeasuredEV` | 2.75 | 257 |
+| `MakerNotes:MeteringMode` | Evaluative | Unknown (3051) |
+| `MakerNotes:OwnerName` |  | =EHK/)' |
+| `MakerNotes:Quality` | RAW | Unknown (565) |
+| `MakerNotes:SerialNumber` | 0123456789 |  |
+| `MakerNotes:TargetAperture` | 3.6 | 256 |
 
 ## Missing Tags
 
@@ -31,108 +70,108 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `Composite:Aperture` | 8.0 |
-| `Composite:AvgBitrate` | 329 kbps |
-| `Composite:BlueBalance` | 1.993255 |
-| `Composite:CircleOfConfusion` | 0.019 mm |
-| `Composite:ConditionalFEC` | 0 |
-| `Composite:DOF` | 0.03 m (0.22 - 0.25 m) |
-| `Composite:DriveMode` | Single-frame Shooting |
-| `Composite:FOV` | 22.8 deg |
-| `Composite:FlashType` | Built-In Flash |
-| `Composite:FocalLength35efl` | 55.0 mm (35 mm equivalent: 89.2 mm) |
-| `Composite:HyperfocalDistance` | 20.42 m |
-| `Composite:ISO` | 400 |
-| `Composite:ImageSize` | 3456x2304 |
-| `Composite:Lens` | 18.0 - 55.0 mm |
-| `Composite:Lens35efl` | 18.0 - 55.0 mm (35 mm equivalent: 29.2 - 89.2 mm) |
-| `Composite:LensID` | Unknown 18-55mm |
-| `Composite:LightValue` | 7.9 |
-| `Composite:Megapixels` | 8.0 |
-| `Composite:RedBalance` | 1.688027 |
-| `Composite:RedEyeReduction` | Off |
-| `Composite:Rotation` | 0 |
-| `Composite:ScaleFactor35efl` | 1.6 |
-| `Composite:ShootingMode` | Aperture-priority AE |
-| `Composite:ShutterCurtainHack` | 1st-curtain sync |
-| `Composite:ShutterSpeed` | 1/15 |
-| `Composite:SubSecCreateDate` | 2018:02:21 12:08:56.21+00:00 |
-| `Composite:SubSecDateTimeOriginal` | 2018:02:21 12:08:56.21+00:00 |
-| `Composite:SubSecModifyDate` | 2018:02:21 12:08:56.21+00:00 |
-| `Composite:WB_RGGBLevels` | 2002 1185 1187 2364 |
-| `EXIF:ApertureValue` | 8.0 |
 | `EXIF:Artist` |  |
-| `EXIF:BitsPerSample` | 8 8 8 |
-| `EXIF:CR2CFAPattern` | [Red,Green][Green,Blue] |
-| `EXIF:ColorSpace` | sRGB |
-| `EXIF:ComponentsConfiguration` | -, -, -, - |
-| `EXIF:Compression` | JPEG (old-style) |
 | `EXIF:Copyright` |  |
-| `EXIF:CreateDate` | 2005:08:03 18:59:18 |
-| `EXIF:CustomRendered` | Normal |
-| `EXIF:DateTimeOriginal` | 2005:08:03 18:59:18 |
-| `EXIF:ExifImageHeight` | 2304 |
-| `EXIF:ExifImageWidth` | 3456 |
-| `EXIF:ExifVersion` | 0221 |
-| `EXIF:ExposureCompensation` | 0 |
-| `EXIF:ExposureMode` | Auto |
 | `EXIF:ExposureProgram` | Aperture-priority AE |
-| `EXIF:ExposureTime` | 1/15 |
-| `EXIF:FNumber` | 8.0 |
-| `EXIF:Flash` | Off, Did not fire |
-| `EXIF:FlashpixVersion` | 0100 |
-| `EXIF:FocalLength` | 55.0 mm |
-| `EXIF:FocalPlaneResolutionUnit` | inches |
-| `EXIF:FocalPlaneXResolution` | 3954.23341 |
-| `EXIF:FocalPlaneYResolution` | 3958.762887 |
 | `EXIF:GPSVersionID` | 2.3.0.0 |
-| `EXIF:ISO` | 400 |
-| `EXIF:ImageHeight` | 1024 |
-| `EXIF:ImageWidth` | 1536 |
 | `EXIF:InteropIndex` | R98 - DCF basic file (sRGB) |
 | `EXIF:InteropVersion` | 0100 |
 | `EXIF:LensInfo` | 15-45mm f/0 |
 | `EXIF:LensModel` | EF-M15-45mm f/3.5-6.3 IS STM |
 | `EXIF:LensSerialNumber` | 0000000000 |
-| `EXIF:Make` | Canon |
-| `EXIF:MeteringMode` | Average |
-| `EXIF:Model` | Canon EOS 350D DIGITAL |
-| `EXIF:ModifyDate` | 2005:08:03 18:59:18 |
 | `EXIF:OffsetTime` | +00:00 |
 | `EXIF:OffsetTimeDigitized` | +00:00 |
 | `EXIF:OffsetTimeOriginal` | +00:00 |
-| `EXIF:Orientation` | Horizontal (normal) |
 | `EXIF:OwnerName` |  |
-| `EXIF:PhotometricInterpretation` | RGB |
-| `EXIF:PlanarConfiguration` | Chunky |
 | `EXIF:PreviewImage` | (Binary data 26 bytes, use -b option to extract) |
 | `EXIF:PreviewImageLength` | 26 |
 | `EXIF:PreviewImageStart` | 8680 |
-| `EXIF:RawImageSegmentation` | 1 1758 1758 |
 | `EXIF:RecommendedExposureIndex` | 12800 |
-| `EXIF:ResolutionUnit` | inches |
-| `EXIF:RowsPerStrip` | 256 |
-| `EXIF:SamplesPerPixel` | 3 |
-| `EXIF:SceneCaptureType` | Standard |
 | `EXIF:SensitivityType` | Recommended Exposure Index |
 | `EXIF:SerialNumber` | 613040000565 |
-| `EXIF:ShutterSpeedValue` | 1/15 |
-| `EXIF:StripByteCounts` | 16 |
-| `EXIF:StripOffsets` | 8648 |
 | `EXIF:SubSecTime` | 21 |
 | `EXIF:SubSecTimeDigitized` | 21 |
 | `EXIF:SubSecTimeOriginal` | 21 |
 | `EXIF:ThumbnailImage` | (Binary data 28 bytes, use -b option to extract) |
 | `EXIF:ThumbnailLength` | 28 |
 | `EXIF:ThumbnailOffset` | 8620 |
-| `EXIF:UserComment` |  |
-| `EXIF:WhiteBalance` | Auto |
-| `EXIF:XResolution` | 72 |
-| `EXIF:YResolution` | 72 |
-| `ExifTool:ExifToolVersion` | 13.43 |
-| `File:ExifByteOrder` | Little-endian (Intel, II) |
+| `MakerNotes:AEBBracketValue` | 0 |
+| `MakerNotes:AFAreaHeight` | 188 |
+| `MakerNotes:AFAreaHeights` | 299 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
+| `MakerNotes:AFAreaMode` | Face + Tracking |
+| `MakerNotes:AFAreaWidth` | 189 |
+| `MakerNotes:AFAreaWidths` | 337 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
+| `MakerNotes:AFAreaXPositions` | 392 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
+| `MakerNotes:AFAreaYPositions` | -327 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0... |
+| `MakerNotes:AFAssistBeam` | Emits |
+| `MakerNotes:AFImageHeight` | 4000 |
+| `MakerNotes:AFImageWidth` | 6000 |
+| `MakerNotes:AFMicroAdjMode` | Disable |
+| `MakerNotes:AFMicroAdjValue` | 0 |
+| `MakerNotes:AmbienceSelection` | Standard |
+| `MakerNotes:AntiFlicker` | Off |
+| `MakerNotes:AspectRatio` | 3:2 |
+| `MakerNotes:AutoExposureBracketing` | Off |
+| `MakerNotes:AutoLightingOptimizer` | Standard |
+| `MakerNotes:AutoRotate` | None |
+| `MakerNotes:BatteryType` | LP-E12 |
+| `MakerNotes:BlackMaskBottomBorder` | 0 |
+| `MakerNotes:BlackMaskLeftBorder` | 0 |
+| `MakerNotes:BlackMaskRightBorder` | 0 |
+| `MakerNotes:BlackMaskTopBorder` | 0 |
+| `MakerNotes:BracketMode` | Off |
+| `MakerNotes:BracketShotNumber` | 0 |
+| `MakerNotes:BracketValue` | 0 |
+| `MakerNotes:BulbDuration` | 0 |
+| `MakerNotes:CameraISO` | Auto |
+| `MakerNotes:CameraTemperature` | 38 C |
+| `MakerNotes:CameraType` | EOS High-end |
+| `MakerNotes:CanonExposureMode` | Aperture-priority AE |
+| `MakerNotes:CanonFirmwareVersion` | Firmware Version 1.0.0 |
+| `MakerNotes:CanonFlashMode` | Off |
+| `MakerNotes:CanonImageHeight` | 4000 |
+| `MakerNotes:CanonImageSize` | Large |
+| `MakerNotes:CanonImageType` | Canon EOS M50 |
+| `MakerNotes:CanonImageWidth` | 6000 |
+| `MakerNotes:ChromaticAberrationSetting` | On |
+| `MakerNotes:ColorDataVersion` | 16 (M50) |
+| `MakerNotes:ColorSpace` | sRGB |
+| `MakerNotes:ColorTempAsShot` | 3284 |
+| `MakerNotes:ColorTempAuto` | 3284 |
+| `MakerNotes:ColorTempCloudy` | 6000 |
+| `MakerNotes:ColorTempCustom1` | 5200 |
+| `MakerNotes:ColorTempCustom2` | 5200 |
+| `MakerNotes:ColorTempDaylight` | 5200 |
+| `MakerNotes:ColorTempFlash` | 6166 |
+| `MakerNotes:ColorTempFluorescent` | 3687 |
+| `MakerNotes:ColorTempKelvin` | 5200 |
+| `MakerNotes:ColorTempMeasured` | 3284 |
+| `MakerNotes:ColorTempShade` | 7000 |
+| `MakerNotes:ColorTempTungsten` | 3200 |
+| `MakerNotes:ColorTemperature` | 5200 |
+| `MakerNotes:ColorTone` | Normal |
+| `MakerNotes:CompressorVersion` | CanonCR3_001/00.09.00/00.00.00 |
+| `MakerNotes:ContinuousDrive` | Single |
+| `MakerNotes:Contrast` | Normal |
+| `MakerNotes:ControlMode` | Camera Local Control |
+| `MakerNotes:CropBottomMargin` | 0 |
+| `MakerNotes:CropLeftMargin` | 0 |
+| `MakerNotes:CropRightMargin` | 0 |
+| `MakerNotes:CropTopMargin` | 0 |
+| `MakerNotes:CroppedImageHeight` | 4000 |
+| `MakerNotes:CroppedImageLeft` | 0 |
+| `MakerNotes:CroppedImageTop` | 0 |
+| `MakerNotes:CroppedImageWidth` | 6000 |
+| `MakerNotes:CustomControls` | 0 19 3 10 23 73 71 61 29 0 7 3 4 |
+| `MakerNotes:CustomPictureStyleFileName` |  |
+| `MakerNotes:DaylightSavings` | Off |
+| `MakerNotes:DigitalGain` | 0 |
+| `MakerNotes:DigitalLensOptimizer` | Off |
+| `MakerNotes:DigitalLensOptimizerSetting` | Off |
+| `MakerNotes:DigitalZoom` | None |
+| `MakerNotes:DistortionCorrectionSetting` | Off |
 
-*...and 274 more missing tags*
+*...and 182 more missing tags*
 
 ## Extra Tags
 
@@ -141,57 +180,24 @@ Tags OxiDex extracts that ExifTool doesn't:
 | Tag | Value |
 |-----|-------|
 | `CR2:ImageLayerCount` | 1 |
-| `Canon:AFPointsInFocus` | 87 |
-| `Canon:AFPointsSelected` | 102 |
-| `Canon:AutoISO` | 2069 |
-| `Canon:BaseISO` | 2087 |
-| `Canon:CanonModelID` | 2147484041 |
-| `Canon:DriveMode` | Unknown (4023) |
-| `Canon:ExposureMode` | Unknown (248) |
-| `Canon:FirmwareVersion` | DJMI***3:A>949VO |
-| `Canon:FlashMode` | Unknown (-10) |
-| `Canon:FocalLength` | 2069 mm |
-| `Canon:FocalType` | 2087 |
-| `Canon:FocusMode` | Unknown (516) |
-| `Canon:ISO` | 196 |
-| `Canon:ImageType` | 7FK;)C.31:2 |
-| `Canon:MacroMode` | Unknown (4312) |
-| `Canon:MeasuredEV` | 257 |
-| `Canon:MeteringMode` | Unknown (3051) |
-| `Canon:OwnerName` | =EHK/)' |
-| `Canon:Quality` | Unknown (565) |
-| `Canon:SerialNumber` |  |
-| `Canon:ShutterCount` | 3932262 |
-| `Canon:SubjectDistance` | 46 mm |
-| `Canon:TargetAperture` | 256 |
-| `Canon:TargetShutterSpeed` | 257 |
-| `ExifIFD:0x8822` | 3 |
-| `ExifIFD:ApertureValue` | 393216/65536 |
-| `ExifIFD:ColorSpace` | 1 |
-| `ExifIFD:ComponentsConfiguration` | [Binary data] |
-| `ExifIFD:CreateDate` | 2005:08:03 18:59:18 |
-| `ExifIFD:CustomRendered` | 0 |
-| `ExifIFD:DateTimeOriginal` | 2005:08:03 18:59:18 |
-| `ExifIFD:ExifImageHeight` | 2304 |
-| `ExifIFD:ExifImageWidth` | 3456 |
-| `ExifIFD:ExifVersion` | [Binary data] |
-| `ExifIFD:ExposureCompensation` | [Binary data] |
-| `ExifIFD:ExposureMode` | 0 |
-| `ExifIFD:ExposureTime` | 1/15 |
-| `ExifIFD:FNumber` | 80/10 |
-| `ExifIFD:Flash` | 16 |
-| `ExifIFD:FlashpixVersion` | [Binary data] |
-| `ExifIFD:FocalLength` | 55/1 |
-| `ExifIFD:FocalPlaneResolutionUnit` | 2 |
-| `ExifIFD:FocalPlaneXResolution` | 3456000/874 |
-| `ExifIFD:FocalPlaneYResolution` | 2304000/582 |
-| `ExifIFD:ISO` | 400 |
-| `ExifIFD:InteropOffset` | 8332 |
-| `ExifIFD:MeteringMode` | 1 |
-| `ExifIFD:SceneCaptureType` | 0 |
-| `ExifIFD:ShutterSpeedValue` | [Binary data] |
-
-*...and 25 more extra tags*
+| `Composite:Aperture` | 8 |
+| `Composite:ISO` | 400 |
+| `Composite:ImageSize` | 384x256 |
+| `Composite:Megapixels` | 0.098 |
+| `Composite:ShutterSpeed` | 0.066667 |
+| `EXIF:0x8822` | 3 |
+| `EXIF:0xC5D8` | 1 |
+| `EXIF:0xC5D9` | 2 |
+| `EXIF:InteropOffset` | 8332 |
+| `IFD1:0x0201` | 8620 |
+| `IFD1:0x0202` | 28 |
+| `MakerNotes:DriveMode` | Unknown (4023) |
+| `MakerNotes:ExposureMode` | Unknown (248) |
+| `MakerNotes:FlashMode` | Unknown (-10) |
+| `MakerNotes:ImageType` | 7FK;)C.31:2 |
+| `MakerNotes:ShutterCount` | 3932262 |
+| `MakerNotes:SubjectDistance` | 46 mm |
+| `MakerNotes:TargetShutterSpeed` | 257 |
 
 ---
 
