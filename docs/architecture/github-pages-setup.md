@@ -289,7 +289,7 @@ dig oxidex.net CNAME
 
 ## Related Documentation
 
-- [Main Documentation Deployment](.github/workflows/deploy-docs.yml)
-- [Tag Comparison Workflow](.github/workflows/compare-exiftool.yml)
-- [VitePress Configuration](docs/.vitepress/config.mts)
+- [Main Documentation Deployment](https://github.com/swack-tools/oxidex/blob/main/.github/workflows/deploy-docs.yml)
+- [Tag Comparison Workflow](https://github.com/swack-tools/oxidex/blob/main/.github/workflows/compare-exiftool.yml)
+- [VitePress Configuration](https://github.com/swack-tools/oxidex/blob/main/docs/.vitepress/config.mts)
 - [GitHub Pages Documentation](https://docs.github.com/en/pages)
