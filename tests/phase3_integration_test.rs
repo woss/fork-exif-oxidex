@@ -88,23 +88,20 @@ mod phase3_integration_tests {
         );
     }
 
-    /// Test 6: Verify ExifTool version detection
+    /// Test 6: Verify ExifTool version detection (in commit message)
     #[test]
     fn test_exiftool_version_detection() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
+        // Version detection moved to commit step and just recipe
         assert!(
             content.contains("exiftool.org/ver.txt"),
             "workflow should detect ExifTool version from ver.txt"
         );
-        assert!(
-            content.contains("exiftool-version"),
-            "workflow should store version in step output"
-        );
     }
 
-    /// Test 7: Verify cache configuration
+    /// Test 7: Verify cache configuration for Rust dependencies
     #[test]
     fn test_cache_configuration() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
@@ -114,41 +111,44 @@ mod phase3_integration_tests {
             content.contains("actions/cache"),
             "should use GitHub cache action"
         );
+        // Rust cargo cache is used; ExifTool is downloaded by just recipe to /tmp
         assert!(
-            content.contains("~/exiftool"),
-            "should cache ExifTool directory"
+            content.contains("~/.cargo"),
+            "should cache Cargo dependencies"
         );
     }
 
-    /// Test 8: Verify tag-comparison binary is built and run
+    /// Test 8: Verify just recipe is used for comparison
     #[test]
     fn test_comparison_binary_usage() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
+        // Workflow now uses just recipe which handles building and running
         assert!(
-            content.contains("--bin tag-comparison"),
-            "workflow should build tag-comparison binary"
+            content.contains("compare-exiftool-full-update"),
+            "workflow should use just compare-exiftool-full-update recipe"
         );
         assert!(
-            content.contains("./target/release/tag-comparison"),
-            "workflow should run tag-comparison binary"
+            content.contains("setup-just"),
+            "workflow should install just"
         );
     }
 
-    /// Test 9: Verify report output configuration
+    /// Test 9: Verify report output configuration (via just recipe)
     #[test]
     fn test_report_output() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+        // The just recipe handles report output; verify justfile has the config
+        let justfile_path = Path::new("justfile");
+        let content = fs::read_to_string(justfile_path).expect("should read justfile");
 
         assert!(
             content.contains("comparison.json"),
-            "workflow should output JSON report"
+            "just recipe should output JSON report"
         );
         assert!(
             content.contains("--markdown-dir"),
-            "workflow should generate markdown reports"
+            "just recipe should generate markdown reports"
         );
     }
 
@@ -171,55 +171,59 @@ mod workflow_configuration_tests {
     use std::fs;
     use std::path::Path;
 
-    /// Verify ExifTool is downloaded from GitHub
+    /// Verify ExifTool is downloaded from GitHub (via just recipe)
     #[test]
     fn test_exiftool_download() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+        // ExifTool download is handled by the just recipe
+        let justfile_path = Path::new("justfile");
+        let content = fs::read_to_string(justfile_path).expect("should read justfile");
 
         assert!(
             content.contains("github.com/exiftool/exiftool"),
-            "should download ExifTool from GitHub"
+            "just recipe should download ExifTool from GitHub"
         );
     }
 
-    /// Verify test images path
+    /// Verify test images path (via just recipe)
     #[test]
     fn test_images_path() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+        // Test images path is configured in the just recipe
+        let justfile_path = Path::new("justfile");
+        let content = fs::read_to_string(justfile_path).expect("should read justfile");
 
         assert!(
             content.contains("t/images"),
-            "workflow should use ExifTool test images"
+            "just recipe should use ExifTool test images"
         );
     }
 
-    /// Verify baseline tracking
+    /// Verify baseline tracking (via just recipe)
     #[test]
     fn test_baseline_tracking() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+        // Baseline tracking is configured in the just recipe
+        let justfile_path = Path::new("justfile");
+        let content = fs::read_to_string(justfile_path).expect("should read justfile");
 
         assert!(
             content.contains("baseline.json"),
-            "workflow should track baseline for regression detection"
+            "just recipe should track baseline for regression detection"
         );
     }
 
-    /// Verify version parameters are passed
+    /// Verify version parameters are passed (via just recipe)
     #[test]
     fn test_version_parameters() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+        // Version parameters are passed by the just recipe
+        let justfile_path = Path::new("justfile");
+        let content = fs::read_to_string(justfile_path).expect("should read justfile");
 
         assert!(
             content.contains("--exiftool-version"),
-            "workflow should pass ExifTool version"
+            "just recipe should pass ExifTool version"
         );
         assert!(
             content.contains("--oxidex-version"),
-            "workflow should pass OxiDex version"
+            "just recipe should pass OxiDex version"
         );
     }
 }
