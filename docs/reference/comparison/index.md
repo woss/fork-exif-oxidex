@@ -4,33 +4,15 @@ title: ExifTool Compatibility Report
 
 # ExifTool Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-07 | **ExifTool:** vunknown | **OxiDex:** vunknown
 
-**Overall Coverage:** 5.1%
+**Overall Coverage:** 7.0%
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [AVI](./avi.md) | 2 | 8.3% | 118 | 22 | 3 | 0 |
-| [CR2](./cr2.md) | 2 | 1.6% | 374 | 52 | 4 | 0 |
-| [DNG](./dng.md) | 1 | 2.0% | 289 | 97 | 4 | 0 |
-| [GIF](./gif.md) | 1 | 16.3% | 39 | 12 | 2 | 0 |
-| [HEIC](./heic.md) | 1 | 25.6% | 23 | 1 | 6 | 0 |
-| [JPEG](./jpeg.md) | 41 | 2.2% | 1325 | 206 | 7 | 0 |
-| [MKV](./mkv.md) | 1 | 41.5% | 21 | 13 | 3 | 0 |
-| [MP3](./mp3.md) | 1 | 22.5% | 30 | 16 | 1 | 0 |
-| [MP4](./mp4.md) | 1 | 0.0% | 99 | 0 | 0 | 0 |
-| [NEF](./nef.md) | 1 | 2.6% | 222 | 69 | 4 | 0 |
-| [PDF](./pdf.md) | 2 | 8.0% | 113 | 24 | 2 | 0 |
-| [PNG](./png.md) | 1 | 68.0% | 7 | 2 | 1 | 0 |
-| [PSD](./psd.md) | 1 | 5.7% | 93 | 25 | 7 | 0 |
-| [RAF](./raf.md) | 1 | 4.5% | 122 | 52 | 4 | 0 |
-| [RW2](./rw2.md) | 1 | 3.8% | 176 | 50 | 3 | 0 |
-| [TIFF](./tiff.md) | 2 | 7.7% | 94 | 66 | 2 | 0 |
-| [WAV](./wav.md) | 1 | 44.0% | 11 | 1 | 3 | 0 |
-| [WEBP](./webp.md) | 1 | 26.7% | 20 | 13 | 2 | 0 |
-| [XMP](./xmp.md) | 10 | 4.1% | 160 | 8 | 3 | 0 |
+| [jpeg](./jpeg.md) | 26 | 7.0% | 143 | 50 | 3 | 0 |
 
 ---
 

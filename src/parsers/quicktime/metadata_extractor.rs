@@ -8,6 +8,7 @@
 //! 5. HEIF/HEIC EXIF data from meta→iinf/iloc referencing mdat
 
 use super::atom_parser::Atom;
+use super::tag_mapping::atom_to_exiftool_tag;
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::io::timestamp::mac_time_to_iso8601;
 use crate::io::{ByteOrder, EndianReader};

@@ -91,7 +91,7 @@ impl OxiDexExtractor {
             .collect();
 
         // Sort by key for consistency
-        tags.sort_by(|a, b| a.key().cmp(&b.key()));
+        tags.sort_by_key(|a| a.key());
 
         let result = ExtractionResult {
             tags: tags.clone(),

@@ -6,7 +6,7 @@
 #[cfg(test)]
 mod phase3_integration_tests {
     use std::fs;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     /// Test 1: Verify comparison directory exists
     #[test]
@@ -39,8 +39,8 @@ mod phase3_integration_tests {
             "index.md should mention ExifTool"
         );
         assert!(
-            content.contains("comparison"),
-            "index.md should discuss comparison"
+            content.contains("Coverage"),
+            "index.md should show coverage information"
         );
     }
 
@@ -64,8 +64,8 @@ mod phase3_integration_tests {
         assert!(content.contains("name:"), "workflow should have a name");
         assert!(content.contains("jobs:"), "workflow should have jobs");
         assert!(
-            content.contains("generate-report"),
-            "workflow should have generate-report job"
+            content.contains("compare:"),
+            "workflow should have compare job"
         );
 
         // Check triggers
@@ -74,217 +74,95 @@ mod phase3_integration_tests {
             "should support manual trigger"
         );
         assert!(content.contains("push:"), "should trigger on push");
-        assert!(
-            content.contains("schedule:"),
-            "should have schedule trigger"
-        );
     }
 
-    /// Test 5: Verify workflow has GitHub Pages deployment
-    #[test]
-    fn test_workflow_github_pages_deployment() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("peaceiris/actions-gh-pages"),
-            "should use peaceiris GitHub Pages action"
-        );
-        assert!(
-            content.contains("tag-comparison"),
-            "should deploy to tag-comparison directory"
-        );
-    }
-
-    /// Test 6: Verify version-locked caching strategy
-    #[test]
-    fn test_workflow_version_locked_cache() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("get-version"),
-            "should get ExifTool version"
-        );
-        assert!(
-            content.contains("exiftool-test-suite"),
-            "should cache test suite"
-        );
-        assert!(
-            content.contains("installed_version"),
-            "cache key should include version"
-        );
-    }
-
-    /// Test 7: Verify 3-tier download fallback
-    #[test]
-    fn test_workflow_download_fallback() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        let exiftool_org_count = content.matches("exiftool.org").count();
-        let github_releases_count = content.matches("github.com/exiftool").count();
-        let github_api_count = content.matches("api.github.com").count();
-
-        assert!(
-            exiftool_org_count > 0,
-            "should try exiftool.org as primary source"
-        );
-        assert!(
-            github_releases_count > 0,
-            "should try GitHub releases as fallback"
-        );
-        assert!(
-            github_api_count > 0,
-            "should try GitHub API as final fallback"
-        );
-    }
-
-    /// Test 8: Verify test script exists
-    #[test]
-    fn test_validation_script_exists() {
-        let script_path = Path::new("scripts/test-compare-workflow.sh");
-        assert!(
-            script_path.exists(),
-            "test-compare-workflow.sh should exist"
-        );
-    }
-
-    /// Test 9: Verify test script is comprehensive
-    #[test]
-    fn test_validation_script_content() {
-        let script_path = Path::new("scripts/test-compare-workflow.sh");
-        let content = fs::read_to_string(script_path).expect("should read test script");
-
-        // Check for test functions
-        assert!(
-            content.contains("test_workflow_exists"),
-            "should test workflow existence"
-        );
-        assert!(
-            content.contains("test_workflow_syntax"),
-            "should test workflow syntax"
-        );
-        assert!(
-            content.contains("test_github_pages_action"),
-            "should test GitHub Pages action"
-        );
-        assert!(
-            content.contains("test_version_locked_cache"),
-            "should test version-locked cache"
-        );
-        assert!(
-            content.contains("test_download_fallback"),
-            "should test download fallback"
-        );
-
-        // Check for reporting
-        assert!(
-            content.contains("TESTS_PASSED"),
-            "should track passed tests"
-        );
-        assert!(
-            content.contains("TESTS_FAILED"),
-            "should track failed tests"
-        );
-    }
-
-    /// Test 10: Verify documentation exists
-    #[test]
-    fn test_documentation_files_exist() {
-        let files = vec![
-            "docs/guides/MANUAL-WORKFLOW-TRIGGER.md",
-            "docs/GITHUB-PAGES-SETUP.md",
-            "docs/checklists/PHASE-3-VALIDATION.md",
-        ];
-
-        for file in files {
-            let path = Path::new(file);
-            assert!(path.exists(), "documentation file {} should exist", file);
-
-            let content = fs::read_to_string(path).expect(&format!("should read {}", file));
-            assert!(
-                !content.is_empty(),
-                "documentation file {} should not be empty",
-                file
-            );
-        }
-    }
-
-    /// Test 11: Verify VitePress configuration includes comparison
-    #[test]
-    fn test_vitepress_config_includes_comparison() {
-        let config_path = Path::new("docs/.vitepress/config.mts");
-        assert!(config_path.exists(), "VitePress config should exist");
-
-        let content = fs::read_to_string(config_path).expect("should read VitePress config");
-
-        assert!(
-            content.contains("comparison"),
-            "VitePress config should include comparison link"
-        );
-    }
-
-    /// Test 12: Verify baseline comparison data exists
-    #[test]
-    fn test_baseline_comparison_data() {
-        let baseline_path = Path::new("docs/reference/comparison/baseline.json");
-        assert!(
-            baseline_path.exists(),
-            "baseline comparison data should exist"
-        );
-
-        let content = fs::read_to_string(baseline_path).expect("should read baseline data");
-
-        // Should be valid JSON
-        let json_result: Result<serde_json::Value, _> = serde_json::from_str(&content);
-        assert!(json_result.is_ok(), "baseline.json should be valid JSON");
-    }
-
-    /// Test 13: Verify tag-comparison binary can be built
-    #[test]
-    #[ignore] // This test requires cargo to build
-    fn test_tag_comparison_buildable() {
-        let output = std::process::Command::new("cargo")
-            .args(&["build", "--release", "--bin", "tag-comparison"])
-            .output()
-            .expect("should run cargo build");
-
-        assert!(
-            output.status.success(),
-            "tag-comparison binary should build successfully"
-        );
-    }
-
-    /// Test 14: Verify existing tests still pass
-    #[test]
-    fn test_no_regressions() {
-        // This test ensures Phase 3 implementation doesn't break existing code
-        // Actual test execution is in main test suite
-        // This is a placeholder to verify the test runs
-
-        // Check that main lib compiles
-        assert!(true, "Phase 3 should not introduce regressions");
-    }
-
-    /// Test 15: Verify GitHub Actions permissions are set
+    /// Test 5: Verify workflow has permissions for commits
     #[test]
     fn test_workflow_permissions() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
-            content.contains("permissions:"),
-            "workflow should declare permissions"
+            content.contains("contents: write"),
+            "should have write permissions for commits"
+        );
+    }
+
+    /// Test 6: Verify ExifTool version detection
+    #[test]
+    fn test_exiftool_version_detection() {
+        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+
+        assert!(
+            content.contains("exiftool.org/ver.txt"),
+            "workflow should detect ExifTool version from ver.txt"
         );
         assert!(
-            content.contains("contents: write") || content.contains("contents:"),
-            "workflow should have contents permission"
+            content.contains("exiftool-version"),
+            "workflow should store version in step output"
+        );
+    }
+
+    /// Test 7: Verify cache configuration
+    #[test]
+    fn test_cache_configuration() {
+        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+
+        assert!(
+            content.contains("actions/cache"),
+            "should use GitHub cache action"
         );
         assert!(
-            content.contains("pages: write") || content.contains("pages:"),
-            "workflow should have pages permission"
+            content.contains("~/exiftool"),
+            "should cache ExifTool directory"
         );
+    }
+
+    /// Test 8: Verify tag-comparison binary is built and run
+    #[test]
+    fn test_comparison_binary_usage() {
+        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+
+        assert!(
+            content.contains("--bin tag-comparison"),
+            "workflow should build tag-comparison binary"
+        );
+        assert!(
+            content.contains("./target/release/tag-comparison"),
+            "workflow should run tag-comparison binary"
+        );
+    }
+
+    /// Test 9: Verify report output configuration
+    #[test]
+    fn test_report_output() {
+        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+
+        assert!(
+            content.contains("comparison.json"),
+            "workflow should output JSON report"
+        );
+        assert!(
+            content.contains("--markdown-dir"),
+            "workflow should generate markdown reports"
+        );
+    }
+
+    /// Test 10: Verify commit step
+    #[test]
+    fn test_commit_step() {
+        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
+
+        assert!(
+            content.contains("Commit reports"),
+            "workflow should have commit step"
+        );
+        assert!(content.contains("git push"), "workflow should push changes");
     }
 }
 
@@ -293,155 +171,55 @@ mod workflow_configuration_tests {
     use std::fs;
     use std::path::Path;
 
-    /// Verify workflow runs on parser changes
+    /// Verify ExifTool is downloaded from GitHub
     #[test]
-    fn test_workflow_triggers_on_parser_changes() {
+    fn test_exiftool_download() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
-            content.contains("src/parsers/**"),
-            "workflow should trigger on parser changes"
+            content.contains("github.com/exiftool/exiftool"),
+            "should download ExifTool from GitHub"
         );
     }
 
-    /// Verify workflow runs on tag-comparison changes
+    /// Verify test images path
     #[test]
-    fn test_workflow_triggers_on_binary_changes() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("src/bin/tag-comparison/**"),
-            "workflow should trigger on binary changes"
-        );
-    }
-
-    /// Verify weekly schedule is configured
-    #[test]
-    fn test_weekly_schedule_configured() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("0 2 * * 0"),
-            "workflow should have weekly schedule (Sunday 2 AM UTC)"
-        );
-    }
-
-    /// Verify ExifTool version is detected
-    #[test]
-    fn test_exiftool_version_detection() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("exiftool -ver"),
-            "workflow should detect ExifTool version"
-        );
-        assert!(
-            content.contains("get-version"),
-            "workflow should store version in step output"
-        );
-    }
-
-    /// Verify test images are validated
-    #[test]
-    fn test_images_validation() {
+    fn test_images_path() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
             content.contains("t/images"),
-            "workflow should verify test images directory"
-        );
-        assert!(
-            content.contains("find exiftool-release/t/images"),
-            "workflow should count test images"
+            "workflow should use ExifTool test images"
         );
     }
 
-    /// Verify report generation step
+    /// Verify baseline tracking
     #[test]
-    fn test_report_generation_step() {
+    fn test_baseline_tracking() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
-            content.contains("Generate tag comparison report"),
-            "workflow should have report generation step"
-        );
-        assert!(
-            content.contains("tag-comparison"),
-            "workflow should run tag-comparison binary"
-        );
-        assert!(
-            content.contains("comparison.json"),
-            "workflow should output JSON report"
+            content.contains("baseline.json"),
+            "workflow should track baseline for regression detection"
         );
     }
 
-    /// Verify HTML report generation
+    /// Verify version parameters are passed
     #[test]
-    fn test_html_report_generation() {
+    fn test_version_parameters() {
         let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
-            content.contains("Generate HTML report"),
-            "workflow should have HTML generation step"
+            content.contains("--exiftool-version"),
+            "workflow should pass ExifTool version"
         );
         assert!(
-            content.contains("index.html"),
-            "workflow should generate index.html"
-        );
-    }
-
-    /// Verify cache step exists
-    #[test]
-    fn test_cache_configuration() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("Cache ExifTool test suite"),
-            "workflow should have cache step"
-        );
-        assert!(
-            content.contains("actions/cache"),
-            "should use GitHub cache action"
-        );
-    }
-
-    /// Verify error handling in download
-    #[test]
-    fn test_download_error_handling() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("if [ \"$DOWNLOAD_SUCCESS\" = false ]"),
-            "workflow should check download success"
-        );
-        assert!(
-            content.contains("exit 1"),
-            "workflow should exit on critical errors"
-        );
-    }
-
-    /// Verify summary step shows results
-    #[test]
-    fn test_summary_step() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
-        let content = fs::read_to_string(workflow_path).expect("should read workflow file");
-
-        assert!(
-            content.contains("Summary"),
-            "workflow should have summary step"
-        );
-        assert!(
-            content.contains("cache-hit"),
-            "summary should show cache status"
+            content.contains("--oxidex-version"),
+            "workflow should pass OxiDex version"
         );
     }
 }

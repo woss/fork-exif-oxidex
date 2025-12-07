@@ -1,0 +1,1406 @@
+{
+  "generated_at": "2025-12-07T10:33:51.948866+00:00",
+  "exiftool_version": "unknown",
+  "oxidex_version": "unknown",
+  "by_format": {
+    "jpeg": {
+      "format": "jpeg",
+      "files_tested": 26,
+      "matched_tags": [
+        "File:Directory",
+        "File:FileName",
+        "File:FilePermissions",
+        "File:FileSize",
+        "File:FileType",
+        "File:FileTypeExtension",
+        "File:MIMEType",
+        "JFIF:JFIFVersion",
+        "JFIF:ResolutionUnit",
+        "JFIF:XResolution",
+        "JFIF:YResolution"
+      ],
+      "missing_in_oxidex": [
+        {
+          "name": "Aperture",
+          "family": "Composite",
+          "value": "4.9",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CircleOfConfusion",
+          "family": "Composite",
+          "value": "0.006 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DOF",
+          "family": "Composite",
+          "value": "2.17 m (3.11 - 5.28 m)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DriveMode",
+          "family": "Composite",
+          "value": "Single-frame Shooting",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FOV",
+          "family": "Composite",
+          "value": "19.7 deg",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalLength35efl",
+          "family": "Composite",
+          "value": "21.3 mm (35 mm equivalent: 103.7 mm)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSPosition",
+          "family": "Composite",
+          "value": "37 deg 46' 33.24\", 122 deg 25' 6.24\"",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "HyperfocalDistance",
+          "family": "Composite",
+          "value": "15.02 m",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ISO",
+          "family": "Composite",
+          "value": "100",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ImageSize",
+          "family": "Composite",
+          "value": "480x360",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Lens",
+          "family": "Composite",
+          "value": "7.1 - 21.3 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Lens35efl",
+          "family": "Composite",
+          "value": "7.1 - 21.3 mm (35 mm equivalent: 34.5 - 103.7 mm)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "LensID",
+          "family": "Composite",
+          "value": "Unknown 7-21mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "LightValue",
+          "family": "Composite",
+          "value": "13.6",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Megapixels",
+          "family": "Composite",
+          "value": "0.173",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ScaleFactor35efl",
+          "family": "Composite",
+          "value": "4.9",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ShootingMode",
+          "family": "Composite",
+          "value": "Program AE",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ShutterSpeed",
+          "family": "Composite",
+          "value": "1/500",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ApertureValue",
+          "family": "EXIF",
+          "value": "5.0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Artist",
+          "family": "EXIF",
+          "value": "GPS Test Artist 1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ColorSpace",
+          "family": "EXIF",
+          "value": "sRGB",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ComponentsConfiguration",
+          "family": "EXIF",
+          "value": "Y, Cb, Cr, -",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CompressedBitsPerPixel",
+          "family": "EXIF",
+          "value": "5",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Compression",
+          "family": "EXIF",
+          "value": "JPEG (old-style)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CreateDate",
+          "family": "EXIF",
+          "value": "2003:12:14 12:01:44",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CustomRendered",
+          "family": "EXIF",
+          "value": "Normal",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DateTimeOriginal",
+          "family": "EXIF",
+          "value": "2003:12:14 12:01:44",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DigitalZoomRatio",
+          "family": "EXIF",
+          "value": "1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifImageHeight",
+          "family": "EXIF",
+          "value": "1704",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifImageWidth",
+          "family": "EXIF",
+          "value": "2272",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifVersion",
+          "family": "EXIF",
+          "value": "0220",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureCompensation",
+          "family": "EXIF",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureMode",
+          "family": "EXIF",
+          "value": "Auto",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureTime",
+          "family": "EXIF",
+          "value": "1/500",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FNumber",
+          "family": "EXIF",
+          "value": "4.9",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FileSource",
+          "family": "EXIF",
+          "value": "Digital Camera",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Flash",
+          "family": "EXIF",
+          "value": "Auto, Did not fire",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FlashpixVersion",
+          "family": "EXIF",
+          "value": "0100",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalLength",
+          "family": "EXIF",
+          "value": "21.3 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneResolutionUnit",
+          "family": "EXIF",
+          "value": "inches",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneXResolution",
+          "family": "EXIF",
+          "value": "8114.285714",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneYResolution",
+          "family": "EXIF",
+          "value": "8114.285714",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSAltitude",
+          "family": "EXIF",
+          "value": "110 m",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSLatitude",
+          "family": "EXIF",
+          "value": "37 deg 46' 33.24\"",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSLongitude",
+          "family": "EXIF",
+          "value": "122 deg 25' 6.24\"",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSVersionID",
+          "family": "EXIF",
+          "value": "2.3.0.0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "InteropIndex",
+          "family": "EXIF",
+          "value": "R98 - DCF basic file (sRGB)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "InteropVersion",
+          "family": "EXIF",
+          "value": "0100",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Make",
+          "family": "EXIF",
+          "value": "TestCamera",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MaxApertureValue",
+          "family": "EXIF",
+          "value": "2.8",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MeteringMode",
+          "family": "EXIF",
+          "value": "Center-weighted average",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Model",
+          "family": "EXIF",
+          "value": "TM",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ModifyDate",
+          "family": "EXIF",
+          "value": "2025:01:15 10:30:00",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Orientation",
+          "family": "EXIF",
+          "value": "Horizontal (normal)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "RelatedImageHeight",
+          "family": "EXIF",
+          "value": "1704",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "RelatedImageWidth",
+          "family": "EXIF",
+          "value": "2272",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ResolutionUnit",
+          "family": "EXIF",
+          "value": "inches",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SceneCaptureType",
+          "family": "EXIF",
+          "value": "Standard",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SensingMethod",
+          "family": "EXIF",
+          "value": "One-chip color area",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ShutterSpeedValue",
+          "family": "EXIF",
+          "value": "1/501",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ThumbnailImage",
+          "family": "EXIF",
+          "value": "(Binary data 5448 bytes, use -b option to extract)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ThumbnailLength",
+          "family": "EXIF",
+          "value": "5448",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ThumbnailOffset",
+          "family": "EXIF",
+          "value": "2066",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "UserComment",
+          "family": "EXIF",
+          "value": "",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "WhiteBalance",
+          "family": "EXIF",
+          "value": "Auto",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "XResolution",
+          "family": "EXIF",
+          "value": "180",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "YCbCrPositioning",
+          "family": "EXIF",
+          "value": "Centered",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "YResolution",
+          "family": "EXIF",
+          "value": "180",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifToolVersion",
+          "family": "ExifTool",
+          "value": "13.36",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "BitsPerSample",
+          "family": "File",
+          "value": "8",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ColorComponents",
+          "family": "File",
+          "value": "3",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "EncodingProcess",
+          "family": "File",
+          "value": "Baseline DCT, Huffman coding",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifByteOrder",
+          "family": "File",
+          "value": "Little-endian (Intel, II)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ImageHeight",
+          "family": "File",
+          "value": "360",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ImageWidth",
+          "family": "File",
+          "value": "480",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "YCbCrSubSampling",
+          "family": "File",
+          "value": "YCbCr4:2:0 (2 2)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "AEBBracketValue",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "AESetting",
+          "family": "MakerNotes",
+          "value": "Normal AE",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "AFPoint",
+          "family": "MakerNotes",
+          "value": "Center",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "AFPointsInFocus",
+          "family": "MakerNotes",
+          "value": "Center",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "AutoExposureBracketing",
+          "family": "MakerNotes",
+          "value": "Off",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "AutoISO",
+          "family": "MakerNotes",
+          "value": "100",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "BaseISO",
+          "family": "MakerNotes",
+          "value": "100",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "BulbDuration",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CameraISO",
+          "family": "MakerNotes",
+          "value": "100",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CameraType",
+          "family": "MakerNotes",
+          "value": "Compact",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CanonExposureMode",
+          "family": "MakerNotes",
+          "value": "Program AE",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CanonFirmwareVersion",
+          "family": "MakerNotes",
+          "value": "Firmware Version 1.10",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CanonFlashMode",
+          "family": "MakerNotes",
+          "value": "Auto",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CanonImageSize",
+          "family": "MakerNotes",
+          "value": "Large",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CanonImageType",
+          "family": "MakerNotes",
+          "value": "IMG:PowerShot S40 JPEG",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CanonModelID",
+          "family": "MakerNotes",
+          "value": "PowerShot S40",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ContinuousDrive",
+          "family": "MakerNotes",
+          "value": "Single",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Contrast",
+          "family": "MakerNotes",
+          "value": "Normal",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ControlMode",
+          "family": "MakerNotes",
+          "value": "Camera Local Control",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DigitalZoom",
+          "family": "MakerNotes",
+          "value": "None",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DisplayAperture",
+          "family": "MakerNotes",
+          "value": "4.9",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "EasyMode",
+          "family": "MakerNotes",
+          "value": "Manual",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureCompensation",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureTime",
+          "family": "MakerNotes",
+          "value": "1/523",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FNumber",
+          "family": "MakerNotes",
+          "value": "5",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FileNumber",
+          "family": "MakerNotes",
+          "value": "117-1771",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FlashActivity",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FlashBits",
+          "family": "MakerNotes",
+          "value": "(none)",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FlashExposureComp",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FlashGuideNumber",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalLength",
+          "family": "MakerNotes",
+          "value": "21.3125 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneXSize",
+          "family": "MakerNotes",
+          "value": "7.26 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneYSize",
+          "family": "MakerNotes",
+          "value": "5.46 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalType",
+          "family": "MakerNotes",
+          "value": "Zoom",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalUnits",
+          "family": "MakerNotes",
+          "value": "32/mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocusContinuous",
+          "family": "MakerNotes",
+          "value": "Single",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocusDistanceLower",
+          "family": "MakerNotes",
+          "value": "0 m",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocusDistanceUpper",
+          "family": "MakerNotes",
+          "value": "7.82 m",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocusMode",
+          "family": "MakerNotes",
+          "value": "Single",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocusRange",
+          "family": "MakerNotes",
+          "value": "Auto",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "LensType",
+          "family": "MakerNotes",
+          "value": "n/a",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MacroMode",
+          "family": "MakerNotes",
+          "value": "Normal",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MaxAperture",
+          "family": "MakerNotes",
+          "value": "5",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MaxFocalLength",
+          "family": "MakerNotes",
+          "value": "21.3125 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MeasuredEV",
+          "family": "MakerNotes",
+          "value": "13.62",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MeteringMode",
+          "family": "MakerNotes",
+          "value": "Center-weighted average",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MinAperture",
+          "family": "MakerNotes",
+          "value": "8",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MinFocalLength",
+          "family": "MakerNotes",
+          "value": "7.09375 mm",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "OpticalZoomCode",
+          "family": "MakerNotes",
+          "value": "6",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "OwnerName",
+          "family": "MakerNotes",
+          "value": "Andreas Huggel",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Quality",
+          "family": "MakerNotes",
+          "value": "Superfine",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "RecordMode",
+          "family": "MakerNotes",
+          "value": "JPEG",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Saturation",
+          "family": "MakerNotes",
+          "value": "Normal",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SelfTimer",
+          "family": "MakerNotes",
+          "value": "Off",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SequenceNumber",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Sharpness",
+          "family": "MakerNotes",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SlowShutter",
+          "family": "MakerNotes",
+          "value": "Off",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SpotMeteringMode",
+          "family": "MakerNotes",
+          "value": "AF Point",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "TargetAperture",
+          "family": "MakerNotes",
+          "value": "5",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "TargetExposureTime",
+          "family": "MakerNotes",
+          "value": "1/501",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "WhiteBalance",
+          "family": "MakerNotes",
+          "value": "Auto",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ZoomSourceWidth",
+          "family": "MakerNotes",
+          "value": "2272",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ZoomTargetWidth",
+          "family": "MakerNotes",
+          "value": "2272",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Creator",
+          "family": "XMP",
+          "value": "John Doe",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Rating",
+          "family": "XMP",
+          "value": "5",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Rights",
+          "family": "XMP",
+          "value": "Copyright 2024",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Title",
+          "family": "XMP",
+          "value": "Sample Photo",
+          "tag_id": null,
+          "source_file": null
+        }
+      ],
+      "extra_in_oxidex": [
+        {
+          "name": "CanonModelID",
+          "family": "Canon",
+          "value": "17891328",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FileNumber",
+          "family": "Canon",
+          "value": "1171771",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "0x927C",
+          "family": "ExifIFD",
+          "value": "[Binary data]",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ApertureValue",
+          "family": "ExifIFD",
+          "value": "149/32",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ColorSpace",
+          "family": "ExifIFD",
+          "value": "1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ComponentsConfiguration",
+          "family": "ExifIFD",
+          "value": "Y, Cb, Cr, -",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CompressedBitsPerPixel",
+          "family": "ExifIFD",
+          "value": "5/1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CreateDate",
+          "family": "ExifIFD",
+          "value": "2003-12-14T12:01:44+00:00",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "CustomRendered",
+          "family": "ExifIFD",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DateTimeOriginal",
+          "family": "ExifIFD",
+          "value": "2003-12-14T12:01:44+00:00",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "DigitalZoomRatio",
+          "family": "ExifIFD",
+          "value": "2272/2272",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifImageHeight",
+          "family": "ExifIFD",
+          "value": "1704",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifImageWidth",
+          "family": "ExifIFD",
+          "value": "2272",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExifVersion",
+          "family": "ExifIFD",
+          "value": "0220",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureCompensation",
+          "family": "ExifIFD",
+          "value": "0/3",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureMode",
+          "family": "ExifIFD",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ExposureTime",
+          "family": "ExifIFD",
+          "value": "1/500",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FNumber",
+          "family": "ExifIFD",
+          "value": "49/10",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FileSource",
+          "family": "ExifIFD",
+          "value": "[Binary data]",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Flash",
+          "family": "ExifIFD",
+          "value": "24",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FlashpixVersion",
+          "family": "ExifIFD",
+          "value": "[Binary data]",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalLength",
+          "family": "ExifIFD",
+          "value": "682/32",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneResolutionUnit",
+          "family": "ExifIFD",
+          "value": "2",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneXResolution",
+          "family": "ExifIFD",
+          "value": "2272000/280",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "FocalPlaneYResolution",
+          "family": "ExifIFD",
+          "value": "1704000/210",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "InteropOffset",
+          "family": "ExifIFD",
+          "value": "1416",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MaxApertureValue",
+          "family": "ExifIFD",
+          "value": "194698/65536",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "MeteringMode",
+          "family": "ExifIFD",
+          "value": "2",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SceneCaptureType",
+          "family": "ExifIFD",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "SensingMethod",
+          "family": "ExifIFD",
+          "value": "2",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ShutterSpeedValue",
+          "family": "ExifIFD",
+          "value": "287/32",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "UserComment",
+          "family": "ExifIFD",
+          "value": "[Binary data]",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "WhiteBalance",
+          "family": "ExifIFD",
+          "value": "0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSAltitude",
+          "family": "GPS",
+          "value": "110 m",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSLatitude",
+          "family": "GPS",
+          "value": "37 deg 46' 33.24\"",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSLongitude",
+          "family": "GPS",
+          "value": "122 deg 25' 6.24\"",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "GPSVersionID",
+          "family": "GPS",
+          "value": "2.3.0.0",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Artist",
+          "family": "IFD0",
+          "value": "GPS Test Artist 1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Make",
+          "family": "IFD0",
+          "value": "TestCamera",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Model",
+          "family": "IFD0",
+          "value": "TM",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ModifyDate",
+          "family": "IFD0",
+          "value": "2025-01-15T10:30:00+00:00",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Orientation",
+          "family": "IFD0",
+          "value": "1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "ResolutionUnit",
+          "family": "IFD0",
+          "value": "2",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "XResolution",
+          "family": "IFD0",
+          "value": "180/1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "YCbCrPositioning",
+          "family": "IFD0",
+          "value": "1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "YResolution",
+          "family": "IFD0",
+          "value": "180/1",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Rights",
+          "family": "XMP-dc",
+          "value": "Copyright 2024",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Title",
+          "family": "XMP-dc",
+          "value": "Sample Photo",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Creator",
+          "family": "XMP-xmp",
+          "value": "John Doe",
+          "tag_id": null,
+          "source_file": null
+        },
+        {
+          "name": "Rating",
+          "family": "XMP-xmp",
+          "value": "5",
+          "tag_id": null,
+          "source_file": null
+        }
+      ],
+      "value_differences": [
+        {
+          "tag_key": "File:FileAccessDate",
+          "exiftool_value": "2025:12:07 04:33:51-06:00",
+          "oxidex_value": "2025:12:07 10:32:37-06:00",
+          "source_file": ""
+        },
+        {
+          "tag_key": "File:FileInodeChangeDate",
+          "exiftool_value": "2025:12:07 04:30:46-06:00",
+          "oxidex_value": "2025:12:07 10:30:46-06:00",
+          "source_file": ""
+        },
+        {
+          "tag_key": "File:FileModifyDate",
+          "exiftool_value": "2025:12:07 04:30:46-06:00",
+          "oxidex_value": "2025:12:07 10:30:46-06:00",
+          "source_file": ""
+        }
+      ],
+      "regressions": [],
+      "coverage_percentage": 7.006369426751593,
+      "total_exiftool_tags": 157,
+      "timestamp": "2025-12-07T10:33:59.311573+00:00"
+    }
+  },
+  "overall_coverage": 7.006369426751593,
+  "total_regressions": 0,
+  "summary": "Analyzed 1 formats: 11/157 tags (7.0% overall coverage)"
+}

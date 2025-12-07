@@ -84,57 +84,11 @@ impl ComparisonEngine {
 
         comparison
     }
-
-    /// Check if two tags match (represent the same metadata)
-    ///
-    /// Two tags match if:
-    /// - Names are identical (case-sensitive)
-    /// - Families match (EXIF, XMP, etc.)
-    fn tags_match(oxidex: &TagInfo, exiftool: &TagInfo) -> bool {
-        oxidex.name == exiftool.name && oxidex.family == exiftool.family
-    }
-
-    /// Normalize tag name for matching
-    /// Handles variations like "EXIF:Make" vs "IFD0:Make"
-    #[allow(dead_code)]
-    fn normalize_name(name: &str) -> String {
-        // TODO: Implementation
-        // Handle variations in tag naming
-        name.to_string()
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_tags_match_identical() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
-        let tag2 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
-        assert!(ComparisonEngine::tags_match(&tag1, &tag2));
-    }
-
-    #[test]
-    fn test_tags_dont_match_different_names() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
-        let tag2 = TagInfo::new("Model".to_string(), "EXIF".to_string(), "5D".to_string());
-        assert!(!ComparisonEngine::tags_match(&tag1, &tag2));
-    }
-
-    #[test]
-    fn test_tags_dont_match_different_families() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
-        let tag2 = TagInfo::new("Make".to_string(), "XMP".to_string(), "Canon".to_string());
-        assert!(!ComparisonEngine::tags_match(&tag1, &tag2));
-    }
-
-    #[test]
-    fn test_tags_case_sensitive() {
-        let tag1 = TagInfo::new("Make".to_string(), "EXIF".to_string(), "Canon".to_string());
-        let tag2 = TagInfo::new("make".to_string(), "EXIF".to_string(), "Canon".to_string());
-        assert!(!ComparisonEngine::tags_match(&tag1, &tag2));
-    }
 
     #[test]
     fn test_compare_all_matched() {

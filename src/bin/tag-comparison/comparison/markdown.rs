@@ -150,7 +150,7 @@ fn generate_format_page(
             comparison.regressions.len()
         ));
     }
-    content.push_str("\n");
+    content.push('\n');
 
     // Regressions (most important, show first)
     if !comparison.regressions.is_empty() {
@@ -161,7 +161,7 @@ fn generate_format_page(
         for tag in &comparison.regressions {
             content.push_str(&format!("| `{}` |\n", tag));
         }
-        content.push_str("\n");
+        content.push('\n');
     }
 
     // Value differences
@@ -184,7 +184,7 @@ fn generate_format_page(
                 comparison.value_differences.len() - 50
             ));
         }
-        content.push_str("\n");
+        content.push('\n');
     }
 
     // Missing tags
@@ -203,7 +203,7 @@ fn generate_format_page(
                 comparison.missing_in_oxidex.len() - 100
             ));
         }
-        content.push_str("\n");
+        content.push('\n');
     }
 
     // Extra tags
@@ -222,7 +222,7 @@ fn generate_format_page(
                 comparison.extra_in_oxidex.len() - 50
             ));
         }
-        content.push_str("\n");
+        content.push('\n');
     }
 
     content.push_str("---\n\n");

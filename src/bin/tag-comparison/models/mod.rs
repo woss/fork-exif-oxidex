@@ -36,12 +36,14 @@ impl TagInfo {
     }
 
     /// Set the tag ID
+    #[allow(dead_code)]
     pub fn with_tag_id(mut self, tag_id: String) -> Self {
         self.tag_id = Some(tag_id);
         self
     }
 
     /// Set the source file
+    #[allow(dead_code)]
     pub fn with_source_file(mut self, source_file: String) -> Self {
         self.source_file = Some(source_file);
         self
@@ -192,6 +194,7 @@ impl ComparisonReport {
     }
 
     /// Get format names in sorted order
+    #[allow(dead_code)]
     pub fn format_names(&self) -> Vec<String> {
         let mut names: Vec<_> = self.by_format.keys().cloned().collect();
         names.sort();
