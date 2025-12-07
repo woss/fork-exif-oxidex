@@ -25,6 +25,9 @@ use crate::tag_db::lookup_tag_name;
 /// * `metadata` - MetadataMap to populate with JFIF tags
 pub fn process_jfif_segments(segments: &[Segment], metadata: &mut MetadataMap) {
     for segment in segments.iter().filter(|s| s.marker == 0xFFE0) {
+        // Also try extended APP0 parser for JFXX segments
+        let _ = crate::parsers::jpeg::app_parsers::parse_app0_extended(segment.data, metadata);
+
         // Check if this is a JFIF segment (starts with "JFIF\0")
         if segment.data.len() >= 14 && &segment.data[0..5] == b"JFIF\0" {
             // JFIF structure after identifier:
@@ -86,11 +89,17 @@ pub fn process_exif_segments(
     reader: &dyn FileReader,
     metadata: &mut MetadataMap,
 ) {
-    // Find all APP1 segments (EXIF/XMP)
+    // Find all APP1 segments (EXIF/XMP/FLIR)
     let app1_segments: Vec<_> = segments.iter().filter(|s| s.is_app1()).collect();
 
     // Process each APP1 segment
     for segment in app1_segments {
+        // Check if this is a FLIR segment (starts with "FLIR\0")
+        if segment.data.len() >= 5 && &segment.data[0..5] == b"FLIR\0" {
+            let _ = crate::parsers::jpeg::flir_parser::parse_flir_segment(segment.data, metadata);
+            continue;
+        }
+
         // Check if this is an EXIF segment (starts with "Exif\0\0")
         if segment.data.len() >= 6 && &segment.data[0..6] == b"Exif\0\0" {
             // Extract EXIF data starting after the 6-byte header

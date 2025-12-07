@@ -6,8 +6,10 @@
 
 pub mod app_parsers;
 pub mod exif_parser;
+pub mod flir_parser;
 pub mod iptc_parser;
 pub mod jfif_parser;
+pub mod jpeg_hdr_parser;
 pub mod segment_parser;
 pub mod xmp_parser;
 

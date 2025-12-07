@@ -277,6 +277,63 @@ pub fn estimate_quality_from_dqt(data: &[u8], metadata: &mut MetadataMap) -> Res
     Ok(())
 }
 
+/// Parse JFIF APP0 segment with extended fields
+///
+/// This parser handles both JFIF and JFXX (JFIF extension) segments.
+pub fn parse_app0_extended(data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
+    if data.len() < 5 {
+        return Err("APP0 segment too short".to_string());
+    }
+
+    // Check JFIF identifier
+    if &data[0..5] == b"JFIF\x00" {
+        // Already parsed by jfif_parser, but we can add JFXX extension support
+        // Check if there's more data after standard JFIF header (14 bytes)
+        if data.len() >= 14 {
+            let thumbnail_width = data[12];
+            let thumbnail_height = data[13];
+
+            // If there's thumbnail data, note it
+            if thumbnail_width > 0 && thumbnail_height > 0 {
+                metadata.insert(
+                    "JFIF:HasThumbnail".to_string(),
+                    TagValue::String("Yes".to_string()),
+                );
+            }
+        }
+        return Ok(());
+    }
+
+    // Check for JFXX extension
+    if &data[0..5] == b"JFXX\x00" {
+        return parse_jfxx_segment(&data[5..], metadata);
+    }
+
+    Err("Not a JFIF/JFXX segment".to_string())
+}
+
+/// Parse JFXX (JFIF extension) segment
+fn parse_jfxx_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
+    if data.is_empty() {
+        return Err("JFXX segment empty".to_string());
+    }
+
+    let extension_code = data[0];
+    let ext_type = match extension_code {
+        0x10 => "Thumbnail JPEG",
+        0x11 => "Thumbnail 1 byte/pixel",
+        0x13 => "Thumbnail 3 bytes/pixel",
+        _ => "Unknown",
+    };
+
+    metadata.insert(
+        "JFIF:ThumbnailType".to_string(),
+        TagValue::String(ext_type.to_string()),
+    );
+
+    Ok(())
+}
+
 /// Parse SOF (Start of Frame) segment for component information
 pub fn parse_sof_segment(
     marker: u16,
