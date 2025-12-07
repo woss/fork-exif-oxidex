@@ -18,10 +18,12 @@ jobs:
 
       - name: Check ExifTool version
         id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           CURRENT=$(cat .exiftool-version 2>/dev/null || echo "none")
-          LATEST=$(curl -s https://api.github.com/repos/exiftool/exiftool/commits/master | jq -r '.sha[:7]')
-          LATEST_FULL=$(curl -s https://api.github.com/repos/exiftool/exiftool/commits/master | jq -r '.sha')
+          LATEST_FULL=$(gh api repos/exiftool/exiftool/commits/master --jq '.sha')
+          LATEST=${LATEST_FULL:0:7}
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "latest=$LATEST" >> $GITHUB_OUTPUT
           echo "latest_full=$LATEST_FULL" >> $GITHUB_OUTPUT
@@ -46,7 +48,7 @@ jobs:
           cargo build --release 2>&1 | tee build.log
 
           echo "Saving ExifTool version..."
-          echo "${{ steps.check.outputs.latest }}" > .exiftool-version
+          echo "${{ steps.check.outputs.latest_full }}" > .exiftool-version
 
       - name: Count tags
         if: steps.check.outputs.current != steps.check.outputs.latest
