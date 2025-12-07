@@ -14,6 +14,22 @@ title: HEIC Compatibility
 - **Missing Tags:** 18
 - **Extra Tags:** 1
 - **Value Differences:** 4
+- **⚠️ Regressions:** 8
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:Directory` |
+| `File:FileInodeChangeDate` |
+| `File:FileModifyDate` |
+| `File:FileName` |
+| `File:FilePermissions` |
+| `File:FileSize` |
+| `File:FileType` |
+| `File:MIMEType` |
 
 ## Value Differences
 

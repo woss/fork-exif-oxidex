@@ -14,6 +14,20 @@ title: PSD Compatibility
 - **Missing Tags:** 76
 - **Extra Tags:** 1
 - **Value Differences:** 3
+- **⚠️ Regressions:** 6
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:Directory` |
+| `File:FileInodeChangeDate` |
+| `File:FileModifyDate` |
+| `File:FileName` |
+| `File:FilePermissions` |
+| `File:FileTypeExtension` |
 
 ## Value Differences
 

@@ -1,8 +1,8 @@
 ---
-title: CANON Compatibility
+title: GOPRO Compatibility
 ---
 
-# CANON Compatibility Report
+# GOPRO Compatibility Report
 
 **Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 

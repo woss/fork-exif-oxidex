@@ -1,8 +1,8 @@
 ---
-title: CANON Compatibility
+title: OLYMPUS Compatibility
 ---
 
-# CANON Compatibility Report
+# OLYMPUS Compatibility Report
 
 **Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 

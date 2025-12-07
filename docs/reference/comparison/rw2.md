@@ -14,6 +14,20 @@ title: RW2 Compatibility
 - **Missing Tags:** 134
 - **Extra Tags:** 33
 - **Value Differences:** 5
+- **⚠️ Regressions:** 6
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:Directory` |
+| `File:FileInodeChangeDate` |
+| `File:FileModifyDate` |
+| `File:FileName` |
+| `File:FilePermissions` |
+| `File:FileTypeExtension` |
 
 ## Value Differences
 

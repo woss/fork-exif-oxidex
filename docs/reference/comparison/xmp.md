@@ -14,6 +14,21 @@ title: XMP Compatibility
 - **Missing Tags:** 148
 - **Extra Tags:** 0
 - **Value Differences:** 0
+- **⚠️ Regressions:** 7
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:Directory` |
+| `File:FileInodeChangeDate` |
+| `File:FileModifyDate` |
+| `File:FileName` |
+| `File:FilePermissions` |
+| `File:FileSize` |
+| `File:FileTypeExtension` |
 
 ## Missing Tags
 

@@ -9,11 +9,26 @@ title: CR2 Compatibility
 ## Summary
 
 - **Files Tested:** 2
-- **Coverage:** 5.5%
-- **Matched Tags:** 19
+- **Coverage:** 9.6%
+- **Matched Tags:** 33
 - **Missing Tags:** 282
 - **Extra Tags:** 19
-- **Value Differences:** 42
+- **Value Differences:** 28
+- **⚠️ Regressions:** 7
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:Directory` |
+| `File:FileInodeChangeDate` |
+| `File:FileModifyDate` |
+| `File:FileName` |
+| `File:FilePermissions` |
+| `File:FileSize` |
+| `File:FileTypeExtension` |
 
 ## Value Differences
 
@@ -21,48 +36,34 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:ApertureValue` | 3.5 | 8.0 |
 | `EXIF:BitsPerSample` | 8 8 8 | 8 |
 | `EXIF:CR2CFAPattern` | [Red,Green][Green,Blue] | 1 |
-| `EXIF:ComponentsConfiguration` | Y, Cb, Cr, - | [Binary data] |
-| `EXIF:CreateDate` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
-| `EXIF:DateTimeOriginal` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
-| `EXIF:ExifImageHeight` | 4000 | 2304 |
-| `EXIF:ExifImageWidth` | 6000 | 3456 |
-| `EXIF:ExifVersion` | 0231 | 0221 |
+| `EXIF:ComponentsConfiguration` | -, -, -, - | [Binary data] |
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
-| `EXIF:ExposureTime` | 1/80 | 0.066667 |
-| `EXIF:FNumber` | 3.5 | 8 |
-| `EXIF:Flash` | No Flash | Off, Did not fire |
-| `EXIF:FocalLength` | 15.0 mm | 55.0 mm |
-| `EXIF:FocalPlaneXResolution` | 6514.65798 | 3954.23341 |
-| `EXIF:FocalPlaneYResolution` | 6734.006734 | 3958.762887 |
-| `EXIF:ISO` | 12800 | 400 |
-| `EXIF:ImageHeight` | 4000 | 256 |
-| `EXIF:ImageWidth` | 6000 | 384 |
-| `EXIF:MeteringMode` | Multi-segment | Average |
-| `EXIF:Model` | Canon EOS M50 | Canon EOS 350D DIGITAL |
-| `EXIF:ModifyDate` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
+| `EXIF:ExposureTime` | 1/15 | 0.066667 |
+| `EXIF:FNumber` | 8.0 | 8 |
+| `EXIF:ImageHeight` | 1024 | 256 |
+| `EXIF:ImageWidth` | 1536 | 384 |
 | `EXIF:PhotometricInterpretation` | RGB | 2 |
 | `EXIF:RawImageSegmentation` | 1 1758 1758 | 1 |
-| `EXIF:ShutterSpeedValue` | 1/83 | [Binary data] |
-| `MakerNotes:AFPointsInFocus` | 0 | 87 |
+| `EXIF:ShutterSpeedValue` | 1/15 | [Binary data] |
+| `MakerNotes:AFPointsInFocus` | 3 | 87 |
 | `MakerNotes:AFPointsSelected` | 0 | 102 |
 | `MakerNotes:AutoISO` | 100 | 2069 |
-| `MakerNotes:BaseISO` | 12800 | 2087 |
-| `MakerNotes:CanonModelID` | EOS M50 / Kiss M | 2147484041 |
+| `MakerNotes:BaseISO` | 400 | 2087 |
+| `MakerNotes:CanonModelID` | EOS Digital Rebel XT / 350D / Kiss Digit... | 2147484041 |
 | `MakerNotes:FirmwareVersion` | 1.0.0 | DJMI***3:A>949VO |
-| `MakerNotes:FocalLength` | 15 mm | 2069 mm |
+| `MakerNotes:FocalLength` | 55 mm | 2069 mm |
 | `MakerNotes:FocalType` | Zoom | 2087 |
-| `MakerNotes:FocusMode` | One-shot AF (Live View) | Unknown (516) |
+| `MakerNotes:FocusMode` | One-shot AF | Unknown (516) |
 | `MakerNotes:ISO` | 12800 | 196 |
 | `MakerNotes:MacroMode` | Normal | Unknown (4312) |
-| `MakerNotes:MeasuredEV` | 2.75 | 257 |
-| `MakerNotes:MeteringMode` | Evaluative | Unknown (3051) |
-| `MakerNotes:OwnerName` |  | =EHK/)' |
+| `MakerNotes:MeasuredEV` | 8.0 | 257 |
+| `MakerNotes:MeteringMode` | Center-weighted average | Unknown (3051) |
+| `MakerNotes:OwnerName` | unknown | =EHK/)' |
 | `MakerNotes:Quality` | RAW | Unknown (565) |
 | `MakerNotes:SerialNumber` | 0123456789 |  |
-| `MakerNotes:TargetAperture` | 3.6 | 256 |
+| `MakerNotes:TargetAperture` | 8 | 256 |
 
 ## Missing Tags
 
@@ -101,11 +102,11 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:AFAreaMode` | Face + Tracking |
 | `MakerNotes:AFAreaWidth` | 189 |
 | `MakerNotes:AFAreaWidths` | 337 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
-| `MakerNotes:AFAreaXPositions` | 392 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
-| `MakerNotes:AFAreaYPositions` | -327 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0... |
+| `MakerNotes:AFAreaXPositions` | 0 -1237 -742 0 742 1237 0 |
+| `MakerNotes:AFAreaYPositions` | -617 0 0 0 0 0 617 |
 | `MakerNotes:AFAssistBeam` | Emits |
-| `MakerNotes:AFImageHeight` | 4000 |
-| `MakerNotes:AFImageWidth` | 6000 |
+| `MakerNotes:AFImageHeight` | 2304 |
+| `MakerNotes:AFImageWidth` | 3456 |
 | `MakerNotes:AFMicroAdjMode` | Disable |
 | `MakerNotes:AFMicroAdjValue` | 0 |
 | `MakerNotes:AmbienceSelection` | Standard |
@@ -125,29 +126,29 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:BulbDuration` | 0 |
 | `MakerNotes:CameraISO` | Auto |
 | `MakerNotes:CameraTemperature` | 38 C |
-| `MakerNotes:CameraType` | EOS High-end |
+| `MakerNotes:CameraType` | EOS Mid-range |
 | `MakerNotes:CanonExposureMode` | Aperture-priority AE |
-| `MakerNotes:CanonFirmwareVersion` | Firmware Version 1.0.0 |
+| `MakerNotes:CanonFirmwareVersion` | Firmware 1.0.2 |
 | `MakerNotes:CanonFlashMode` | Off |
-| `MakerNotes:CanonImageHeight` | 4000 |
-| `MakerNotes:CanonImageSize` | Large |
-| `MakerNotes:CanonImageType` | Canon EOS M50 |
-| `MakerNotes:CanonImageWidth` | 6000 |
+| `MakerNotes:CanonImageHeight` | 2304 |
+| `MakerNotes:CanonImageSize` | n/a |
+| `MakerNotes:CanonImageType` | Canon EOS 350D DIGITAL |
+| `MakerNotes:CanonImageWidth` | 3456 |
 | `MakerNotes:ChromaticAberrationSetting` | On |
 | `MakerNotes:ColorDataVersion` | 16 (M50) |
 | `MakerNotes:ColorSpace` | sRGB |
-| `MakerNotes:ColorTempAsShot` | 3284 |
-| `MakerNotes:ColorTempAuto` | 3284 |
+| `MakerNotes:ColorTempAsShot` | 3064 |
+| `MakerNotes:ColorTempAuto` | 3064 |
 | `MakerNotes:ColorTempCloudy` | 6000 |
 | `MakerNotes:ColorTempCustom1` | 5200 |
 | `MakerNotes:ColorTempCustom2` | 5200 |
 | `MakerNotes:ColorTempDaylight` | 5200 |
-| `MakerNotes:ColorTempFlash` | 6166 |
-| `MakerNotes:ColorTempFluorescent` | 3687 |
+| `MakerNotes:ColorTempFlash` | 6440 |
+| `MakerNotes:ColorTempFluorescent` | 3905 |
 | `MakerNotes:ColorTempKelvin` | 5200 |
 | `MakerNotes:ColorTempMeasured` | 3284 |
 | `MakerNotes:ColorTempShade` | 7000 |
-| `MakerNotes:ColorTempTungsten` | 3200 |
+| `MakerNotes:ColorTempTungsten` | 3201 |
 | `MakerNotes:ColorTemperature` | 5200 |
 | `MakerNotes:ColorTone` | Normal |
 | `MakerNotes:CompressorVersion` | CanonCR3_001/00.09.00/00.00.00 |

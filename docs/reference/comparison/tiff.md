@@ -14,6 +14,23 @@ title: TIFF Compatibility
 - **Missing Tags:** 29
 - **Extra Tags:** 8
 - **Value Differences:** 17
+- **⚠️ Regressions:** 9
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:Directory` |
+| `File:FileInodeChangeDate` |
+| `File:FileModifyDate` |
+| `File:FileName` |
+| `File:FilePermissions` |
+| `File:FileSize` |
+| `File:FileType` |
+| `File:FileTypeExtension` |
+| `File:MIMEType` |
 
 ## Value Differences
 
@@ -22,7 +39,7 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `EXIF:ColorMap` | (Binary data 1536 bytes, use -b option t... | 65535 64923 64312 63701 63090 62479 6186... |
-| `EXIF:PhotometricInterpretation` | RGB | 2 |
+| `EXIF:PhotometricInterpretation` | RGB Palette | 3 |
 | `EXIF:SubfileType` | Full-resolution image | Full-resolution Image |
 | `ICC_Profile:BlueMatrixColumn` | 0.14307 0.06061 0.7141 | 0.14306640625 0.06060791015625 0.7140960... |
 | `ICC_Profile:ColorSpaceData` | RGB  | RGB |
@@ -81,8 +98,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `Composite:ImageSize` | 160x120 |
-| `Composite:Megapixels` | 0.019 |
+| `Composite:ImageSize` | 25x24 |
+| `Composite:Megapixels` | 0.001 |
 | `EXIF:0x83BB` | 469893120 33554972 41418771 1416127776 1885954932 ... |
 | `EXIF:0x85D8` | [Binary data] |
 | `EXIF:0x87AF` | 1 1 0 10 1024 0 1 1 1025 0 1 1 2048 0 1 32767 2049... |

@@ -14,6 +14,22 @@ title: WEBP Compatibility
 - **Missing Tags:** 11
 - **Extra Tags:** 6
 - **Value Differences:** 0
+- **⚠️ Regressions:** 8
+
+## ⚠️ Regressions
+
+Tags that OxiDex previously extracted but no longer does:
+
+| Tag |
+|-----|
+| `File:Directory` |
+| `File:FileInodeChangeDate` |
+| `File:FileModifyDate` |
+| `File:FileName` |
+| `File:FilePermissions` |
+| `File:FileSize` |
+| `File:FileTypeExtension` |
+| `File:MIMEType` |
 
 ## Missing Tags
 
