@@ -9,11 +9,14 @@
 /// # Example
 /// ```
 /// use oxidex::core::decode_flags;
-/// let flags = decode_flags(0x2003, &[
-///     (0x0001, "Flag A"),
-///     (0x0002, "Flag B"),
-///     (0x2000, "Flag C"),
-/// ]);
+/// let flags = decode_flags(
+///     0x2003,
+///     &[
+///         (0x0001, "Flag A"),
+///         (0x0002, "Flag B"),
+///         (0x2000, "Flag C"),
+///     ],
+/// );
 /// assert_eq!(flags, vec!["Flag A", "Flag B", "Flag C"]);
 /// ```
 pub fn decode_flags<'a>(value: u32, flags: &'a [(u32, &'a str)]) -> Vec<&'a str> {

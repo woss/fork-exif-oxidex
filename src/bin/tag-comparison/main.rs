@@ -11,7 +11,7 @@ mod comparison;
 
 use models::ComparisonReport;
 use extraction::{OxiDexExtractor, ExifToolExtractor};
-use comparison::ComparisonEngine;
+use comparison::{ComparisonEngine, generate_markdown_reports};
 
 #[derive(Parser, Debug)]
 #[command(name = "tag-comparison")]
@@ -32,6 +32,10 @@ struct Args {
     /// Path to exiftool executable
     #[arg(long, default_value = "exiftool")]
     exiftool: String,
+
+    /// Output directory for markdown reports
+    #[arg(long, default_value = "docs/compatibility")]
+    markdown_dir: PathBuf,
 }
 
 #[tokio::main]
@@ -99,6 +103,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json = serde_json::to_string_pretty(&report)?;
     std::fs::write(&args.output, json)?;
     println!("\n✅ Results saved to: {}", args.output.display());
+
+    // Generate markdown reports
+    println!("\n📝 Generating markdown reports...");
+    generate_markdown_reports(&report, &args.markdown_dir)?;
+    println!("✅ Markdown reports saved to: {}", args.markdown_dir.display());
 
     Ok(())
 }
