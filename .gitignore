@@ -115,3 +115,6 @@ docs/.vitepress/cache/
 
 # Build artifacts
 build.log
+
+# Quibbler hook artifacts
+.quibbler/
