@@ -237,12 +237,18 @@ fn generate_format_page(
 }
 
 fn truncate(s: &str, max_len: usize) -> String {
-    if s.len() <= max_len {
-        s.replace('|', "\\|").replace('\n', " ")
+    // Sanitize the string first - replace control chars and non-printable bytes
+    let sanitized: String = s
+        .chars()
+        .filter(|c| !c.is_control() || *c == ' ')
+        .map(|c| if c == '|' { '¦' } else { c })
+        .collect();
+
+    // Truncate by character count, not byte count
+    if sanitized.chars().count() <= max_len {
+        sanitized.replace('\n', " ")
     } else {
-        format!(
-            "{}...",
-            &s[..max_len].replace('|', "\\|").replace('\n', " ")
-        )
+        let truncated: String = sanitized.chars().take(max_len).collect();
+        format!("{}...", truncated.replace('\n', " "))
     }
 }
