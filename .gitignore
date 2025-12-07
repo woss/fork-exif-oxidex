@@ -113,6 +113,9 @@ triddefs.trd
 docs/.vitepress/dist/
 docs/.vitepress/cache/
 
+# Generated HTML files in docs (VitePress generates from .md at build time)
+docs/**/*.html
+
 # Build artifacts
 build.log
 
