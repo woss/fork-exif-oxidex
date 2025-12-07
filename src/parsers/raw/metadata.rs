@@ -209,10 +209,12 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
         // Parse this IFD
         match parse_ifd(&reader, ifd_offset, byte_order) {
             Ok(tags) => {
-                // Track sub-IFD offsets
+                // Track sub-IFD offsets, MakerNote data, and camera make
                 let mut exif_ifd_offset = None;
                 let mut gps_ifd_offset = None;
                 let mut sub_ifd_offsets = Vec::new();
+                let mut makernote_data: Option<Vec<u8>> = None;
+                let mut camera_make: Option<String> = None;
 
                 // Convert tags to metadata
                 for (tag_id, field_type, value_count, raw_bytes) in &tags {
@@ -247,6 +249,20 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                         continue; // Don't add pointer tag to metadata
                     }
 
+                    // Check for MakerNote tag (0x927C) - crucial for RAW format metadata
+                    // MakerNotes contain manufacturer-specific camera settings
+                    if *tag_id == 0x927C {
+                        makernote_data = Some(bytes.to_vec());
+                        continue; // Don't add raw MakerNote to metadata, will be parsed separately
+                    }
+
+                    // Check for Make tag (0x010F) - needed for MakerNote dispatcher
+                    if *tag_id == 0x010F && *field_type == 2 {
+                        // Extract camera make for MakerNote parsing (ASCII type)
+                        let make_str = String::from_utf8_lossy(bytes);
+                        camera_make = Some(make_str.trim_end_matches('\0').trim().to_string());
+                    }
+
                     // Convert tag to metadata
                     let tag_name = lookup_tag_name(*tag_id, ifd_name);
                     let tag_value =
@@ -257,15 +273,62 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                 // Parse EXIF Sub-IFD if present
                 if let Some(offset) = exif_ifd_offset {
                     if let Ok(exif_tags) = parse_ifd(&reader, offset, byte_order) {
-                        for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
-                            let tag_name = lookup_tag_name(tag_id, "ExifIFD");
+                        // Also check EXIF IFD for MakerNote and Make tags
+                        let mut exif_makernote: Option<Vec<u8>> = None;
+                        let mut exif_make: Option<String> = None;
+
+                        for (tag_id, field_type, value_count, raw_bytes) in &exif_tags {
+                            let bytes = raw_bytes.as_ref();
+
+                            // MakerNote in EXIF IFD (more common location)
+                            if *tag_id == 0x927C {
+                                exif_makernote = Some(bytes.to_vec());
+                                continue;
+                            }
+
+                            // Make tag in EXIF IFD
+                            if *tag_id == 0x010F && *field_type == 2 {
+                                let make_str = String::from_utf8_lossy(bytes);
+                                exif_make = Some(make_str.trim_end_matches('\0').trim().to_string());
+                            }
+
+                            let tag_name = lookup_tag_name(*tag_id, "ExifIFD");
                             let tag_value = raw_bytes_to_simple_tag_value(
-                                raw_bytes.as_ref(),
-                                field_type,
-                                value_count,
+                                bytes,
+                                *field_type,
+                                *value_count,
                                 byte_order,
                             );
                             metadata.insert(tag_name, tag_value);
+                        }
+
+                        // Prefer EXIF IFD MakerNote/Make over IFD0 versions
+                        if exif_makernote.is_some() {
+                            makernote_data = exif_makernote;
+                        }
+                        if exif_make.is_some() {
+                            camera_make = exif_make;
+                        }
+                    }
+                }
+
+                // Parse MakerNote if present and we have the camera make
+                if let (Some(make), Some(mn_data)) = (camera_make.as_ref(), makernote_data.as_ref())
+                {
+                    // Use the MakerNote dispatcher to parse manufacturer-specific tags
+                    let mut makernote_tags = std::collections::HashMap::new();
+                    if let Err(e) = crate::parsers::tiff::makernote_dispatcher::dispatch_makernote(
+                        make,
+                        mn_data,
+                        byte_order,
+                        &mut makernote_tags,
+                    ) {
+                        eprintln!("Warning: Failed to parse MakerNote for {}: {}", make, e);
+                    } else {
+                        // Add parsed MakerNote tags to metadata
+                        // Tags already have proper prefixes (e.g., "Canon:MacroMode")
+                        for (tag_name, tag_value) in makernote_tags {
+                            metadata.insert(tag_name, TagValue::new_string(tag_value));
                         }
                     }
                 }
