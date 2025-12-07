@@ -241,7 +241,12 @@ fn truncate(s: &str, max_len: usize) -> String {
     let sanitized: String = s
         .chars()
         .filter(|c| !c.is_control() || *c == ' ')
-        .map(|c| if c == '|' { '¦' } else { c })
+        .map(|c| match c {
+            '|' => '¦',  // Pipe breaks markdown tables
+            '<' => '‹',  // Less-than interpreted as HTML tag by VitePress
+            '>' => '›',  // Greater-than interpreted as HTML tag by VitePress
+            _ => c,
+        })
         .collect();
 
     // Truncate by character count, not byte count
