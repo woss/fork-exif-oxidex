@@ -10,6 +10,7 @@ pub mod date_shift;
 pub mod file_format;
 pub mod file_metadata;
 pub mod file_reader_trait;
+pub mod flag_utils;
 pub mod format_dispatch;
 pub mod format_parser_trait;
 pub mod jpeg_helpers;
@@ -28,6 +29,7 @@ pub use oxidex_tags::{FormatFamily, TagDescriptor, TagId, ValueType};
 // Re-export commonly used types for convenience
 pub use file_format::FileFormat;
 pub use file_reader_trait::FileReader;
+pub use flag_utils::decode_flags;
 pub use format_parser_trait::FormatParser;
 pub use metadata::Metadata;
 pub use metadata_map::MetadataMap;
