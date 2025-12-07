@@ -100,13 +100,13 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | RIFF | 75% | ✅ Good |
 | Mach-O | 75% | ✅ Good |
 | PDF | 75% | ✅ Good |
+| JPEG | 60% | ✅ Good |
+| PNG | 60% | ✅ Good |
 | IPTC | 60% | ✅ Good |
 | XMP | 60% | ✅ Good |
 | TEXT | 60% | ✅ Good |
-| JPEG | 60% | ✅ Good |
 | DOCX | 60% | ✅ Good |
 | XLSX | 60% | ✅ Good |
-| PNG | 60% | ✅ Good |
 
 ### ⚠️ Partial Coverage (10-50%)
 
