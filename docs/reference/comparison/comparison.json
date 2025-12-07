@@ -1,10 +1,10 @@
 {
-  "generated_at": "2025-12-07T09:26:28.850389905+00:00",
+  "generated_at": "2025-12-07T09:32:40.407304306+00:00",
   "exiftool_version": "13.43",
   "oxidex_version": "1.2.1",
   "by_format": {
-    "CR2": {
-      "format": "CR2",
+    "GIF": {
+      "format": "GIF",
       "files_tested": 0,
       "matched_tags": [],
       "missing_in_oxidex": [],
@@ -13,19 +13,7 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851459630+00:00"
-    },
-    "HEIC": {
-      "format": "HEIC",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851547565+00:00"
+      "timestamp": "2025-12-07T09:32:40.408398296+00:00"
     },
     "PSD": {
       "format": "PSD",
@@ -37,7 +25,7 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851721731+00:00"
+      "timestamp": "2025-12-07T09:32:40.408630721+00:00"
     },
     "DNG": {
       "format": "DNG",
@@ -49,10 +37,10 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851483484+00:00"
+      "timestamp": "2025-12-07T09:32:40.408375092+00:00"
     },
-    "AVI": {
-      "format": "AVI",
+    "HEIC": {
+      "format": "HEIC",
       "files_tested": 0,
       "matched_tags": [],
       "missing_in_oxidex": [],
@@ -61,10 +49,10 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851434152+00:00"
+      "timestamp": "2025-12-07T09:32:40.408446937+00:00"
     },
-    "MP3": {
-      "format": "MP3",
+    "CR2": {
+      "format": "CR2",
       "files_tested": 0,
       "matched_tags": [],
       "missing_in_oxidex": [],
@@ -73,43 +61,7 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851607116+00:00"
-    },
-    "MP4": {
-      "format": "MP4",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851627785+00:00"
-    },
-    "NEF": {
-      "format": "NEF",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851647011+00:00"
-    },
-    "PDF": {
-      "format": "PDF",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851666427+00:00"
+      "timestamp": "2025-12-07T09:32:40.408351178+00:00"
     },
     "WAV": {
       "format": "WAV",
@@ -121,67 +73,7 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851801130+00:00"
-    },
-    "GIF": {
-      "format": "GIF",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851524952+00:00"
-    },
-    "PNG": {
-      "format": "PNG",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851701984+00:00"
-    },
-    "JPEG": {
-      "format": "JPEG",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851567832+00:00"
-    },
-    "RW2": {
-      "format": "RW2",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851760023+00:00"
-    },
-    "RAF": {
-      "format": "RAF",
-      "files_tested": 0,
-      "matched_tags": [],
-      "missing_in_oxidex": [],
-      "extra_in_oxidex": [],
-      "value_differences": [],
-      "regressions": [],
-      "coverage_percentage": 0.0,
-      "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851741117+00:00"
+      "timestamp": "2025-12-07T09:32:40.408734235+00:00"
     },
     "TIFF": {
       "format": "TIFF",
@@ -193,7 +85,7 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851780291+00:00"
+      "timestamp": "2025-12-07T09:32:40.408711723+00:00"
     },
     "WEBP": {
       "format": "WEBP",
@@ -205,10 +97,10 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851820386+00:00"
+      "timestamp": "2025-12-07T09:32:40.408757569+00:00"
     },
-    "XMP": {
-      "format": "XMP",
+    "MP4": {
+      "format": "MP4",
       "files_tested": 0,
       "matched_tags": [],
       "missing_in_oxidex": [],
@@ -217,7 +109,31 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851839902+00:00"
+      "timestamp": "2025-12-07T09:32:40.408539380+00:00"
+    },
+    "PNG": {
+      "format": "PNG",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408607197+00:00"
+    },
+    "RW2": {
+      "format": "RW2",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408675675+00:00"
     },
     "MKV": {
       "format": "MKV",
@@ -229,7 +145,91 @@
       "regressions": [],
       "coverage_percentage": 0.0,
       "total_exiftool_tags": 0,
-      "timestamp": "2025-12-07T09:26:28.851587389+00:00"
+      "timestamp": "2025-12-07T09:32:40.408492723+00:00"
+    },
+    "PDF": {
+      "format": "PDF",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408584445+00:00"
+    },
+    "RAF": {
+      "format": "RAF",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408653314+00:00"
+    },
+    "MP3": {
+      "format": "MP3",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408515987+00:00"
+    },
+    "JPEG": {
+      "format": "JPEG",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408469960+00:00"
+    },
+    "AVI": {
+      "format": "AVI",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408325660+00:00"
+    },
+    "XMP": {
+      "format": "XMP",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408780061+00:00"
+    },
+    "NEF": {
+      "format": "NEF",
+      "files_tested": 0,
+      "matched_tags": [],
+      "missing_in_oxidex": [],
+      "extra_in_oxidex": [],
+      "value_differences": [],
+      "regressions": [],
+      "coverage_percentage": 0.0,
+      "total_exiftool_tags": 0,
+      "timestamp": "2025-12-07T09:32:40.408562053+00:00"
     }
   },
   "overall_coverage": 0.0,
