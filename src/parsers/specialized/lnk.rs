@@ -64,27 +64,6 @@ const KNOWN_FOLDER_BLOCK_SIG: u32 = 0xA000000B;
 /// Windows FILETIME epoch offset (number of 100-nanosecond intervals from 1601-01-01 to 1970-01-01)
 const FILETIME_EPOCH_DIFF: i64 = 116444736000000000;
 
-/// Helper function to check if a year is a leap year
-fn is_leap_year(year: u64) -> bool {
-    (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
-}
-
-/// Helper function to get the number of days in a month
-fn get_days_in_month(month: u32, year: u64) -> u64 {
-    match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 => {
-            if is_leap_year(year) {
-                29
-            } else {
-                28
-            }
-        }
-        _ => 0,
-    }
-}
-
 /// Windows Shortcut (LNK) parser for extracting metadata from .lnk files
 pub struct LNKParser;
 
@@ -94,13 +73,15 @@ impl LNKParser {
     /// FILETIME represents the number of 100-nanosecond intervals since 1601-01-01 00:00:00 UTC.
     /// Returns None if the timestamp is zero (not set) or invalid.
     fn filetime_to_iso8601(filetime: u64) -> Option<String> {
+        use chrono::{TimeZone, Utc};
+
         if filetime == 0 {
             return None;
         }
 
-        // Convert to Unix timestamp (seconds since 1970-01-01)
+        // FILETIME epoch is 1601-01-01, convert to Unix epoch (1970-01-01)
         let filetime_i64 = filetime as i64;
-        let unix_nanos = (filetime_i64 - FILETIME_EPOCH_DIFF) * 100;
+        let unix_nanos = (filetime_i64 - FILETIME_EPOCH_DIFF).checked_mul(100)?;
 
         if unix_nanos < 0 {
             return None;
@@ -109,50 +90,10 @@ impl LNKParser {
         let unix_secs = unix_nanos / 1_000_000_000;
         let subsec_nanos = (unix_nanos % 1_000_000_000) as u32;
 
-        // Calculate date components from Unix timestamp
-        let days_since_epoch = unix_secs / 86400;
-        let remaining_secs = unix_secs % 86400;
-        let hours = remaining_secs / 3600;
-        let minutes = (remaining_secs % 3600) / 60;
-        let seconds = remaining_secs % 60;
-        let millis = subsec_nanos / 1_000_000;
-
-        // Convert days since epoch to year/month/day
-        let mut year = 1970;
-        let mut days_left = days_since_epoch;
-
-        // Handle negative years (before 1970)
-        if days_left < 0 {
-            return None;
-        }
-
-        loop {
-            let days_in_year = if is_leap_year(year) { 366 } else { 365 };
-            if days_left >= days_in_year {
-                days_left -= days_in_year;
-                year += 1;
-            } else {
-                break;
-            }
-        }
-
-        let mut month = 1;
-        for m in 1..=12 {
-            let days_in_month = get_days_in_month(m, year) as i64;
-            if days_left >= days_in_month {
-                days_left -= days_in_month;
-            } else {
-                month = m;
-                break;
-            }
-        }
-
-        let day = days_left + 1;
-
-        Some(format!(
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
-            year, month, day, hours, minutes, seconds, millis
-        ))
+        // Use timestamp_opt which returns LocalResult (can call .single() for strict validation)
+        Utc.timestamp_opt(unix_secs, subsec_nanos)
+            .single()
+            .map(|dt| dt.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string())
     }
 
     /// Verifies LNK signature by checking magic number and GUID
