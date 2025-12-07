@@ -45,7 +45,7 @@ jobs:
 
       - name: Run benchmarks
         if: steps.changes.outputs.benchmarks_changed == 'true'
-        run: cargo bench --bench integration_benchmarks --bench parse_benchmarks
+        run: cargo bench --bench integration_benchmarks --bench parse_benchmarks -- --quick
 
       - name: Update benchmark metadata in docs
         if: steps.changes.outputs.benchmarks_changed == 'true'
