@@ -117,9 +117,6 @@ clean:
     @echo "Cleaning build artifacts..."
     cargo clean
 
-# Clean and rebuild
-rebuild: clean build
-
 # Run the binary with arguments
 run *args:
     @echo "Running oxidex..."
@@ -202,6 +199,11 @@ audit:
     @echo "Auditing dependencies..."
     cargo audit
 
+# Check for unused dependencies (requires cargo-udeps and nightly)
+udeps:
+    @echo "Checking for unused dependencies..."
+    cargo +nightly udeps --all-targets --all-features
+
 # Install the binary locally
 install:
     @echo "Installing oxidex..."
@@ -275,19 +277,6 @@ workspace:
 
 # Git commands
 # -------------
-
-# Create a new git commit with formatted message
-commit message:
-    @echo "Creating commit: {{message}}"
-    git add -A
-    git commit -m "{{message}}"
-
-# Commit and push to current branch
-push message:
-    @echo "Committing and pushing: {{message}}"
-    git add -A
-    git commit -m "{{message}}"
-    git push origin $(git branch --show-current)
 
 # Show git status
 status:
