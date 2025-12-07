@@ -80,33 +80,33 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | Opus | 100% | ✅ Complete |
 | OGG | 100% | ✅ Complete |
 | WAV | 100% | ✅ Complete |
-| TTF | 90% | ✅ Good |
-| OTF | 90% | ✅ Good |
-| ZIP | 90% | ✅ Good |
 | ICC | 90% | ✅ Good |
+| ZIP | 90% | ✅ Good |
 | PE | 90% | ✅ Good |
-| TIFF | 90% | ✅ Good |
-| EXIF | 90% | ✅ Good |
 | BMP | 90% | ✅ Good |
 | GIF | 90% | ✅ Good |
 | WebP | 90% | ✅ Good |
+| TIFF | 90% | ✅ Good |
+| EXIF | 90% | ✅ Good |
 | SPECIALIZED | 90% | ✅ Good |
+| TTF | 90% | ✅ Good |
+| OTF | 90% | ✅ Good |
 | QuickTime | 75% | ✅ Good |
 | MP4 | 75% | ✅ Good |
 | MOV | 75% | ✅ Good |
-| PDF | 75% | ✅ Good |
 | ELF | 75% | ✅ Good |
-| Mach-O | 75% | ✅ Good |
 | MKV | 75% | ✅ Good |
 | AVI | 75% | ✅ Good |
 | RIFF | 75% | ✅ Good |
+| Mach-O | 75% | ✅ Good |
+| PDF | 75% | ✅ Good |
 | IPTC | 60% | ✅ Good |
 | XMP | 60% | ✅ Good |
-| PNG | 60% | ✅ Good |
+| TEXT | 60% | ✅ Good |
+| JPEG | 60% | ✅ Good |
 | DOCX | 60% | ✅ Good |
 | XLSX | 60% | ✅ Good |
-| JPEG | 60% | ✅ Good |
-| TEXT | 60% | ✅ Good |
+| PNG | 60% | ✅ Good |
 
 ### ⚠️ Partial Coverage (10-50%)
 
