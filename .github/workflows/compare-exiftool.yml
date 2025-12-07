@@ -1,4 +1,4 @@
-name: Generate Tag Comparison Report
+name: ExifTool Compatibility Report
 
 on:
   push:
@@ -6,95 +6,44 @@ on:
     paths:
       - 'src/parsers/**'
       - 'src/bin/tag-comparison/**'
-  schedule:
-    - cron: '0 2 * * 0'  # Weekly Sunday 2 AM UTC
   workflow_dispatch:
 
 jobs:
-  generate-report:
+  compare:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get ExifTool version (for caching)
-        id: get-version
+      - name: Get ExifTool version
+        id: exiftool-version
         run: |
-          # Get the version of ExifTool installed in runner
-          INSTALLED_VERSION=$(exiftool -ver)
-          echo "installed_version=$INSTALLED_VERSION" >> $GITHUB_OUTPUT
-          echo "✅ ExifTool installed version: $INSTALLED_VERSION"
+          VERSION=$(curl -s https://exiftool.org/ver.txt)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "ExifTool latest version: $VERSION"
 
-      - name: Cache ExifTool test suite (version-locked)
-        id: cache-suite
+      - name: Cache ExifTool + test images
         uses: actions/cache@v4
+        id: cache-exiftool
         with:
-          path: exiftool-release/
-          # Cache key includes version: ensures consistency between binary and test files
-          key: exiftool-test-suite-v${{ steps.get-version.outputs.installed_version }}
-          restore-keys: |
-            exiftool-test-suite-
+          path: ~/exiftool
+          key: exiftool-${{ steps.exiftool-version.outputs.version }}
 
-      - name: Download ExifTool release (version-matched)
-        if: steps.cache-suite.outputs.cache-hit != 'true'
+      - name: Download ExifTool release
+        if: steps.cache-exiftool.outputs.cache-hit != 'true'
         run: |
-          VERSION=${{ steps.get-version.outputs.installed_version }}
-          echo "🔄 Cache miss - downloading ExifTool v${VERSION} test suite..."
-          mkdir -p exiftool-release/
+          VERSION=${{ steps.exiftool-version.outputs.version }}
+          echo "Downloading ExifTool $VERSION..."
+          curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" -o exiftool.tar.gz
+          tar -xzf exiftool.tar.gz
+          mv "exiftool-$VERSION" ~/exiftool
+          echo "ExifTool downloaded to ~/exiftool"
+          echo "Test images: $(find ~/exiftool/t/images -type f | wc -l) files"
 
-          # Strategy: Try official tarball first (fastest), fallback to GitHub API
-          DOWNLOAD_SUCCESS=false
-
-          # Attempt 1: Official exiftool.org tarball
-          echo "  → Trying official exiftool.org tarball..."
-          if wget https://exiftool.org/exiftool-${VERSION}.tar.gz -O /tmp/et.tar.gz 2>/dev/null; then
-            echo "  ✅ Downloaded from exiftool.org"
-            tar xzf /tmp/et.tar.gz -C exiftool-release/ --strip-components=1
-            DOWNLOAD_SUCCESS=true
-          fi
-
-          # Attempt 2: GitHub release archive (fallback)
-          if [ "$DOWNLOAD_SUCCESS" = false ]; then
-            echo "  → Trying GitHub release archive..."
-            GITHUB_URL="https://github.com/exiftool/exiftool/archive/refs/tags/${VERSION}.tar.gz"
-            if wget "$GITHUB_URL" -O /tmp/et.tar.gz 2>/dev/null; then
-              echo "  ✅ Downloaded from GitHub releases"
-              tar xzf /tmp/et.tar.gz -C exiftool-release/ --strip-components=1
-              DOWNLOAD_SUCCESS=true
-            fi
-          fi
-
-          # Attempt 3: GitHub API tarball (always available, slower)
-          if [ "$DOWNLOAD_SUCCESS" = false ]; then
-            echo "  → Trying GitHub API (fallback)..."
-            GITHUB_API_URL="https://api.github.com/repos/exiftool/exiftool/tarball/${VERSION}"
-            wget "$GITHUB_API_URL" -O /tmp/et.tar.gz
-            echo "  ✅ Downloaded from GitHub API"
-            tar xzf /tmp/et.tar.gz -C exiftool-release/ --strip-components=2
-            DOWNLOAD_SUCCESS=true
-          fi
-
-          if [ "$DOWNLOAD_SUCCESS" = false ]; then
-            echo "❌ ERROR: Could not download ExifTool v${VERSION}"
-            exit 1
-          fi
-
-          # Verify test images directory exists for this version
-          if [ ! -d "exiftool-release/t/images" ]; then
-            echo "❌ ERROR: Test images not found in ExifTool v${VERSION}"
-            echo "Available directories in archive:"
-            ls -la exiftool-release/ | head -10
-            exit 1
-          fi
-
-          echo "✅ Successfully downloaded ExifTool v${VERSION} with test images"
-          echo "Test image count: $(find exiftool-release/t/images -type f | wc -l)"
-
-      - name: Setup Rust toolchain
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust dependencies
@@ -105,153 +54,40 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Build tag-comparison binary
+      - name: Build OxiDex and comparison tool
         run: |
-          echo "🔨 Building tag-comparison binary..."
-          cargo build --release --bin tag-comparison 2>&1 | grep -E "(Compiling|Finished|error)" || true
+          cargo build --release
+          cargo build --release --bin tag-comparison
 
-      - name: Generate tag comparison report
-        id: report
+      - name: Get OxiDex version
+        id: oxidex-version
         run: |
-          VERSION=${{ steps.get-version.outputs.installed_version }}
-          echo "📊 Generating tag comparison report for ExifTool v${VERSION}..."
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Create output directory
-          mkdir -p target/report/
-
-          # Run tag-comparison with ExifTool test suite
+      - name: Run comparison
+        run: |
           ./target/release/tag-comparison \
-            --fixture-dir exiftool-release/t/images \
-            --output target/report/comparison.json \
-            2>&1 | tee target/report/build.log
+            --exiftool ~/exiftool/exiftool \
+            --samples ~/exiftool/t/images \
+            --baseline docs/reference/comparison/baseline.json \
+            --output docs/reference/comparison \
+            --markdown-dir docs/reference/comparison \
+            --exiftool-version "${{ steps.exiftool-version.outputs.version }}" \
+            --oxidex-version "${{ steps.oxidex-version.outputs.version }}"
 
-          if [ $? -eq 0 ]; then
-            echo "✅ Report generated successfully"
-            # Extract summary statistics
-            if [ -f "target/report/comparison.json" ]; then
-              REPORT_SIZE=$(wc -c < target/report/comparison.json)
-              echo "Report size: ${REPORT_SIZE} bytes"
-              echo "report_generated=true" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "⚠️ Report generation encountered issues (see logs above)"
-            echo "report_generated=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Generate HTML report
-        if: steps.report.outputs.report_generated == 'true'
+      - name: Commit reports
         run: |
-          echo "🎨 Generating HTML report..."
-          # Create simple HTML template for report
-          mkdir -p docs/reference/tag-comparison/
-
-          cat > docs/reference/tag-comparison/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>OxiDex Tag Comparison Report</title>
-              <style>
-                  body {
-                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                      line-height: 1.6;
-                      color: #333;
-                      max-width: 1200px;
-                      margin: 0 auto;
-                      padding: 20px;
-                      background: #f5f5f5;
-                  }
-                  .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-                  h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-                  h2 { color: #34495e; margin-top: 30px; }
-                  .metadata { background: #ecf0f1; padding: 15px; border-radius: 4px; margin: 20px 0; }
-                  .metric { display: inline-block; margin: 10px 20px 10px 0; }
-                  .metric-label { font-weight: bold; color: #2c3e50; }
-                  .metric-value { font-size: 1.3em; color: #3498db; }
-                  table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                  th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-                  th { background: #3498db; color: white; font-weight: bold; }
-                  tr:hover { background: #f9f9f9; }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <h1>📊 OxiDex Tag Comparison Report</h1>
-
-                  <div class="metadata">
-                      <div class="metric">
-                          <span class="metric-label">Generated:</span>
-                          <span class="metric-value" id="timestamp"></span>
-                      </div>
-                      <div class="metric">
-                          <span class="metric-label">ExifTool Version:</span>
-                          <span class="metric-value" id="exiftool-version"></span>
-                      </div>
-                      <div class="metric">
-                          <span class="metric-label">Test Suite Version:</span>
-                          <span class="metric-version"></span>
-                      </div>
-                  </div>
-
-                  <h2>📈 Summary</h2>
-                  <p>This report compares OxiDex's metadata tag support against the official ExifTool release.</p>
-                  <p>Test images come from the exact ExifTool version being compared, ensuring consistency.</p>
-
-                  <h2>ℹ️ Data Location</h2>
-                  <p>Detailed comparison data: <a href="./comparison.json">comparison.json</a></p>
-
-                  <h2>🔗 References</h2>
-                  <ul>
-                      <li><a href="https://exiftool.org/">ExifTool Official Site</a></li>
-                      <li><a href="https://github.com/exiftool/exiftool">ExifTool GitHub Repository</a></li>
-                      <li><a href="../../">OxiDex Documentation</a></li>
-                  </ul>
-
-                  <p style="margin-top: 40px; text-align: center; color: #7f8c8d; font-size: 0.9em;">
-                      Auto-generated by <a href="/.github/workflows/compare-exiftool.yml">GitHub Actions workflow</a>
-                  </p>
-              </div>
-
-              <script>
-                  // Set timestamp
-                  document.getElementById('timestamp').textContent = new Date().toLocaleString();
-                  document.getElementById('exiftool-version').textContent = 'See comparison.json';
-              </script>
-          </body>
-          </html>
-          EOF
-
-          # Copy data file
-          cp target/report/comparison.json docs/reference/tag-comparison/ 2>/dev/null || true
-
-          echo "✅ HTML report generated"
-          ls -lh docs/reference/tag-comparison/
-
-      - name: Deploy to GitHub Pages
-        if: always()
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/reference/tag-comparison
-          destination_dir: tag-comparison
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "✅ Tag Comparison Workflow Complete"
-          echo "======================================"
-          echo ""
-          echo "ExifTool Version: ${{ steps.get-version.outputs.installed_version }}"
-          echo "Cache Hit: ${{ steps.cache-suite.outputs.cache-hit }}"
-          echo "Report Generated: ${{ steps.report.outputs.report_generated }}"
-          echo ""
-          if [ "${{ steps.cache-suite.outputs.cache-hit }}" = "true" ]; then
-            echo "⚡ Used cached test suite (no download needed)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/reference/comparison/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
           else
-            echo "📥 Downloaded fresh test suite"
+            git commit -m "docs: update ExifTool compatibility report
+
+          ExifTool: v${{ steps.exiftool-version.outputs.version }}
+          OxiDex: v${{ steps.oxidex-version.outputs.version }}"
+            git push
           fi
-          echo ""
-          echo "🌐 Report deployed to: https://oxidex.net/tag-comparison/"

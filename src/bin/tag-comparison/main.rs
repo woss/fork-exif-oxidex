@@ -17,9 +17,9 @@ use comparison::{ComparisonEngine, generate_markdown_reports};
 #[command(name = "tag-comparison")]
 #[command(about = "Compare tags extracted by OxiDex vs ExifTool", long_about = None)]
 struct Args {
-    /// Path to test fixtures directory
-    #[arg(long, default_value = "tests/fixtures")]
-    fixture_path: PathBuf,
+    /// Path to test samples directory
+    #[arg(long, alias = "fixture-path", default_value = "tests/fixtures")]
+    samples: PathBuf,
 
     /// Specific format to process (if not specified, all formats)
     #[arg(long)]
@@ -29,13 +29,25 @@ struct Args {
     #[arg(short, long, default_value = "comparison.json")]
     output: PathBuf,
 
+    /// Path to baseline.json for regression detection
+    #[arg(long)]
+    baseline: Option<PathBuf>,
+
     /// Path to exiftool executable
     #[arg(long, default_value = "exiftool")]
     exiftool: String,
 
     /// Output directory for markdown reports
-    #[arg(long, default_value = "docs/compatibility")]
+    #[arg(long, default_value = "docs/reference/comparison")]
     markdown_dir: PathBuf,
+
+    /// ExifTool version string (for report metadata)
+    #[arg(long, default_value = "unknown")]
+    exiftool_version: String,
+
+    /// OxiDex version string (for report metadata)
+    #[arg(long, default_value = "unknown")]
+    oxidex_version: String,
 }
 
 #[tokio::main]
@@ -44,42 +56,54 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("🏷️  Tag Comparison Tool");
     println!("=======================\n");
+    println!("ExifTool: v{}", args.exiftool_version);
+    println!("OxiDex: v{}", args.oxidex_version);
+    println!("Samples: {}", args.samples.display());
+    println!();
+
+    // Load baseline for regression detection
+    let baseline: Option<ComparisonReport> = args.baseline.as_ref().and_then(|path| {
+        if path.exists() {
+            std::fs::read_to_string(path)
+                .ok()
+                .and_then(|content| serde_json::from_str(&content).ok())
+        } else {
+            None
+        }
+    });
 
     // Create report
     let mut report = ComparisonReport::new();
+    report.exiftool_version = args.exiftool_version.clone();
+    report.oxidex_version = args.oxidex_version.clone();
 
-    // Determine which formats to process
+    // Auto-detect formats from samples directory
     let formats = if let Some(format) = args.format {
         vec![format]
     } else {
-        // TODO: Auto-detect formats from fixture directory
-        vec![
-            "JPEG".to_string(),
-            "PNG".to_string(),
-            "TIFF".to_string(),
-            "PDF".to_string(),
-            "MP4".to_string(),
-        ]
+        detect_formats(&args.samples)?
     };
+
+    println!("Found {} formats to process\n", formats.len());
 
     // Process each format
     for format in formats {
         println!("Processing format: {}", format);
 
         // Extract OxiDex tags
-        let mut oxidex_extractor = OxiDexExtractor::new(args.fixture_path.clone());
+        let mut oxidex_extractor = OxiDexExtractor::new(args.samples.clone());
         match oxidex_extractor.extract_format_tags(&format).await {
             Ok(oxidex_tags) => {
                 println!("  OxiDex found {} tags", oxidex_tags.len());
 
                 // Extract ExifTool tags
                 let mut exiftool_extractor = ExifToolExtractor::new(args.exiftool.clone());
-                match exiftool_extractor.extract_format_tags(&format, &args.fixture_path).await {
+                match exiftool_extractor.extract_format_tags(&format, &args.samples).await {
                     Ok(exiftool_tags) => {
                         println!("  ExifTool found {} tags", exiftool_tags.len());
 
-                        // Compare
-                        let previous = None; // TODO: Load from baseline
+                        // Compare with baseline for regression detection
+                        let previous = baseline.as_ref().and_then(|b| b.by_format.get(&format));
                         let comparison = ComparisonEngine::compare(oxidex_tags, exiftool_tags, &format, previous);
                         println!("  Result: {}", comparison.summary());
 
@@ -109,5 +133,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     generate_markdown_reports(&report, &args.markdown_dir)?;
     println!("✅ Markdown reports saved to: {}", args.markdown_dir.display());
 
+    // Save updated baseline
+    if let Some(baseline_path) = &args.baseline {
+        let baseline_json = serde_json::to_string_pretty(&report)?;
+        if let Some(parent) = baseline_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(baseline_path, baseline_json)?;
+        println!("✅ Baseline updated: {}", baseline_path.display());
+    }
+
     Ok(())
+}
+
+fn detect_formats(samples_path: &PathBuf) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut formats = Vec::new();
+
+    if samples_path.is_dir() {
+        for entry in std::fs::read_dir(samples_path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    // Skip hidden directories
+                    if !name.starts_with('.') {
+                        formats.push(name.to_uppercase());
+                    }
+                }
+            }
+        }
+    }
+
+    formats.sort();
+    Ok(formats)
 }
