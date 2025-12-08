@@ -1329,6 +1329,311 @@
 #define SHN_XINDEX 65535
 
 /*
+ Emissivity (f32) - thermal emissivity of the target object
+ */
+#define EMISSIVITY 32
+
+/*
+ Object distance in meters (f32)
+ */
+#define OBJECT_DISTANCE 36
+
+/*
+ Reflected apparent temperature in Kelvin (f32)
+ */
+#define REFLECTED_APPARENT_TEMP 40
+
+/*
+ Atmospheric temperature in Kelvin (f32)
+ */
+#define ATMOSPHERIC_TEMP 44
+
+/*
+ IR window temperature in Kelvin (f32)
+ */
+#define IR_WINDOW_TEMP 48
+
+/*
+ IR window transmission coefficient (f32)
+ */
+#define IR_WINDOW_TRANSMISSION 52
+
+/*
+ Relative humidity as percentage (f32)
+ */
+#define RELATIVE_HUMIDITY 60
+
+/*
+ Planck R1 constant (f32)
+ */
+#define PLANCK_R1 88
+
+/*
+ Planck B constant (f32)
+ */
+#define PLANCK_B 92
+
+/*
+ Planck F constant (f32)
+ */
+#define PLANCK_F 96
+
+/*
+ Atmospheric transmission alpha1 coefficient (f32)
+ */
+#define ATMOSPHERIC_TRANS_ALPHA1 112
+
+/*
+ Atmospheric transmission alpha2 coefficient (f32)
+ */
+#define ATMOSPHERIC_TRANS_ALPHA2 116
+
+/*
+ Atmospheric transmission beta1 coefficient (f32)
+ */
+#define ATMOSPHERIC_TRANS_BETA1 120
+
+/*
+ Atmospheric transmission beta2 coefficient (f32)
+ */
+#define ATMOSPHERIC_TRANS_BETA2 124
+
+/*
+ Atmospheric transmission X coefficient (f32)
+ */
+#define ATMOSPHERIC_TRANS_X 128
+
+/*
+ Camera temperature range maximum in Kelvin (f32)
+ */
+#define CAMERA_TEMP_RANGE_MAX 144
+
+/*
+ Camera temperature range minimum in Kelvin (f32)
+ */
+#define CAMERA_TEMP_RANGE_MIN 148
+
+/*
+ Camera temperature max clip value (f32)
+ */
+#define CAMERA_TEMP_MAX_CLIP 152
+
+/*
+ Camera temperature min clip value (f32)
+ */
+#define CAMERA_TEMP_MIN_CLIP 156
+
+/*
+ Camera temperature max warn value (f32)
+ */
+#define CAMERA_TEMP_MAX_WARN 160
+
+/*
+ Camera temperature min warn value (f32)
+ */
+#define CAMERA_TEMP_MIN_WARN 164
+
+/*
+ Camera temperature max saturated value (f32)
+ */
+#define CAMERA_TEMP_MAX_SATURATED 168
+
+/*
+ Camera temperature min saturated value (f32)
+ */
+#define CAMERA_TEMP_MIN_SATURATED 172
+
+/*
+ Camera model string (32 bytes)
+ */
+#define CAMERA_MODEL 212
+
+/*
+ Camera part number string (32 bytes)
+ */
+#define CAMERA_PART_NUMBER 244
+
+/*
+ Camera serial number string (16 bytes)
+ */
+#define CAMERA_SERIAL_NUMBER 260
+
+/*
+ Camera software version string (16 bytes)
+ */
+#define CAMERA_SOFTWARE 276
+
+/*
+ Lens model string (32 bytes)
+ */
+#define LENS_MODEL 368
+
+/*
+ Lens part number string (16 bytes)
+ */
+#define LENS_PART_NUMBER 400
+
+/*
+ Lens serial number string (16 bytes)
+ */
+#define LENS_SERIAL_NUMBER 416
+
+/*
+ Field of view in degrees (f32)
+ */
+#define FIELD_OF_VIEW 436
+
+/*
+ Peak spectral sensitivity in micrometers (f32)
+ */
+#define PEAK_SPECTRAL_SENSITIVITY 440
+
+/*
+ Filter model string (16 bytes)
+ */
+#define FILTER_MODEL 492
+
+/*
+ Filter part number string (32 bytes)
+ */
+#define FILTER_PART_NUMBER 508
+
+/*
+ Filter serial number string (32 bytes)
+ */
+#define FILTER_SERIAL_NUMBER 540
+
+/*
+ Planck O constant (i32)
+ */
+#define PLANCK_O 776
+
+/*
+ Planck R2 constant (f32)
+ */
+#define PLANCK_R2 780
+
+/*
+ Raw value range minimum (u16)
+ */
+#define RAW_VALUE_RANGE_MIN 784
+
+/*
+ Raw value range maximum (u16)
+ */
+#define RAW_VALUE_RANGE_MAX 786
+
+/*
+ Raw value median (u16)
+ */
+#define RAW_VALUE_MEDIAN 824
+
+/*
+ Raw value range (u16)
+ */
+#define RAW_VALUE_RANGE 828
+
+/*
+ Date/time original (various formats)
+ */
+#define DATE_TIME_ORIGINAL 900
+
+/*
+ Focus step count (i16)
+ */
+#define FOCUS_STEP_COUNT 912
+
+/*
+ Focus distance in meters (f32)
+ */
+#define FOCUS_DISTANCE 1116
+
+/*
+ Frame rate (u16)
+ */
+#define FRAME_RATE 1124
+
+/*
+ Byte order indicator (u16)
+ */
+#define BYTE_ORDER 0
+
+/*
+ Raw thermal image width (u16)
+ */
+#define WIDTH 2
+
+/*
+ Raw thermal image height (u16)
+ */
+#define HEIGHT 4
+
+/*
+ Raw thermal image type (u16)
+ */
+#define IMAGE_TYPE 16
+
+/*
+ Number of palette colors (u8)
+ */
+#define PALETTE_COLORS 0
+
+/*
+ Above color RGB (3 bytes)
+ */
+#define ABOVE_COLOR 6
+
+/*
+ Below color RGB (3 bytes)
+ */
+#define BELOW_COLOR 9
+
+/*
+ Overflow color RGB (3 bytes)
+ */
+#define OVERFLOW_COLOR 12
+
+/*
+ Underflow color RGB (3 bytes)
+ */
+#define UNDERFLOW_COLOR 15
+
+/*
+ Isotherm1 color RGB (3 bytes)
+ */
+#define ISOTHERM1_COLOR 18
+
+/*
+ Isotherm2 color RGB (3 bytes)
+ */
+#define ISOTHERM2_COLOR 21
+
+/*
+ Palette method (u8)
+ */
+#define PALETTE_METHOD 26
+
+/*
+ Palette stretch (u8)
+ */
+#define PALETTE_STRETCH 27
+
+/*
+ Palette file name (32 bytes)
+ */
+#define PALETTE_FILE_NAME 48
+
+/*
+ Palette name (32 bytes)
+ */
+#define PALETTE_NAME 80
+
+/*
+ Palette data (variable length)
+ */
+#define PALETTE 112
+
+/*
  Regular section
  */
 #define S_REGULAR 0
@@ -2752,6 +3057,116 @@
  Reproducible build debug information
  */
 #define IMAGE_DEBUG_TYPE_REPRO 16
+
+/*
+ Version string offset (4 bytes ASCII)
+ */
+#define VERSION 0
+
+/*
+ Exit pupil position offset
+ */
+#define EXIT_PUPIL_POSITION 4
+
+/*
+ AF aperture offset
+ */
+#define AF_APERTURE 5
+
+/*
+ Focus position offset
+ */
+#define FOCUS_POSITION 8
+
+/*
+ Focal length offset (encoded)
+ */
+#define FOCAL_LENGTH 10
+
+/*
+ Lens ID number offset
+ */
+#define LENS_ID_NUMBER 11
+
+/*
+ Lens F-stops offset (encoded as value / 12)
+ */
+#define LENS_FSTOPS 12
+
+/*
+ Minimum focal length offset (encoded)
+ */
+#define MIN_FOCAL_LENGTH 13
+
+/*
+ Maximum focal length offset (encoded)
+ */
+#define MAX_FOCAL_LENGTH 14
+
+/*
+ Maximum aperture at minimum focal length offset (encoded APEX value)
+ */
+#define MAX_APERTURE_AT_MIN_FOCAL 15
+
+/*
+ Maximum aperture at maximum focal length offset (encoded APEX value)
+ */
+#define MAX_APERTURE_AT_MAX_FOCAL 16
+
+/*
+ MCU (Micro Controller Unit) version offset
+ */
+#define MCU_VERSION 17
+
+/*
+ Minimum structure size for this version
+ */
+#define MIN_SIZE 18
+
+/*
+ Effective maximum aperture offset
+ */
+#define EFFECTIVE_MAX_APERTURE 19
+
+/*
+ Bit 0: MF (Manual Focus) lens - no AF motor
+ */
+#define MF 1
+
+/*
+ Bit 1: D lens - has distance encoder for 3D matrix metering
+ */
+#define D 2
+
+/*
+ Bit 2: G lens - no aperture ring (electronically controlled)
+ */
+#define G 4
+
+/*
+ Bit 3: VR (Vibration Reduction) lens - has optical stabilization
+ */
+#define VR 8
+
+/*
+ Bit 4: 1 (Nikon 1 mount lens)
+ */
+#define NIKON_1 16
+
+/*
+ Bit 5: FT-1 adapter (Nikon F to Nikon 1)
+ */
+#define FT1 32
+
+/*
+ Bit 6: E lens (electronic aperture, newer than G)
+ */
+#define E 64
+
+/*
+ Bit 7: AF-S lens (Silent Wave Motor for autofocus)
+ */
+#define AF_S 128
 
 /*
  Rich Capture mode tag (Off/On/Auto)

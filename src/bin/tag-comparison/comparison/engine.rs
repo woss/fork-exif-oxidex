@@ -22,9 +22,18 @@ fn is_enum_like_value(value: &str) -> bool {
     // Check if it's primarily alphabetic with allowed characters
     // Allowed: letters, digits, spaces, hyphens, slashes, underscores, parentheses
     let alpha_count = value.chars().filter(|c| c.is_ascii_alphabetic()).count();
-    let total_valid = value.chars().filter(|c| {
-        c.is_ascii_alphanumeric() || *c == ' ' || *c == '-' || *c == '/' || *c == '_' || *c == '(' || *c == ')'
-    }).count();
+    let total_valid = value
+        .chars()
+        .filter(|c| {
+            c.is_ascii_alphanumeric()
+                || *c == ' '
+                || *c == '-'
+                || *c == '/'
+                || *c == '_'
+                || *c == '('
+                || *c == ')'
+        })
+        .count();
 
     // Must be all valid characters and at least 50% alphabetic
     total_valid == value.len() && alpha_count * 2 >= value.len()
@@ -55,8 +64,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     // Handle GPS coordinate precision differences
     // ExifTool: "51 deg 26' 35.00\"" vs OxiDex: "51 deg 26' 35\""
     // Normalize to 2 decimal places for seconds
-    if (tag_key.contains("GPSLatitude") || tag_key.contains("GPSLongitude")
-        || tag_key.contains("GPSDestLatitude") || tag_key.contains("GPSDestLongitude"))
+    if (tag_key.contains("GPSLatitude")
+        || tag_key.contains("GPSLongitude")
+        || tag_key.contains("GPSDestLatitude")
+        || tag_key.contains("GPSDestLongitude"))
         && !tag_key.contains("Ref")
         && normalized.contains("deg")
     {
@@ -116,9 +127,7 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
             }
         }
         // Normalize T separator and dashes
-        let date_normalized = date_str
-            .replace('T', " ")
-            .replace('-', ":");
+        let date_normalized = date_str.replace('T', " ").replace('-', ":");
         if date_normalized.len() >= 10 {
             return date_normalized;
         }
@@ -134,6 +143,52 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
             }
         }
         // Already a number
+        if normalized.parse::<i32>().is_ok() {
+            return normalized.to_string();
+        }
+    }
+
+    // Handle XMP:Prefs format normalization
+    // ExifTool: "Tagged:1, ColorClass:0, Rating:0, FrameNum:-00001"
+    // OxiDex: "1:0:0:-00001"
+    if tag_key.contains("Prefs") && !tag_key.contains("ICC") {
+        // Try to parse ExifTool verbose format
+        if normalized.contains("Tagged:") && normalized.contains("ColorClass:") {
+            // Parse verbose format and convert to compact
+            let tagged = extract_number_after_colon(&normalized, "Tagged:").unwrap_or(0);
+            let color_class = extract_number_after_colon(&normalized, "ColorClass:").unwrap_or(0);
+            let rating = extract_number_after_colon(&normalized, "Rating:").unwrap_or(0);
+            // Extract frame number (may be negative)
+            let frame_num = if let Some(idx) = normalized.find("FrameNum:") {
+                let rest = &normalized[idx + 9..];
+                let end = rest
+                    .find(|c: char| !c.is_ascii_digit() && c != '-')
+                    .unwrap_or(rest.len());
+                rest[..end].to_string()
+            } else {
+                "0".to_string()
+            };
+            return format!("{}:{}:{}:{}", tagged, color_class, rating, frame_num);
+        }
+        // Already in compact format, ensure consistent
+        if normalized.matches(':').count() == 3 {
+            return normalized.to_string();
+        }
+    }
+
+    // Handle "(not set)" vs empty string
+    if normalized == "(not set)" || normalized == "not set" {
+        return "".to_string();
+    }
+
+    // Handle YCbCrSubSampling: "Unknown (2)" vs "2"
+    if tag_key.contains("YCbCrSubSampling") {
+        if let Some(start) = normalized.find('(') {
+            if let Some(end) = normalized.find(')') {
+                return normalized[start + 1..end].to_string();
+            }
+        }
+        // Single number
         if normalized.parse::<i32>().is_ok() {
             return normalized.to_string();
         }
@@ -294,7 +349,11 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
 
     // Handle "Normal" vs "0" for certain MakerNotes tags
     let contrast_like_tags = [
-        "Contrast", "Saturation", "Sharpness", "ColorMode", "CameraOrientation"
+        "Contrast",
+        "Saturation",
+        "Sharpness",
+        "ColorMode",
+        "CameraOrientation",
     ];
     for tag_suffix in contrast_like_tags {
         if tag_key.contains(tag_suffix) {
@@ -429,7 +488,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
                 if d != 0.0 {
                     let val = n / d;
                     // Round to reasonable precision
-                    return format!("{:.6}", val).trim_end_matches('0').trim_end_matches('.').to_string();
+                    return format!("{:.6}", val)
+                        .trim_end_matches('0')
+                        .trim_end_matches('.')
+                        .to_string();
                 }
             }
         }
@@ -477,6 +539,20 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     normalized
+}
+
+/// Extract a number that follows a prefix like "Tagged:" or "Rating:"
+fn extract_number_after_colon(s: &str, prefix: &str) -> Option<i32> {
+    let idx = s.find(prefix)?;
+    let rest = &s[idx + prefix.len()..];
+    let end = rest
+        .find(|c: char| !c.is_ascii_digit() && c != '-')
+        .unwrap_or(rest.len());
+    if end > 0 {
+        rest[..end].parse().ok()
+    } else {
+        None
+    }
 }
 
 /// Normalize GPS coordinate to consistent precision
@@ -687,26 +763,44 @@ mod tests {
         let exiftool_value = normalize_value_for_comparison("XMP:ColorClass", "0 (None)");
         let oxidex_value = normalize_value_for_comparison("XMP:ColorClass", "0");
 
-        assert_eq!(exiftool_value, "0", "ExifTool value should normalize to '0'");
+        assert_eq!(
+            exiftool_value, "0",
+            "ExifTool value should normalize to '0'"
+        );
         assert_eq!(oxidex_value, "0", "OxiDex value should normalize to '0'");
-        assert_eq!(exiftool_value, oxidex_value, "Both should match after normalization");
+        assert_eq!(
+            exiftool_value, oxidex_value,
+            "Both should match after normalization"
+        );
     }
 
     #[test]
     fn test_colorclass_comparison_matches() {
         // Test that ColorClass values match in comparison
-        let oxidex_tags = vec![
-            TagInfo::new("ColorClass".to_string(), "XMP".to_string(), "0".to_string()),
-        ];
-        let exiftool_tags = vec![
-            TagInfo::new("ColorClass".to_string(), "XMP".to_string(), "0 (None)".to_string()),
-        ];
+        let oxidex_tags = vec![TagInfo::new(
+            "ColorClass".to_string(),
+            "XMP".to_string(),
+            "0".to_string(),
+        )];
+        let exiftool_tags = vec![TagInfo::new(
+            "ColorClass".to_string(),
+            "XMP".to_string(),
+            "0 (None)".to_string(),
+        )];
 
         let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
 
         // Should match after normalization
-        assert_eq!(result.matched_tags.len(), 1, "ColorClass should be in matched tags");
-        assert_eq!(result.value_differences.len(), 0, "No value differences expected");
+        assert_eq!(
+            result.matched_tags.len(),
+            1,
+            "ColorClass should be in matched tags"
+        );
+        assert_eq!(
+            result.value_differences.len(),
+            0,
+            "No value differences expected"
+        );
     }
 
     #[test]
