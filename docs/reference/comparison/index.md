@@ -15,7 +15,7 @@ title: ExifTool Compatibility Report
 | [APPLE](./apple.md) | 66 | 59.0% | 79 | 40 | 14 | 0 |
 | [CANON](./canon.md) | 725 | 23.7% | 632 | 82 | 36 | 0 |
 | [DJI](./dji.md) | 21 | 50.9% | 126 | 46 | 14 | 0 |
-| [FUJIFILM](./fujifilm.md) | 411 | 63.5% | 138 | 50 | 45 | 0 |
+| [FUJIFILM](./fujifilm.md) | 411 | 63.1% | 138 | 50 | 47 | 0 |
 | [GOOGLE](./google.md) | 24 | 42.3% | 172 | 31 | 15 | 0 |
 | [GOPRO](./gopro.md) | 23 | 62.2% | 64 | 30 | 7 | 0 |
 | [LEICA](./leica.md) | 67 | 35.0% | 337 | 131 | 27 | 0 |

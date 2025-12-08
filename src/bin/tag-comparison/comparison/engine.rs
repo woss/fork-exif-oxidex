@@ -215,6 +215,36 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         return normalized.to_lowercase();
     }
 
+    // Handle "Normal" vs "0" for certain MakerNotes tags
+    let contrast_like_tags = [
+        "Contrast", "Saturation", "Sharpness", "ColorMode", "CameraOrientation"
+    ];
+    for tag_suffix in contrast_like_tags {
+        if tag_key.contains(tag_suffix) {
+            if normalized == "0" || normalized.eq_ignore_ascii_case("normal") {
+                return "normal".to_string();
+            }
+        }
+    }
+
+    // Handle rotation formatting: "0°" vs "Horizontal (normal)"
+    if tag_key.contains("Rotation") || tag_key.contains("Orientation") {
+        if normalized == "0°" || normalized == "0" || normalized.contains("horizontal (normal)") {
+            return "0".to_string();
+        }
+    }
+
+    // Handle EV formatting: "0" vs "0.0 EV"
+    if tag_key.contains("Bias") || tag_key.contains("FlashBias") {
+        let num_str = normalized.trim_end_matches(" EV").trim_end_matches("EV");
+        if let Ok(val) = num_str.parse::<f64>() {
+            if val.abs() < 0.001 {
+                return "0".to_string();
+            }
+            return format!("{:.1}", val);
+        }
+    }
+
     // Handle numeric comparison with slight differences
     if tag_key.contains("FocalType")
         || tag_key.contains("Contrast")
