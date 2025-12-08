@@ -3,8 +3,10 @@
 use super::super::shared::{array_schemas::*, tag_registry::TagRegistry};
 
 // Re-export existing decoders from canon.rs
+// These decoders convert numeric values to human-readable strings
 use super::super::canon::{
-    DRIVE_MODE, EXPOSURE_MODE, FLASH_MODE, FOCUS_MODE, MACRO_MODE, METERING_MODE, QUALITY,
+    CONTRAST, DIGITAL_ZOOM, DRIVE_MODE, EASY_MODE, EXPOSURE_MODE, FLASH_MODE, FOCUS_MODE,
+    FOCUS_RANGE, MACRO_MODE, METERING_MODE, QUALITY, SATURATION, SHARPNESS,
 };
 
 // ============================================================================
@@ -13,6 +15,7 @@ use super::super::canon::{
 
 /// CameraSettings array schema (Tag 0x0001)
 /// Contains 18+ camera configuration settings
+/// Reference: ExifTool Canon.pm CameraSettings table
 static CAMERA_SETTINGS_SCHEMA: ArraySchema = ArraySchema {
     name: "CameraSettings",
     indices: &[
@@ -23,13 +26,14 @@ static CAMERA_SETTINGS_SCHEMA: ArraySchema = ArraySchema {
         ArrayIndexDef::with_i16_decoder(5, "DriveMode", &DRIVE_MODE),
         ArrayIndexDef::with_i16_decoder(7, "FocusMode", &FOCUS_MODE),
         ArrayIndexDef::raw(10, "ImageSize"),
-        ArrayIndexDef::raw(11, "EasyMode"),
-        ArrayIndexDef::raw(13, "Contrast"),
-        ArrayIndexDef::raw(14, "Saturation"),
-        ArrayIndexDef::raw(15, "Sharpness"),
+        ArrayIndexDef::with_i16_decoder(11, "EasyMode", &EASY_MODE),
+        ArrayIndexDef::with_i16_decoder(12, "DigitalZoom", &DIGITAL_ZOOM),
+        ArrayIndexDef::with_i16_decoder(13, "Contrast", &CONTRAST),
+        ArrayIndexDef::with_i16_decoder(14, "Saturation", &SATURATION),
+        ArrayIndexDef::with_i16_decoder(15, "Sharpness", &SHARPNESS),
         ArrayIndexDef::raw(16, "ISO"),
         ArrayIndexDef::with_i16_decoder(17, "MeteringMode", &METERING_MODE),
-        ArrayIndexDef::raw(18, "FocusType"),
+        ArrayIndexDef::with_i16_decoder(18, "FocusRange", &FOCUS_RANGE),
         ArrayIndexDef::raw(19, "AFPoint"),
         ArrayIndexDef::with_i16_decoder(20, "ExposureMode", &EXPOSURE_MODE),
         ArrayIndexDef::raw(28, "FlashActivity"),

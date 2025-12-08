@@ -53,8 +53,10 @@ use crate::core::formatters::{
     decode_cfa_pattern, decode_gps_processing_method, decode_scene_type, decode_version_bytes,
     format_exposure_program, format_gps_altitude_ref, format_gps_direction_ref,
     format_gps_lat_ref, format_gps_lon_ref, format_gps_speed_ref, format_icc_value,
-    format_with_unit, is_icc_matrix_tag,
+    format_integer_precision_values, format_three_decimal_values, format_with_unit,
+    is_icc_matrix_tag, is_integer_precision_tag, is_three_decimal_tag,
 };
+use crate::core::binary_decoders::decode_user_comment;
 use crate::core::formatters::gps_speed_ref::format_gps_dest_distance_ref;
 use crate::core::formatters::gps_status::{format_gps_differential, format_gps_measure_mode, format_gps_status};
 use crate::core::{MetadataMap, TagValue};
@@ -359,7 +361,44 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 11: Percentage Tags (Quality, MeasurementFlare)
+    // Rule 11: Integer Precision Tags (ReferenceBlackWhite)
+    // Format whole numbers without decimal places (0, 255, 128 not 0.0, 255.0)
+    // ---------------------------------------------------------------------
+    if is_integer_precision_tag(base_name) {
+        if let Some(s) = value.as_string() {
+            let formatted = format_integer_precision_values(s);
+            return TagValue::String(formatted);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 12: Three Decimal Precision Tags (YCbCrCoefficients)
+    // Format with 3 decimal places (0.299 0.587 0.114 not 0.2990000000...)
+    // ---------------------------------------------------------------------
+    if is_three_decimal_tag(base_name) {
+        if let Some(s) = value.as_string() {
+            let formatted = format_three_decimal_values(s);
+            return TagValue::String(formatted);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 13: UserComment (decode binary text encoding)
+    // UserComment has 8-byte encoding prefix (ASCII/UNICODE/JIS) + text
+    // ---------------------------------------------------------------------
+    if is_user_comment(base_name) {
+        if let TagValue::Binary(data) = value {
+            if let Some(decoded) = decode_user_comment(data) {
+                // Only return if we got meaningful text (not empty or just nulls)
+                if !decoded.is_empty() {
+                    return TagValue::String(decoded);
+                }
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 14: Percentage Tags (Quality, MeasurementFlare)
     // Append "%" suffix to numeric values representing percentages
     // Note: MeasurementFlare is also handled in the ICC matrix rule above,
     // but Quality (from Ducky segment) is handled here for integer values.
@@ -381,7 +420,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 12: Unit Suffixes (FocalLength -> mm, GPSAltitude -> m)
+    // Rule 15: Unit Suffixes (FocalLength -> mm, GPSAltitude -> m)
     // ---------------------------------------------------------------------
     if is_unit_suffix_tag(base_name) {
         // For string values, apply unit suffix directly
@@ -419,7 +458,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 13: Special Values (infinity -> "undef", -0 -> "0")
+    // Rule 16: Special Values (infinity -> "undef", -0 -> "0")
     // Handle special float/rational values that result from invalid/undefined data.
     // GPS tags like GPSDestBearing/GPSDestDistance produce infinity when
     // the denominator is 0. ExifTool displays "undef" for these cases.
@@ -448,7 +487,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 14: Default - Return original value unchanged
+    // Rule 17: Default - Return original value unchanged
     // ---------------------------------------------------------------------
     value.clone()
 }
@@ -783,6 +822,23 @@ pub fn is_percentage_tag(base_name: &str) -> bool {
     // Note: MeasurementFlare strings are handled by ICC matrix rule first,
     // but integers fall through to this rule for the % suffix.
     matches!(base_name, "Quality" | "MeasurementFlare")
+}
+
+/// Checks if the tag is UserComment.
+///
+/// UserComment (tag 0x9286) stores text with an 8-byte encoding prefix
+/// (ASCII, UNICODE, JIS) followed by the actual text content. This needs
+/// special decoding to extract the human-readable text.
+///
+/// # Arguments
+///
+/// * `base_name` - The tag name without family prefix
+///
+/// # Returns
+///
+/// `true` if this tag should be decoded as UserComment
+pub fn is_user_comment(base_name: &str) -> bool {
+    base_name == "UserComment"
 }
 
 // =============================================================================
@@ -1542,5 +1598,106 @@ mod tests {
         assert!(is_icc_matrix_tag("ICC_Profile:Luminance"));
         assert!(!is_icc_matrix_tag("FocalLength"));
         assert!(!is_icc_matrix_tag("GPSAltitude"));
+    }
+
+    // -------------------------------------------------------------------------
+    // ReferenceBlackWhite Integer Precision tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_reference_black_white_integer_formatting() {
+        // ReferenceBlackWhite should display integers without decimals
+        // ExifTool: "0 255 128 255 128 255"
+        // OxiDex before fix: "0.0000000000 255.0000000000 128.0000000000..."
+        let value = TagValue::String(
+            "0.0000000000 255.0000000000 128.0000000000 255.0000000000 128.0000000000 255.0000000000"
+                .to_string(),
+        );
+        let formatted = format_tag_value("EXIF:ReferenceBlackWhite", &value);
+        assert_eq!(formatted.as_string(), Some("0 255 128 255 128 255"));
+
+        // Without family prefix
+        let value = TagValue::String("0.0 128.0 255.0".to_string());
+        let formatted = format_tag_value("ReferenceBlackWhite", &value);
+        assert_eq!(formatted.as_string(), Some("0 128 255"));
+    }
+
+    #[test]
+    fn test_reference_black_white_with_fractional_values() {
+        // If any values are non-integer, preserve minimal decimals
+        let value = TagValue::String("0.5 255.0 128.25".to_string());
+        let formatted = format_tag_value("EXIF:ReferenceBlackWhite", &value);
+        assert_eq!(formatted.as_string(), Some("0.5 255 128.25"));
+    }
+
+    // -------------------------------------------------------------------------
+    // YCbCrCoefficients Three Decimal Precision tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_ycbcr_coefficients_three_decimal_formatting() {
+        // YCbCrCoefficients should display with 3 decimal places
+        // ExifTool: "0.299 0.587 0.114"
+        // OxiDex before fix: "0.2990000000 0.5870000000 0.1140000000"
+        let value = TagValue::String(
+            "0.2990000000 0.5870000000 0.1140000000".to_string(),
+        );
+        let formatted = format_tag_value("EXIF:YCbCrCoefficients", &value);
+        assert_eq!(formatted.as_string(), Some("0.299 0.587 0.114"));
+
+        // Without family prefix
+        let formatted = format_tag_value("YCbCrCoefficients", &value);
+        assert_eq!(formatted.as_string(), Some("0.299 0.587 0.114"));
+    }
+
+    #[test]
+    fn test_ycbcr_coefficients_trimmed_zeros() {
+        // Values with fewer decimals should still trim trailing zeros
+        let value = TagValue::String("0.5 1.0 0.25".to_string());
+        let formatted = format_tag_value("EXIF:YCbCrCoefficients", &value);
+        assert_eq!(formatted.as_string(), Some("0.5 1 0.25"));
+    }
+
+    // -------------------------------------------------------------------------
+    // UserComment Decoding tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_user_comment_ascii_decoding() {
+        // UserComment with ASCII encoding should be decoded to text
+        // ExifTool shows: "GCM_TAG"
+        // OxiDex before fix showed: "[Binary data]"
+        let mut data = b"ASCII\0\0\0GCM_TAG".to_vec();
+        let value = TagValue::Binary(data);
+        let formatted = format_tag_value("EXIF:UserComment", &value);
+        assert_eq!(formatted.as_string(), Some("GCM_TAG"));
+    }
+
+    #[test]
+    fn test_user_comment_unicode_decoding() {
+        // UserComment with UNICODE encoding
+        let mut data = b"UNICODE\0".to_vec();
+        // "Hi" in UTF-16LE: H=0x48, i=0x69
+        data.extend_from_slice(&[0x48, 0x00, 0x69, 0x00, 0x00, 0x00]);
+        let value = TagValue::Binary(data);
+        let formatted = format_tag_value("UserComment", &value);
+        assert_eq!(formatted.as_string(), Some("Hi"));
+    }
+
+    #[test]
+    fn test_user_comment_empty_stays_binary() {
+        // Empty UserComment should not produce a string result
+        let data = b"ASCII\0\0\0".to_vec();
+        let value = TagValue::Binary(data);
+        let formatted = format_tag_value("EXIF:UserComment", &value);
+        // Empty decoded content falls through to default (binary returned as-is)
+        assert!(matches!(formatted, TagValue::Binary(_)));
+    }
+
+    #[test]
+    fn test_is_user_comment() {
+        assert!(is_user_comment("UserComment"));
+        assert!(!is_user_comment("Comment"));
+        assert!(!is_user_comment("ImageDescription"));
     }
 }

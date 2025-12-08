@@ -281,10 +281,10 @@ fn parse_mp_index_ifd(
     Ok(())
 }
 
-/// Parses the MPFVersion tag value into a human-readable string.
+/// Parses the MPFVersion tag value into a string.
 ///
-/// The version is stored as 4 ASCII characters representing major.minor version.
-/// For example, "0100" represents version 1.0.
+/// The version is stored as 4 ASCII characters (e.g., "0100" for version 1.0).
+/// Per ExifTool compatibility, we output the raw 4-character string as-is.
 ///
 /// # Arguments
 ///
@@ -297,16 +297,12 @@ fn parse_mpf_version(
     value_or_offset: u32,
 ) -> Result<String, String> {
     // Version is 4 ASCII bytes: "0100" = version 1.0
+    // ExifTool outputs the raw format "0100", not "1.0"
     if value_count <= 4 {
         // Value is inline in the 4-byte field
         let bytes = value_or_offset.to_le_bytes();
         if let Ok(s) = std::str::from_utf8(&bytes[..value_count]) {
-            // Convert "0100" to "1.0" format
-            if s.len() == 4 {
-                if let (Ok(major), Ok(minor)) = (s[0..2].parse::<u8>(), s[2..4].parse::<u8>()) {
-                    return Ok(format!("{}.{}", major, minor));
-                }
-            }
+            // Return raw version string (e.g., "0100") for ExifTool compatibility
             return Ok(s.trim_end_matches('\0').to_string());
         }
     } else {
@@ -314,11 +310,7 @@ fn parse_mpf_version(
         let offset = value_or_offset as usize;
         if let Some(bytes) = reader.bytes_at(offset, value_count.min(4)) {
             if let Ok(s) = std::str::from_utf8(bytes) {
-                if s.len() == 4 {
-                    if let (Ok(major), Ok(minor)) = (s[0..2].parse::<u8>(), s[2..4].parse::<u8>()) {
-                        return Ok(format!("{}.{}", major, minor));
-                    }
-                }
+                // Return raw version string for ExifTool compatibility
                 return Ok(s.trim_end_matches('\0').to_string());
             }
         }
@@ -335,6 +327,11 @@ fn parse_mpf_version(
 /// - Bytes 12-13: Dependent Image 1 Entry Number
 /// - Bytes 14-15: Dependent Image 2 Entry Number
 ///
+/// This function outputs both:
+/// 1. Numbered per-image tags (MPF:MPImage1Flags, MPF:MPImage2Flags, etc.)
+/// 2. Generic tags for the last non-primary image (MPF:MPImageFlags, etc.)
+///    which matches ExifTool's behavior for compatibility.
+///
 /// # Arguments
 ///
 /// * `data` - Raw bytes of the MP Entry array
@@ -349,6 +346,23 @@ fn parse_mp_entry_array(
 ) -> Result<(), String> {
     // Create reader with same byte order as the main data
     let entry_reader = EndianReader::new(data, reader.byte_order());
+
+    // Track the last non-primary image for generic tags (ExifTool compatibility)
+    let mut last_non_primary_idx: Option<usize> = None;
+
+    // First pass: identify the last non-primary image
+    for i in 0..count {
+        let entry_offset = i * 16;
+        if entry_offset + 16 > data.len() {
+            break;
+        }
+        let image_attr = entry_reader.u32_at(entry_offset).unwrap_or(0);
+        let image_type = image_attr & 0x00FFFFFF;
+        // Non-primary images are anything that's not 0x030000 (Baseline MP Primary Image)
+        if image_type != 0x030000 {
+            last_non_primary_idx = Some(i);
+        }
+    }
 
     for i in 0..count {
         let entry_offset = i * 16;
@@ -394,7 +408,7 @@ fn parse_mp_entry_array(
 
         let entry_prefix = format!("MPF:MPImage{}", i + 1);
 
-        // Image Flags interpretation
+        // Image Flags interpretation - numbered format
         let dep_flag_str = match dep_flag {
             0 => "Independent",
             1 => "Dependent parent",
@@ -427,7 +441,10 @@ fn parse_mp_entry_array(
 
         // Image type interpretation
         let type_str = decode_image_type(image_type);
-        metadata.insert(format!("{}Type", entry_prefix), TagValue::String(type_str));
+        metadata.insert(
+            format!("{}Type", entry_prefix),
+            TagValue::String(type_str.clone()),
+        );
 
         // Image size
         metadata.insert(
@@ -454,9 +471,78 @@ fn parse_mp_entry_array(
                 TagValue::Integer(dep_image2 as i64),
             );
         }
+
+        // Output generic MPImage tags for the last non-primary image
+        // (ExifTool compatibility - it outputs these for the "current" image)
+        if Some(i) == last_non_primary_idx {
+            // Generic flags format uses "image" suffix like ExifTool
+            let generic_flag_str = match dep_flag {
+                0 => "(none)",
+                1 => "Dependent parent image",
+                2 => "Dependent child image",
+                3 => "Both dependent parent and child image",
+                _ => "Unknown",
+            };
+            metadata.insert(
+                "MPF:MPImageFlags".to_string(),
+                TagValue::String(generic_flag_str.to_string()),
+            );
+            metadata.insert(
+                "MPF:MPImageFormat".to_string(),
+                TagValue::String(format_str.to_string()),
+            );
+
+            // Generic type uses different format (VGA equivalent, full HD equivalent)
+            let generic_type_str = decode_image_type_generic(image_type);
+            metadata.insert(
+                "MPF:MPImageType".to_string(),
+                TagValue::String(generic_type_str),
+            );
+
+            // MPImageLength and MPImageStart match ExifTool naming
+            metadata.insert(
+                "MPF:MPImageLength".to_string(),
+                TagValue::Integer(image_size as i64),
+            );
+            metadata.insert(
+                "MPF:MPImageStart".to_string(),
+                TagValue::Integer(image_offset as i64),
+            );
+
+            // Always output DependentImageNEntryNumber for generic tags
+            metadata.insert(
+                "MPF:DependentImage1EntryNumber".to_string(),
+                TagValue::Integer(dep_image1 as i64),
+            );
+            metadata.insert(
+                "MPF:DependentImage2EntryNumber".to_string(),
+                TagValue::Integer(dep_image2 as i64),
+            );
+        }
     }
 
     Ok(())
+}
+
+/// Decodes the image type field into ExifTool's generic tag format.
+///
+/// This uses the "VGA equivalent" / "full HD equivalent" format that ExifTool
+/// uses for generic MPImageType tags (as opposed to numbered MPImage1Type etc).
+///
+/// # Arguments
+///
+/// * `image_type` - 24-bit image type code
+fn decode_image_type_generic(image_type: u32) -> String {
+    match image_type {
+        0x000000 => "Undefined".to_string(),
+        0x010001 => "Large Thumbnail (VGA equivalent)".to_string(),
+        0x010002 => "Large Thumbnail (full HD equivalent)".to_string(),
+        0x020001 => "Multi-Frame Panorama".to_string(),
+        0x020002 => "Multi-Frame Disparity".to_string(),
+        0x020003 => "Multi-Angle".to_string(),
+        0x030000 => "Baseline MP Primary Image".to_string(),
+        _ => format!("Unknown (0x{:06X})", image_type),
+    }
 }
 
 /// Decodes the image type field from MP Entry into a human-readable string.
@@ -467,16 +553,22 @@ fn parse_mp_entry_array(
 ///
 /// # Returns
 ///
-/// Human-readable image type description
+/// Human-readable image type description matching ExifTool format
 fn decode_image_type(image_type: u32) -> String {
-    // For JPEG format, type codes are defined as:
+    // For JPEG format, type codes are defined as per CIPA DC-007-2009:
     // 0x000000 = Undefined
-    // 0x010001 = Large thumbnail (class 1)
-    // 0x010002 = Large thumbnail (class 2)
+    // 0x010001 = Large thumbnail (VGA equivalent / class 1)
+    // 0x010002 = Large thumbnail (full HD equivalent / class 2)
     // 0x020001 = Multi-frame panorama
     // 0x020002 = Multi-frame disparity
     // 0x020003 = Multi-angle
     // 0x030000 = Baseline MP primary image
+    //
+    // Note: ExifTool outputs "Large Thumbnail (VGA equivalent)" for class 1
+    // and "Large Thumbnail (full HD equivalent)" for class 2 in generic
+    // MPImage tags, but uses "Large Thumbnail (Class 1)" and "Large Thumbnail
+    // (Class 2)" in numbered MPImageN tags. We use the Class format for
+    // consistency with numbered tags.
     match image_type {
         0x000000 => "Undefined".to_string(),
         0x010001 => "Large Thumbnail (Class 1)".to_string(),
@@ -747,10 +839,15 @@ mod tests {
         let result = parse_mpf_segment(&data, &mut metadata);
         assert!(result.is_ok(), "Failed to parse: {:?}", result);
 
-        // Check MPFVersion (should parse "0100" to "1.0" or similar)
+        // Check MPFVersion - should be raw "0100" format for ExifTool compatibility
         assert!(
             metadata.contains_key("MPF:MPFVersion"),
             "Missing MPFVersion"
+        );
+        assert_eq!(
+            metadata.get_string("MPF:MPFVersion"),
+            Some("0100"),
+            "MPFVersion should be raw '0100' format"
         );
 
         // Check NumberOfImages
@@ -769,7 +866,7 @@ mod tests {
         let result = parse_mpf_segment(&data, &mut metadata);
         assert!(result.is_ok(), "Failed to parse: {:?}", result);
 
-        // Check that MP entries were parsed
+        // Check that numbered MP entry tags were parsed
         assert!(
             metadata.contains_key("MPF:MPImage1Type"),
             "Missing MPImage1Type"
@@ -779,7 +876,7 @@ mod tests {
             "Missing MPImage2Type"
         );
 
-        // Check image sizes
+        // Check image sizes (numbered tags)
         assert_eq!(
             metadata.get_integer("MPF:MPImage1Size"),
             Some(100000),
@@ -789,6 +886,51 @@ mod tests {
             metadata.get_integer("MPF:MPImage2Size"),
             Some(50000),
             "Wrong MPImage2Size"
+        );
+
+        // Check generic tags (ExifTool compatibility) - should be from last non-primary image
+        // Entry 2 is a Large Thumbnail (class 1), so generic tags should reflect that
+        assert!(
+            metadata.contains_key("MPF:MPImageFlags"),
+            "Missing generic MPImageFlags"
+        );
+        assert!(
+            metadata.contains_key("MPF:MPImageFormat"),
+            "Missing generic MPImageFormat"
+        );
+        assert!(
+            metadata.contains_key("MPF:MPImageType"),
+            "Missing generic MPImageType"
+        );
+        assert!(
+            metadata.contains_key("MPF:MPImageLength"),
+            "Missing generic MPImageLength"
+        );
+        assert!(
+            metadata.contains_key("MPF:MPImageStart"),
+            "Missing generic MPImageStart"
+        );
+
+        // Verify generic tag values match the second entry (thumbnail)
+        assert_eq!(
+            metadata.get_integer("MPF:MPImageLength"),
+            Some(50000),
+            "Wrong MPImageLength"
+        );
+        assert_eq!(
+            metadata.get_integer("MPF:MPImageStart"),
+            Some(100000),
+            "Wrong MPImageStart"
+        );
+        assert_eq!(
+            metadata.get_string("MPF:MPImageType"),
+            Some("Large Thumbnail (VGA equivalent)"),
+            "Wrong MPImageType"
+        );
+        assert_eq!(
+            metadata.get_string("MPF:MPImageFlags"),
+            Some("(none)"),
+            "Wrong MPImageFlags"
         );
     }
 

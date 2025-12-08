@@ -7,19 +7,39 @@
 //!
 //! # Format Overview
 //!
-//! JPEG-HDR segments contain:
-//! - Version information (JPEG-HDRVersion)
-//! - Tone mapping coefficients (Alpha, Beta)
-//! - Correction method indicator
-//! - Luminance range parameters (Ln0, Ln1)
-//! - Signal-to-noise information (S2n)
-//! - Optional ratio image data for HDR reconstruction
+//! JPEG-HDR segments contain (compatible with ExifTool output):
+//! - JPEG-HDRVersion - Format version (1 byte)
+//! - CorrectionMethod - Method used for HDR correction (1 byte)
+//! - Alpha - Tone mapping exposure coefficient (4 bytes float)
+//! - Beta - Tone mapping contrast coefficient (4 bytes float)
+//! - Ln0 - Lower luminance bound in log space (4 bytes float)
+//! - Ln1 - Upper luminance bound in log space (4 bytes float)
+//! - S2n - Signal-to-noise ratio estimate (4 bytes float)
+//! - RatioImage - Optional embedded ratio image data (remaining bytes)
 //!
 //! # Segment Structure
 //!
-//! JPEG-HDR segments typically begin with one of these identifiers:
-//! - `HDR_RI\0` (HDR Ratio Image) - Contains ratio image data
-//! - `JPEG-HDR` - Contains HDR parameters and metadata
+//! JPEG-HDR segments begin with one of these identifiers:
+//! - `HDR_RI` (6 bytes) - HDR Ratio Image segment containing reconstruction data
+//! - `JPEG-HDR` (8 bytes) - Generic JPEG-HDR parameter segment
+//!
+//! After the identifier, the binary structure is:
+//! ```text
+//! Offset  Size  Description
+//! 0       1     Version (JPEG-HDRVersion)
+//! 1       1     CorrectionMethod
+//! 2       4     Alpha (float32, big-endian)
+//! 6       4     Beta (float32, big-endian)
+//! 10      4     Ln0 (float32, big-endian)
+//! 14      4     Ln1 (float32, big-endian)
+//! 18      4     S2n (float32, big-endian)
+//! 22      N     RatioImage data (optional)
+//! ```
+//!
+//! # ExifTool Compatibility
+//!
+//! Tags are output with the `APP11` family prefix to match ExifTool's output format.
+//! For example: `APP11:Alpha`, `APP11:JPEG-HDRVersion`, etc.
 //!
 //! # References
 //!
@@ -33,11 +53,14 @@ use crate::io::EndianReader;
 /// Minimum segment size required for parsing (identifier + basic header)
 const MIN_SEGMENT_SIZE: usize = 6;
 
-/// HDR Ratio Image identifier ("HDR_RI\0")
+/// HDR Ratio Image identifier ("HDR_RI")
 const HDR_RI_IDENTIFIER: &[u8] = b"HDR_RI";
 
 /// Generic JPEG-HDR identifier
 const JPEG_HDR_IDENTIFIER: &[u8] = b"JPEG-HDR";
+
+/// Header size after identifier: version(1) + correction(1) + 5 floats(20) = 22 bytes
+const HDR_HEADER_SIZE: usize = 22;
 
 /// Correction method identifiers used in JPEG-HDR tone mapping
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,7 +117,7 @@ impl CorrectionMethod {
 ///
 /// This structure holds all the HDR-related parameters extracted from an APP11 segment.
 /// These parameters are used to reconstruct the full HDR image from the tone-mapped base.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct JpegHdrParameters {
     /// JPEG-HDR format version (major.minor)
     pub version: Option<(u8, u8)>,
@@ -114,22 +137,6 @@ pub struct JpegHdrParameters {
     pub ratio_image_size: Option<usize>,
     /// Indicates if this segment contains ratio image data
     pub has_ratio_image: bool,
-}
-
-impl Default for JpegHdrParameters {
-    fn default() -> Self {
-        Self {
-            version: None,
-            alpha: None,
-            beta: None,
-            correction_method: None,
-            ln0: None,
-            ln1: None,
-            s2n: None,
-            ratio_image_size: None,
-            has_ratio_image: false,
-        }
-    }
 }
 
 /// Parses a JPEG-HDR APP11 segment and returns extracted metadata.
@@ -199,35 +206,37 @@ pub fn parse_app11_jpeg_hdr(data: &[u8]) -> Result<MetadataMap> {
 /// Parses an HDR Ratio Image (HDR_RI) segment.
 ///
 /// HDR_RI segments contain the ratio image data used to reconstruct the full HDR
-/// image from the tone-mapped base JPEG. The format is:
+/// image from the tone-mapped base JPEG. The format (after the "HDR_RI" identifier) is:
 ///
 /// ```text
 /// Offset  Size  Description
-/// 0       2     Version (major.minor as bytes)
-/// 2       1     Correction method
-/// 3       4     Ln0 (float32, luminance lower bound)
-/// 7       4     Ln1 (float32, luminance upper bound)
-/// 11      4     Alpha (float32, exposure coefficient)
-/// 15      4     Beta (float32, contrast coefficient)
-/// 19      4     S2n (float32, signal-to-noise)
-/// 23      N     Ratio image data
+/// 0       1     JPEG-HDRVersion (version number, single byte)
+/// 1       1     CorrectionMethod (correction method code)
+/// 2       4     Alpha (float32, big-endian, exposure coefficient)
+/// 6       4     Beta (float32, big-endian, contrast coefficient)
+/// 10      4     Ln0 (float32, big-endian, luminance lower bound)
+/// 14      4     Ln1 (float32, big-endian, luminance upper bound)
+/// 18      4     S2n (float32, big-endian, signal-to-noise)
+/// 22      N     RatioImage data (optional binary image data)
 /// ```
 ///
 /// # Arguments
 ///
 /// * `data` - Segment data after the "HDR_RI" identifier
 /// * `metadata` - MetadataMap to populate with extracted values
+///
+/// # ExifTool Compatibility
+///
+/// Tags are named to match ExifTool's APP11 output format:
+/// - APP11:JPEG-HDRVersion
+/// - APP11:CorrectionMethod
+/// - APP11:Alpha
+/// - APP11:Beta
+/// - APP11:Ln0
+/// - APP11:Ln1
+/// - APP11:S2n
+/// - APP11:RatioImage
 fn parse_hdr_ratio_image_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
-    // Mark the segment format type
-    metadata.insert(
-        "JPEG-HDR:Format".to_string(),
-        TagValue::String("Ratio Image".to_string()),
-    );
-
-    // We need at least enough data for the header (version + correction + parameters)
-    // Minimum header size: 2 (version) + 1 (correction) + 4*5 (five float32 params) = 23 bytes
-    const HEADER_SIZE: usize = 23;
-
     if data.is_empty() {
         // Empty segment after identifier - still valid but no parameters
         return Ok(());
@@ -235,92 +244,81 @@ fn parse_hdr_ratio_image_segment(data: &[u8], metadata: &mut MetadataMap) -> Res
 
     let reader = EndianReader::big_endian(data);
 
-    // Parse version (2 bytes: major, minor)
+    // Parse JPEG-HDRVersion (1 byte at offset 0)
+    // ExifTool reports this as an integer (e.g., "11")
+    if !data.is_empty() {
+        let version = reader.u8_at(0).unwrap_or(0);
+        metadata.insert(
+            "APP11:JPEG-HDRVersion".to_string(),
+            TagValue::Integer(version as i64),
+        );
+    }
+
+    // Parse CorrectionMethod (1 byte at offset 1)
+    // ExifTool reports this as the raw numeric value (e.g., "0")
     if data.len() >= 2 {
-        let version_major = reader.u8_at(0).unwrap_or(0);
-        let version_minor = reader.u8_at(1).unwrap_or(0);
-
+        let correction_byte = reader.u8_at(1).unwrap_or(0);
         metadata.insert(
-            "JPEG-HDR:Version".to_string(),
-            TagValue::String(format!("{}.{}", version_major, version_minor)),
+            "APP11:CorrectionMethod".to_string(),
+            TagValue::Integer(correction_byte as i64),
         );
     }
 
-    // Parse correction method (1 byte at offset 2)
-    if data.len() >= 3 {
-        let correction_byte = reader.u8_at(2).unwrap_or(0);
-        let correction_method = CorrectionMethod::from_byte(correction_byte);
-
-        metadata.insert(
-            "JPEG-HDR:CorrectionMethod".to_string(),
-            TagValue::String(correction_method.description()),
-        );
-    }
-
-    // Parse floating-point parameters (all big-endian float32)
-    // These represent the tone mapping curve parameters
-
-    // Ln0 - Lower luminance bound (offset 3)
-    if data.len() >= 7 {
-        if let Some(ln0) = reader.f32_at(3) {
-            // Validate the value is reasonable (should be in log space, typically negative)
-            if ln0.is_finite() {
-                metadata.insert("JPEG-HDR:Ln0".to_string(), TagValue::Float(ln0 as f64));
-            }
-        }
-    }
-
-    // Ln1 - Upper luminance bound (offset 7)
-    if data.len() >= 11 {
-        if let Some(ln1) = reader.f32_at(7) {
-            if ln1.is_finite() {
-                metadata.insert("JPEG-HDR:Ln1".to_string(), TagValue::Float(ln1 as f64));
-            }
-        }
-    }
-
-    // Alpha - Exposure coefficient (offset 11)
-    if data.len() >= 15 {
-        if let Some(alpha) = reader.f32_at(11) {
+    // Parse Alpha - exposure coefficient (4 bytes float32 at offset 2)
+    if data.len() >= 6 {
+        if let Some(alpha) = reader.f32_at(2) {
             if alpha.is_finite() {
-                metadata.insert("JPEG-HDR:Alpha".to_string(), TagValue::Float(alpha as f64));
+                metadata.insert("APP11:Alpha".to_string(), TagValue::Float(alpha as f64));
             }
         }
     }
 
-    // Beta - Contrast coefficient (offset 15)
-    if data.len() >= 19 {
-        if let Some(beta) = reader.f32_at(15) {
+    // Parse Beta - contrast coefficient (4 bytes float32 at offset 6)
+    if data.len() >= 10 {
+        if let Some(beta) = reader.f32_at(6) {
             if beta.is_finite() {
-                metadata.insert("JPEG-HDR:Beta".to_string(), TagValue::Float(beta as f64));
+                metadata.insert("APP11:Beta".to_string(), TagValue::Float(beta as f64));
             }
         }
     }
 
-    // S2n - Signal-to-noise estimate (offset 19)
-    if data.len() >= 23 {
-        if let Some(s2n) = reader.f32_at(19) {
-            if s2n.is_finite() && s2n >= 0.0 {
-                metadata.insert("JPEG-HDR:S2n".to_string(), TagValue::Float(s2n as f64));
+    // Parse Ln0 - lower luminance bound (4 bytes float32 at offset 10)
+    if data.len() >= 14 {
+        if let Some(ln0) = reader.f32_at(10) {
+            if ln0.is_finite() {
+                metadata.insert("APP11:Ln0".to_string(), TagValue::Float(ln0 as f64));
             }
         }
     }
 
-    // Check for ratio image data
-    if data.len() > HEADER_SIZE {
-        let ratio_image_size = data.len() - HEADER_SIZE;
+    // Parse Ln1 - upper luminance bound (4 bytes float32 at offset 14)
+    if data.len() >= 18 {
+        if let Some(ln1) = reader.f32_at(14) {
+            if ln1.is_finite() {
+                metadata.insert("APP11:Ln1".to_string(), TagValue::Float(ln1 as f64));
+            }
+        }
+    }
+
+    // Parse S2n - signal-to-noise estimate (4 bytes float32 at offset 18)
+    if data.len() >= 22 {
+        if let Some(s2n) = reader.f32_at(18) {
+            if s2n.is_finite() {
+                metadata.insert("APP11:S2n".to_string(), TagValue::Float(s2n as f64));
+            }
+        }
+    }
+
+    // Check for ratio image data (anything after the 22-byte header)
+    if data.len() > HDR_HEADER_SIZE {
+        let ratio_image_size = data.len() - HDR_HEADER_SIZE;
+        // ExifTool reports this as "(Binary data N bytes, use -b option to extract)"
         metadata.insert(
-            "JPEG-HDR:RatioImageSize".to_string(),
-            TagValue::Integer(ratio_image_size as i64),
-        );
-        metadata.insert(
-            "JPEG-HDR:HasRatioImage".to_string(),
-            TagValue::String("Yes".to_string()),
-        );
-    } else {
-        metadata.insert(
-            "JPEG-HDR:HasRatioImage".to_string(),
-            TagValue::String("No".to_string()),
+            "APP11:RatioImage".to_string(),
+            TagValue::String(format!(
+                "(Binary data {} bytes, use -b option to extract)",
+                ratio_image_size
+            )),
         );
     }
 
@@ -330,137 +328,113 @@ fn parse_hdr_ratio_image_segment(data: &[u8], metadata: &mut MetadataMap) -> Res
 /// Parses a generic JPEG-HDR parameter segment.
 ///
 /// This handles segments that begin with the "JPEG-HDR" identifier and contain
-/// HDR parameters in a more flexible format. The structure may vary by implementation.
+/// HDR parameters. The structure is the same as HDR_RI but with a different
+/// identifier prefix.
 ///
-/// # Format Variants
+/// # Format
 ///
-/// The JPEG-HDR specification allows for some flexibility in how parameters are encoded.
-/// This parser handles the most common format:
+/// After the "JPEG-HDR" identifier (8 bytes), the structure is:
 ///
 /// ```text
 /// Offset  Size  Description
-/// 0       1     Version byte
-/// 1       1     Sub-version or flags
-/// 2       1     Correction method
-/// 3       4     Alpha (float32)
-/// 7       4     Beta (float32)
-/// 11      4     Ln0 (float32, optional)
-/// 15      4     Ln1 (float32, optional)
+/// 0       1     JPEG-HDRVersion
+/// 1       1     CorrectionMethod
+/// 2       4     Alpha (float32, big-endian)
+/// 6       4     Beta (float32, big-endian)
+/// 10      4     Ln0 (float32, big-endian)
+/// 14      4     Ln1 (float32, big-endian)
+/// 18      4     S2n (float32, big-endian)
+/// 22      N     RatioImage data (optional)
 /// ```
 ///
 /// # Arguments
 ///
 /// * `data` - Segment data after the "JPEG-HDR" identifier
 /// * `metadata` - MetadataMap to populate with extracted values
+///
+/// # ExifTool Compatibility
+///
+/// Tags use the APP11 family prefix to match ExifTool's output.
 fn parse_jpeg_hdr_parameter_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
-    // Mark the segment format type
-    metadata.insert(
-        "JPEG-HDR:Format".to_string(),
-        TagValue::String("HDR Parameters".to_string()),
-    );
-
     if data.is_empty() {
         return Ok(());
     }
 
     let reader = EndianReader::big_endian(data);
 
-    // Parse version information
-    // First byte is typically major version, second byte is minor/flags
+    // Parse JPEG-HDRVersion (1 byte at offset 0)
     if !data.is_empty() {
-        let version_byte = reader.u8_at(0).unwrap_or(0);
-
-        if version_byte > 0 {
-            // Check for sub-version byte
-            let sub_version = if data.len() > 1 {
-                reader.u8_at(1).unwrap_or(0)
-            } else {
-                0
-            };
-
-            metadata.insert(
-                "JPEG-HDR:Version".to_string(),
-                TagValue::String(format!("{}.{}", version_byte, sub_version)),
-            );
-
-            // Also store as integer for compatibility with existing parser
-            metadata.insert(
-                "JPEG-HDR:HDRVersion".to_string(),
-                TagValue::Integer(version_byte as i64),
-            );
-        }
-    }
-
-    // Parse correction method if present (offset 2)
-    if data.len() >= 3 {
-        let correction_byte = reader.u8_at(2).unwrap_or(0);
-        let correction_method = CorrectionMethod::from_byte(correction_byte);
-
+        let version = reader.u8_at(0).unwrap_or(0);
         metadata.insert(
-            "JPEG-HDR:CorrectionMethod".to_string(),
-            TagValue::String(correction_method.description()),
+            "APP11:JPEG-HDRVersion".to_string(),
+            TagValue::Integer(version as i64),
         );
     }
 
-    // Parse Alpha coefficient (offset 3)
-    if data.len() >= 7 {
-        if let Some(alpha) = reader.f32_at(3) {
+    // Parse CorrectionMethod (1 byte at offset 1)
+    if data.len() >= 2 {
+        let correction_byte = reader.u8_at(1).unwrap_or(0);
+        metadata.insert(
+            "APP11:CorrectionMethod".to_string(),
+            TagValue::Integer(correction_byte as i64),
+        );
+    }
+
+    // Parse Alpha coefficient (4 bytes float32 at offset 2)
+    if data.len() >= 6 {
+        if let Some(alpha) = reader.f32_at(2) {
             if alpha.is_finite() {
-                metadata.insert("JPEG-HDR:Alpha".to_string(), TagValue::Float(alpha as f64));
+                metadata.insert("APP11:Alpha".to_string(), TagValue::Float(alpha as f64));
             }
         }
     }
 
-    // Parse Beta coefficient (offset 7)
-    if data.len() >= 11 {
-        if let Some(beta) = reader.f32_at(7) {
+    // Parse Beta coefficient (4 bytes float32 at offset 6)
+    if data.len() >= 10 {
+        if let Some(beta) = reader.f32_at(6) {
             if beta.is_finite() {
-                metadata.insert("JPEG-HDR:Beta".to_string(), TagValue::Float(beta as f64));
+                metadata.insert("APP11:Beta".to_string(), TagValue::Float(beta as f64));
             }
         }
     }
 
-    // Parse optional Ln0 (offset 11)
-    if data.len() >= 15 {
-        if let Some(ln0) = reader.f32_at(11) {
+    // Parse Ln0 - lower luminance bound (4 bytes float32 at offset 10)
+    if data.len() >= 14 {
+        if let Some(ln0) = reader.f32_at(10) {
             if ln0.is_finite() {
-                metadata.insert("JPEG-HDR:Ln0".to_string(), TagValue::Float(ln0 as f64));
+                metadata.insert("APP11:Ln0".to_string(), TagValue::Float(ln0 as f64));
             }
         }
     }
 
-    // Parse optional Ln1 (offset 15)
-    if data.len() >= 19 {
-        if let Some(ln1) = reader.f32_at(15) {
+    // Parse Ln1 - upper luminance bound (4 bytes float32 at offset 14)
+    if data.len() >= 18 {
+        if let Some(ln1) = reader.f32_at(14) {
             if ln1.is_finite() {
-                metadata.insert("JPEG-HDR:Ln1".to_string(), TagValue::Float(ln1 as f64));
+                metadata.insert("APP11:Ln1".to_string(), TagValue::Float(ln1 as f64));
             }
         }
     }
 
-    // Parse optional S2n (offset 19)
-    if data.len() >= 23 {
-        if let Some(s2n) = reader.f32_at(19) {
-            if s2n.is_finite() && s2n >= 0.0 {
-                metadata.insert("JPEG-HDR:S2n".to_string(), TagValue::Float(s2n as f64));
+    // Parse S2n - signal-to-noise estimate (4 bytes float32 at offset 18)
+    if data.len() >= 22 {
+        if let Some(s2n) = reader.f32_at(18) {
+            if s2n.is_finite() {
+                metadata.insert("APP11:S2n".to_string(), TagValue::Float(s2n as f64));
             }
         }
     }
 
-    // Store exposure compensation for backward compatibility
-    // This is derived from the Alpha value when available
-    if let Some(alpha_val) = metadata.get_float("JPEG-HDR:Alpha") {
-        // Convert alpha to exposure stops (EV) for user-friendly display
-        // alpha typically represents a multiplier, so log2 gives stops
-        if alpha_val > 0.0 {
-            let exposure_ev = (alpha_val as f64).log2();
-            if exposure_ev.is_finite() {
-                metadata.insert(
-                    "JPEG-HDR:ExposureCompensation".to_string(),
-                    TagValue::Float(exposure_ev),
-                );
-            }
-        }
+    // Check for ratio image data (anything after the 22-byte header)
+    if data.len() > HDR_HEADER_SIZE {
+        let ratio_image_size = data.len() - HDR_HEADER_SIZE;
+        metadata.insert(
+            "APP11:RatioImage".to_string(),
+            TagValue::String(format!(
+                "(Binary data {} bytes, use -b option to extract)",
+                ratio_image_size
+            )),
+        );
     }
 
     Ok(())
@@ -486,8 +460,8 @@ fn parse_jpeg_hdr_parameter_segment(data: &[u8], metadata: &mut MetadataMap) -> 
 /// use oxidex::parsers::jpeg::app_segments::app11_jpeg_hdr::extract_hdr_parameters;
 ///
 /// let params = extract_hdr_parameters(segment_data)?;
-/// if let Some((major, minor)) = params.version {
-///     println!("JPEG-HDR version: {}.{}", major, minor);
+/// if let Some(version) = params.version {
+///     println!("JPEG-HDR version: {}", version);
 /// }
 /// if params.has_ratio_image {
 ///     println!("Contains ratio image data");
@@ -497,43 +471,39 @@ pub fn extract_hdr_parameters(data: &[u8]) -> Result<JpegHdrParameters> {
     let metadata = parse_app11_jpeg_hdr(data)?;
     let mut params = JpegHdrParameters::default();
 
-    // Extract version
-    if let Some(version_str) = metadata.get_string("JPEG-HDR:Version") {
-        let parts: Vec<&str> = version_str.split('.').collect();
-        if parts.len() >= 2 {
-            if let (Ok(major), Ok(minor)) = (parts[0].parse::<u8>(), parts[1].parse::<u8>()) {
-                params.version = Some((major, minor));
-            }
-        }
+    // Extract version (now stored as single integer in APP11:JPEG-HDRVersion)
+    if let Some(version) = metadata.get_integer("APP11:JPEG-HDRVersion") {
+        params.version = Some((version as u8, 0));
     }
 
-    // Extract floating-point parameters
-    params.alpha = metadata.get_float("JPEG-HDR:Alpha").map(|v| v as f32);
-    params.beta = metadata.get_float("JPEG-HDR:Beta").map(|v| v as f32);
-    params.ln0 = metadata.get_float("JPEG-HDR:Ln0").map(|v| v as f32);
-    params.ln1 = metadata.get_float("JPEG-HDR:Ln1").map(|v| v as f32);
-    params.s2n = metadata.get_float("JPEG-HDR:S2n").map(|v| v as f32);
+    // Extract floating-point parameters (using APP11 prefix)
+    params.alpha = metadata.get_float("APP11:Alpha").map(|v| v as f32);
+    params.beta = metadata.get_float("APP11:Beta").map(|v| v as f32);
+    params.ln0 = metadata.get_float("APP11:Ln0").map(|v| v as f32);
+    params.ln1 = metadata.get_float("APP11:Ln1").map(|v| v as f32);
+    params.s2n = metadata.get_float("APP11:S2n").map(|v| v as f32);
 
-    // Extract correction method
-    if let Some(method_str) = metadata.get_string("JPEG-HDR:CorrectionMethod") {
-        params.correction_method = Some(match method_str {
-            "None" => CorrectionMethod::None,
-            "Multiplicative" => CorrectionMethod::Multiplicative,
-            "Additive" => CorrectionMethod::Additive,
-            "Logarithmic" => CorrectionMethod::Logarithmic,
-            "Gamma" => CorrectionMethod::Gamma,
-            _ => CorrectionMethod::Unknown(0),
-        });
+    // Extract correction method (now stored as integer)
+    if let Some(correction) = metadata.get_integer("APP11:CorrectionMethod") {
+        params.correction_method = Some(CorrectionMethod::from_byte(correction as u8));
     }
 
     // Extract ratio image information
-    params.ratio_image_size = metadata
-        .get_integer("JPEG-HDR:RatioImageSize")
-        .map(|v| v as usize);
-    params.has_ratio_image = metadata
-        .get_string("JPEG-HDR:HasRatioImage")
-        .map(|s| s == "Yes")
-        .unwrap_or(false);
+    // Ratio image size can be parsed from the RatioImage string if present
+    if let Some(ratio_str) = metadata.get_string("APP11:RatioImage") {
+        params.has_ratio_image = true;
+        // Parse size from "(Binary data N bytes, use -b option to extract)"
+        if let Some(size_start) = ratio_str.find("Binary data ") {
+            let size_part = &ratio_str[size_start + 12..];
+            if let Some(size_end) = size_part.find(' ') {
+                if let Ok(size) = size_part[..size_end].parse::<usize>() {
+                    params.ratio_image_size = Some(size);
+                }
+            }
+        }
+    } else {
+        params.has_ratio_image = false;
+    }
 
     Ok(params)
 }
@@ -542,43 +512,73 @@ pub fn extract_hdr_parameters(data: &[u8]) -> Result<JpegHdrParameters> {
 mod tests {
     use super::*;
 
-    /// Helper to create a test segment with HDR_RI identifier
-    fn create_hdr_ri_segment(version: (u8, u8), correction: u8, params: &[f32]) -> Vec<u8> {
+    /// Helper to create a test segment with HDR_RI identifier.
+    ///
+    /// Creates a properly formatted JPEG-HDR segment with the structure:
+    /// - HDR_RI identifier (6 bytes)
+    /// - Version (1 byte)
+    /// - CorrectionMethod (1 byte)
+    /// - Alpha (4 bytes float32 big-endian)
+    /// - Beta (4 bytes float32 big-endian)
+    /// - Ln0 (4 bytes float32 big-endian)
+    /// - Ln1 (4 bytes float32 big-endian)
+    /// - S2n (4 bytes float32 big-endian)
+    fn create_hdr_ri_segment(
+        version: u8,
+        correction: u8,
+        alpha: f32,
+        beta: f32,
+        ln0: f32,
+        ln1: f32,
+        s2n: f32,
+    ) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(HDR_RI_IDENTIFIER);
-        data.push(version.0);
-        data.push(version.1);
+        data.push(version);
         data.push(correction);
-
-        for param in params {
-            data.extend_from_slice(&param.to_be_bytes());
-        }
-
+        data.extend_from_slice(&alpha.to_be_bytes());
+        data.extend_from_slice(&beta.to_be_bytes());
+        data.extend_from_slice(&ln0.to_be_bytes());
+        data.extend_from_slice(&ln1.to_be_bytes());
+        data.extend_from_slice(&s2n.to_be_bytes());
         data
     }
 
-    /// Helper to create a test segment with JPEG-HDR identifier
-    fn create_jpeg_hdr_segment(version: (u8, u8), correction: u8, params: &[f32]) -> Vec<u8> {
+    /// Helper to create a test segment with JPEG-HDR identifier.
+    fn create_jpeg_hdr_segment(
+        version: u8,
+        correction: u8,
+        alpha: f32,
+        beta: f32,
+        ln0: f32,
+        ln1: f32,
+        s2n: f32,
+    ) -> Vec<u8> {
         let mut data = Vec::new();
         data.extend_from_slice(JPEG_HDR_IDENTIFIER);
-        data.push(version.0);
-        data.push(version.1);
+        data.push(version);
         data.push(correction);
-
-        for param in params {
-            data.extend_from_slice(&param.to_be_bytes());
-        }
-
+        data.extend_from_slice(&alpha.to_be_bytes());
+        data.extend_from_slice(&beta.to_be_bytes());
+        data.extend_from_slice(&ln0.to_be_bytes());
+        data.extend_from_slice(&ln1.to_be_bytes());
+        data.extend_from_slice(&s2n.to_be_bytes());
         data
     }
 
     #[test]
     fn test_parse_hdr_ri_segment_with_full_parameters() {
-        // Create a segment with version 1.0, logarithmic correction, and full parameters
+        // Create a segment matching ExifTool baseline values:
+        // Version=11, CorrectionMethod=0, Alpha=1.0, Beta=1.0,
+        // Ln0=0.122262, Ln1=2.634655, S2n=2269.635
         let segment = create_hdr_ri_segment(
-            (1, 0),
-            3,                              // Logarithmic
-            &[-5.0, 10.0, 1.5, 0.8, 100.0], // Ln0, Ln1, Alpha, Beta, S2n
+            11,       // JPEG-HDRVersion
+            0,        // CorrectionMethod
+            1.0,      // Alpha
+            1.0,      // Beta
+            0.122262, // Ln0
+            2.634655, // Ln1
+            2269.635, // S2n
         );
 
         let result = parse_app11_jpeg_hdr(&segment);
@@ -586,98 +586,94 @@ mod tests {
 
         let metadata = result.unwrap();
 
+        // Verify JPEG-HDRVersion (integer)
         assert_eq!(
-            metadata.get_string("JPEG-HDR:Format"),
-            Some("Ratio Image"),
-            "Format should be Ratio Image"
+            metadata.get_integer("APP11:JPEG-HDRVersion"),
+            Some(11),
+            "JPEG-HDRVersion should be 11"
         );
 
+        // Verify CorrectionMethod (integer)
         assert_eq!(
-            metadata.get_string("JPEG-HDR:Version"),
-            Some("1.0"),
-            "Version should be 1.0"
+            metadata.get_integer("APP11:CorrectionMethod"),
+            Some(0),
+            "CorrectionMethod should be 0"
         );
 
-        assert_eq!(
-            metadata.get_string("JPEG-HDR:CorrectionMethod"),
-            Some("Logarithmic"),
-            "Correction method should be Logarithmic"
-        );
-
-        // Check floating-point parameters with tolerance
-        let ln0 = metadata.get_float("JPEG-HDR:Ln0").unwrap();
+        // Verify Alpha (float)
+        let alpha = metadata.get_float("APP11:Alpha").unwrap();
         assert!(
-            (ln0 - (-5.0)).abs() < 0.001,
-            "Ln0 should be approximately -5.0"
+            (alpha - 1.0).abs() < 0.001,
+            "Alpha should be approximately 1.0"
         );
 
-        let ln1 = metadata.get_float("JPEG-HDR:Ln1").unwrap();
+        // Verify Beta (float)
+        let beta = metadata.get_float("APP11:Beta").unwrap();
+        assert!((beta - 1.0).abs() < 0.001, "Beta should be approximately 1.0");
+
+        // Verify Ln0 (float)
+        let ln0 = metadata.get_float("APP11:Ln0").unwrap();
         assert!(
-            (ln1 - 10.0).abs() < 0.001,
-            "Ln1 should be approximately 10.0"
+            (ln0 - 0.122262).abs() < 0.001,
+            "Ln0 should be approximately 0.122262"
         );
 
-        let alpha = metadata.get_float("JPEG-HDR:Alpha").unwrap();
+        // Verify Ln1 (float)
+        let ln1 = metadata.get_float("APP11:Ln1").unwrap();
         assert!(
-            (alpha - 1.5).abs() < 0.001,
-            "Alpha should be approximately 1.5"
+            (ln1 - 2.634655).abs() < 0.001,
+            "Ln1 should be approximately 2.634655"
         );
 
-        let beta = metadata.get_float("JPEG-HDR:Beta").unwrap();
+        // Verify S2n (float)
+        let s2n = metadata.get_float("APP11:S2n").unwrap();
         assert!(
-            (beta - 0.8).abs() < 0.001,
-            "Beta should be approximately 0.8"
+            (s2n - 2269.635).abs() < 1.0,
+            "S2n should be approximately 2269.635"
         );
 
-        let s2n = metadata.get_float("JPEG-HDR:S2n").unwrap();
+        // No RatioImage without extra data
         assert!(
-            (s2n - 100.0).abs() < 0.001,
-            "S2n should be approximately 100.0"
-        );
-
-        assert_eq!(
-            metadata.get_string("JPEG-HDR:HasRatioImage"),
-            Some("No"),
+            metadata.get_string("APP11:RatioImage").is_none(),
             "Should not have ratio image data"
         );
     }
 
     #[test]
     fn test_parse_hdr_ri_segment_with_ratio_image() {
-        // Create segment with parameters and additional ratio image data
-        let mut segment = create_hdr_ri_segment(
-            (1, 2),
-            1, // Multiplicative
-            &[-3.0, 8.0, 2.0, 1.0, 50.0],
-        );
+        // Create segment with parameters and additional ratio image data (19 bytes like ExifTool baseline)
+        let mut segment = create_hdr_ri_segment(11, 0, 1.0, 1.0, 0.122262, 2.634655, 2269.635);
 
-        // Add some dummy ratio image data
-        segment.extend_from_slice(&[0xDE, 0xAD, 0xBE, 0xEF, 0x12, 0x34, 0x56, 0x78]);
+        // Add 19 bytes of dummy ratio image data
+        segment.extend_from_slice(&[
+            0xDE, 0xAD, 0xBE, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22,
+            0x33, 0x44, 0x55, 0x66, 0x77,
+        ]);
 
         let result = parse_app11_jpeg_hdr(&segment);
         assert!(result.is_ok());
 
         let metadata = result.unwrap();
 
-        assert_eq!(
-            metadata.get_string("JPEG-HDR:HasRatioImage"),
-            Some("Yes"),
-            "Should have ratio image data"
-        );
-
-        assert_eq!(
-            metadata.get_integer("JPEG-HDR:RatioImageSize"),
-            Some(8),
-            "Ratio image should be 8 bytes"
+        // Verify RatioImage string format matches ExifTool
+        let ratio_image = metadata.get_string("APP11:RatioImage");
+        assert!(ratio_image.is_some(), "Should have ratio image data");
+        assert!(
+            ratio_image.unwrap().contains("19 bytes"),
+            "RatioImage should indicate 19 bytes"
         );
     }
 
     #[test]
     fn test_parse_jpeg_hdr_parameter_segment() {
         let segment = create_jpeg_hdr_segment(
-            (2, 1),
-            4,                             // Gamma correction
-            &[1.8, 0.9, -2.5, 7.0, 200.0], // Alpha, Beta, Ln0, Ln1, S2n
+            11,       // Version
+            0,        // CorrectionMethod
+            1.0,      // Alpha
+            1.0,      // Beta
+            0.122262, // Ln0
+            2.634655, // Ln1
+            2269.635, // S2n
         );
 
         let result = parse_app11_jpeg_hdr(&segment);
@@ -685,28 +681,17 @@ mod tests {
 
         let metadata = result.unwrap();
 
+        // Verify using APP11 prefix
         assert_eq!(
-            metadata.get_string("JPEG-HDR:Format"),
-            Some("HDR Parameters"),
-            "Format should be HDR Parameters"
+            metadata.get_integer("APP11:JPEG-HDRVersion"),
+            Some(11),
+            "JPEG-HDRVersion should be 11"
         );
 
         assert_eq!(
-            metadata.get_string("JPEG-HDR:Version"),
-            Some("2.1"),
-            "Version should be 2.1"
-        );
-
-        assert_eq!(
-            metadata.get_integer("JPEG-HDR:HDRVersion"),
-            Some(2),
-            "HDRVersion integer should be 2"
-        );
-
-        assert_eq!(
-            metadata.get_string("JPEG-HDR:CorrectionMethod"),
-            Some("Gamma"),
-            "Correction method should be Gamma"
+            metadata.get_integer("APP11:CorrectionMethod"),
+            Some(0),
+            "CorrectionMethod should be 0"
         );
     }
 
@@ -755,26 +740,39 @@ mod tests {
 
     #[test]
     fn test_minimal_hdr_ri_segment() {
-        // Just the identifier and version, no parameters
+        // Just the identifier and version/correction, no float parameters
         let mut minimal = Vec::new();
         minimal.extend_from_slice(HDR_RI_IDENTIFIER);
-        minimal.push(1); // version major
-        minimal.push(0); // version minor
+        minimal.push(11); // version
+        minimal.push(0); // correction method
 
         let result = parse_app11_jpeg_hdr(&minimal);
         assert!(result.is_ok());
 
         let metadata = result.unwrap();
-        assert_eq!(metadata.get_string("JPEG-HDR:Version"), Some("1.0"));
-        assert_eq!(metadata.get_string("JPEG-HDR:Format"), Some("Ratio Image"));
+        assert_eq!(
+            metadata.get_integer("APP11:JPEG-HDRVersion"),
+            Some(11),
+            "JPEG-HDRVersion should be 11"
+        );
+        assert_eq!(
+            metadata.get_integer("APP11:CorrectionMethod"),
+            Some(0),
+            "CorrectionMethod should be 0"
+        );
     }
 
     #[test]
     fn test_extract_hdr_parameters_structured() {
+        // Test the structured parameter extraction
         let segment = create_hdr_ri_segment(
-            (1, 5),
-            3,                             // Logarithmic
-            &[-4.0, 9.0, 1.2, 0.95, 75.0], // Ln0, Ln1, Alpha, Beta, S2n
+            11,      // Version
+            3,       // Logarithmic
+            1.2,     // Alpha
+            0.95,    // Beta
+            -4.0,    // Ln0
+            9.0,     // Ln1
+            75.0,    // S2n
         );
 
         let result = extract_hdr_parameters(&segment);
@@ -782,7 +780,7 @@ mod tests {
 
         let params = result.unwrap();
 
-        assert_eq!(params.version, Some((1, 5)));
+        assert_eq!(params.version, Some((11, 0)));
         assert_eq!(
             params.correction_method,
             Some(CorrectionMethod::Logarithmic)
@@ -810,17 +808,17 @@ mod tests {
     #[test]
     fn test_nan_and_infinity_handling() {
         // Create segment with NaN and infinity values - these should be filtered out
+        // Format: HDR_RI + version(1) + correction(1) + Alpha(4) + Beta(4) + Ln0(4) + Ln1(4) + S2n(4)
         let mut segment = Vec::new();
         segment.extend_from_slice(HDR_RI_IDENTIFIER);
-        segment.push(1);
-        segment.push(0);
-        segment.push(0); // No correction
+        segment.push(1); // version
+        segment.push(0); // correction method
 
-        // Add NaN for Ln0
+        // Add NaN for Alpha (offset 2)
         segment.extend_from_slice(&f32::NAN.to_be_bytes());
-        // Add Infinity for Ln1
+        // Add Infinity for Beta (offset 6)
         segment.extend_from_slice(&f32::INFINITY.to_be_bytes());
-        // Add valid Alpha
+        // Add valid Ln0 (offset 10)
         segment.extend_from_slice(&1.5f32.to_be_bytes());
 
         let result = parse_app11_jpeg_hdr(&segment);
@@ -830,70 +828,19 @@ mod tests {
 
         // NaN and Infinity values should NOT be included
         assert!(
-            metadata.get_float("JPEG-HDR:Ln0").is_none(),
+            metadata.get_float("APP11:Alpha").is_none(),
             "NaN should be filtered out"
         );
         assert!(
-            metadata.get_float("JPEG-HDR:Ln1").is_none(),
+            metadata.get_float("APP11:Beta").is_none(),
             "Infinity should be filtered out"
         );
 
         // Valid value should be included
         assert!(
-            metadata.get_float("JPEG-HDR:Alpha").is_some(),
+            metadata.get_float("APP11:Ln0").is_some(),
             "Valid float should be included"
         );
-    }
-
-    #[test]
-    fn test_negative_s2n_handling() {
-        // S2n should be non-negative, test that negative values are filtered
-        let mut segment = Vec::new();
-        segment.extend_from_slice(HDR_RI_IDENTIFIER);
-        segment.push(1);
-        segment.push(0);
-        segment.push(0); // No correction
-
-        // Ln0, Ln1, Alpha, Beta
-        segment.extend_from_slice(&0.0f32.to_be_bytes());
-        segment.extend_from_slice(&1.0f32.to_be_bytes());
-        segment.extend_from_slice(&1.0f32.to_be_bytes());
-        segment.extend_from_slice(&1.0f32.to_be_bytes());
-
-        // Negative S2n (invalid)
-        segment.extend_from_slice(&(-10.0f32).to_be_bytes());
-
-        let result = parse_app11_jpeg_hdr(&segment);
-        assert!(result.is_ok());
-
-        let metadata = result.unwrap();
-        assert!(
-            metadata.get_float("JPEG-HDR:S2n").is_none(),
-            "Negative S2n should be filtered out"
-        );
-    }
-
-    #[test]
-    fn test_exposure_compensation_calculation() {
-        // Test that exposure compensation is correctly derived from Alpha
-        let segment = create_jpeg_hdr_segment(
-            (1, 0),
-            0,
-            &[2.0, 1.0, 0.0, 0.0, 0.0], // Alpha = 2.0 means +1 EV
-        );
-
-        let result = parse_app11_jpeg_hdr(&segment);
-        assert!(result.is_ok());
-
-        let metadata = result.unwrap();
-
-        if let Some(ev) = metadata.get_float("JPEG-HDR:ExposureCompensation") {
-            // Alpha of 2.0 should give log2(2.0) = 1.0 EV
-            assert!(
-                (ev - 1.0).abs() < 0.001,
-                "Exposure compensation should be approximately 1.0 EV"
-            );
-        }
     }
 
     #[test]
@@ -903,21 +850,25 @@ mod tests {
         let result = parse_app11_jpeg_hdr(segment);
         assert!(result.is_ok());
 
+        // Empty data after identifier produces no tags
         let metadata = result.unwrap();
-        assert_eq!(metadata.get_string("JPEG-HDR:Format"), Some("Ratio Image"));
+        assert!(
+            metadata.get_integer("APP11:JPEG-HDRVersion").is_none(),
+            "No version without data"
+        );
     }
 
     #[test]
     fn test_partial_parameters() {
         // Segment with only some parameters present
+        // Format: HDR_RI + version(1) + correction(1) + Alpha(4)
         let mut segment = Vec::new();
         segment.extend_from_slice(HDR_RI_IDENTIFIER);
-        segment.push(1);
-        segment.push(0);
-        segment.push(3); // Logarithmic
+        segment.push(11); // version
+        segment.push(0); // correction method
 
-        // Only Ln0
-        segment.extend_from_slice(&(-2.5f32).to_be_bytes());
+        // Only Alpha (4 bytes)
+        segment.extend_from_slice(&1.5f32.to_be_bytes());
 
         let result = parse_app11_jpeg_hdr(&segment);
         assert!(result.is_ok());
@@ -925,16 +876,16 @@ mod tests {
         let metadata = result.unwrap();
 
         assert!(
-            metadata.get_float("JPEG-HDR:Ln0").is_some(),
-            "Ln0 should be present"
+            metadata.get_float("APP11:Alpha").is_some(),
+            "Alpha should be present"
         );
         assert!(
-            metadata.get_float("JPEG-HDR:Ln1").is_none(),
-            "Ln1 should not be present"
+            metadata.get_float("APP11:Beta").is_none(),
+            "Beta should not be present"
         );
         assert!(
-            metadata.get_float("JPEG-HDR:Alpha").is_none(),
-            "Alpha should not be present"
+            metadata.get_float("APP11:Ln0").is_none(),
+            "Ln0 should not be present"
         );
     }
 }

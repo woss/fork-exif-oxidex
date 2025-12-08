@@ -21,8 +21,9 @@
 //! // High precision tags (9 decimal places)
 //! assert_eq!(format_exif_rational("BrightnessValue", 3.617254236), "3.617254236");
 //!
-//! // GPS tags (2 decimal places with trailing zeros)
-//! assert_eq!(format_exif_rational("GPSImgDirection", 45.5), "45.50");
+//! // GPS tags (whole numbers without decimals, fractional with minimal precision)
+//! assert_eq!(format_exif_rational("GPSImgDirection", 45.5), "45.5");
+//! assert_eq!(format_exif_rational("GPSImgDirection", 45.0), "45");
 //!
 //! // Resolution tags (only as many decimals as needed, up to 10)
 //! assert_eq!(format_exif_rational("XResolution", 72.0), "72");
@@ -62,6 +63,20 @@ pub const GPS_NUMERIC_TAGS: &[&str] = &[
 /// Resolution values typically display as integers when they are whole numbers,
 /// but can have up to 10 decimal places for fractional DPI values.
 pub const RESOLUTION_TAGS: &[&str] = &["XResolution", "YResolution"];
+
+/// Tags that should format integers without decimal places (integer precision).
+///
+/// These tags store values as rational numbers but ExifTool displays them as
+/// integers when they are whole numbers. ReferenceBlackWhite contains Y, Cb, Cr
+/// black and white reference values which are typically 0, 255, or 128.
+pub const INTEGER_PRECISION_TAGS: &[&str] = &["ReferenceBlackWhite"];
+
+/// Tags that should use 3 decimal places of precision.
+///
+/// YCbCrCoefficients contains the matrix coefficients for converting RGB to YCbCr.
+/// Standard values are 0.299, 0.587, and 0.114 (ITU-R BT.601 standard).
+/// ExifTool displays these with 3 decimal places.
+pub const THREE_DECIMAL_PRECISION_TAGS: &[&str] = &["YCbCrCoefficients"];
 
 /// Tags for ICC profile matrix values requiring 5 decimal places maximum.
 ///
@@ -142,11 +157,11 @@ pub const ICC_MATRIX_TAGS: &[&str] = &[
 /// assert_eq!(format_exif_rational("DigitalZoomRatio", 1.0), "1");
 /// assert_eq!(format_exif_rational("CompressedBitsPerPixel", 2.5), "2.5");
 ///
-/// // GPS tags (exactly 2 decimals, trailing zeros preserved)
+/// // GPS tags (whole numbers without decimals, fractional with minimal precision)
 /// assert_eq!(format_exif_rational("GPSDestBearing", 123.45), "123.45");
-/// assert_eq!(format_exif_rational("GPSImgDirection", 45.0), "45.00");
-/// assert_eq!(format_exif_rational("GPSSpeed", 50.5), "50.50");
-/// assert_eq!(format_exif_rational("GPSTrack", 180.0), "180.00");
+/// assert_eq!(format_exif_rational("GPSImgDirection", 45.0), "45");
+/// assert_eq!(format_exif_rational("GPSSpeed", 50.5), "50.5");
+/// assert_eq!(format_exif_rational("GPSTrack", 180.0), "180");
 ///
 /// // Resolution (up to 10 decimals, trailing zeros trimmed)
 /// assert_eq!(format_exif_rational("XResolution", 72.0), "72");
@@ -157,7 +172,7 @@ pub const ICC_MATRIX_TAGS: &[&str] = &[
 ///
 /// // Works with fully-qualified tag names
 /// assert_eq!(format_exif_rational("EXIF:BrightnessValue", 3.617254236), "3.617254236");
-/// assert_eq!(format_exif_rational("GPS:GPSImgDirection", 45.0), "45.00");
+/// assert_eq!(format_exif_rational("GPS:GPSImgDirection", 45.0), "45");
 /// ```
 pub fn format_exif_rational(tag_name: &str, value: f64) -> String {
     // Extract the base tag name (after the last colon if present).
@@ -385,6 +400,137 @@ pub fn format_icc_value(value: f64) -> String {
 pub fn is_resolution_tag(tag_name: &str) -> bool {
     let base_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
     RESOLUTION_TAGS.contains(&base_name)
+}
+
+/// Check if a tag requires integer precision (no decimal places for whole numbers).
+///
+/// Integer precision tags like ReferenceBlackWhite contain values that should
+/// be displayed as integers when they are whole numbers (0, 128, 255).
+///
+/// # Arguments
+///
+/// * `tag_name` - The tag name, optionally with group prefix
+///
+/// # Returns
+///
+/// `true` if the tag should use integer precision formatting.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::core::formatters::numeric_precision::is_integer_precision_tag;
+///
+/// assert!(is_integer_precision_tag("ReferenceBlackWhite"));
+/// assert!(is_integer_precision_tag("EXIF:ReferenceBlackWhite"));
+/// assert!(!is_integer_precision_tag("YCbCrCoefficients"));
+/// ```
+pub fn is_integer_precision_tag(tag_name: &str) -> bool {
+    let base_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
+    INTEGER_PRECISION_TAGS.contains(&base_name)
+}
+
+/// Check if a tag requires 3 decimal places of precision.
+///
+/// Three-decimal precision is used for tags like YCbCrCoefficients which
+/// contain standard values like 0.299, 0.587, and 0.114.
+///
+/// # Arguments
+///
+/// * `tag_name` - The tag name, optionally with group prefix
+///
+/// # Returns
+///
+/// `true` if the tag should use 3 decimal precision formatting.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::core::formatters::numeric_precision::is_three_decimal_tag;
+///
+/// assert!(is_three_decimal_tag("YCbCrCoefficients"));
+/// assert!(is_three_decimal_tag("EXIF:YCbCrCoefficients"));
+/// assert!(!is_three_decimal_tag("ReferenceBlackWhite"));
+/// ```
+pub fn is_three_decimal_tag(tag_name: &str) -> bool {
+    let base_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
+    THREE_DECIMAL_PRECISION_TAGS.contains(&base_name)
+}
+
+/// Format a space-separated list of values with integer precision.
+///
+/// Each value in the space-separated string is reformatted to display
+/// as an integer when it's a whole number, matching ExifTool output.
+///
+/// # Arguments
+///
+/// * `value` - Space-separated string of numeric values (e.g., "0.0 255.0 128.0")
+///
+/// # Returns
+///
+/// A string with each value formatted as integer if whole, or minimal decimals if not.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::core::formatters::numeric_precision::format_integer_precision_values;
+///
+/// assert_eq!(format_integer_precision_values("0.0 255.0 128.0"), "0 255 128");
+/// assert_eq!(format_integer_precision_values("0.5 255.0 128.5"), "0.5 255 128.5");
+/// ```
+pub fn format_integer_precision_values(value: &str) -> String {
+    value
+        .split_whitespace()
+        .map(|part| {
+            if let Ok(f) = part.parse::<f64>() {
+                // Check if value is effectively an integer
+                if (f.fract().abs()) < 1e-9 {
+                    format!("{:.0}", f)
+                } else {
+                    // Non-integer: use minimal precision (trim trailing zeros)
+                    format_with_precision(f, 6)
+                }
+            } else {
+                part.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Format a space-separated list of values with 3 decimal precision.
+///
+/// Each value in the space-separated string is reformatted to display
+/// with up to 3 decimal places, matching ExifTool output for tags like
+/// YCbCrCoefficients.
+///
+/// # Arguments
+///
+/// * `value` - Space-separated string of numeric values (e.g., "0.299 0.587 0.114")
+///
+/// # Returns
+///
+/// A string with each value formatted with up to 3 decimal places.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::core::formatters::numeric_precision::format_three_decimal_values;
+///
+/// assert_eq!(format_three_decimal_values("0.2990000000 0.5870000000 0.1140000000"), "0.299 0.587 0.114");
+/// assert_eq!(format_three_decimal_values("0.5 1.0 0.25"), "0.5 1 0.25");
+/// ```
+pub fn format_three_decimal_values(value: &str) -> String {
+    value
+        .split_whitespace()
+        .map(|part| {
+            if let Ok(f) = part.parse::<f64>() {
+                format_with_precision(f, 3)
+            } else {
+                part.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 // ============================================================================

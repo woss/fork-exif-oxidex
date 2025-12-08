@@ -345,14 +345,14 @@ fn format_gps_timestamp(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
 /// - [2] = Minimum F-number at minimum focal length
 /// - [3] = Minimum F-number at maximum focal length
 ///
-/// Formatted as: "focal_min-focal_max mm f/aperture_min-aperture_max"
-/// Example: "24-70 mm f/2.8-2.8" or "50 mm f/1.8"
+/// Formatted as: "focal_min-focal_maxmm f/aperture_min-aperture_max"
+/// Example: "24-70mm f/2.8-2.8" or "50mm f/1.8" or "3.99mm f/1.8"
 ///
 /// # Formatting Rules (ExifTool compatibility)
 ///
-/// - Focal lengths are rounded to nearest integer when close to whole numbers
-/// - Values like 3.99 are rounded to 4
-/// - Space between number and "mm" (e.g., "4 mm" not "4mm")
+/// - Focal lengths preserve decimal precision when present (e.g., "3.99mm")
+/// - Whole numbers display without decimals (e.g., "24mm" not "24.0mm")
+/// - No space between number and "mm" (e.g., "3.99mm" not "3.99 mm")
 fn format_lens_info(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
     let mut values = Vec::new();
     for i in 0..4 {
@@ -371,35 +371,41 @@ fn format_lens_info(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
     let min_f_at_min = values[2];
     let min_f_at_max = values[3];
 
-    // Helper to format focal length - round to integer when appropriate
-    // Values like 3.99 should display as 4, matching ExifTool behavior
-    let format_focal = |f: f64| -> String {
-        let rounded = f.round();
-        // If within 0.1 of a whole number, use the rounded value
-        if (f - rounded).abs() < 0.1 {
-            format!("{:.0}", rounded)
+    /// Helper to format focal length with appropriate precision.
+    /// Whole numbers display without decimals, fractional values preserve precision.
+    /// Uses up to 2 decimal places, trimming trailing zeros.
+    fn format_focal(f: f64) -> String {
+        // Format with 2 decimal places then trim trailing zeros
+        let formatted = format!("{:.2}", f);
+        let trimmed = formatted.trim_end_matches('0').trim_end_matches('.');
+        trimmed.to_string()
+    }
+
+    // Format focal length range (no space before "mm")
+    let focal_str = if (min_focal - max_focal).abs() < 0.01 {
+        // Prime lens (single focal length)
+        format!("{}mm", format_focal(min_focal))
+    } else {
+        // Zoom lens (focal range)
+        format!("{}-{}mm", format_focal(min_focal), format_focal(max_focal))
+    };
+
+    // Format aperture range - keep one decimal for f-numbers, trim if whole
+    let format_aperture = |f: f64| -> String {
+        if f.fract().abs() < 0.001 {
+            format!("{:.0}", f)
         } else {
-            // Keep one decimal place for truly fractional values
-            format!("{:.1}", f)
+            // Format with 1 decimal, trim trailing zeros
+            format!("{:.1}", f).trim_end_matches('0').trim_end_matches('.').to_string()
         }
     };
 
-    // Format focal length range
-    let focal_str = if (min_focal - max_focal).abs() < 0.1 {
-        // Prime lens (single focal length)
-        format!("{} mm", format_focal(min_focal))
-    } else {
-        // Zoom lens (focal range)
-        format!("{}-{} mm", format_focal(min_focal), format_focal(max_focal))
-    };
-
-    // Format aperture range - keep one decimal for f-numbers
-    let aperture_str = if (min_f_at_min - min_f_at_max).abs() < 0.1 {
-        // Constant aperture (e.g., f/2.8)
-        format!("f/{:.1}", min_f_at_min)
+    let aperture_str = if (min_f_at_min - min_f_at_max).abs() < 0.01 {
+        // Constant aperture (e.g., f/2.8 or f/4)
+        format!("f/{}", format_aperture(min_f_at_min))
     } else {
         // Variable aperture (e.g., f/3.5-5.6)
-        format!("f/{:.1}-{:.1}", min_f_at_min, min_f_at_max)
+        format!("f/{}-{}", format_aperture(min_f_at_min), format_aperture(min_f_at_max))
     };
 
     let formatted = format!("{} {}", focal_str, aperture_str);
@@ -975,7 +981,8 @@ mod tests {
         );
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "50 mm f/1.8");
+            // ExifTool format: no space before mm
+            assert_eq!(s, "50mm f/1.8");
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -998,7 +1005,8 @@ mod tests {
         );
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "24-70 mm f/2.8");
+            // ExifTool format: no space before mm, no trailing .0
+            assert_eq!(s, "24-70mm f/2.8");
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -1021,7 +1029,8 @@ mod tests {
         );
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "18-55 mm f/3.5-5.6");
+            // ExifTool format: no space before mm
+            assert_eq!(s, "18-55mm f/3.5-5.6");
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -1044,7 +1053,8 @@ mod tests {
         );
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "85 mm f/1.4");
+            // ExifTool format: no space before mm
+            assert_eq!(s, "85mm f/1.4");
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -1067,7 +1077,8 @@ mod tests {
         );
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "70-200 mm f/4.0");
+            // ExifTool format: no space before mm, no trailing .0
+            assert_eq!(s, "70-200mm f/4");
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -1091,8 +1102,8 @@ mod tests {
         );
 
         if let TagValue::String(s) = result {
-            // 3.99 rounds to 4
-            assert_eq!(s, "4 mm f/1.8");
+            // ExifTool keeps exact value (3.99), no rounding. Format: no space before mm
+            assert_eq!(s, "3.99mm f/1.8");
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -1112,8 +1123,8 @@ mod tests {
         );
 
         if let TagValue::String(s) = result2 {
-            // 4.5 stays as 4.5 (not rounded)
-            assert_eq!(s, "4.5 mm f/2.8");
+            // 4.5 stays as 4.5 (not rounded), ExifTool format: no space before mm
+            assert_eq!(s, "4.5mm f/2.8");
         } else {
             panic!("Expected String variant, got {:?}", result2);
         }
@@ -1276,14 +1287,14 @@ mod tests {
             raw_bytes_to_tag_value(lens_serial, 2, 12, 0xA435, ByteOrder::LittleEndian);
         assert!(matches!(lens_result, TagValue::String(ref s) if s == "LS987654321"));
 
-        // Lens info: 24-70mm f/2.8
+        // Lens info: 24-70mm f/2.8 (ExifTool format: no space before mm)
         let lens_info_bytes = make_rational_array_bytes(
             &[(24, 1), (70, 1), (28, 10), (28, 10)],
             ByteOrder::LittleEndian,
         );
         let lens_info_result =
             raw_bytes_to_tag_value(&lens_info_bytes, 5, 4, 0xA432, ByteOrder::LittleEndian);
-        assert!(matches!(lens_info_result, TagValue::String(ref s) if s == "24-70 mm f/2.8"));
+        assert!(matches!(lens_info_result, TagValue::String(ref s) if s == "24-70mm f/2.8"));
 
         // Owner name
         let owner = b"Evidence Photographer\0";

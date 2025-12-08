@@ -335,8 +335,11 @@ const MEASURED_COLOR_TEMPERATURE: usize = 3;
 // Using const_decoder! macro for declarative, zero-overhead value decoding
 
 // Canon macro mode decoder
+// Used for MacroMode in CameraSettings (index 1)
+// Reference: ExifTool Canon.pm MacroMode table
+// Value 0 = "Off" (no macro), 1 = "Macro" (macro mode active), 2 = "Normal"
 // Public to allow re-use in registry module
-const_decoder!(pub MACRO_MODE, i16, [(1, "Macro"), (2, "Normal"),]);
+const_decoder!(pub MACRO_MODE, i16, [(0, "Off"), (1, "Macro"), (2, "Normal"),]);
 
 // Canon quality setting decoder
 // Public to allow re-use in registry module
@@ -617,10 +620,13 @@ const_decoder!(
 
 // Canon digital zoom decoder
 // Used for DigitalZoom in CameraSettings (index 12)
+// Reference: ExifTool Canon.pm DigitalZoom table
+// Note: -1 indicates "Off" (not available), 0 indicates "None" (not used)
 const_decoder!(
     pub DIGITAL_ZOOM,
     i16,
     [
+        (-1, "Off"),
         (0, "None"),
         (1, "2x"),
         (2, "4x"),
@@ -773,6 +779,69 @@ const_decoder!(
         (20, "PC Set 4"),
         (21, "PC Set 5"),
         (23, "Auto (Ambience Priority)"),
+    ]
+);
+
+// Canon Contrast decoder
+// Used for Contrast in CameraSettings (index 13)
+// Reference: ExifTool Canon.pm Contrast table
+// Canon uses signed values: 0=Normal, negative=Low, positive=High
+const_decoder!(
+    pub CONTRAST,
+    i16,
+    [
+        (-2, "Very Low"),
+        (-1, "Low"),
+        (0, "Normal"),
+        (1, "High"),
+        (2, "Very High"),
+    ]
+);
+
+// Canon Saturation decoder
+// Used for Saturation in CameraSettings (index 14)
+// Reference: ExifTool Canon.pm Saturation table
+// Canon uses signed values: 0=Normal, negative=Low, positive=High
+const_decoder!(
+    pub SATURATION,
+    i16,
+    [
+        (-2, "Very Low"),
+        (-1, "Low"),
+        (0, "Normal"),
+        (1, "High"),
+        (2, "Very High"),
+    ]
+);
+
+// Canon Sharpness decoder
+// Used for Sharpness in CameraSettings (index 15)
+// Reference: ExifTool Canon.pm Sharpness table
+// Canon uses signed values: 0=Normal, negative=Soft, positive=Sharp
+const_decoder!(
+    pub SHARPNESS,
+    i16,
+    [
+        (-2, "Very Soft"),
+        (-1, "Soft"),
+        (0, "Normal"),
+        (1, "Sharp"),
+        (2, "Very Sharp"),
+    ]
+);
+
+// Canon FocalType decoder
+// Used for FocalType in FocalLength array (index 0)
+// Reference: ExifTool Canon.pm FocalType table
+// Describes whether lens is fixed focal length or zoom
+const_decoder!(
+    pub FOCAL_TYPE,
+    i16,
+    [
+        (0, "Unknown"),
+        (1, "Fixed"),
+        (2, "Zoom"),
+        (3, "Fixed"),  // Alternative encoding for fixed lens
     ]
 );
 
@@ -1361,26 +1430,29 @@ fn parse_canon_makernote_impl(
                     }
 
                     // Contrast (index 13) - Contrast adjustment value
+                    // Uses decoder to convert signed value to human-readable string
                     if array.len() > CAMERA_SETTINGS_CONTRAST {
                         tags.insert(
                             "Canon:Contrast".to_string(),
-                            array[CAMERA_SETTINGS_CONTRAST].to_string(),
+                            CONTRAST.decode(array[CAMERA_SETTINGS_CONTRAST]),
                         );
                     }
 
                     // Saturation (index 14) - Saturation adjustment value
+                    // Uses decoder to convert signed value to human-readable string
                     if array.len() > CAMERA_SETTINGS_SATURATION {
                         tags.insert(
                             "Canon:Saturation".to_string(),
-                            array[CAMERA_SETTINGS_SATURATION].to_string(),
+                            SATURATION.decode(array[CAMERA_SETTINGS_SATURATION]),
                         );
                     }
 
                     // Sharpness (index 15) - Sharpness adjustment value
+                    // Uses decoder to convert signed value to human-readable string
                     if array.len() > CAMERA_SETTINGS_SHARPNESS {
                         tags.insert(
                             "Canon:Sharpness".to_string(),
-                            array[CAMERA_SETTINGS_SHARPNESS].to_string(),
+                            SHARPNESS.decode(array[CAMERA_SETTINGS_SHARPNESS]),
                         );
                     }
 
@@ -1735,13 +1807,15 @@ fn parse_canon_makernote_impl(
             }
 
             // FocalLength array (Phase 2)
+            // Contains focal type (Fixed/Zoom) and focal length value
             CANON_FOCAL_LENGTH => {
                 if let Some(array) = extract_canon_i16_array(entry, ifd_data, byte_order) {
-                    // array[0] = focal type
-                    // array[1] = focal length
+                    // array[0] = focal type (Fixed, Zoom, etc.)
+                    // Uses FOCAL_TYPE decoder to convert numeric value to string
                     if !array.is_empty() {
-                        tags.insert("Canon:FocalType".to_string(), array[0].to_string());
+                        tags.insert("Canon:FocalType".to_string(), FOCAL_TYPE.decode(array[0]));
                     }
+                    // array[1] = focal length in mm
                     if array.len() > 1 {
                         tags.insert("Canon:FocalLength".to_string(), format!("{} mm", array[1]));
                     }
@@ -2298,7 +2372,8 @@ mod tests {
 
         let result = parse_canon_makernote_impl(&data, ByteOrder::LittleEndian).unwrap();
 
-        assert_eq!(result.get("Canon:FocalType"), Some(&"2".to_string()));
+        // FocalType value 2 is decoded to "Zoom" using FOCAL_TYPE decoder
+        assert_eq!(result.get("Canon:FocalType"), Some(&"Zoom".to_string()));
         assert_eq!(result.get("Canon:FocalLength"), Some(&"50 mm".to_string()));
     }
 
