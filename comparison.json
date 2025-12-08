@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-08T06:42:04.398057+00:00",
+  "generated_at": "2025-12-08T08:13:48.525094+00:00",
   "exiftool_version": "unknown",
   "oxidex_version": "unknown",
   "by_format": {
@@ -61,6 +61,7 @@
         "MakerNotes:AESetting",
         "MakerNotes:AFPoint",
         "MakerNotes:AutoExposureBracketing",
+        "MakerNotes:CameraType",
         "MakerNotes:CanonExposureMode",
         "MakerNotes:CanonFlashMode",
         "MakerNotes:CanonImageSize",
@@ -81,6 +82,7 @@
         "MakerNotes:FocusDistanceUpper",
         "MakerNotes:FocusMode",
         "MakerNotes:FocusRange",
+        "MakerNotes:LensType",
         "MakerNotes:MacroMode",
         "MakerNotes:MaxAperture",
         "MakerNotes:MaxFocalLength",
@@ -93,6 +95,7 @@
         "MakerNotes:Saturation",
         "MakerNotes:SelfTimer",
         "MakerNotes:SequenceNumber",
+        "MakerNotes:Sharpness",
         "MakerNotes:SlowShutter",
         "MakerNotes:SpotMeteringMode",
         "MakerNotes:TargetAperture",
@@ -142,20 +145,6 @@
           "source_file": null
         },
         {
-          "name": "CameraISO",
-          "family": "MakerNotes",
-          "value": "100",
-          "tag_id": null,
-          "source_file": null
-        },
-        {
-          "name": "CameraType",
-          "family": "MakerNotes",
-          "value": "Compact",
-          "tag_id": null,
-          "source_file": null
-        },
-        {
           "name": "CanonFirmwareVersion",
           "family": "MakerNotes",
           "value": "Firmware Version 1.10",
@@ -201,13 +190,6 @@
           "name": "FocalPlaneYSize",
           "family": "MakerNotes",
           "value": "5.46 mm",
-          "tag_id": null,
-          "source_file": null
-        },
-        {
-          "name": "LensType",
-          "family": "MakerNotes",
-          "value": "n/a",
           "tag_id": null,
           "source_file": null
         },
@@ -322,11 +304,17 @@
         {
           "tag_key": "MakerNotes:AutoISO",
           "exiftool_value": "100",
-          "oxidex_value": "0",
+          "oxidex_value": "17",
           "source_file": ""
         },
         {
           "tag_key": "MakerNotes:BaseISO",
+          "exiftool_value": "100",
+          "oxidex_value": "160",
+          "source_file": ""
+        },
+        {
+          "tag_key": "MakerNotes:CameraISO",
           "exiftool_value": "100",
           "oxidex_value": "160",
           "source_file": ""
@@ -352,23 +340,17 @@
         {
           "tag_key": "MakerNotes:MeasuredEV",
           "exiftool_value": "13.62",
-          "oxidex_value": "+8.6",
-          "source_file": ""
-        },
-        {
-          "tag_key": "MakerNotes:Sharpness",
-          "exiftool_value": "0",
-          "oxidex_value": "Normal",
+          "oxidex_value": "8.62",
           "source_file": ""
         }
       ],
       "regressions": [],
-      "coverage_percentage": 80.16528925619835,
+      "coverage_percentage": 82.64462809917356,
       "total_exiftool_tags": 121,
-      "timestamp": "2025-12-08T06:42:07.409732+00:00"
+      "timestamp": "2025-12-08T08:13:49.926833+00:00"
     }
   },
-  "overall_coverage": 80.16528925619835,
+  "overall_coverage": 82.64462809917356,
   "total_regressions": 0,
-  "summary": "Analyzed 1 formats: 97/121 tags (80.2% overall coverage)"
+  "summary": "Analyzed 1 formats: 100/121 tags (82.6% overall coverage)"
 }

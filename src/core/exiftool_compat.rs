@@ -30,8 +30,14 @@
 //! 8. APP14 flags (APP14Flags0/APP14Flags1: 0 -> "(none)")
 //! 9. Enum tags (ExposureProgram integer -> string description)
 //! 10. ICC_Profile matrix tags (5 decimal precision, MeasurementFlare with % suffix)
-//! 11. Unit suffixes (FocalLength -> "X mm", GPSAltitude -> "X m")
-//! 12. Default: return original value unchanged
+//! 11. Integer precision tags (ReferenceBlackWhite: whole numbers)
+//! 12. Three decimal precision tags (YCbCrCoefficients)
+//! 13. UserComment (binary data with encoding prefix)
+//! 14. ThumbnailImage (binary -> "(Binary data X bytes, use -b option to extract)")
+//! 15. Percentage tags (Quality, MeasurementFlare: append %)
+//! 16. Unit suffixes (FocalLength -> "X mm", GPSAltitude -> "X m")
+//! 17. Special values (infinity -> "undef", -0 -> "0")
+//! 18. Default: return original value unchanged
 //!
 //! # Example
 //!
@@ -137,8 +143,14 @@ pub fn format_for_exiftool(metadata: &MetadataMap) -> MetadataMap {
 /// 8. APP14 flags (APP14Flags0, APP14Flags1: 0 -> "(none)")
 /// 9. Enum tags (ExposureProgram)
 /// 10. ICC_Profile matrix tags (5 decimal precision for color matrices, white points, etc.)
-/// 11. Unit suffixes (FocalLength, GPSAltitude)
-/// 12. Default: return original value unchanged
+/// 11. Integer precision tags (ReferenceBlackWhite: whole numbers)
+/// 12. Three decimal precision tags (YCbCrCoefficients)
+/// 13. UserComment (binary data with encoding prefix)
+/// 14. ThumbnailImage (binary -> "(Binary data X bytes, use -b option to extract)")
+/// 15. Percentage tags (Quality, MeasurementFlare: append %)
+/// 16. Unit suffixes (FocalLength, GPSAltitude)
+/// 17. Special values (infinity -> "undef", -0 -> "0")
+/// 18. Default: return original value unchanged
 ///
 /// # Arguments
 ///
@@ -398,7 +410,20 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 14: Percentage Tags (Quality, MeasurementFlare)
+    // Rule 14: ThumbnailImage (format binary thumbnail data)
+    // Format thumbnail images with ExifTool-compatible message
+    // ---------------------------------------------------------------------
+    if is_thumbnail_image(base_name) {
+        if let TagValue::Binary(data) = value {
+            return TagValue::String(format!(
+                "(Binary data {} bytes, use -b option to extract)",
+                data.len()
+            ));
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 15: Percentage Tags (Quality, MeasurementFlare)
     // Append "%" suffix to numeric values representing percentages
     // Note: MeasurementFlare is also handled in the ICC matrix rule above,
     // but Quality (from Ducky segment) is handled here for integer values.
@@ -420,7 +445,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 15: Unit Suffixes (FocalLength -> mm, GPSAltitude -> m)
+    // Rule 16: Unit Suffixes (FocalLength -> mm, GPSAltitude -> m)
     // ---------------------------------------------------------------------
     if is_unit_suffix_tag(base_name) {
         // For string values, apply unit suffix directly
@@ -458,7 +483,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 16: Special Values (infinity -> "undef", -0 -> "0")
+    // Rule 17: Special Values (infinity -> "undef", -0 -> "0")
     // Handle special float/rational values that result from invalid/undefined data.
     // GPS tags like GPSDestBearing/GPSDestDistance produce infinity when
     // the denominator is 0. ExifTool displays "undef" for these cases.
@@ -487,7 +512,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 17: Default - Return original value unchanged
+    // Rule 18: Default - Return original value unchanged
     // ---------------------------------------------------------------------
     value.clone()
 }
@@ -839,6 +864,23 @@ pub fn is_percentage_tag(base_name: &str) -> bool {
 /// `true` if this tag should be decoded as UserComment
 pub fn is_user_comment(base_name: &str) -> bool {
     base_name == "UserComment"
+}
+
+/// Checks if a tag name refers to a thumbnail image.
+///
+/// ThumbnailImage tags should be formatted with the ExifTool-compatible
+/// message "(Binary data X bytes, use -b option to extract)" instead of
+/// just showing the raw binary data.
+///
+/// # Arguments
+///
+/// * `base_name` - The tag name without family prefix
+///
+/// # Returns
+///
+/// `true` if this tag should be formatted as a thumbnail image
+pub fn is_thumbnail_image(base_name: &str) -> bool {
+    base_name == "ThumbnailImage"
 }
 
 // =============================================================================
@@ -1667,7 +1709,7 @@ mod tests {
         // UserComment with ASCII encoding should be decoded to text
         // ExifTool shows: "GCM_TAG"
         // OxiDex before fix showed: "[Binary data]"
-        let mut data = b"ASCII\0\0\0GCM_TAG".to_vec();
+        let data = b"ASCII\0\0\0GCM_TAG".to_vec();
         let value = TagValue::Binary(data);
         let formatted = format_tag_value("EXIF:UserComment", &value);
         assert_eq!(formatted.as_string(), Some("GCM_TAG"));
@@ -1699,5 +1741,41 @@ mod tests {
         assert!(is_user_comment("UserComment"));
         assert!(!is_user_comment("Comment"));
         assert!(!is_user_comment("ImageDescription"));
+    }
+
+    // -------------------------------------------------------------------------
+    // ThumbnailImage Formatting tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_thumbnail_image_binary_formatting() {
+        // ThumbnailImage should be formatted with ExifTool-compatible message
+        // ExifTool shows: "(Binary data 5448 bytes, use -b option to extract)"
+        let data = vec![0xFF, 0xD8, 0xFF, 0xE0]; // Start of JPEG
+        let value = TagValue::Binary(data);
+        let formatted = format_tag_value("EXIF:ThumbnailImage", &value);
+        assert_eq!(
+            formatted.as_string(),
+            Some("(Binary data 4 bytes, use -b option to extract)")
+        );
+    }
+
+    #[test]
+    fn test_thumbnail_image_large_binary() {
+        // Test with a larger thumbnail
+        let data = vec![0u8; 5448]; // 5448 bytes like in the example
+        let value = TagValue::Binary(data);
+        let formatted = format_tag_value("ThumbnailImage", &value);
+        assert_eq!(
+            formatted.as_string(),
+            Some("(Binary data 5448 bytes, use -b option to extract)")
+        );
+    }
+
+    #[test]
+    fn test_is_thumbnail_image() {
+        assert!(is_thumbnail_image("ThumbnailImage"));
+        assert!(!is_thumbnail_image("PreviewImage"));
+        assert!(!is_thumbnail_image("JpgFromRaw"));
     }
 }

@@ -1143,6 +1143,49 @@ pub fn decode_canon_model_id(model_id: u32) -> String {
     }
 }
 
+/// Decodes Canon model ID to camera type (Compact, EOS, etc.).
+///
+/// # Parameters
+/// - `model_id`: The Canon model ID value from tag 0x0010
+///
+/// # Returns
+/// Camera type as a string: "Compact", "EOS Mid-range", "EOS High-end", etc.
+pub fn decode_camera_type(model_id: u32) -> String {
+    // EOS cameras use model IDs starting with 0x80000000
+    // PowerShot and other compact cameras use model IDs in 0x01000000 range
+    if model_id >= 0x80000000 {
+        // EOS DSLR/Mirrorless cameras
+        match model_id {
+            // Professional 1-series bodies
+            0x80000001 | // EOS-1D
+            0x80000167 | // EOS-1Ds
+            0x80000168 | // EOS-1D Mark II
+            0x80000169 | // EOS-1Ds Mark II
+            0x80000170 | // EOS-1D Mark II N
+            0x80000174 | // EOS-1D Mark III
+            0x80000175 | // EOS-1Ds Mark III
+            0x80000269 | // EOS-1D Mark IV
+            0x80000281 | // EOS-1D X
+            0x80000285 | // EOS-1D X Mark II (duplicate ID handling)
+            0x80000302 | // EOS-1D C
+            0x80000324 | // EOS-1D C (duplicate)
+            0x80000328 | // EOS-1D C (duplicate)
+            0x80000347 | // EOS-1D X Mark II
+            0x80000406   // EOS-1D X Mark III
+            => "EOS High-end".to_string(),
+
+            // All other EOS models are mid-range or entry-level
+            _ => "EOS Mid-range".to_string(),
+        }
+    } else if model_id >= 0x01000000 && model_id < 0x02000000 {
+        // PowerShot and compact cameras
+        "Compact".to_string()
+    } else {
+        // Unknown camera type
+        "Unknown".to_string()
+    }
+}
+
 /// Represents a Canon MakerNote tag value
 #[derive(Debug, Clone, PartialEq)]
 pub enum CanonTagValue {
@@ -1314,7 +1357,18 @@ fn parse_canon_makernote_impl(
             CANON_IMAGE_TYPE | CANON_FIRMWARE_VERSION | CANON_OWNER_NAME | CANON_SERIAL_NUMBER => {
                 if let Some(value) = extract_string_value(entry, ifd_data) {
                     let tag_name = canon_tag_to_name(entry.tag_id);
-                    tags.insert(tag_name, value);
+                    tags.insert(tag_name.clone(), value.clone());
+
+                    // Add ExifTool-compatible aliases for compatibility
+                    match entry.tag_id {
+                        CANON_FIRMWARE_VERSION => {
+                            tags.insert("Canon:CanonFirmwareVersion".to_string(), value);
+                        }
+                        CANON_IMAGE_TYPE => {
+                            tags.insert("Canon:CanonImageType".to_string(), value);
+                        }
+                        _ => {}
+                    }
                 }
             }
 
@@ -1325,6 +1379,10 @@ fn parse_canon_makernote_impl(
                 let model_id = entry.value_offset;
                 let model_name = decode_canon_model_id(model_id);
                 tags.insert("Canon:CanonModelID".to_string(), model_name);
+
+                // Also output CameraType based on model ID
+                let camera_type = decode_camera_type(model_id);
+                tags.insert("Canon:CameraType".to_string(), camera_type);
             }
 
             // Simple integer tags (Phase 1)
@@ -1448,11 +1506,11 @@ fn parse_canon_makernote_impl(
                     }
 
                     // Sharpness (index 15) - Sharpness adjustment value
-                    // Uses decoder to convert signed value to human-readable string
+                    // Output raw numeric value to match ExifTool
                     if array.len() > CAMERA_SETTINGS_SHARPNESS {
                         tags.insert(
                             "Canon:Sharpness".to_string(),
-                            SHARPNESS.decode(array[CAMERA_SETTINGS_SHARPNESS]),
+                            array[CAMERA_SETTINGS_SHARPNESS].to_string(),
                         );
                     }
 
@@ -1510,6 +1568,9 @@ fn parse_canon_makernote_impl(
                                     format!("Unknown ({})", lens_id),
                                 );
                             }
+                        } else {
+                            // For compact cameras or fixed lenses, output "n/a"
+                            tags.insert("Canon:LensType".to_string(), "n/a".to_string());
                         }
                     }
 
@@ -1649,27 +1710,48 @@ fn parse_canon_makernote_impl(
             // Extracts all available fields from the Canon ShotInfo array
             CANON_SHOT_INFO => {
                 if let Some(array) = extract_canon_i16_array(entry, ifd_data, byte_order) {
-                    // AutoISO (index 1) - direct value
+                    // AutoISO (index 1) - direct value, with fallback to CameraSettings ISO
                     if array.len() > SHOT_INFO_AUTO_ISO {
-                        tags.insert(
-                            "Canon:AutoISO".to_string(),
-                            array[SHOT_INFO_AUTO_ISO].to_string(),
-                        );
+                        let auto_iso = array[SHOT_INFO_AUTO_ISO];
+                        // If AutoISO is 0, try to use CameraSettings ISO if available
+                        if auto_iso > 0 {
+                            tags.insert("Canon:AutoISO".to_string(), auto_iso.to_string());
+                        } else if let Some(iso) = tags.get("Canon:ISO") {
+                            tags.insert("Canon:AutoISO".to_string(), iso.clone());
+                        }
                     }
 
-                    // BaseISO (index 2) - direct value
+                    // BaseISO (index 2) - may need conversion from APEX or different index
+                    // Note: For some camera models, BaseISO encoding varies
                     if array.len() > SHOT_INFO_BASE_ISO {
-                        tags.insert(
-                            "Canon:BaseISO".to_string(),
-                            array[SHOT_INFO_BASE_ISO].to_string(),
-                        );
+                        let base_iso_raw = array[SHOT_INFO_BASE_ISO];
+                        // Try to interpret the value - if it matches common ISO values, use it
+                        // Otherwise try fallback to CameraSettings ISO
+                        let base_iso = if base_iso_raw > 0 && base_iso_raw < 1000 {
+                            base_iso_raw.to_string()
+                        } else if let Some(iso) = tags.get("Canon:ISO") {
+                            iso.clone()
+                        } else {
+                            base_iso_raw.to_string()
+                        };
+                        tags.insert("Canon:BaseISO".to_string(), base_iso.clone());
+
+                        // CameraISO - use AutoISO if > 0, otherwise BaseISO
+                        if array.len() > SHOT_INFO_AUTO_ISO && array[SHOT_INFO_AUTO_ISO] > 0 {
+                            tags.insert("Canon:CameraISO".to_string(), array[SHOT_INFO_AUTO_ISO].to_string());
+                        } else {
+                            tags.insert("Canon:CameraISO".to_string(), base_iso);
+                        }
                     }
 
                     // MeasuredEV (index 3) - format as EV value
+                    // Use unsigned value and different scaling for MeasuredEV
                     if array.len() > SHOT_INFO_MEASURED_EV {
+                        let raw_value = array[SHOT_INFO_MEASURED_EV] as u16;
+                        let ev = raw_value as f64 / 32.0;
                         tags.insert(
                             "Canon:MeasuredEV".to_string(),
-                            apex_to_ev(array[SHOT_INFO_MEASURED_EV]),
+                            format!("{:.2}", ev),
                         );
                     }
 
@@ -1872,6 +1954,9 @@ fn parse_canon_makernote_impl(
                                 // Unknown lens - store ID
                                 tags.insert("Canon:LensID".to_string(), lens_id.to_string());
                             }
+                        } else {
+                            // For compact cameras or fixed lenses, output "n/a"
+                            tags.insert("Canon:LensType".to_string(), "n/a".to_string());
                         }
                     }
 
@@ -2331,7 +2416,7 @@ mod tests {
 
         assert_eq!(result.get("Canon:AutoISO"), Some(&"100".to_string()));
         assert_eq!(result.get("Canon:BaseISO"), Some(&"100".to_string()));
-        assert_eq!(result.get("Canon:MeasuredEV"), Some(&"+4.0".to_string()));
+        assert_eq!(result.get("Canon:MeasuredEV"), Some(&"4.00".to_string()));
         assert_eq!(
             result.get("Canon:TargetAperture"),
             Some(&"f/5.7".to_string())
