@@ -9,11 +9,11 @@ title: SAMSUNG Compatibility
 ## Summary
 
 - **Files Tested:** 702
-- **Coverage:** 41.6%
-- **Matched Tags:** 207
+- **Coverage:** 42.6%
+- **Matched Tags:** 212
 - **Missing Tags:** 261
 - **Extra Tags:** 91
-- **Value Differences:** 30
+- **Value Differences:** 25
 
 ## Value Differences
 
@@ -37,19 +37,14 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:XResolution` | 0.3333333333 | 0.333333333 |
 | `EXIF:YCbCrSubSampling` | YCbCr4:2:0 (2 2) | 2 1 |
 | `EXIF:YResolution` | 0.3333333333 | 0.333333333 |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
-| `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 8085319 | 8035733 |
-| `MakerNotes:FaceDetect` | Off | 0 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:Data` | (Binary data 648421 bytes, use -b option... | iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAAAAAC/... |
 | `XMP:PoseHeadingDegrees` | 0.0 | 0 |
 | `XMP:PosePitchDegrees` | 0.0 | 0 |
 | `XMP:PoseRollDegrees` | 0.0 | 0 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:-00001 |
-| `XMP:Tagged` | Yes | true |
 | `XMP:Version` | 1.0 | 1 |
 
 ## Missing Tags

@@ -9,11 +9,11 @@ title: GOPRO Compatibility
 ## Summary
 
 - **Files Tested:** 23
-- **Coverage:** 61.7%
-- **Matched Tags:** 116
+- **Coverage:** 62.2%
+- **Matched Tags:** 117
 - **Missing Tags:** 64
 - **Extra Tags:** 30
-- **Value Differences:** 8
+- **Value Differences:** 7
 
 ## Value Differences
 
@@ -25,7 +25,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSLatitude` | 40 deg 39' 30.67" | 40 deg 39' 30.6705599" |
 | `EXIF:GPSLongitude` | 73 deg 59' 36.18" | 73 deg 59' 36.17988" |
 | `ICC_Profile:DeviceModel` |  |  |
-| `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 6405694 | 6343213 |

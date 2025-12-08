@@ -9,11 +9,11 @@ title: SONY Compatibility
 ## Summary
 
 - **Files Tested:** 761
-- **Coverage:** 20.7%
-- **Matched Tags:** 159
+- **Coverage:** 21.6%
+- **Matched Tags:** 166
 - **Missing Tags:** 566
 - **Extra Tags:** 82
-- **Value Differences:** 43
+- **Value Differences:** 36
 
 ## Value Differences
 
@@ -29,7 +29,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `ICC_Profile:MediaBlackPoint` | 0.01205 0.0125 0.01031 | 0.012054443359375 0.0124969482421875 0.0... |
 | `ICC_Profile:PrimaryPlatform` | Unknown () |  |
 | `IPTC:By-line` | Picasa 2.6 | Picasa 2.6 |
-| `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 4738048 | 4702678 |
 | `MakerNotes:AFIlluminator` | Auto | 1 |
@@ -47,23 +46,17 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:ImageStabilization` | On | 1 |
 | `MakerNotes:LensType` | Sony DT 18-55mm F3.5-5.6 SAM (SAL1855) o... | 2248 |
 | `MakerNotes:LongExposureNoiseReduction` | On (unused) | 1 |
-| `MakerNotes:Macro` | Off | 0 |
-| `MakerNotes:MultiFrameNoiseReduction` | Off | 0 |
-| `MakerNotes:PictureEffect` | Off | 0 |
 | `MakerNotes:Quality` | Fine | 0 |
 | `MakerNotes:ReleaseMode` | Normal | 0 |
 | `MakerNotes:SceneMode` | Standard | 0 |
 | `MakerNotes:SequenceNumber` | Single | 2 |
-| `MakerNotes:SoftSkinEffect` | Off | 0 |
 | `MakerNotes:Teleconverter` | None | 0 |
 | `MakerNotes:WhiteBalance` | Auto | 0 |
 | `MakerNotes:ZoneMatching` | ISO Setting Used | 0 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:DateAcquired` | 2007:05:04 13:50:33Z | 2007:05:04 13:50:33 |
 | `XMP:LastKeywordXMP` | ["April 2007","SunsetBeach2007-","vacati... | April 2007SunsetBeach2007-vacationJamaic... |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000099 |
 | `XMP:Subject` | ["April 2007","SunsetBeach2007-","vacati... | April 2007SunsetBeach2007-vacationJamaic... |
-| `XMP:Tagged` | Yes | true |
 
 ## Missing Tags
 

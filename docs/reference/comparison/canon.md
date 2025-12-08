@@ -9,11 +9,11 @@ title: CANON Compatibility
 ## Summary
 
 - **Files Tested:** 725
-- **Coverage:** 22.5%
-- **Matched Tags:** 197
+- **Coverage:** 23.9%
+- **Matched Tags:** 209
 - **Missing Tags:** 632
 - **Extra Tags:** 82
-- **Value Differences:** 47
+- **Value Differences:** 35
 
 ## Value Differences
 
@@ -21,16 +21,8 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:FocalPlaneXResolution` | 19041.32231 | 19041.32231405 |
-| `EXIF:FocalPlaneYResolution` | 18989.01099 | 18989.010989011 |
 | `EXIF:GPSDestBearingRef` | Unknown () |  |
 | `EXIF:GPSLongitude` | 122 deg 5' 46.54" | 122 deg 5' 46.536" |
-| `EXIF:XPAuthor` |  | 0 |
-| `EXIF:XPComment` |  | 0 |
-| `EXIF:XPKeywords` |  | 0 |
-| `EXIF:XPSubject` |  | 0 |
-| `EXIF:XPTitle` |  | 0 |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `IPTC:By-line` |  | Picasa |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 6690816 | 6658136 |
@@ -49,6 +41,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:FileNumber` | 100-0114 | 15-17074 |
 | `MakerNotes:FirmwareVersion` | 1.0.9 |  |
 | `MakerNotes:FlashActivity` | 0 | Fired |
+| `MakerNotes:FlashExposureComp` | 0 | +0.0 |
 | `MakerNotes:FocalType` | Zoom | Unknown |
 | `MakerNotes:FocusDistanceLower` | 0 m | undef |
 | `MakerNotes:ISO` | 100 | 16484 |
@@ -61,13 +54,8 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:SerialNumber` | 0220100039 | � |
 | `MakerNotes:ShutterCount` | 1304 | 1 |
 | `MakerNotes:TargetAperture` | 3.6 | f/3.5 |
-| `XMP:ApproximateFocusDistance` | 1.04 | 104/100 |
-| `XMP:ColorClass` | 0 (None) | 0 |
-| `XMP:FlashCompensation` | 0 | 0/1 |
 | `XMP:LensSerialNumber` | 0000000000 | 0 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:006138 |
-| `XMP:SerialNumber` | 000500065821 | 500065821 |
-| `XMP:Tagged` | Yes | true |
 
 ## Missing Tags
 

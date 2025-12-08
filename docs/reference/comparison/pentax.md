@@ -9,11 +9,11 @@ title: PENTAX Compatibility
 ## Summary
 
 - **Files Tested:** 145
-- **Coverage:** 29.1%
-- **Matched Tags:** 158
+- **Coverage:** 29.5%
+- **Matched Tags:** 160
 - **Missing Tags:** 339
 - **Extra Tags:** 69
-- **Value Differences:** 46
+- **Value Differences:** 44
 
 ## Value Differences
 
@@ -24,14 +24,12 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSLatitude` | 11 deg 58' 4.67" | 11 deg 58' 4.674" |
 | `EXIF:GPSLongitude` | 121 deg 55' 6.47" | 121 deg 55' 6.474" |
 | `EXIF:UserComment` | A409451B392442A465403t577390B402434t4984... | 392442A465403t577390B402434t498419t53242... |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `ICC_Profile:ProfileCMMType` |  |  |
 | `MakerNotes:AFPointSelected` | Auto | 65535 |
 | `MakerNotes:BlueBalance` | 1.9296875 | 494 |
 | `MakerNotes:CameraTemperature` | 20 C | 335544320°C |
 | `MakerNotes:ColorTemperature` | 0 | 0K |
 | `MakerNotes:Contrast` | 0 (normal) | Normal |
-| `MakerNotes:ContrastHighlightShadowAdj` | Off | 0 |
 | `MakerNotes:DataScaling` | 8192 | 536870912 |
 | `MakerNotes:DestinationCity` | New York | 12 |
 | `MakerNotes:DigitalZoom` | 1 | 1.00x |

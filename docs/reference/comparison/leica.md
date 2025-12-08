@@ -9,11 +9,11 @@ title: LEICA Compatibility
 ## Summary
 
 - **Files Tested:** 67
-- **Coverage:** 34.3%
-- **Matched Tags:** 192
+- **Coverage:** 34.8%
+- **Matched Tags:** 195
 - **Missing Tags:** 337
 - **Extra Tags:** 131
-- **Value Differences:** 31
+- **Value Differences:** 28
 
 ## Value Differences
 
@@ -33,11 +33,9 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:LensInfo` | 28mm f/1.53125 | 28mm f/1.5 |
 | `EXIF:ShutterSpeedValue` | 1/1064 | 1/7 |
 | `EXIF:YCbCrSubSampling` | YCbCr4:2:2 (2 1) | 2 1 |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `IPTC:Keywords` | ["Kansas","TGPNP"] | TGPNP |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 5700096 | 5649496 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:Exposure` | +0.15 | 0.15 |
 | `XMP:LensInfo` | 28mm f/1.53125-2.97265625 | 28mm f/1.5-3.0 |
 | `XMP:MetadataDate` | 2020:11:05 16:56:55-08:00 | 2020:11:05 16:56:55 |
@@ -48,7 +46,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:RollAngle` | -1.3999999762 | -1.4 |
 | `XMP:ScalingFactorHeight` | 0.964228034 | 0.96423 |
 | `XMP:Subject` | ["Kansas","TGPNP"] | KansasTGPNP |
-| `XMP:Tagged` | No | false |
 | `XMP:TargetAspectRatio` | 1.5025252104 | 1.50253 |
 | `XMP:Tint` | +40 | 40 |
 | `XMP:ToneCurve` | ["0, 0","32, 22","64, 56","128, 128","19... | 0, 032, 2264, 56128, 128192, 196255, 255 |

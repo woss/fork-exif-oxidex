@@ -9,11 +9,11 @@ title: PANASONIC Compatibility
 ## Summary
 
 - **Files Tested:** 477
-- **Coverage:** 56.1%
-- **Matched Tags:** 337
+- **Coverage:** 57.1%
+- **Matched Tags:** 343
 - **Missing Tags:** 200
 - **Extra Tags:** 114
-- **Value Differences:** 64
+- **Value Differences:** 58
 
 ## Value Differences
 
@@ -24,15 +24,11 @@ Tags where ExifTool and OxiDex extract different values:
 | `APP14:APP14Flags0` | [14] | 16384 |
 | `EXIF:CFAPattern` | [Green,Red][Blue,Green] | [Invalid CFA data] |
 | `EXIF:Compression` | JPEG (old-style) | Uncompressed |
-| `EXIF:FocalPlaneXResolution` | 1683.936401 | 1683.936401367 |
-| `EXIF:FocalPlaneYResolution` | 1683.936401 | 1683.936401367 |
 | `EXIF:GPSAreaInformation` | --- | (Binary data 266 bytes, use -b option to... |
 | `EXIF:GPSImgDirectionRef` | Unknown () |  |
 | `EXIF:GPSProcessingMethod` |  | (Binary data 64 bytes, use -b option to ... |
 | `EXIF:PanasonicTitle2` | 9999:99:99 00:00:00 | (Binary data 128 bytes, use -b option to... |
 | `EXIF:YCbCrSubSampling` | Unknown (2) | 2 |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
-| `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 6986240 | 6956120 |
 | `MakerNotes:AFAreaMode` | Unknown (2 4 104 80 0 0) | Unknown (1070) |
@@ -48,6 +44,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:ClearRetouchValue` | undef | 5444 |
 | `MakerNotes:ColorMode` | Normal | 0 |
 | `MakerNotes:ColorTempKelvin` | 2500 | 2500 K |
+| `MakerNotes:Contrast` | Normal | 0 |
 | `MakerNotes:FilmMode` | n/a | Unknown (0) |
 | `MakerNotes:FlashBias` | 0 | 0.0 EV |
 | `MakerNotes:ImageQuality` | High |  |
@@ -63,16 +60,19 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:PitchAngle` | -30.2 | 302 |
 | `MakerNotes:RollAngle` | -1.7 | 65519 |
 | `MakerNotes:Rotation` | Horizontal (normal) | 0° |
-| `MakerNotes:SceneMode` | Off | 0 |
+| `MakerNotes:Saturation` | Normal | 0 |
 | `MakerNotes:SelfTimer` | Off | 1 s |
 | `MakerNotes:Sharpness` | Normal | 0 |
 | `MakerNotes:TimeSincePowerOn` | 00:02:19.16 | 13916 |
-| `MakerNotes:Transform` | Off | 0 |
 | `MakerNotes:TravelDay` | n/a | 65535 |
 | `MakerNotes:WBShiftGM` | -3 | 65533 |
 | `MakerNotes:WhiteBalanceBias` | +26/3 | 26 |
+| `XMP:CreateDate` | 2025:05:10 15:02:36.01-06:00 | 2025:05:10 15:02:36.01 |
+| `XMP:DateAcquired` | 2008:09:13 04:53:14Z | 2008:09:13 04:53:14 |
+| `XMP:Exposure2012` | 0.0 | 0 |
+| `XMP:FocalLength` | 6.9 mm | 40 mm |
 
-*...and 14 more differences*
+*...and 8 more differences*
 
 ## Missing Tags
 

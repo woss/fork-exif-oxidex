@@ -9,11 +9,11 @@ title: OLYMPUS Compatibility
 ## Summary
 
 - **Files Tested:** 315
-- **Coverage:** 25.5%
-- **Matched Tags:** 133
+- **Coverage:** 26.3%
+- **Matched Tags:** 137
 - **Missing Tags:** 367
 - **Extra Tags:** 97
-- **Value Differences:** 21
+- **Value Differences:** 17
 
 ## Value Differences
 
@@ -32,16 +32,12 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSLongitudeRef` | Unknown () |  |
 | `EXIF:Pressure` | 0 | -0 |
 | `EXIF:WaterDepth` | -0.0 | -0 |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `MakerNotes:CameraID` | ???????????????????????????????? | OLYMPUS DIGITAL CAMERA |
 | `MakerNotes:CameraType` | Unknown (?????) | DCHT |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:CreateDate` | 2025:01:29 16:06:35-08:00 | 2025:01:29 16:06:35 |
-| `XMP:FlashCompensation` | 0 | 0/256 |
 | `XMP:MetadataDate` | 2015:02:04 20:41:55-08:00 | 2015:02:04 20:41:55 |
 | `XMP:ModifyDate` | 2015:02:04 19:47:15-08:00 | 2015:02:04 19:47:15 |
 | `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:5, FrameN... | 0:0:5:003344 |
-| `XMP:Tagged` | No | false |
 
 ## Missing Tags
 

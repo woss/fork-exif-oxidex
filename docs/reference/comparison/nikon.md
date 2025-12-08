@@ -9,11 +9,11 @@ title: NIKON Compatibility
 ## Summary
 
 - **Files Tested:** 307
-- **Coverage:** 20.6%
-- **Matched Tags:** 170
+- **Coverage:** 22.4%
+- **Matched Tags:** 185
 - **Missing Tags:** 589
 - **Extra Tags:** 95
-- **Value Differences:** 67
+- **Value Differences:** 52
 
 ## Value Differences
 
@@ -27,16 +27,11 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSLongitude` | 134 deg 22' 36.50" | 134 deg 22' 36.504" |
 | `EXIF:GPSProcessingMethod` |  | (Binary data 64 bytes, use -b option to ... |
 | `EXIF:LensSerialNumber` | 20147348 | 20147348  |
-| `EXIF:XPAuthor` |  | 0 |
-| `EXIF:XPTitle` |  | 0 |
 | `ICC_Profile:DeviceModel` |  |  |
 | `ICC_Profile:ProfileCreator` |  |  |
-| `MPF:ImageUIDList` | (Binary data 99 bytes, use -b option to ... | (Binary data, 99 bytes) |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 21317456 | 21266422 |
 | `MakerNotes:AutoISO` | On | ISO 256 |
-| `MakerNotes:ColorHue` | Mode3 | MODE3 |
-| `MakerNotes:ColorMode` | Color | COLOR |
 | `MakerNotes:ColorSpace` | sRGB | Unknown |
 | `MakerNotes:CropHiSpeed` | FX Uncropped (8288x5520 cropped to 8288x... | Off |
 | `MakerNotes:DistortionControl` | Off | Unknown |
@@ -51,28 +46,33 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:FocusDistance` | 10.0 m | 14384 mm |
 | `MakerNotes:FocusMode` | AF-S | Unknown |
 | `MakerNotes:HueAdjustment` | None | 0 |
-| `MakerNotes:ISOExpansion` | Off | 0 |
 | `MakerNotes:ISOSelection` | Auto | Manual |
 | `MakerNotes:ISOSetting` |  | ISO 6553600 |
 | `MakerNotes:ImageBoundary` | 0 0 8256 5504 | 0 512 0 512 |
-| `MakerNotes:ImageOptimization` | Normal | NORMAL |
 | `MakerNotes:LensFStops` | 5.0 | 65562.3 |
 | `MakerNotes:LensID` | Nikkor Z 24-70mm f/4 S | Unknown (48261) |
 | `MakerNotes:LensType` | AF | 0x00 |
-| `MakerNotes:LightSource` | Colored | COLORED |
-| `MakerNotes:MakerNoteVersion` | 2.11 | 0211 |
 | `MakerNotes:MaxApertureAtMaxFocal` | 5.7 | f/2130.2 |
 | `MakerNotes:MaxApertureAtMinFocal` | 3.6 | f/4524.9 |
 | `MakerNotes:MultiExposureMode` | Off | Unknown |
-| `MakerNotes:NoiseReduction` | Off | OFF |
 | `MakerNotes:PictureControlVersion` | 0300 | 12336 |
 | `MakerNotes:ProgramShift` | 0 | 454 |
 | `MakerNotes:Quality` | Fine | Unknown |
 | `MakerNotes:RetouchHistory` | None |  |
 | `MakerNotes:Saturation` | n/a | NORMAL |
-| `MakerNotes:SceneAssist` | Non-Frame/Portrait | NON-FRAME/PORTRAIT |
+| `MakerNotes:SensorPixelSize` | 9.4 x 9.4 um | 0x000007D2 |
+| `MakerNotes:Sharpness` | n/a | 424 |
+| `MakerNotes:ShootingMode` | Single-Frame, Auto ISO | Unknown |
+| `MakerNotes:ShotInfoVersion` | 0803 | 8224 |
+| `MakerNotes:VRInfoVersion` | 0200 | 110 |
+| `MakerNotes:VRMode` | Normal | Unknown |
+| `MakerNotes:VignetteControl` | Normal | Unknown |
+| `MakerNotes:WB_RBLevels` | 1.859375 1.2578125 1 1 | 3813 17999 |
+| `MakerNotes:WhiteBalance` | Auto1 | Unknown |
+| `MakerNotes:WhiteBalanceFineTune` | 0 0 | 0 |
+| `XMP:CreateDate` | 2020:12:11 14:55:22.09Z | 2020:12:11 14:55:22.09 |
 
-*...and 17 more differences*
+*...and 2 more differences*
 
 ## Missing Tags
 

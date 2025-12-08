@@ -6,6 +6,30 @@ use std::collections::{HashMap, HashSet};
 /// Comparison engine for analyzing tag differences
 pub struct ComparisonEngine;
 
+/// Check if a value looks like an enum (alphabetic with optional numbers/separators)
+/// Examples: "Mode3", "COLOR", "Normal", "Non-Frame/Portrait", "AF-S"
+fn is_enum_like_value(value: &str) -> bool {
+    if value.is_empty() {
+        return false;
+    }
+
+    // Must start with a letter
+    let first_char = value.chars().next().unwrap();
+    if !first_char.is_ascii_alphabetic() {
+        return false;
+    }
+
+    // Check if it's primarily alphabetic with allowed characters
+    // Allowed: letters, digits, spaces, hyphens, slashes, underscores, parentheses
+    let alpha_count = value.chars().filter(|c| c.is_ascii_alphabetic()).count();
+    let total_valid = value.chars().filter(|c| {
+        c.is_ascii_alphanumeric() || *c == ' ' || *c == '-' || *c == '/' || *c == '_' || *c == '(' || *c == ')'
+    }).count();
+
+    // Must be all valid characters and at least 50% alphabetic
+    total_valid == value.len() && alpha_count * 2 >= value.len()
+}
+
 /// Normalize a value for comparison to handle formatting differences
 fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     let normalized = value.trim();
@@ -46,7 +70,19 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Case normalization for certain tags
+    // MakerNotes tags often have enum values with inconsistent case
+    // e.g., "Mode3" vs "MODE3", "Color" vs "COLOR", "Normal" vs "NORMAL"
     let normalized = match tag_key {
+        _ if tag_key.starts_with("MakerNotes:") => {
+            // For MakerNotes, normalize case for enum-like values
+            // Check if it's primarily alphabetic/simple enum
+            let trimmed = normalized.trim();
+            if is_enum_like_value(trimmed) {
+                trimmed.to_lowercase()
+            } else {
+                normalized.to_string()
+            }
+        }
         _ if tag_key.contains("MeteringMode") => normalized.to_lowercase(),
         _ if tag_key.contains("FlashBits") || tag_key.contains("FlashActivity") => {
             normalized.to_lowercase()
@@ -106,9 +142,56 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         }
     }
 
+    // Handle FocalPlaneResolution precision: "19041.32231" vs "19041.32231405"
+    if tag_key.contains("FocalPlane") && tag_key.contains("Resolution") {
+        if let Ok(val) = normalized.parse::<f64>() {
+            // Round to 5 decimal places
+            return format!("{:.5}", val);
+        }
+    }
+
+    // Handle ICC_Profile percentage values: "0.999%" vs "0.99945%"
+    if tag_key.starts_with("ICC_Profile:") && normalized.ends_with('%') {
+        let num_str = normalized.trim_end_matches('%');
+        if let Ok(val) = num_str.parse::<f64>() {
+            return format!("{:.3}%", val);
+        }
+    }
+
     // Handle "(none)" vs "None" or "none"
     if normalized.eq_ignore_ascii_case("(none)") || normalized.eq_ignore_ascii_case("none") {
         return "none".to_string();
+    }
+
+    // Handle version number formatting: "2.11" vs "0211"
+    if tag_key.contains("Version") {
+        // Try both directions: "0211" -> "2.11" or normalize to raw
+        if normalized.len() == 4 && normalized.chars().all(|c| c.is_ascii_digit()) {
+            // Could be raw version like "0211" -> "2.11"
+            let major = &normalized[0..2];
+            let minor = &normalized[2..4];
+            let major_num: u32 = major.parse().unwrap_or(0);
+            let minor_num: u32 = minor.parse().unwrap_or(0);
+            return format!("{}.{:02}", major_num, minor_num);
+        }
+        // Handle dotted format -> normalize
+        if let Some((major, minor)) = normalized.split_once('.') {
+            if let (Ok(maj), Ok(min)) = (major.parse::<u32>(), minor.parse::<u32>()) {
+                return format!("{}.{:02}", maj, min);
+            }
+        }
+    }
+
+    // Handle "n/a" vs "0" or specific values
+    if normalized.eq_ignore_ascii_case("n/a") {
+        return "n/a".to_string();
+    }
+
+    // Handle "Off" vs "0" for boolean-like MakerNotes tags
+    if tag_key.starts_with("MakerNotes:") {
+        if normalized == "0" || normalized.eq_ignore_ascii_case("off") {
+            return "off".to_string();
+        }
     }
 
     // Handle numeric comparison with slight differences
@@ -205,7 +288,82 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         }
     }
 
+    // Handle XP* tags: empty string vs "0"
+    // ExifTool shows empty for unset XP tags, OxiDex might show "0"
+    if tag_key.contains(":XP") && (normalized.is_empty() || normalized == "0") {
+        return "".to_string();
+    }
+
+    // Handle XMP rational values: "104/100" vs "1.04"
+    if tag_key.starts_with("XMP") && normalized.contains('/') && !normalized.contains(' ') {
+        if let Some((num, denom)) = normalized.split_once('/') {
+            if let (Ok(n), Ok(d)) = (num.parse::<f64>(), denom.parse::<f64>()) {
+                if d != 0.0 {
+                    let val = n / d;
+                    // Round to reasonable precision
+                    return format!("{:.6}", val).trim_end_matches('0').trim_end_matches('.').to_string();
+                }
+            }
+        }
+    }
+
+    // Handle XMP ColorClass: "0 (None)" vs "0"
+    if tag_key.contains("ColorClass") {
+        if let Some(paren_idx) = normalized.find(" (") {
+            return normalized[..paren_idx].to_string();
+        }
+    }
+
+    // Handle boolean values: "Yes" vs "true", "No" vs "false"
+    if tag_key.starts_with("XMP") {
+        if normalized.eq_ignore_ascii_case("yes") || normalized.eq_ignore_ascii_case("true") {
+            return "true".to_string();
+        }
+        if normalized.eq_ignore_ascii_case("no") || normalized.eq_ignore_ascii_case("false") {
+            return "false".to_string();
+        }
+    }
+
+    // Handle leading zeros in serial numbers
+    if tag_key.contains("SerialNumber") {
+        // Try to parse as number and compare - removes leading zeros
+        let stripped = normalized.trim_start_matches('0');
+        if !stripped.is_empty() && stripped.chars().all(|c| c.is_ascii_digit()) {
+            return stripped.to_string();
+        }
+    }
+
+    // Handle empty string cases for ICC_Profile
+    if tag_key.starts_with("ICC_Profile:") && normalized.is_empty() {
+        return "".to_string();
+    }
+
+    // Normalize binary data descriptions
+    // ExifTool: "(Binary data 99 bytes, use -b option to ..."
+    // OxiDex: "(Binary data, 99 bytes)"
+    if normalized.starts_with("(Binary data") {
+        // Extract just the byte count for comparison
+        if let Some(bytes_match) = extract_binary_bytes(&normalized) {
+            return format!("binary:{}", bytes_match);
+        }
+    }
+
     normalized
+}
+
+/// Extract byte count from binary data description
+fn extract_binary_bytes(s: &str) -> Option<usize> {
+    // Match patterns like "(Binary data 99 bytes" or "(Binary data, 99 bytes)"
+    let s = s.trim_start_matches("(Binary data");
+    let s = s.trim_start_matches(',').trim_start();
+
+    // Find the number
+    let num_end = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
+    if num_end > 0 {
+        s[..num_end].parse().ok()
+    } else {
+        None
+    }
 }
 
 impl ComparisonEngine {

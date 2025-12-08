@@ -9,11 +9,11 @@ title: FUJIFILM Compatibility
 ## Summary
 
 - **Files Tested:** 411
-- **Coverage:** 60.1%
-- **Matched Tags:** 301
+- **Coverage:** 60.9%
+- **Matched Tags:** 305
 - **Missing Tags:** 138
 - **Extra Tags:** 50
-- **Value Differences:** 62
+- **Value Differences:** 58
 
 ## Value Differences
 
@@ -26,7 +26,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSLongitude` | 145 deg 42' 5.89" | 145 deg 42' 5.891" |
 | `EXIF:XPKeywords` | 10.02.14 | 10.02.14 |
 | `EXIF:XPTitle` |  |                 |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `MakerNotes:AdvancedFilter` | Miniature | Unknown (262144) |
 | `MakerNotes:AutoDynamicRange` | 100% | Unknown (100) |
 | `MakerNotes:ColorTemperature` | 10000 | 10000 K |
@@ -58,10 +57,8 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:Sharpness` | 0 (normal) | 3 (Hard) |
 | `MakerNotes:WhiteBalanceFineTune` | Red +0, Blue +0 | +674 |
 | `XMP:Brightness` | 0.0 | 0 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:Contrast` | 0.0 | 0 |
 | `XMP:Exposure2012` | +0.70 | 0.7 |
-| `XMP:FlashCompensation` | 0 | 0/100 |
 | `XMP:MetadataDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
 | `XMP:ModifyDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
 | `XMP:PerspectiveRotate` | 0.0 | 0 |
@@ -71,8 +68,11 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:PipelineVersion` | 01.00 | 1 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000427 |
 | `XMP:ProcessVersion` | 11.0 | 11 |
+| `XMP:Shadows2012` | +35 | 35 |
+| `XMP:SharpenRadius` | +1.0 | 1 |
+| `XMP:Tint` | +24 | 24 |
 
-*...and 12 more differences*
+*...and 8 more differences*
 
 ## Missing Tags
 

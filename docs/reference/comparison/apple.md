@@ -9,11 +9,11 @@ title: APPLE Compatibility
 ## Summary
 
 - **Files Tested:** 66
-- **Coverage:** 58.1%
-- **Matched Tags:** 132
+- **Coverage:** 58.6%
+- **Matched Tags:** 133
 - **Missing Tags:** 79
 - **Extra Tags:** 40
-- **Value Differences:** 16
+- **Value Differences:** 15
 
 ## Value Differences
 
@@ -31,7 +31,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSLongitude` | 122 deg 56' 47.40" | 122 deg 56' 0" |
 | `EXIF:GPSSpeed` | 0.2700000107 | 0.270000011 |
 | `ICC_Profile:DeviceModel` |  |  |
-| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `ICC_Profile:ProfileCopyright` | Copyright Apple Inc., 2022 | Copyright Apple Inc., 2017 |
 | `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageStart` | 3406314 | 3387627 |
