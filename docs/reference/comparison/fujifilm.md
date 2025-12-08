@@ -9,11 +9,11 @@ title: FUJIFILM Compatibility
 ## Summary
 
 - **Files Tested:** 411
-- **Coverage:** 60.3%
-- **Matched Tags:** 302
+- **Coverage:** 60.1%
+- **Matched Tags:** 301
 - **Missing Tags:** 138
 - **Extra Tags:** 50
-- **Value Differences:** 61
+- **Value Differences:** 62
 
 ## Value Differences
 
@@ -22,7 +22,8 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `APP14:APP14Flags0` | [14], Encoded with Blend=1 downsampling | 49152 |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
+| `EXIF:GPSLatitude` | 15 deg 9' 25.41" | 15 deg 9' 25.409" |
+| `EXIF:GPSLongitude` | 145 deg 42' 5.89" | 145 deg 42' 5.891" |
 | `EXIF:XPKeywords` | 10.02.14 | 10.02.14 |
 | `EXIF:XPTitle` |  |                 |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
@@ -70,9 +71,8 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:PipelineVersion` | 01.00 | 1 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000427 |
 | `XMP:ProcessVersion` | 11.0 | 11 |
-| `XMP:Shadows2012` | +35 | 35 |
 
-*...and 11 more differences*
+*...and 12 more differences*
 
 ## Missing Tags
 
@@ -195,10 +195,10 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:0x012D` | 0 0 2 4 7 11 17 24 32 42 53 65 79 94 111 129 148 1... |
 | `EXIF:0x920C` | 311 |
 | `EXIF:0x920D` | 6 |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:0x9CA1` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 24732 bytes, use -b option to extract... |
+| `EXIF:0x9CA1` | (Binary data 60 bytes, use -b option to extract) |
 | `EXIF:0x9CA2` | MBAAAEAFCAAAAAAAADAAAAAAAYUgAAAAAAAAAAAAAAAAAAAAAA... |
-| `EXIF:0xC4A5` | [Binary data] |
+| `EXIF:0xC4A5` | (Binary data 28 bytes, use -b option to extract) |
 | `IPTC:Unknown-1-0` |  |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |

@@ -9,11 +9,11 @@ title: OLYMPUS Compatibility
 ## Summary
 
 - **Files Tested:** 315
-- **Coverage:** 25.3%
-- **Matched Tags:** 132
+- **Coverage:** 25.5%
+- **Matched Tags:** 133
 - **Missing Tags:** 367
 - **Extra Tags:** 97
-- **Value Differences:** 22
+- **Value Differences:** 21
 
 ## Value Differences
 
@@ -25,12 +25,11 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:AmbientTemperature` | -0 C | -0 |
 | `EXIF:CFAPattern` | [Red,Green][Green,Blue] | [Invalid CFA data] |
 | `EXIF:Compression` | JPEG (old-style) | Uncompressed |
-| `EXIF:GPSAreaInformation` | 府中市郷土の森博物館 | [Binary data] |
-| `EXIF:GPSLatitude` |  | 0 deg 0' 0.00" |
+| `EXIF:GPSAreaInformation` | 府中市郷土の森博物館 | (Binary data 264 bytes, use -b option to... |
+| `EXIF:GPSLatitude` |  | 0 deg 0' 0" |
 | `EXIF:GPSLatitudeRef` | Unknown () |  |
-| `EXIF:GPSLongitude` |  | 0 deg 0' 0.00" |
+| `EXIF:GPSLongitude` |  | 0 deg 0' 0" |
 | `EXIF:GPSLongitudeRef` | Unknown () |  |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:Pressure` | 0 | -0 |
 | `EXIF:WaterDepth` | -0.0 | -0 |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
@@ -162,8 +161,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 3.6 |
 | `Composite:ISO` | 160 |
 | `Composite:ShutterSpeed` | 1/176 |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:0xC4A5` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 406 bytes, use -b option to extract) |
+| `EXIF:0xC4A5` | (Binary data 690 bytes, use -b option to extract) |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |
 | `IPTC:Unknown-2-221` | 0:0:5:003344 |

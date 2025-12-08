@@ -9,11 +9,11 @@ title: LEICA Compatibility
 ## Summary
 
 - **Files Tested:** 67
-- **Coverage:** 34.5%
-- **Matched Tags:** 193
+- **Coverage:** 34.3%
+- **Matched Tags:** 192
 - **Missing Tags:** 337
 - **Extra Tags:** 131
-- **Value Differences:** 30
+- **Value Differences:** 31
 
 ## Value Differences
 
@@ -22,14 +22,15 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `EXIF:ApertureValue` | 3.4 | 2.8 |
-| `EXIF:GPSAreaInformation` |  | [Binary data] |
+| `EXIF:GPSAreaInformation` |  | (Binary data 264 bytes, use -b option to... |
+| `EXIF:GPSLatitude` | 0 deg 0' 0.00" | 0 deg 0' 0" |
 | `EXIF:GPSLatitudeRef` | Unknown () |  |
+| `EXIF:GPSLongitude` | 0 deg 0' 0.00" | 0 deg 0' 0" |
 | `EXIF:GPSLongitudeRef` | Unknown () |  |
 | `EXIF:GPSMeasureMode` | Unknown () |  |
 | `EXIF:GPSSpeedRef` | Unknown () |  |
 | `EXIF:ImageUniqueID` | 00000000000000000000000001517332 | 00000000005412EF21C7544A30DA5FA7 |
 | `EXIF:LensInfo` | 28mm f/1.53125 | 28mm f/1.5 |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:ShutterSpeedValue` | 1/1064 | 1/7 |
 | `EXIF:YCbCrSubSampling` | YCbCr4:2:2 (2 1) | 2 1 |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
@@ -173,12 +174,12 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:0x920E` | 3744 |
 | `EXIF:0x920F` | 3744 |
 | `EXIF:0x9210` | 2 |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:0xC4A5` | [Binary data] |
-| `EXIF:PanasonicTitle` | [Binary data] |
-| `EXIF:PanasonicTitle2` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 25882 bytes, use -b option to extract... |
+| `EXIF:0xC4A5` | (Binary data 208 bytes, use -b option to extract) |
+| `EXIF:PanasonicTitle` | (Binary data 64 bytes, use -b option to extract) |
+| `EXIF:PanasonicTitle2` | (Binary data 128 bytes, use -b option to extract) |
 | `HDR:Format` | Unknown |
-| `HDR:GainCurve` | [Binary data] |
+| `HDR:GainCurve` | (Binary data 60958 bytes, use -b option to extract... |
 | `HDR:GainCurveSize` | 60958 |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |

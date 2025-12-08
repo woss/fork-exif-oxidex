@@ -9,11 +9,11 @@ title: NIKON Compatibility
 ## Summary
 
 - **Files Tested:** 307
-- **Coverage:** 20.7%
-- **Matched Tags:** 171
+- **Coverage:** 20.6%
+- **Matched Tags:** 170
 - **Missing Tags:** 589
 - **Extra Tags:** 95
-- **Value Differences:** 66
+- **Value Differences:** 67
 
 ## Value Differences
 
@@ -23,9 +23,10 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `EXIF:CFAPattern` | [Red,Green][Green,Blue] | [Invalid CFA data] |
 | `EXIF:FocalPlaneResolutionUnit` | Unknown (0) | 0 |
-| `EXIF:GPSProcessingMethod` |  | [Binary data] |
+| `EXIF:GPSLatitude` | 7 deg 11' 47.27" | 7 deg 11' 47.274" |
+| `EXIF:GPSLongitude` | 134 deg 22' 36.50" | 134 deg 22' 36.504" |
+| `EXIF:GPSProcessingMethod` |  | (Binary data 64 bytes, use -b option to ... |
 | `EXIF:LensSerialNumber` | 20147348 | 20147348  |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:XPAuthor` |  | 0 |
 | `EXIF:XPTitle` |  | 0 |
 | `ICC_Profile:DeviceModel` |  |  |
@@ -70,9 +71,8 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:RetouchHistory` | None |  |
 | `MakerNotes:Saturation` | n/a | NORMAL |
 | `MakerNotes:SceneAssist` | Non-Frame/Portrait | NON-FRAME/PORTRAIT |
-| `MakerNotes:SceneMode` | Portrait | PORTRAIT |
 
-*...and 16 more differences*
+*...and 17 more differences*
 
 ## Missing Tags
 
@@ -194,7 +194,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ImageSize` | 4257x2703 |
 | `Composite:Megapixels` | 11.507 |
 | `Composite:ShutterSpeed` | 1/200 |
-| `EXIF:0x927C` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 31932 bytes, use -b option to extract... |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |
 | `IPTC:Unknown-2-221` | 0:0:0:000620 |

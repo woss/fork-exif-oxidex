@@ -9,11 +9,11 @@ title: SAMSUNG Compatibility
 ## Summary
 
 - **Files Tested:** 702
-- **Coverage:** 41.8%
-- **Matched Tags:** 208
+- **Coverage:** 41.6%
+- **Matched Tags:** 207
 - **Missing Tags:** 261
 - **Extra Tags:** 91
-- **Value Differences:** 29
+- **Value Differences:** 30
 
 ## Value Differences
 
@@ -22,20 +22,21 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `APP14:APP14Flags0` | [14] | 16384 |
-| `EXIF:CompressedBitsPerPixel` | 1.979196054 | 1.979196 |
-| `EXIF:DeviceSettingDescription` | (Binary data 4 bytes, use -b option to e... | [Binary data] |
-| `EXIF:GPSAreaInformation` |  | [Binary data] |
+| `EXIF:GPSAreaInformation` |  | (Binary data 46 bytes, use -b option to ... |
+| `EXIF:GPSDestLatitude` | 35 deg 48' 8.00" | 35 deg 48' 8" |
 | `EXIF:GPSDestLatitudeRef` | North | N |
+| `EXIF:GPSDestLongitude` | 139 deg 34' 55.00" | 139 deg 34' 55" |
 | `EXIF:GPSDestLongitudeRef` | East | E |
+| `EXIF:GPSLatitude` | 51 deg 26' 35.00" | 51 deg 26' 35" |
+| `EXIF:GPSLongitude` | 3 deg 18' 10.00" | 3 deg 18' 10" |
 | `EXIF:GPSSatellites` | ??B?? | ��B��C� |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:Saturation` | Unknown (57584) | 57584 |
 | `EXIF:UserComment` | KJKJS | KJKJS���Xd4n����L�/A�v=��3���a����*M����... |
 | `EXIF:XPAuthor` | BoB Am5terdam | BoB Am5terdam |
 | `EXIF:XPKeywords` | 2012 YAR Kickoff Ham Co | 2012 YAR Kickoff Ham Co |
-| `EXIF:XResolution` | 0.3333333333 | 0.333333 |
+| `EXIF:XResolution` | 0.3333333333 | 0.333333333 |
 | `EXIF:YCbCrSubSampling` | YCbCr4:2:0 (2 2) | 2 1 |
-| `EXIF:YResolution` | 0.3333333333 | 0.333333 |
+| `EXIF:YResolution` | 0.3333333333 | 0.333333333 |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPFVersion` | 0100 | 0010 |
@@ -184,13 +185,13 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:0x0224` | 0 |
 | `EXIF:0x0225` |  |
 | `EXIF:0x882A` | 2 |
-| `EXIF:0x927C` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 30044 bytes, use -b option to extract... |
 | `EXIF:0x9284` | 160 |
 | `EXIF:0x9285` | 103 |
 | `EXIF:0x9287` | 4294967186 |
 | `EXIF:0x9288` | 4294967195 |
 | `EXIF:0x9289` | 4294967189 |
-| `EXIF:0xC4A5` | [Binary data] |
+| `EXIF:0xC4A5` | (Binary data 666 bytes, use -b option to extract) |
 | `EXIF:0xDD01` |  |
 | `EXIF:0xDD02` |  |
 | `EXIF:0xDD03` |  |

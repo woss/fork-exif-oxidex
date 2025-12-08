@@ -12,18 +12,18 @@ title: ExifTool Compatibility Report
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [APPLE](./apple.md) | 66 | 56.8% | 79 | 40 | 19 | 0 |
-| [CANON](./canon.md) | 725 | 22.1% | 632 | 82 | 50 | 0 |
+| [APPLE](./apple.md) | 66 | 58.1% | 79 | 40 | 16 | 0 |
+| [CANON](./canon.md) | 725 | 22.5% | 632 | 82 | 47 | 0 |
 | [DJI](./dji.md) | 21 | 45.6% | 126 | 46 | 29 | 0 |
-| [FUJIFILM](./fujifilm.md) | 411 | 60.3% | 138 | 50 | 61 | 0 |
+| [FUJIFILM](./fujifilm.md) | 411 | 60.1% | 138 | 50 | 62 | 0 |
 | [GOOGLE](./google.md) | 24 | 41.7% | 172 | 31 | 17 | 0 |
-| [GOPRO](./gopro.md) | 23 | 61.2% | 64 | 30 | 9 | 0 |
-| [LEICA](./leica.md) | 67 | 34.5% | 337 | 131 | 30 | 0 |
-| [NIKON](./nikon.md) | 307 | 20.7% | 589 | 95 | 66 | 0 |
-| [OLYMPUS](./olympus.md) | 315 | 25.3% | 367 | 97 | 22 | 0 |
-| [PANASONIC](./panasonic.md) | 477 | 56.2% | 200 | 114 | 63 | 0 |
-| [PENTAX](./pentax.md) | 145 | 29.3% | 339 | 69 | 45 | 0 |
-| [SAMSUNG](./samsung.md) | 702 | 41.8% | 261 | 91 | 29 | 0 |
+| [GOPRO](./gopro.md) | 23 | 61.7% | 64 | 30 | 8 | 0 |
+| [LEICA](./leica.md) | 67 | 34.3% | 337 | 131 | 31 | 0 |
+| [NIKON](./nikon.md) | 307 | 20.6% | 589 | 95 | 67 | 0 |
+| [OLYMPUS](./olympus.md) | 315 | 25.5% | 367 | 97 | 21 | 0 |
+| [PANASONIC](./panasonic.md) | 477 | 56.1% | 200 | 114 | 64 | 0 |
+| [PENTAX](./pentax.md) | 145 | 29.1% | 339 | 69 | 46 | 0 |
+| [SAMSUNG](./samsung.md) | 702 | 41.6% | 261 | 91 | 30 | 0 |
 | [SONY](./sony.md) | 761 | 20.7% | 566 | 82 | 43 | 0 |
 
 ## Other Format Reports

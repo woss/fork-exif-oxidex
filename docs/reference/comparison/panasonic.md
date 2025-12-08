@@ -9,11 +9,11 @@ title: PANASONIC Compatibility
 ## Summary
 
 - **Files Tested:** 477
-- **Coverage:** 56.2%
-- **Matched Tags:** 338
+- **Coverage:** 56.1%
+- **Matched Tags:** 337
 - **Missing Tags:** 200
 - **Extra Tags:** 114
-- **Value Differences:** 63
+- **Value Differences:** 64
 
 ## Value Differences
 
@@ -24,11 +24,12 @@ Tags where ExifTool and OxiDex extract different values:
 | `APP14:APP14Flags0` | [14] | 16384 |
 | `EXIF:CFAPattern` | [Green,Red][Blue,Green] | [Invalid CFA data] |
 | `EXIF:Compression` | JPEG (old-style) | Uncompressed |
-| `EXIF:GPSAreaInformation` | --- | [Binary data] |
+| `EXIF:FocalPlaneXResolution` | 1683.936401 | 1683.936401367 |
+| `EXIF:FocalPlaneYResolution` | 1683.936401 | 1683.936401367 |
+| `EXIF:GPSAreaInformation` | --- | (Binary data 266 bytes, use -b option to... |
 | `EXIF:GPSImgDirectionRef` | Unknown () |  |
-| `EXIF:GPSProcessingMethod` |  | [Binary data] |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
-| `EXIF:PanasonicTitle2` | 9999:99:99 00:00:00 | [Binary data] |
+| `EXIF:GPSProcessingMethod` |  | (Binary data 64 bytes, use -b option to ... |
+| `EXIF:PanasonicTitle2` | 9999:99:99 00:00:00 | (Binary data 128 bytes, use -b option to... |
 | `EXIF:YCbCrSubSampling` | Unknown (2) | 2 |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
@@ -70,9 +71,8 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:TravelDay` | n/a | 65535 |
 | `MakerNotes:WBShiftGM` | -3 | 65533 |
 | `MakerNotes:WhiteBalanceBias` | +26/3 | 26 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 
-*...and 13 more differences*
+*...and 14 more differences*
 
 ## Missing Tags
 
@@ -194,10 +194,10 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ImageSize` | 1280x960 |
 | `Composite:Megapixels` | 1.229 |
 | `Composite:ShutterSpeed` | 1/500 |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:0xC4A5` | [Binary data] |
-| `EXIF:ICC_Profile` | [Binary data] |
-| `EXIF:PanasonicTitle` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 692 bytes, use -b option to extract) |
+| `EXIF:0xC4A5` | (Binary data 208 bytes, use -b option to extract) |
+| `EXIF:ICC_Profile` | (Binary data 3144 bytes, use -b option to extract) |
+| `EXIF:PanasonicTitle` | (Binary data 64 bytes, use -b option to extract) |
 | `IPTC:Unknown-1-0` |  |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |

@@ -9,11 +9,11 @@ title: APPLE Compatibility
 ## Summary
 
 - **Files Tested:** 66
-- **Coverage:** 56.8%
-- **Matched Tags:** 129
+- **Coverage:** 58.1%
+- **Matched Tags:** 132
 - **Missing Tags:** 79
 - **Extra Tags:** 40
-- **Value Differences:** 19
+- **Value Differences:** 16
 
 ## Value Differences
 
@@ -21,18 +21,15 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:BrightnessValue` | 3.617254236 | 3.617254 |
-| `EXIF:CompositeImageExposureTimes` | 0 3.4 0 0.4 0 0.4 0 0 | [Binary data] |
+| `EXIF:CompositeImageExposureTimes` | 0 3.4 0 0.4 0 0.4 0 0 | (Binary data 58 bytes, use -b option to ... |
 | `EXIF:Compression` | JPEG (old-style) | Uncompressed |
 | `EXIF:CustomRendered` | Portrait HDR | 7 |
-| `EXIF:DigitalZoomRatio` | 1.001988072 | 1.001988 |
 | `EXIF:GPSAltitude` | 27.99831776 m | 28.0 m |
-| `EXIF:GPSDestBearing` | 358.8270572 | 358.827057 |
-| `EXIF:GPSHPositioningError` | 4.372127182 m | 4.372127 m |
-| `EXIF:GPSImgDirection` | 358.8270572 | 358.827057 |
-| `EXIF:GPSLatitude` | 46 deg 8' 36.00" | 46 deg 8' 0.00" |
-| `EXIF:GPSLongitude` | 122 deg 56' 47.40" | 122 deg 56' 0.00" |
-| `EXIF:GPSSpeed` | 0.2700000107 | 0.27 |
+| `EXIF:GPSDestBearing` | 358.8270572 | 358.827057183 |
+| `EXIF:GPSImgDirection` | 358.8270572 | 358.827057183 |
+| `EXIF:GPSLatitude` | 46 deg 8' 36.00" | 46 deg 8' 0" |
+| `EXIF:GPSLongitude` | 122 deg 56' 47.40" | 122 deg 56' 0" |
+| `EXIF:GPSSpeed` | 0.2700000107 | 0.270000011 |
 | `ICC_Profile:DeviceModel` |  |  |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `ICC_Profile:ProfileCopyright` | Copyright Apple Inc., 2022 | Copyright Apple Inc., 2017 |
@@ -136,9 +133,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 2.4 |
 | `Composite:ISO` | 125 |
 | `Composite:ShutterSpeed` | 1/60 |
-| `EXIF:0x927C` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 1248 bytes, use -b option to extract) |
 | `HDR:Format` | AROT |
-| `HDR:GainCurve` | [Binary data] |
+| `HDR:GainCurve` | (Binary data 614 bytes, use -b option to extract) |
 | `HDR:GainCurveSize` | 614 |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |

@@ -9,11 +9,11 @@ title: GOPRO Compatibility
 ## Summary
 
 - **Files Tested:** 23
-- **Coverage:** 61.2%
-- **Matched Tags:** 115
+- **Coverage:** 61.7%
+- **Matched Tags:** 116
 - **Missing Tags:** 64
 - **Extra Tags:** 30
-- **Value Differences:** 9
+- **Value Differences:** 8
 
 ## Value Differences
 
@@ -21,10 +21,9 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:CompressedBitsPerPixel` | 2.193316072 | 2.193316 |
-| `EXIF:DeviceSettingDescription` | (Binary data 4 bytes, use -b option to e... | [Binary data] |
 | `EXIF:GPSAltitude` | 9.046 m | 9.0 m |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
+| `EXIF:GPSLatitude` | 40 deg 39' 30.67" | 40 deg 39' 30.6705599" |
+| `EXIF:GPSLongitude` | 73 deg 59' 36.18" | 73 deg 59' 36.17988" |
 | `ICC_Profile:DeviceModel` |  |  |
 | `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPFVersion` | 0100 | 0010 |
@@ -111,10 +110,10 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 2.8 |
 | `Composite:ISO` | 100 |
 | `Composite:ShutterSpeed` | 1/1496 |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:0xC4A5` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 192 bytes, use -b option to extract) |
+| `EXIF:0xC4A5` | (Binary data 40 bytes, use -b option to extract) |
 | `HDR:Format` | AROT |
-| `HDR:GainCurve` | [Binary data] |
+| `HDR:GainCurve` | (Binary data 520 bytes, use -b option to extract) |
 | `HDR:GainCurveSize` | 520 |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |

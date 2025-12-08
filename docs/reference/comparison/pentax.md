@@ -9,11 +9,11 @@ title: PENTAX Compatibility
 ## Summary
 
 - **Files Tested:** 145
-- **Coverage:** 29.3%
-- **Matched Tags:** 159
+- **Coverage:** 29.1%
+- **Matched Tags:** 158
 - **Missing Tags:** 339
 - **Extra Tags:** 69
-- **Value Differences:** 45
+- **Value Differences:** 46
 
 ## Value Differences
 
@@ -21,7 +21,8 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
+| `EXIF:GPSLatitude` | 11 deg 58' 4.67" | 11 deg 58' 4.674" |
+| `EXIF:GPSLongitude` | 121 deg 55' 6.47" | 121 deg 55' 6.474" |
 | `EXIF:UserComment` | A409451B392442A465403t577390B402434t4984... | 392442A465403t577390B402434t498419t53242... |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
 | `ICC_Profile:ProfileCMMType` |  |  |
@@ -186,8 +187,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ISO` | 80 |
 | `Composite:ShutterSpeed` | 1/160 |
 | `EXIF:0x9103` | 1 |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:0xC4A5` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 7880 bytes, use -b option to extract) |
+| `EXIF:0xC4A5` | (Binary data 350 bytes, use -b option to extract) |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |
 | `JPEG:ComponentID_1` | Y |

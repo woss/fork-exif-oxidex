@@ -9,11 +9,11 @@ title: CANON Compatibility
 ## Summary
 
 - **Files Tested:** 725
-- **Coverage:** 22.1%
-- **Matched Tags:** 194
+- **Coverage:** 22.5%
+- **Matched Tags:** 197
 - **Missing Tags:** 632
 - **Extra Tags:** 82
-- **Value Differences:** 50
+- **Value Differences:** 47
 
 ## Value Differences
 
@@ -21,11 +21,10 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:BrightnessValue` | 6.614257812 | 6.614258 |
-| `EXIF:FocalPlaneXResolution` | 19041.32231 | 19041.322314 |
-| `EXIF:FocalPlaneYResolution` | 18989.01099 | 18989.010989 |
+| `EXIF:FocalPlaneXResolution` | 19041.32231 | 19041.32231405 |
+| `EXIF:FocalPlaneYResolution` | 18989.01099 | 18989.010989011 |
 | `EXIF:GPSDestBearingRef` | Unknown () |  |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
+| `EXIF:GPSLongitude` | 122 deg 5' 46.54" | 122 deg 5' 46.536" |
 | `EXIF:XPAuthor` |  | 0 |
 | `EXIF:XPComment` |  | 0 |
 | `EXIF:XPKeywords` |  | 0 |
@@ -46,7 +45,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:CameraType` | Compact | Unknown |
 | `MakerNotes:CanonFirmwareVersion` | Firmware Version 1.00 |  |
 | `MakerNotes:CanonImageType` | IMG:PowerShot A1300 JPEG |  |
-| `MakerNotes:CanonModelID` | PowerShot A1300 | Unknown (51773440) |
 | `MakerNotes:DisplayAperture` | 3.8 | f/0.1 |
 | `MakerNotes:FileNumber` | 100-0114 | 15-17074 |
 | `MakerNotes:FirmwareVersion` | 1.0.9 |  |
@@ -66,7 +64,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:ApproximateFocusDistance` | 1.04 | 104/100 |
 | `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:FlashCompensation` | 0 | 0/1 |
-| `XMP:LensInfo` | 50mm f/? | 50/1 50/1 0/0 0/0 |
 | `XMP:LensSerialNumber` | 0000000000 | 0 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:006138 |
 | `XMP:SerialNumber` | 000500065821 | 500065821 |
@@ -192,8 +189,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ShutterSpeed` | 1/10 |
 | `EXIF:0x0000` | 0 |
 | `EXIF:0x827D` | K520C-01044 |
-| `EXIF:0x83BB` | [Binary data] |
-| `EXIF:0x927C` | [Binary data] |
+| `EXIF:0x83BB` | (Binary data 4255 bytes, use -b option to extract) |
+| `EXIF:0x927C` | (Binary data 3794 bytes, use -b option to extract) |
 | `IPTC:Unknown-1-0` |  |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |

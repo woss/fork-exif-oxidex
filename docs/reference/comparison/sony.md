@@ -21,10 +21,10 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:BrightnessValue` | 4.4078125 | 4.407813 |
 | `EXIF:FocalPlaneResolutionUnit` | Unknown (0) | 0 |
 | `EXIF:GPSDestBearingRef` | Unknown () |  |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
+| `EXIF:GPSLatitude` | 51 deg 30' 11.74" | 51 deg 30' 11.736" |
+| `EXIF:GPSLongitude` | 0 deg 4' 30.95" | 0 deg 4' 30.948" |
 | `EXIF:XPKeywords` | 01.06 | 01.06 |
 | `ICC_Profile:MediaBlackPoint` | 0.01205 0.0125 0.01031 | 0.012054443359375 0.0124969482421875 0.0... |
 | `ICC_Profile:PrimaryPlatform` | Unknown () |  |
@@ -183,8 +183,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 5.6 |
 | `Composite:ISO` | 100 |
 | `Composite:ShutterSpeed` | 1/160 |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:0xC4A5` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 0 bytes, use -b option to extract) |
+| `EXIF:0xC4A5` | (Binary data 28 bytes, use -b option to extract) |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |
 | `IPTC:Unknown-2-221` | 1:0:0:000099 |

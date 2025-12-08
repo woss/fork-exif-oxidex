@@ -21,10 +21,10 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:CompressedBitsPerPixel` | 3.198877333 | 3.198877 |
-| `EXIF:DeviceSettingDescription` | (Binary data 4 bytes, use -b option to e... | [Binary data] |
 | `EXIF:FocalPlaneResolutionUnit` | mm | 4 |
 | `EXIF:GPSAltitude` | 42.904 m | 42.9 m |
+| `EXIF:GPSLatitude` | 53 deg 22' 40.26" | 53 deg 22' 40.2628" |
+| `EXIF:GPSLongitude` | 1 deg 27' 35.35" | 1 deg 27' 35.3515" |
 | `EXIF:SerialNumber` | 0b265914ffff2cff7c4e6fff56ff4910 | 0b265914ffff2cff7c4e6fff56ff4910b |
 | `EXIF:XPComment` | 0.91.142 | 0.91.142 |
 | `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
@@ -172,8 +172,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Megapixels` | 0.328 |
 | `Composite:ShutterSpeed` | 1/629 |
 | `DJI:Make` | DJI |
-| `EXIF:0x927C` | [Binary data] |
-| `EXIF:ApplicationNotes` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 256 bytes, use -b option to extract) |
+| `EXIF:ApplicationNotes` | (Binary data 1035 bytes, use -b option to extract) |
 | `FLIR:CameraModel` | FFF |
 | `FLIR:CreatorSoftware` | _RBFO |
 | `FLIR:RawThermalImageWidth` | 70 |

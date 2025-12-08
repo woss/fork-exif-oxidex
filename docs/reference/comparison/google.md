@@ -159,7 +159,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ImageSize` | 3024x4032 |
 | `Composite:Megapixels` | 12.193 |
 | `Composite:ShutterSpeed` | 1/244 |
-| `EXIF:0x927C` | [Binary data] |
+| `EXIF:0x927C` | (Binary data 4577 bytes, use -b option to extract) |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |
 | `IPTC:Unknown-2-221` | 1:0:0:-00001 |
