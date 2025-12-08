@@ -14,17 +14,6 @@ title: CR2 Compatibility
 - **Missing Tags:** 240
 - **Extra Tags:** 19
 - **Value Differences:** 28
-- **⚠️ Regressions:** 3
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `MakerNotes:ControlMode` |
-| `MakerNotes:FlashActivity` |
-| `MakerNotes:FlashExposureComp` |
 
 ## Value Differences
 

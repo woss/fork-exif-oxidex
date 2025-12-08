@@ -14,19 +14,6 @@ title: JPEG Compatibility
 - **Missing Tags:** 2879
 - **Extra Tags:** 415
 - **Value Differences:** 262
-- **⚠️ Regressions:** 5
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `MakerNotes:ControlMode` |
-| `MakerNotes:ExposureCompensation` |
-| `MakerNotes:FlashExposureComp` |
-| `MakerNotes:OwnerName` |
-| `MakerNotes:Quality` |
 
 ## Value Differences
 
