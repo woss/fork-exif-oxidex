@@ -7,7 +7,7 @@
 use super::{FileFormat, FileReader, MetadataMap, TagValue};
 use crate::core::format_dispatch::dispatch_format_parser;
 use crate::core::jpeg_helpers::{
-    process_app10_segments, process_app11_segments, process_app12_segments,
+    process_app6_segments, process_app10_segments, process_app11_segments, process_app12_segments,
     process_app14_segments, process_exif_segments, process_icc_segments, process_iptc_segments,
     process_jfif_segments, process_mpf_segments, process_sof_segments, process_xmp_segments,
 };
@@ -476,6 +476,8 @@ pub(crate) fn parse_jpeg_metadata(reader: &dyn FileReader) -> Result<MetadataMap
     process_sof_segments(&segments, &mut metadata);
 
     // Process HDR and manufacturer-specific APP segments
+    // TODO: re-enable when parse_app6 is implemented
+    // process_app6_segments(&segments, &mut metadata);
     process_app10_segments(&segments, &mut metadata);
     process_app11_segments(&segments, &mut metadata);
     process_app12_segments(&segments, &mut metadata);

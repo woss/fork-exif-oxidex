@@ -297,42 +297,71 @@ impl MakerNoteParser for NikonParser {
             return Err("Invalid Nikon MakerNote header".to_string());
         }
 
-        // Determine header type and skip to IFD
-        // Type 2: "Nikon\0\x02\x10\x00\x00" (10 bytes header)
-        // Type 3: "Nikon\0\x02\x00\x00\x00" (10 bytes header)
-        let ifd_offset = if data.len() >= 10 {
-            10 // Skip 10-byte header
+        // Nikon Type 2/3 MakerNotes have an embedded TIFF structure after the Nikon header
+        // Structure: "Nikon\0" (6 bytes) + version (4 bytes) + TIFF header + IFD
+        // The TIFF header contains its own byte order indicator and IFD offset
+
+        // Skip Nikon-specific header (10 bytes: "Nikon\0" + 4-byte version)
+        let tiff_start = 10;
+
+        if data.len() < tiff_start + 8 {
+            eprintln!("DEBUG: Not enough data for TIFF header");
+            return Ok(());
+        }
+
+        // Parse embedded TIFF byte order from bytes 10-11
+        let tiff_data = &data[tiff_start..];
+        let tiff_byte_order = if tiff_data.len() >= 2 {
+            if &tiff_data[0..2] == b"MM" {
+                ByteOrder::BigEndian
+            } else if &tiff_data[0..2] == b"II" {
+                ByteOrder::LittleEndian
+            } else {
+                eprintln!("DEBUG: Invalid TIFF byte order marker");
+                return Err(format!("Invalid TIFF byte order in Nikon MakerNote"));
+            }
         } else {
-            6 // Fallback to just skip "Nikon\0"
+            byte_order  // Fallback to provided byte order
         };
 
-        if data.len() <= ifd_offset + 2 {
+        // Read IFD offset from TIFF header (bytes 4-7 of TIFF structure)
+        let ifd_offset_in_tiff = if tiff_byte_order == ByteOrder::BigEndian {
+            u32::from_be_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]]) as usize
+        } else {
+            u32::from_le_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]]) as usize
+        };
+
+        eprintln!("DEBUG: Nikon TIFF byte_order={:?}, IFD offset={}", tiff_byte_order, ifd_offset_in_tiff);
+
+        // IFD offset is relative to the start of the TIFF structure (byte 10 in full data)
+        let ifd_absolute = tiff_start + ifd_offset_in_tiff;
+
+        if data.len() <= ifd_absolute + 2 {
+            eprintln!("DEBUG: Not enough data for IFD at offset {}", ifd_absolute);
             return Ok(());
         }
 
         let config = IfdParserConfig {
-            signature: None, // Signature already checked and skipped via offset
+            signature: None,
             signature_offset: 0,
             max_entries: 200,
         };
 
-        // Nikon parse_ifd_entries call
-        // We pass the slice starting at ifd_offset
+        // Parse IFD entries starting at the IFD location
+        // Pass the full 'data' buffer so that offset calculations work correctly
         let _ = parse_ifd_entries(
-            &data[ifd_offset..],
-            byte_order,
+            &data[ifd_absolute..],
+            tiff_byte_order,
             &config,
             |entry, _ifd_data| {
-                // For extract_string_value, we need the full data and the absolute offset
-                // Since _ifd_data is relative to ifd_offset, we can use 'data' directly if we adjust offsets
-                // BUT extract_string_value logic expects absolute offsets relative to the start of the *file* or *segment* provided
-                // In Nikon case, offsets are relative to the start of the MakerNote (which is 'data')
+                // Offsets in Nikon MakerNote IFD entries are relative to the embedded TIFF structure
+                // which starts at byte 10 (tiff_start) in the full data buffer
 
                 match entry.tag_id {
                     // Simple string tags
                     NIKON_VERSION | NIKON_SERIAL_NUMBER => {
-                        // Nikon string offsets are relative to the IFD start (after header)
-                        if let Some(value) = extract_string_with_offset(entry, data, ifd_offset) {
+                        // String offsets are relative to the TIFF header (byte 10)
+                        if let Some(value) = extract_string_with_offset(entry, data, tiff_start) {
                             let tag_name = nikon_tag_to_name(entry.tag_id);
                             tags.insert(tag_name, value);
                         }
@@ -564,7 +593,7 @@ impl MakerNoteParser for NikonParser {
                     | NIKON_SCENE_ASSIST
                     | NIKON_RETOUCH_HISTORY
                     | NIKON_FLASH_TYPE => {
-                        if let Some(value) = extract_string_with_offset(entry, data, ifd_offset) {
+                        if let Some(value) = extract_string_with_offset(entry, data, tiff_start) {
                             let tag_name = nikon_tag_to_name(entry.tag_id);
                             tags.insert(tag_name, value);
                         }

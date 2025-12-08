@@ -7,7 +7,7 @@ use super::{FileReader, MetadataMap, TagValue};
 use crate::core::operations_helpers::read_u32;
 use crate::core::tag_conversion::raw_bytes_to_tag_value;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
-use crate::parsers::tiff::makernotes::canon;
+use crate::parsers::tiff::makernote_dispatcher::dispatch_makernote;
 use crate::tag_db::lookup_tag_name;
 use std::collections::HashMap;
 
@@ -429,34 +429,46 @@ pub fn parse_gps_subifd(
     }
 }
 
-/// Parses Canon MakerNote data if present.
+/// Parses MakerNote data for any supported manufacturer.
 ///
-/// Canon cameras store proprietary metadata in MakerNote tags.
-/// This function detects and parses Canon-specific formats.
+/// Camera manufacturers store proprietary metadata in MakerNote tags.
+/// This function dispatches to the appropriate manufacturer parser based on
+/// the camera make detected from the TIFF metadata.
 ///
 /// # Arguments
 ///
 /// * `makernote_data` - Raw MakerNote bytes
 /// * `byte_order` - Byte order for interpreting multi-byte values
-/// * `metadata` - MetadataMap to populate with Canon tags
+/// * `metadata` - MetadataMap to populate with manufacturer-specific tags
 fn parse_makernote_if_canon(
     makernote_data: &[u8],
     byte_order: ByteOrder,
     metadata: &mut MetadataMap,
 ) {
-    // Check if this is a Canon MakerNote
-    if canon::is_canon_makernote(makernote_data) {
-        // Parse Canon MakerNote tags
-        let mut canon_tags = HashMap::new();
-        canon::parse_canon_makernotes(makernote_data, byte_order, &mut canon_tags);
-        // Add Canon tags to metadata
-        // Note: tag names already include "Canon:" prefix from canon_tag_to_name()
-        for (tag_name, tag_value_str) in canon_tags {
+    // Extract camera make from metadata to determine which parser to use
+    let make = metadata
+        .get_string("IFD0:Make")
+        .unwrap_or("");
+
+    eprintln!("DEBUG: parse_makernote_if_canon called with make='{}', data_len={}", make, makernote_data.len());
+
+    if !make.is_empty() {
+        // Parse MakerNote using the dispatcher
+        let mut makernote_tags = HashMap::new();
+        if let Err(e) = dispatch_makernote(&make, makernote_data, byte_order, &mut makernote_tags)
+        {
+            eprintln!("Warning: Failed to parse MakerNote for {}: {}", make, e);
+            return;
+        }
+
+        eprintln!("DEBUG: Extracted {} makernote tags", makernote_tags.len());
+
+        // Add manufacturer tags to metadata
+        // Note: tag names already include manufacturer prefix (e.g., "Canon:", "Nikon:")
+        for (tag_name, tag_value_str) in makernote_tags {
             // Convert string value to TagValue
             let tag_value = TagValue::String(tag_value_str);
             metadata.insert(tag_name, tag_value);
         }
     }
-    // If not Canon, silently ignore - other vendors' MakerNotes
-    // can be added in future phases (Nikon, Sony, etc.)
 }

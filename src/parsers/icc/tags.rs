@@ -326,9 +326,9 @@ fn parse_measurement(data: &[u8]) -> Result<HashMap<String, String>> {
 
     if data.len() >= 32 {
         let flare = read_u16fixed16(data, 28)?;
-        // Store raw percentage value; formatting (including % suffix) is applied
+        // Store raw percentage value with 5 decimal places; % suffix is applied
         // by exiftool_compat when output formatting is requested
-        result.insert("flare".to_string(), format!("{}", flare * 100.0));
+        result.insert("flare".to_string(), format!("{:.5}", flare * 100.0));
     }
 
     if data.len() >= 36 {

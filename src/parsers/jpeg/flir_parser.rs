@@ -123,6 +123,8 @@ mod camera_info_offsets {
     pub const LENS_SERIAL_NUMBER: usize = 0x01A0;
     /// Field of view in degrees (f32)
     pub const FIELD_OF_VIEW: usize = 0x01B4;
+    /// Peak spectral sensitivity in micrometers (f32)
+    pub const PEAK_SPECTRAL_SENSITIVITY: usize = 0x01B8;
     /// Filter model string (16 bytes)
     pub const FILTER_MODEL: usize = 0x01EC;
     /// Filter part number string (32 bytes)
@@ -245,24 +247,74 @@ pub fn parse_flir_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
     }
 
     // Parse FLIR segment header
-    // Byte 5: Segment number (1-based index for multi-segment FLIR data)
-    // Byte 6: Total number of segments
-    let segment_number = data[5];
-    let total_segments = data[6];
+    // Byte 5: Often 0x01 (segment marker/version)
+    // Byte 6: Segment index (0-based) for multi-segment data
+    // Byte 7: Reserved/checksum
+    let _segment_marker = data[5];
+    let segment_index = data[6];
+    
+    // The FFF data starts after the 8-byte header
+    // Header: "FLIR\0" (5) + marker (1) + index (1) + reserved (1)
+    let payload = if data.len() > 8 { &data[8..] } else { return Ok(()) };
 
-    // For now, we only handle single-segment FLIR data (most common case)
-    // Multi-segment FLIR data would require reassembly across APP1 segments
-    if total_segments > 1 && segment_number != 1 {
-        // Skip non-first segments for now - they contain continuation data
-        return Ok(());
+    // Check if this looks like multi-segment data (DJI style)
+    // First segment (index 0) contains "FFF\0" header
+    let is_multi_segment = segment_index > 0 || (payload.len() >= 4 && &payload[0..4] == b"FFF\0" && segment_index == 0);
+    
+    if is_multi_segment && segment_index < 20 {
+        // Multi-segment data: reassemble all segments before parsing
+        use std::cell::RefCell;
+        thread_local! {
+            static FLIR_SEGMENTS: RefCell<Vec<Vec<u8>>> = RefCell::new(Vec::new());
+        }
+
+        FLIR_SEGMENTS.with(|segments| {
+            let mut segs = segments.borrow_mut();
+
+            // First segment (index 0) initializes the collection
+            if segment_index == 0 {
+                segs.clear();
+                segs.resize(20, Vec::new());  // Max 20 segments
+            }
+
+            // Store this segment's payload
+            let idx = segment_index as usize;
+            if idx < segs.len() {
+                segs[idx] = payload.to_vec();
+            }
+
+            // Check if we have all segments (contiguous non-empty segments)
+            let filled_count = segs.iter().take_while(|s| !s.is_empty()).count();
+            let is_complete = filled_count > 0 && 
+                             (filled_count >= segs.len() || segs[filled_count].is_empty());
+            
+            if is_complete {
+                // Reassemble the complete FFF data
+                let mut complete_data = Vec::new();
+                for seg in segs.iter() {
+                    if !seg.is_empty() {
+                        complete_data.extend_from_slice(seg);
+                    } else {
+                        break;  // Stop at first empty segment
+                    }
+                }
+
+                // Parse the complete FFF structure
+                let result = parse_fff_structure(&complete_data, metadata);
+
+                // Clear segments after parsing
+                segs.clear();
+
+                result
+            } else {
+                // Still waiting for more segments
+                Ok(())
+            }
+        })
+    } else {
+        // Single-segment FLIR data - parse directly
+        parse_fff_structure(payload, metadata)
     }
-
-    // The FFF data starts after the 8-byte header in the first segment
-    // Header: "FLIR\0" (5) + segment_num (1) + total_segments (1) + reserved (1)
-    let fff_data = if data.len() > 8 { &data[8..] } else { return Ok(()) };
-
-    // Parse the FFF structure
-    parse_fff_structure(fff_data, metadata)
 }
 
 /// Parse the FLIR FFF (FLIR File Format) structure.
@@ -305,6 +357,16 @@ fn parse_fff_structure(data: &[u8], metadata: &mut MetadataMap) -> Result<(), St
 /// entries pointing to different data records (CameraInfo, RawData, etc.)
 fn parse_fff_with_index(data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
     let reader = EndianReader::little_endian(data);
+
+    // Extract CreatorSoftware from FFF header (typically at offset 0x08, 16 bytes)
+    if let Some(creator) = try_read_string(data, 0x08, 16) {
+        if !creator.is_empty() {
+            metadata.insert(
+                "FLIR:CreatorSoftware".to_string(),
+                TagValue::String(creator),
+            );
+        }
+    }
 
     // FFF header is typically 64 bytes
     // Record index follows the header
@@ -801,6 +863,16 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
             metadata.insert(
                 "FLIR:FieldOfView".to_string(),
                 TagValue::Float(fov as f64),
+            );
+        }
+    }
+
+    // Peak spectral sensitivity (wavelength in micrometers)
+    if let Some(wavelength) = reader.f32_at(camera_info_offsets::PEAK_SPECTRAL_SENSITIVITY) {
+        if wavelength > 0.0 && wavelength < 100.0 {
+            metadata.insert(
+                "FLIR:PeakSpectralSensitivity".to_string(),
+                TagValue::Float(wavelength as f64),
             );
         }
     }

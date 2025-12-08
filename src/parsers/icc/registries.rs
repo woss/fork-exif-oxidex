@@ -332,19 +332,19 @@ pub static RENDERING_INTENTS: &[&str] = &[
 pub static CMM_TYPES: &[LookupEntry] = &[
     LookupEntry {
         code: "ADBE",
-        name: "Adobe",
+        name: "Adobe Systems Inc.",
     },
     LookupEntry {
         code: "ACMS",
-        name: "Agfa",
+        name: "Agfa Color Management System",
     },
     LookupEntry {
         code: "appl",
-        name: "Apple CMM",
+        name: "Apple Computer Inc.",
     },
     LookupEntry {
         code: "APPL",
-        name: "Apple CMM",
+        name: "Apple Computer Inc.",
     },
     LookupEntry {
         code: "CCMS",
@@ -388,11 +388,19 @@ pub static CMM_TYPES: &[LookupEntry] = &[
     },
     LookupEntry {
         code: "KCMS",
-        name: "Kodak",
+        name: "Kodak Color Management System",
+    },
+    LookupEntry {
+        code: "Lino",
+        name: "Linotronic",
     },
     LookupEntry {
         code: "MCML",
         name: "Konica Minolta",
+    },
+    LookupEntry {
+        code: "NKON",
+        name: "Nikon Corporation",
     },
     LookupEntry {
         code: "WCS",
@@ -400,7 +408,7 @@ pub static CMM_TYPES: &[LookupEntry] = &[
     },
     LookupEntry {
         code: "MSFT",
-        name: "Microsoft",
+        name: "Microsoft Corporation",
     },
     LookupEntry {
         code: "SIGN",
@@ -421,6 +429,10 @@ pub static CMM_TYPES: &[LookupEntry] = &[
     LookupEntry {
         code: "TCMM",
         name: "Toshiba",
+    },
+    LookupEntry {
+        code: "UCCM",
+        name: "Unknown (UCCM)",
     },
     LookupEntry {
         code: "32BT",
@@ -447,19 +459,51 @@ pub static CMM_TYPES: &[LookupEntry] = &[
 pub static MANUFACTURERS: &[LookupEntry] = &[
     LookupEntry {
         code: "ADBE",
-        name: "Adobe",
+        name: "Adobe Systems Inc.",
     },
     LookupEntry {
         code: "APPL",
-        name: "Apple",
+        name: "Apple Computer Inc.",
     },
     LookupEntry {
         code: "appl",
-        name: "Apple",
+        name: "Apple Computer Inc.",
+    },
+    LookupEntry {
+        code: "CANO",
+        name: "Canon, Inc. (Canon Development Americas, Inc.)",
+    },
+    LookupEntry {
+        code: "EPSO",
+        name: "Epson",
+    },
+    LookupEntry {
+        code: "GOOG",
+        name: "Google",
+    },
+    LookupEntry {
+        code: "HP",
+        name: "Hewlett-Packard",
+    },
+    LookupEntry {
+        code: "IEC",
+        name: "Hewlett-Packard",
+    },
+    LookupEntry {
+        code: "ISL",
+        name: "Ichikawa Soft Laboratory",
+    },
+    LookupEntry {
+        code: "KODA",
+        name: "Kodak",
     },
     LookupEntry {
         code: "MSFT",
-        name: "Microsoft",
+        name: "Microsoft Corporation",
+    },
+    LookupEntry {
+        code: "NKON",
+        name: "Nikon",
     },
     LookupEntry {
         code: "SGI",
@@ -472,26 +516,6 @@ pub static MANUFACTURERS: &[LookupEntry] = &[
     LookupEntry {
         code: "TOSH",
         name: "Toshiba",
-    },
-    LookupEntry {
-        code: "HP",
-        name: "Hewlett-Packard",
-    },
-    LookupEntry {
-        code: "EPSO",
-        name: "Epson",
-    },
-    LookupEntry {
-        code: "KODA",
-        name: "Kodak",
-    },
-    LookupEntry {
-        code: "CANO",
-        name: "Canon",
-    },
-    LookupEntry {
-        code: "NKON",
-        name: "Nikon",
     },
     LookupEntry {
         code: "argl",

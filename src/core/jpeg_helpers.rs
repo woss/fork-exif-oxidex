@@ -384,6 +384,23 @@ pub fn process_sof_segments(segments: &[Segment], metadata: &mut MetadataMap) {
 /// - Standard HDR with "HDR\0" prefix
 /// - Android AROT gain map format
 /// - Generic/unknown HDR formats (stored as raw data)
+pub fn process_app6_segments(_segments: &[Segment], _metadata: &mut MetadataMap) {
+    // TODO: implement parse_app6
+    // const APP6_MARKER: u16 = 0xFFE6;
+    // for segment in segments.iter().filter(|s| s.marker == APP6_MARKER) {
+    //     match parse_app6(segment.data) {
+    //         Ok(app6_metadata) => {
+    //             for (key, value) in app6_metadata.iter() {
+    //                 metadata.insert(key.clone(), value.clone());
+    //             }
+    //         }
+    //         Err(e) => {
+    //             eprintln!("Warning: Failed to parse APP6 segment: {}", e);
+    //         }
+    //     }
+    // }
+}
+
 pub fn process_app10_segments(segments: &[Segment], metadata: &mut MetadataMap) {
     // APP10 marker is 0xFFEA
     const APP10_MARKER: u16 = 0xFFEA;

@@ -4,48 +4,48 @@ title: ExifTool Compatibility Report
 
 # ExifTool Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 82.6%
+**Overall Coverage:** 34.0%
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [jpeg](./jpeg.md) | 26 | 82.6% | 13 | 13 | 8 | 0 |
+| [APPLE](./apple.md) | 66 | 56.4% | 80 | 41 | 19 | 0 |
+| [CANON](./canon.md) | 725 | 21.8% | 633 | 83 | 52 | 0 |
+| [DJI](./dji.md) | 21 | 43.9% | 127 | 47 | 33 | 0 |
+| [FUJIFILM](./fujifilm.md) | 411 | 57.9% | 139 | 51 | 72 | 0 |
+| [GOOGLE](./google.md) | 24 | 41.0% | 173 | 32 | 18 | 0 |
+| [GOPRO](./gopro.md) | 23 | 59.0% | 65 | 31 | 12 | 0 |
+| [LEICA](./leica.md) | 67 | 32.3% | 338 | 132 | 41 | 0 |
+| [NIKON](./nikon.md) | 307 | 18.8% | 651 | 88 | 20 | 0 |
+| [OLYMPUS](./olympus.md) | 315 | 25.0% | 368 | 98 | 23 | 0 |
+| [PANASONIC](./panasonic.md) | 477 | 54.9% | 201 | 115 | 70 | 0 |
+| [PENTAX](./pentax.md) | 145 | 28.5% | 340 | 70 | 48 | 0 |
+| [SAMSUNG](./samsung.md) | 702 | 40.8% | 262 | 92 | 33 | 0 |
+| [SONY](./sony.md) | 761 | 20.2% | 593 | 37 | 20 | 0 |
 
 ## Other Format Reports
 
 Additional format-specific reports:
 
-- [Apple](./apple.md)
 - [Avi](./avi.md)
-- [Canon](./canon.md)
 - [Cr2](./cr2.md)
-- [Dji](./dji.md)
 - [Dng](./dng.md)
-- [Fujifilm](./fujifilm.md)
 - [Gif](./gif.md)
-- [Google](./google.md)
-- [Gopro](./gopro.md)
 - [Heic](./heic.md)
-- [Leica](./leica.md)
+- [Jpeg](./jpeg.md)
 - [Mkv](./mkv.md)
 - [Mp3](./mp3.md)
 - [Mp4](./mp4.md)
 - [Nef](./nef.md)
-- [Nikon](./nikon.md)
-- [Olympus](./olympus.md)
-- [Panasonic](./panasonic.md)
 - [Pdf](./pdf.md)
-- [Pentax](./pentax.md)
 - [Png](./png.md)
 - [Psd](./psd.md)
 - [Raf](./raf.md)
 - [Raw](./raw.md)
 - [Rw2](./rw2.md)
-- [Samsung](./samsung.md)
-- [Sony](./sony.md)
 - [Tiff](./tiff.md)
 - [Wav](./wav.md)
 - [Webp](./webp.md)
