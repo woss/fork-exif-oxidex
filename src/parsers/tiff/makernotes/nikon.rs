@@ -42,8 +42,7 @@ const NIKON_WHITE_BALANCE_FINE: u16 = 0x000B;
 const NIKON_COLOR_BALANCE: u16 = 0x000C;
 const NIKON_PROGRAM_SHIFT: u16 = 0x000F;
 const NIKON_EXPOSURE_DIFF: u16 = 0x0010;
-const NIKON_ISO_SELECTION: u16 = 0x0011;
-const NIKON_PREVIEW_IFD: u16 = 0x0011;
+const NIKON_ISO_SELECTION: u16 = 0x0011; // Also NIKON_PREVIEW_IFD
 const NIKON_LENS_TYPE: u16 = 0x0083;
 const NIKON_LENS: u16 = 0x0084;
 const NIKON_FLASH_MODE: u16 = 0x0087;
@@ -108,9 +107,8 @@ const NIKON_IMAGE_BOUNDARY: u16 = 0x0016; // Image Boundary
 const NIKON_IMAGE_ADJUSTMENT: u16 = 0x0080; // Image Adjustment
 const NIKON_AUX_LENS: u16 = 0x0082; // Auxiliary Lens
 const NIKON_MULTI_EXPOSURE: u16 = 0x00B2; // Multi Exposure
-const NIKON_HIGH_ISO_NR: u16 = 0x00B0; // High ISO Noise Reduction (conflicts with ColorSpace - let later one win)
-const NIKON_AF_INFO2: u16 = 0x00B7; // AF Info 2
-const NIKON_FILE_INFO: u16 = 0x00B8; // File Info
+                                          // Note: 0x00B0=ColorSpace, 0x00B7=VignetteControl, 0x00B8=DistortionControl are primary
+                                          // (HIGH_ISO_NR, AF_INFO2, FILE_INFO are alternate names for same tag IDs)
 
 // Nikon header signatures
 const NIKON_HEADER_TYPE2: &[u8] = b"Nikon\0\x02\x10\x00\x00";
@@ -700,18 +698,7 @@ impl MakerNoteParser for NikonParser {
                         tags.insert("Nikon:DistortionControl".to_string(), mode.to_string());
                     }
 
-                    NIKON_HIGH_ISO_NR => {
-                        let value = entry.value_offset as i32;
-                        let mode = match value {
-                            0 => "Off",
-                            1 => "Minimal",
-                            2 => "Low",
-                            4 => "Normal",
-                            6 => "High",
-                            _ => "Unknown",
-                        };
-                        tags.insert("Nikon:HighISONoiseReduction".to_string(), mode.to_string());
-                    }
+                    // Note: HIGH_ISO_NR (0x00B0) removed - same tag ID as ColorSpace, handled above
 
                     // Array tags
                     NIKON_AF_INFO => {
@@ -885,7 +872,7 @@ fn nikon_tag_to_name(tag_id: u16) -> String {
         NIKON_PROGRAM_SHIFT => "ProgramShift",
         NIKON_EXPOSURE_DIFF => "ExposureDifference",
         NIKON_ISO_SELECTION => "ISOSelection",
-        NIKON_PREVIEW_IFD => "NikonPreview",
+        // Note: PREVIEW_IFD = 0x0011 same as ISO_SELECTION, handled above
         NIKON_FLASH_EXPOSURE_COMP => "FlashExposureComp",
         NIKON_ISO_SETTING => "ISOSetting",
         NIKON_IMAGE_BOUNDARY => "ImageBoundary",
@@ -951,18 +938,15 @@ fn nikon_tag_to_name(tag_id: u16) -> String {
         NIKON_VARI_PROGRAM => "VariProgram",
 
         // Advanced (0x00B0-0x00B8)
-        NIKON_MULTI_EXPOSURE => "MultiExposure",
-        NIKON_HIGH_ISO_NR => "HighISONoiseReduction",
-        NIKON_COLOR_SPACE => "ColorSpace",
+        NIKON_COLOR_SPACE => "ColorSpace", // 0x00B0 (also HIGH_ISO_NR)
         NIKON_VR_INFO => "VRInfo",
+        NIKON_MULTI_EXPOSURE => "MultiExposure",
         NIKON_ACTIVE_D_LIGHTING => "ActiveD-Lighting",
         NIKON_PICTURE_CONTROL => "PictureControl",
         NIKON_WORLD_TIME => "WorldTime",
         NIKON_ISO_INFO => "ISOInfo",
-        NIKON_VIGNETTE_CONTROL => "VignetteControl",
-        NIKON_DISTORTION_CONTROL => "DistortionControl",
-        NIKON_AF_INFO2 => "AFInfo2",
-        NIKON_FILE_INFO => "FileInfo",
+        NIKON_VIGNETTE_CONTROL => "VignetteControl", // 0x00B7 (also AF_INFO2)
+        NIKON_DISTORTION_CONTROL => "DistortionControl", // 0x00B8 (also FILE_INFO)
 
         _ => return format!("Nikon:Unknown-{:#06X}", tag_id),
     };

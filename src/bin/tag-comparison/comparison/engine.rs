@@ -30,10 +30,14 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         // ISO 8601: YYYY-MM-DDTHH:MM:SS+TZ
         // EXIF: YYYY:MM:DD HH:MM:SS
         let date_normalized = normalized
-            .replace('T', " ")  // Replace T separator with space
-            .replace('-', ":")  // Replace dashes with colons in date
-            .split('+').next().unwrap_or(normalized)  // Remove timezone
-            .split('-').next().unwrap_or(normalized)  // Remove negative timezone
+            .replace('T', " ") // Replace T separator with space
+            .replace('-', ":") // Replace dashes with colons in date
+            .split('+')
+            .next()
+            .unwrap_or(normalized) // Remove timezone
+            .split('-')
+            .next()
+            .unwrap_or(normalized) // Remove negative timezone
             .trim()
             .to_string();
         if date_normalized.len() >= 10 {
@@ -108,7 +112,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle numeric comparison with slight differences
-    if tag_key.contains("FocalType") || tag_key.contains("Contrast") || tag_key.contains("Saturation") {
+    if tag_key.contains("FocalType")
+        || tag_key.contains("Contrast")
+        || tag_key.contains("Saturation")
+    {
         // These often have value lookup differences - normalize to raw number if possible
         if let Ok(_val) = normalized.parse::<i32>() {
             return normalized.to_string();
@@ -158,24 +165,25 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle FlashExposureComp more aggressively
-    if tag_key.contains("Flash") && tag_key.contains("Comp") {
-        if normalized == "+0.0" || normalized == "-0.0" || normalized == "0.0" {
-            return "0".to_string();
-        }
+    if tag_key.contains("Flash")
+        && tag_key.contains("Comp")
+        && (normalized == "+0.0" || normalized == "-0.0" || normalized == "0.0")
+    {
+        return "0".to_string();
     }
 
     // Handle AutoExposureBracketing: "Off" vs "+0.0"
-    if tag_key.contains("AutoExposureBracketing") || tag_key.contains("AEB") {
-        if normalized.eq_ignore_ascii_case("off") || normalized == "+0.0" || normalized == "0" {
-            return "off".to_string();
-        }
+    if (tag_key.contains("AutoExposureBracketing") || tag_key.contains("AEB"))
+        && (normalized.eq_ignore_ascii_case("off") || normalized == "+0.0" || normalized == "0")
+    {
+        return "off".to_string();
     }
 
     // Handle FocusDistance: "0 m" vs "inf" for zero/infinite values
-    if tag_key.contains("FocusDistance") {
-        if normalized == "0 m" || normalized == "0" || normalized.eq_ignore_ascii_case("inf") {
-            return "0".to_string();
-        }
+    if tag_key.contains("FocusDistance")
+        && (normalized == "0 m" || normalized == "0" || normalized.eq_ignore_ascii_case("inf"))
+    {
+        return "0".to_string();
     }
 
     // Handle floating-point precision differences in arrays (e.g., PrimaryChromaticities)

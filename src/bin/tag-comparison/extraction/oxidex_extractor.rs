@@ -381,23 +381,19 @@ impl OxiDexExtractor {
         // PNG:tEXt:Author → PNG:Author
         // PNG:tEXt:date:create → PNG:Datecreate
         // PNG-pHYs:PixelUnits → PNG:PixelUnits
-        if tag_key.starts_with("PNG:tEXt:") {
-            let rest = &tag_key[9..]; // After "PNG:tEXt:"
+        if let Some(rest) = tag_key.strip_prefix("PNG:tEXt:") {
             // Handle date:create → Datecreate format
             // ExifTool uses lowercase after "Date" (Datecreate, not DateCreate)
-            if rest.starts_with("date:") {
+            if let Some(date_part) = rest.strip_prefix("date:") {
                 // date:create → Datecreate, date:modify → Datemodify, date:timestamp → Datetimestamp
-                let date_part = &rest[5..]; // After "date:"
                 return format!("PNG:Date{}", date_part);
             }
             return format!("PNG:{}", rest);
         }
-        if tag_key.starts_with("PNG-pHYs:") {
-            let rest = &tag_key[9..]; // After "PNG-pHYs:"
+        if let Some(rest) = tag_key.strip_prefix("PNG-pHYs:") {
             return format!("PNG:{}", rest);
         }
-        if tag_key.starts_with("PNG:iTXt:") {
-            let rest = &tag_key[9..]; // After "PNG:iTXt:"
+        if let Some(rest) = tag_key.strip_prefix("PNG:iTXt:") {
             return format!("PNG:{}", rest);
         }
 

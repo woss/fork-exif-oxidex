@@ -556,13 +556,13 @@ fn detect_header_type_and_offsets(
     }
 
     // Check Type 1 headers
-    if data.len() >= 8 {
-        if &data[0..8] == OLYMPUS_HEADER_TYPE1_V1 || &data[0..8] == OLYMPUS_HEADER_TYPE1_V2 {
-            // Type 1: IFD starts immediately after 8-byte header
-            // Offsets are typically TIFF-relative, but we treat base_offset as 0
-            // since the data slice we receive starts at MakerNote position
-            return Ok((8, 0, default_byte_order));
-        }
+    if data.len() >= 8
+        && (&data[0..8] == OLYMPUS_HEADER_TYPE1_V1 || &data[0..8] == OLYMPUS_HEADER_TYPE1_V2)
+    {
+        // Type 1: IFD starts immediately after 8-byte header
+        // Offsets are typically TIFF-relative, but we treat base_offset as 0
+        // since the data slice we receive starts at MakerNote position
+        return Ok((8, 0, default_byte_order));
     }
 
     Err("Invalid Olympus MakerNote header".to_string())

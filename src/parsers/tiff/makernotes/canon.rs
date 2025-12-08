@@ -173,7 +173,11 @@ fn calculate_makernote_base(data: &[u8], byte_order: ByteOrder) -> Option<u32> {
 
 /// Legacy wrapper for extract_canon_i16_array without base offset (for test compatibility)
 #[allow(dead_code)]
-fn extract_canon_i16_array(entry: &IfdEntry, data: &[u8], byte_order: ByteOrder) -> Option<Vec<i16>> {
+fn extract_canon_i16_array(
+    entry: &IfdEntry,
+    data: &[u8],
+    byte_order: ByteOrder,
+) -> Option<Vec<i16>> {
     // For legacy calls, try to calculate base offset
     if let Some(base) = calculate_makernote_base(data, byte_order) {
         extract_canon_i16_array_with_base(entry, data, byte_order, base)
@@ -2248,7 +2252,10 @@ mod tests {
         assert_eq!(result.get("Canon:AutoISO"), Some(&"100".to_string()));
         assert_eq!(result.get("Canon:BaseISO"), Some(&"100".to_string()));
         assert_eq!(result.get("Canon:MeasuredEV"), Some(&"+4.0".to_string()));
-        assert_eq!(result.get("Canon:TargetAperture"), Some(&"f/5.7".to_string()));
+        assert_eq!(
+            result.get("Canon:TargetAperture"),
+            Some(&"f/5.7".to_string())
+        );
         assert_eq!(
             result.get("Canon:TargetExposureTime"),
             Some(&"1/8".to_string())

@@ -274,13 +274,12 @@ impl AppleParser {
     /// Apple MakerNotes on newer devices use "Apple iOS\0" followed by bplist data.
     fn is_bplist_format(data: &[u8]) -> bool {
         // Check for "Apple iOS\0" header followed by bplist
-        if data.len() >= 16 {
-            if &data[0..9] == APPLE_SIGNATURE && data[9] == 0 {
-                // Check for bplist magic after the header
-                if &data[10..16] == BPLIST_MAGIC {
-                    return true;
-                }
-            }
+        if data.len() >= 16
+            && &data[0..9] == APPLE_SIGNATURE
+            && data[9] == 0
+            && &data[10..16] == BPLIST_MAGIC
+        {
+            return true;
         }
 
         // Also check for direct bplist format

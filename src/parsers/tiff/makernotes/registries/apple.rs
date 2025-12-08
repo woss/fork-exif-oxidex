@@ -20,8 +20,7 @@ use super::super::shared::tag_registry::TagRegistry;
 // These decoders are already defined using const_decoder! macro
 use super::super::apple::{
     DECODE_CAMERA_TYPE, DECODE_GREEN_GHOST_MITIGATION, DECODE_HDR_TYPE, DECODE_IMAGE_CAPTURE_TYPE,
-    DECODE_LENS_MODEL, DECODE_OIS_MODE, DECODE_PORTRAIT_MODE, DECODE_SCENE_TYPE,
-    DECODE_SEMANTIC_STYLE, DECODE_SNR_TYPE,
+    DECODE_OIS_MODE, DECODE_SEMANTIC_STYLE, DECODE_SNR_TYPE,
 };
 
 // ============================================================================
