@@ -4,16 +4,16 @@ title: RW2 Compatibility
 
 # RW2 Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 9.2%
-- **Matched Tags:** 14
+- **Coverage:** 9.8%
+- **Matched Tags:** 15
 - **Missing Tags:** 134
 - **Extra Tags:** 33
-- **Value Differences:** 5
+- **Value Differences:** 4
 
 ## Value Differences
 
@@ -23,7 +23,6 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
 | `EXIF:ExposureTime` | 1/250 | 0.004 |
-| `EXIF:FNumber` | 4.0 | 4 |
 | `EXIF:InteropVersion` | 0100 | 3724 |
 | `EXIF:XResolution` | 180 | 1 |
 

@@ -4,7 +4,7 @@ title: MKV Compatibility
 
 # MKV Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 

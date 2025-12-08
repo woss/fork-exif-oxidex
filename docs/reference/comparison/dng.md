@@ -4,16 +4,16 @@ title: DNG Compatibility
 
 # DNG Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 12.8%
-- **Matched Tags:** 34
+- **Coverage:** 13.2%
+- **Matched Tags:** 35
 - **Missing Tags:** 207
 - **Extra Tags:** 44
-- **Value Differences:** 24
+- **Value Differences:** 23
 
 ## Value Differences
 
@@ -37,10 +37,9 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:DNGVersion` | 1.1.0.0 | [Binary data] |
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
 | `EXIF:ExposureTime` | 1/15 | 0.066667 |
-| `EXIF:FNumber` | 8.0 | 8 |
 | `EXIF:ImageHeight` | 2328 | 8 |
 | `EXIF:ImageWidth` | 3516 | 8 |
-| `EXIF:PhotometricInterpretation` | Color Filter Array | 2 |
+| `EXIF:PhotometricInterpretation` | Color Filter Array | RGB |
 | `EXIF:RawDataUniqueID` | 0358DB4E08632D90925171A6BB8848A2 | [Binary data] |
 | `EXIF:SamplesPerPixel` | 1 | 3 |
 | `EXIF:ShutterSpeedValue` | 1/15 | [Binary data] |
@@ -189,7 +188,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `SubIFD0:ImageHeight` | 2304 |
 | `SubIFD0:ImageWidth` | 3456 |
 | `SubIFD0:MaskedAreas` | 14 |
-| `SubIFD0:PhotometricInterpretation` | 6 |
+| `SubIFD0:PhotometricInterpretation` | YCbCr |
 | `SubIFD0:PlanarConfiguration` | Chunky |
 | `SubIFD0:ReferenceBlackWhite` | 0 |
 | `SubIFD0:RowsPerStrip` | 2304 |

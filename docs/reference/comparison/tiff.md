@@ -4,17 +4,17 @@ title: TIFF Compatibility
 
 # TIFF Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** v13.36 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
-- **Files Tested:** 7
-- **Coverage:** 100.0%
-- **Matched Tags:** 26
-- **Missing Tags:** 0
-- **Extra Tags:** 39
-- **Value Differences:** 0
-- **⚠️ Regressions:** 28
+- **Files Tested:** 2
+- **Coverage:** 52.8%
+- **Matched Tags:** 47
+- **Missing Tags:** 29
+- **Extra Tags:** 8
+- **Value Differences:** 13
+- **⚠️ Regressions:** 10
 
 ## ⚠️ Regressions
 
@@ -22,34 +22,72 @@ Tags that OxiDex previously extracted but no longer does:
 
 | Tag |
 |-----|
-| `EXIF:ImageDescription` |
-| `EXIF:ModifyDate` |
-| `EXIF:ResolutionUnit` |
-| `ICC_Profile:BlueTRC` |
-| `ICC_Profile:CMMFlags` |
-| `ICC_Profile:DeviceAttributes` |
-| `ICC_Profile:DeviceMfgDesc` |
-| `ICC_Profile:DeviceModel` |
-| `ICC_Profile:DeviceModelDesc` |
-| `ICC_Profile:GreenTRC` |
-| `ICC_Profile:MeasurementBacking` |
-| `ICC_Profile:MeasurementGeometry` |
-| `ICC_Profile:MeasurementIlluminant` |
-| `ICC_Profile:MeasurementObserver` |
-| `ICC_Profile:MediaBlackPoint` |
-| `ICC_Profile:PrimaryPlatform` |
-| `ICC_Profile:ProfileClass` |
-| `ICC_Profile:ProfileCopyright` |
-| `ICC_Profile:ProfileDateTime` |
-| `ICC_Profile:ProfileDescription` |
-| `ICC_Profile:ProfileFileSignature` |
-| `ICC_Profile:ProfileID` |
-| `ICC_Profile:ProfileVersion` |
-| `ICC_Profile:RedTRC` |
-| `ICC_Profile:RenderingIntent` |
-| `ICC_Profile:Technology` |
-| `ICC_Profile:ViewingCondDesc` |
-| `ICC_Profile:ViewingCondIlluminantType` |
+| `EXIF:Artist` |
+| `EXIF:ExposureTime` |
+| `EXIF:ExtraSamples` |
+| `EXIF:FNumber` |
+| `EXIF:FillOrder` |
+| `EXIF:Orientation` |
+| `EXIF:PageNumber` |
+| `EXIF:PrimaryChromaticities` |
+| `EXIF:SubfileType` |
+| `EXIF:WhitePoint` |
+
+## Value Differences
+
+Tags where ExifTool and OxiDex extract different values:
+
+| Tag | ExifTool | OxiDex |
+|-----|----------|--------|
+| `EXIF:ColorMap` | (Binary data 1536 bytes, use -b option t... | 65535 64923 64312 63701 63090 62479 6186... |
+| `EXIF:SubfileType` | Full-resolution image | Full-resolution Image |
+| `ICC_Profile:BlueMatrixColumn` | 0.14307 0.06061 0.7141 | 0.14306640625 0.06060791015625 0.7140960... |
+| `ICC_Profile:ConnectionSpaceIlluminant` | 0.9642 1 0.82491 | 0.964202880859375 1 0.8249053955078125 |
+| `ICC_Profile:DeviceManufacturer` | Hewlett-Packard | IEC |
+| `ICC_Profile:GreenMatrixColumn` | 0.38515 0.71687 0.09708 | 0.3851470947265625 0.7168731689453125 0.... |
+| `ICC_Profile:Luminance` | 76.03647 80 87.12462 | 76.03646850585938 80 87.12461853027344 |
+| `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945068359375% |
+| `ICC_Profile:MediaWhitePoint` | 0.95045 1 1.08905 | 0.9504547119140625 1 1.08905029296875 |
+| `ICC_Profile:ProfileCMMType` | Linotronic | Lino |
+| `ICC_Profile:RedMatrixColumn` | 0.43607 0.22249 0.01392 | 0.436065673828125 0.2224884033203125 0.0... |
+| `ICC_Profile:ViewingCondIlluminant` | 19.6445 20.3718 16.8089 | 19.644500732421875 20.371795654296875 16... |
+| `ICC_Profile:ViewingCondSurround` | 3.92889 4.07439 3.36179 | 3.92889404296875 4.0743865966796875 3.36... |
+
+## Missing Tags
+
+Tags ExifTool extracts that OxiDex doesn't:
+
+| Tag | Sample Value |
+|-----|-------------|
+| `EXIF:ModelTransform` | 33.4179196429669 35.8363313794284 0 691955.1656840... |
+| `GeoTiff:GTModelType` | Projected |
+| `GeoTiff:GTRasterType` | Pixel Is Area |
+| `GeoTiff:GeoTiffVersion` | 1.1.0 |
+| `GeoTiff:GeogCitation` | Hough UTM zone 17N |
+| `GeoTiff:GeogGeodeticDatum` | User Defined |
+| `GeoTiff:GeogSemiMajorAxis` | 6378270 |
+| `GeoTiff:GeogSemiMinorAxis` | 6356794.343479 |
+| `GeoTiff:GeographicType` | User Defined |
+| `GeoTiff:PCSCitation` | Hough UTM zone 17N |
+| `GeoTiff:ProjectedCSType` | User Defined |
+| `GeoTiff:Projection` | UTM zone 17N |
+| `IPTC:ApplicationRecordVersion` | 2 |
+| `IPTC:By-line` | I'm the author |
+| `IPTC:By-lineTitle` | On top |
+| `IPTC:Caption-Abstract` | The picture caption |
+| `IPTC:City` | Kingston |
+| `IPTC:CopyrightNotice` | Copyright notice |
+| `IPTC:Country-PrimaryLocationName` | Canada |
+| `IPTC:Credit` | Phil Harvey |
+| `IPTC:DateCreated` | 2004:02:20 |
+| `IPTC:Headline` | headline |
+| `IPTC:Keywords` | ["exiftool","test","picture"] |
+| `IPTC:ObjectName` | This is the title |
+| `IPTC:OriginalTransmissionReference` | no reference |
+| `IPTC:Province-State` | Ontario |
+| `IPTC:Source` | My camera |
+| `IPTC:SpecialInstructions` | no instructions |
+| `IPTC:Writer-Editor` | I wrote it |
 
 ## Extra Tags
 
@@ -57,45 +95,14 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `Composite:Aperture` | 2.8 |
-| `Composite:ImageSize` | 200x150 |
-| `Composite:Megapixels` | 0.030 |
-| `Composite:ShutterSpeed` | 1/100 |
-| `IFD1:BitsPerSample` | 16 16 16 16 |
-| `IFD1:Compression` | Uncompressed |
-| `IFD1:ExtraSamples` | Unassociated Alpha |
-| `IFD1:FillOrder` | Normal |
-| `IFD1:ImageHeight` | 120 |
-| `IFD1:ImageWidth` | 160 |
-| `IFD1:Model` | TestModel |
-| `IFD1:Orientation` | Horizontal (normal) |
-| `IFD1:PageNumber` | 1 3 |
-| `IFD1:PhotometricInterpretation` | RGB |
-| `IFD1:PlanarConfiguration` | Chunky |
-| `IFD1:PrimaryChromaticities` | 0.6399999857 0.3300000131 0.3000000119 0.600000023... |
-| `IFD1:RowsPerStrip` | 120 |
-| `IFD1:SamplesPerPixel` | 4 |
-| `IFD1:StripByteCounts` | 153600 |
-| `IFD1:StripOffsets` | 153890 |
-| `IFD1:SubfileType` | Single page of multi-page image |
-| `IFD1:WhitePoint` | 0.3127000034 0.3289999962 |
-| `IFD2:BitsPerSample` | 16 16 16 16 |
-| `IFD2:Compression` | Uncompressed |
-| `IFD2:ExtraSamples` | Unassociated Alpha |
-| `IFD2:FillOrder` | Normal |
-| `IFD2:ImageHeight` | 120 |
-| `IFD2:ImageWidth` | 160 |
-| `IFD2:Orientation` | Horizontal (normal) |
-| `IFD2:PageNumber` | 2 3 |
-| `IFD2:PhotometricInterpretation` | RGB |
-| `IFD2:PlanarConfiguration` | Chunky |
-| `IFD2:PrimaryChromaticities` | 0.6399999857 0.3300000131 0.3000000119 0.600000023... |
-| `IFD2:RowsPerStrip` | 120 |
-| `IFD2:SamplesPerPixel` | 4 |
-| `IFD2:StripByteCounts` | 153600 |
-| `IFD2:StripOffsets` | 307772 |
-| `IFD2:SubfileType` | Single page of multi-page image |
-| `IFD2:WhitePoint` | 0.3127000034 0.3289999962 |
+| `Composite:ImageSize` | 25x24 |
+| `Composite:Megapixels` | 0.001 |
+| `EXIF:0x83BB` | 469893120 33554972 41418771 1416127776 1885954932 ... |
+| `EXIF:0x85D8` | [Binary data] |
+| `EXIF:0x87AF` | 1 1 0 10 1024 0 1 1 1025 0 1 1 2048 0 1 32767 2049... |
+| `EXIF:GeoTiffAsciiParams` | Hough UTM zone 17N¦ |
+| `EXIF:GeoTiffDoubleParams` | [Binary data] |
+| `EXIF:ICC_Profile` | [Binary data] |
 
 ---
 

@@ -4,17 +4,17 @@ title: PNG Compatibility
 
 # PNG Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** v13.36 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
-- **Files Tested:** 4
-- **Coverage:** 100.0%
-- **Matched Tags:** 48
-- **Missing Tags:** 0
-- **Extra Tags:** 12
+- **Files Tested:** 1
+- **Coverage:** 90.9%
+- **Matched Tags:** 10
+- **Missing Tags:** 1
+- **Extra Tags:** 1
 - **Value Differences:** 0
-- **⚠️ Regressions:** 1
+- **⚠️ Regressions:** 40
 
 ## ⚠️ Regressions
 
@@ -22,7 +22,54 @@ Tags that OxiDex previously extracted but no longer does:
 
 | Tag |
 |-----|
-| `XMP:Creator` |
+| `EXIF:Artist` |
+| `EXIF:ColorSpace` |
+| `EXIF:ComponentsConfiguration` |
+| `EXIF:DateTimeOriginal` |
+| `EXIF:ExifVersion` |
+| `EXIF:Make` |
+| `EXIF:Model` |
+| `EXIF:ResolutionUnit` |
+| `EXIF:XResolution` |
+| `EXIF:YCbCrPositioning` |
+| `EXIF:YResolution` |
+| `PNG:Author` |
+| `PNG:BlueX` |
+| `PNG:BlueY` |
+| `PNG:Datecreate` |
+| `PNG:Datemodify` |
+| `PNG:Datetimestamp` |
+| `PNG:Description` |
+| `PNG:ExifArtist` |
+| `PNG:ExifColorSpace` |
+| `PNG:ExifComponentsConfiguration` |
+| `PNG:ExifDateTimeOriginal` |
+| `PNG:ExifExifOffset` |
+| `PNG:ExifExifVersion` |
+| `PNG:ExifMake` |
+| `PNG:ExifModel` |
+| `PNG:ExifYCbCrPositioning` |
+| `PNG:GreenX` |
+| `PNG:GreenY` |
+| `PNG:ModifyDate` |
+| `PNG:Palette` |
+| `PNG:PixelUnits` |
+| `PNG:PixelsPerUnitX` |
+| `PNG:PixelsPerUnitY` |
+| `PNG:RedX` |
+| `PNG:RedY` |
+| `PNG:Software` |
+| `PNG:Title` |
+| `PNG:WhitePointX` |
+| `PNG:WhitePointY` |
+
+## Missing Tags
+
+Tags ExifTool extracts that OxiDex doesn't:
+
+| Tag | Sample Value |
+|-----|-------------|
+| `PNG:Comment` | test comment |
 
 ## Extra Tags
 
@@ -30,18 +77,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `PNG:ExifResolutionUnit` | 1 |
-| `PNG:ExifXResolution` | [Binary data] |
-| `PNG:ExifYResolution` | [Binary data] |
-| `PNG:exif:Artist` | PNG Artist 1 |
-| `PNG:exif:ColorSpace` | 65535 |
-| `PNG:exif:ComponentsConfiguration` | ... |
-| `PNG:exif:DateTimeOriginal` | 2024:03:01 10:00:00 |
-| `PNG:exif:ExifOffset` | 164 |
-| `PNG:exif:ExifVersion` | 0232 |
-| `PNG:exif:Make` | PNG EXIF Test |
-| `PNG:exif:Model` | PNG Cam 1 |
-| `PNG:exif:YCbCrPositioning` | 1 |
+| `PNG:comment` | test comment |
 
 ---
 

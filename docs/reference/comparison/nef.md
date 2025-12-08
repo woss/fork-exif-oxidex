@@ -4,7 +4,7 @@ title: NEF Compatibility
 
 # NEF Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
@@ -28,7 +28,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:ExposureTime` | 1/20 | 0.05 |
 | `EXIF:ImageHeight` | 2014 | 106 |
 | `EXIF:ImageWidth` | 3040 | 160 |
-| `EXIF:PhotometricInterpretation` | Color Filter Array | 2 |
+| `EXIF:PhotometricInterpretation` | Color Filter Array | RGB |
 | `EXIF:RowsPerStrip` | 2014 | 106 |
 | `EXIF:SamplesPerPixel` | 1 | 3 |
 | `EXIF:SceneType` | Directly photographed | [Binary data] |
@@ -173,7 +173,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `SubIFD0:ImageHeight` | 2014 |
 | `SubIFD0:ImageWidth` | 3040 |
 | `SubIFD0:Orientation` | Horizontal (normal) |
-| `SubIFD0:PhotometricInterpretation` | 32803 |
+| `SubIFD0:PhotometricInterpretation` | Color Filter Array |
 | `SubIFD0:PlanarConfiguration` | Chunky |
 | `SubIFD0:ResolutionUnit` | inches |
 | `SubIFD0:RowsPerStrip` | 2014 |

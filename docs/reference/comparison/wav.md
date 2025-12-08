@@ -4,24 +4,16 @@ title: WAV Compatibility
 
 # WAV Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 25.0%
-- **Matched Tags:** 3
+- **Coverage:** 33.3%
+- **Matched Tags:** 4
 - **Missing Tags:** 8
 - **Extra Tags:** 1
-- **Value Differences:** 1
-
-## Value Differences
-
-Tags where ExifTool and OxiDex extract different values:
-
-| Tag | ExifTool | OxiDex |
-|-----|----------|--------|
-| `RIFF:DateCreated` | 2005:08:08 | 2005-08-08 |
+- **Value Differences:** 0
 
 ## Missing Tags
 

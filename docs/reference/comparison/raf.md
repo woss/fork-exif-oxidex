@@ -4,16 +4,16 @@ title: RAF Compatibility
 
 # RAF Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 35.6%
-- **Matched Tags:** 36
+- **Coverage:** 37.6%
+- **Matched Tags:** 38
 - **Missing Tags:** 54
 - **Extra Tags:** 8
-- **Value Differences:** 11
+- **Value Differences:** 9
 
 ## Value Differences
 
@@ -26,9 +26,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:Copyright` |  |                                         ... |
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
 | `EXIF:ExposureTime` | 1/250 | 0.004 |
-| `EXIF:FNumber` | 8.0 | 8 |
 | `EXIF:FocalLengthIn35mmFormat` | 105 mm | 105 |
-| `EXIF:Model` | FinePix S5Pro | FinePix S5Pro   |
 | `EXIF:SceneType` | Directly photographed | [Binary data] |
 | `EXIF:ShutterSpeedValue` | 1/256 | [Binary data] |
 | `EXIF:UserComment` |  | [Binary data] |

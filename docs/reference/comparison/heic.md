@@ -4,16 +4,16 @@ title: HEIC Compatibility
 
 # HEIC Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 8.3%
-- **Matched Tags:** 2
+- **Coverage:** 12.5%
+- **Matched Tags:** 3
 - **Missing Tags:** 18
 - **Extra Tags:** 1
-- **Value Differences:** 4
+- **Value Differences:** 3
 
 ## Value Differences
 
@@ -21,7 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `QuickTime:CompatibleBrands` | ["mif1","heic","hevc"] | mif1 heic hevc |
 | `QuickTime:HandlerType` | Picture | pict |
 | `QuickTime:MajorBrand` | High Efficiency Image Format still image... | mif1 |
 | `QuickTime:MediaDataOffset` | 605 | 579 |

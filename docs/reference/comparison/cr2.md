@@ -4,16 +4,16 @@ title: CR2 Compatibility
 
 # CR2 Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 2
-- **Coverage:** 9.6%
-- **Matched Tags:** 33
-- **Missing Tags:** 282
-- **Extra Tags:** 19
-- **Value Differences:** 28
+- **Coverage:** 21.9%
+- **Matched Tags:** 75
+- **Missing Tags:** 246
+- **Extra Tags:** 20
+- **Value Differences:** 22
 
 ## Value Differences
 
@@ -26,29 +26,23 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:ComponentsConfiguration` | -, -, -, - | [Binary data] |
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
 | `EXIF:ExposureTime` | 1/15 | 0.066667 |
-| `EXIF:FNumber` | 8.0 | 8 |
 | `EXIF:ImageHeight` | 1024 | 256 |
 | `EXIF:ImageWidth` | 1536 | 384 |
-| `EXIF:PhotometricInterpretation` | RGB | 2 |
 | `EXIF:RawImageSegmentation` | 1 1758 1758 | 1 |
 | `EXIF:ShutterSpeedValue` | 1/15 | [Binary data] |
-| `MakerNotes:AFPointsInFocus` | 3 | 87 |
-| `MakerNotes:AFPointsSelected` | 0 | 102 |
-| `MakerNotes:AutoISO` | 100 | 2069 |
-| `MakerNotes:BaseISO` | 400 | 2087 |
-| `MakerNotes:CanonModelID` | EOS Digital Rebel XT / 350D / Kiss Digit... | 2147484041 |
+| `MakerNotes:AFPointsInFocus` | 3 | 0 |
+| `MakerNotes:AFPointsSelected` | 0 | -1237 |
+| `MakerNotes:AutoISO` | 100 | 0 |
+| `MakerNotes:BaseISO` | 400 | 224 |
+| `MakerNotes:CanonExposureMode` | Aperture-priority AE | Aperture Priority |
 | `MakerNotes:FirmwareVersion` | 1.0.0 | DJMI***3:A›949VO |
-| `MakerNotes:FocalLength` | 55 mm | 2069 mm |
-| `MakerNotes:FocalType` | Zoom | 2087 |
-| `MakerNotes:FocusMode` | One-shot AF | Unknown (516) |
-| `MakerNotes:ISO` | 12800 | 196 |
-| `MakerNotes:MacroMode` | Normal | Unknown (4312) |
-| `MakerNotes:MeasuredEV` | 8.0 | 257 |
-| `MakerNotes:MeteringMode` | Center-weighted average | Unknown (3051) |
+| `MakerNotes:FocusDistanceLower` | 0.22 m | inf |
+| `MakerNotes:FocusDistanceUpper` | 0.24 m | inf |
+| `MakerNotes:ISO` | 12800 | 32767 |
+| `MakerNotes:MeasuredEV` | 8.0 | +3.0 |
+| `MakerNotes:OpticalZoomCode` | n/a | 8 |
 | `MakerNotes:OwnerName` | unknown | =EHK/)' |
-| `MakerNotes:Quality` | RAW | Unknown (565) |
 | `MakerNotes:SerialNumber` | 0123456789 |  |
-| `MakerNotes:TargetAperture` | 8 | 256 |
 
 ## Missing Tags
 
@@ -81,7 +75,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `EXIF:ThumbnailImage` | (Binary data 28 bytes, use -b option to extract) |
 | `EXIF:ThumbnailLength` | 28 |
 | `EXIF:ThumbnailOffset` | 8620 |
-| `MakerNotes:AEBBracketValue` | 0 |
 | `MakerNotes:AFAreaHeight` | 188 |
 | `MakerNotes:AFAreaHeights` | 299 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
 | `MakerNotes:AFAreaMode` | Face + Tracking |
@@ -90,14 +83,11 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:AFAreaXPositions` | 0 -1237 -742 0 742 1237 0 |
 | `MakerNotes:AFAreaYPositions` | -617 0 0 0 0 0 617 |
 | `MakerNotes:AFAssistBeam` | Emits |
-| `MakerNotes:AFImageHeight` | 2304 |
-| `MakerNotes:AFImageWidth` | 3456 |
 | `MakerNotes:AFMicroAdjMode` | Disable |
 | `MakerNotes:AFMicroAdjValue` | 0 |
 | `MakerNotes:AmbienceSelection` | Standard |
 | `MakerNotes:AntiFlicker` | Off |
 | `MakerNotes:AspectRatio` | 3:2 |
-| `MakerNotes:AutoExposureBracketing` | Off |
 | `MakerNotes:AutoLightingOptimizer` | Standard |
 | `MakerNotes:AutoRotate` | None |
 | `MakerNotes:BatteryType` | LP-E12 |
@@ -112,11 +102,8 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:CameraISO` | Auto |
 | `MakerNotes:CameraTemperature` | 38 C |
 | `MakerNotes:CameraType` | EOS Mid-range |
-| `MakerNotes:CanonExposureMode` | Aperture-priority AE |
 | `MakerNotes:CanonFirmwareVersion` | Firmware 1.0.2 |
-| `MakerNotes:CanonFlashMode` | Off |
 | `MakerNotes:CanonImageHeight` | 2304 |
-| `MakerNotes:CanonImageSize` | n/a |
 | `MakerNotes:CanonImageType` | Canon EOS 350D DIGITAL |
 | `MakerNotes:CanonImageWidth` | 3456 |
 | `MakerNotes:ChromaticAberrationSetting` | On |
@@ -137,9 +124,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:ColorTemperature` | 5200 |
 | `MakerNotes:ColorTone` | Normal |
 | `MakerNotes:CompressorVersion` | CanonCR3_001/00.09.00/00.00.00 |
-| `MakerNotes:ContinuousDrive` | Single |
-| `MakerNotes:Contrast` | Normal |
-| `MakerNotes:ControlMode` | Camera Local Control |
 | `MakerNotes:CropBottomMargin` | 0 |
 | `MakerNotes:CropLeftMargin` | 0 |
 | `MakerNotes:CropRightMargin` | 0 |
@@ -154,10 +138,20 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:DigitalGain` | 0 |
 | `MakerNotes:DigitalLensOptimizer` | Off |
 | `MakerNotes:DigitalLensOptimizerSetting` | Off |
-| `MakerNotes:DigitalZoom` | None |
 | `MakerNotes:DistortionCorrectionSetting` | Off |
+| `MakerNotes:DualPixelRaw` | Off |
+| `MakerNotes:DustRemovalData` | (Binary data 1024 bytes, use -b option to extract) |
+| `MakerNotes:ETTLII` | Evaluative |
+| `MakerNotes:ExposureLevelIncrements` | 1/3 Stop |
+| `MakerNotes:ExposureTime` | 1/16 |
+| `MakerNotes:FNumber` | 8 |
+| `MakerNotes:FileNumber` | 100-0024 |
+| `MakerNotes:FilterEffect` | None |
+| `MakerNotes:FisheyeFilter` | Off |
+| `MakerNotes:FlashExposureLock` | Off |
+| `MakerNotes:FlashSyncSpeedAv` | Auto |
 
-*...and 182 more missing tags*
+*...and 146 more missing tags*
 
 ## Extra Tags
 
@@ -177,13 +171,14 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:InteropOffset` | 8332 |
 | `IFD1:0x0201` | 8620 |
 | `IFD1:0x0202` | 28 |
-| `MakerNotes:DriveMode` | Unknown (4023) |
-| `MakerNotes:ExposureMode` | Unknown (248) |
-| `MakerNotes:FlashMode` | Unknown (-10) |
+| `MakerNotes:AESetting` | Unknown (-1) |
+| `MakerNotes:AFPoint` | Unknown (0) |
+| `MakerNotes:DriveMode` | Single |
+| `MakerNotes:ExposureMode` | Aperture Priority |
+| `MakerNotes:FlashMode` | Off |
 | `MakerNotes:ImageType` | 7FK;)C.31:2 |
-| `MakerNotes:ShutterCount` | 3932262 |
-| `MakerNotes:SubjectDistance` | 46 mm |
-| `MakerNotes:TargetShutterSpeed` | 257 |
+| `MakerNotes:ShutterCount` | 24 |
+| `MakerNotes:SpotMeteringMode` | Unknown (-1) |
 
 ---
 
