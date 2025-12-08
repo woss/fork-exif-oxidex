@@ -88,32 +88,44 @@ const CFA_COLOR_NAMES: [&str; 7] = ["Red", "Green", "Blue", "Cyan", "Magenta", "
 /// assert_eq!(decode_cfa_pattern(&[0, 2]), "[Invalid CFA data]");
 /// ```
 pub fn decode_cfa_pattern(data: &[u8]) -> String {
-    // Validate minimum header size: need at least 4 bytes for width and height
+    // Handle two common formats:
+    // 1. Full format (0xA302): 4-byte header (width, height) + pattern data
+    // 2. Simple format (0x828E, or some cameras): just 4 bytes of pattern data
+
+    // Validate minimum header size: need at least 4 bytes
     if data.len() < 4 {
         return "[Invalid CFA data]".to_string();
     }
 
-    // Parse width and height from big-endian u16 values
-    // These represent the horizontal and vertical repeat counts of the pattern
+    // Try full format first (with width/height header)
     let width = u16::from_be_bytes([data[0], data[1]]) as usize;
     let height = u16::from_be_bytes([data[2], data[3]]) as usize;
 
-    // Validate dimensions are reasonable (non-zero and not excessively large)
-    // Most CFA patterns are 2x2, but some sensors may use larger patterns
-    if width == 0 || height == 0 || width > 16 || height > 16 {
+    // If dimensions look valid (typically 2x2 for Bayer), try full format
+    if width > 0 && width <= 16 && height > 0 && height <= 16 {
+        let pattern_size = width * height;
+        let required_length = 4 + pattern_size;
+        if data.len() >= required_length {
+            return decode_cfa_with_dimensions(data, width, height);
+        }
+        // Header looks valid but not enough data
         return "[Invalid CFA data]".to_string();
     }
 
-    // Calculate required data size and validate we have enough bytes
+    // Try simple format: exactly 4 bytes for 2x2 Bayer pattern
+    // Only when the header values don't make sense as dimensions
+    // Check if all 4 bytes are valid color values (0-6)
+    if data.len() == 4 && data.iter().all(|&b| b <= 6) {
+        return decode_simple_2x2(data);
+    }
+
+    "[Invalid CFA data]".to_string()
+}
+
+/// Decode CFA pattern with explicit width/height dimensions (full format with header)
+fn decode_cfa_with_dimensions(data: &[u8], width: usize, height: usize) -> String {
     let pattern_size = width * height;
-    let required_length = 4 + pattern_size;
-    if data.len() < required_length {
-        return "[Invalid CFA data]".to_string();
-    }
-
-    // Build the output string row by row
-    // Each row is enclosed in brackets with comma-separated color names
-    let mut result = String::with_capacity(pattern_size * 8); // Estimate capacity
+    let mut result = String::with_capacity(pattern_size * 8);
 
     for row in 0..height {
         result.push('[');
@@ -123,18 +135,37 @@ pub fn decode_cfa_pattern(data: &[u8]) -> String {
             let byte_index = 4 + row * width + col;
             let color_value = data[byte_index] as usize;
 
-            // Add comma separator between colors in the same row
             if col > 0 {
                 result.push(',');
             }
 
-            // Look up color name, defaulting to "Unknown" for undefined values
             let color_name = CFA_COLOR_NAMES.get(color_value).unwrap_or(&"Unknown");
             result.push_str(color_name);
         }
 
         result.push(']');
     }
+
+    result
+}
+
+/// Decode simple 2x2 CFA pattern (no header, just 4 color bytes)
+fn decode_simple_2x2(data: &[u8]) -> String {
+    let mut result = String::with_capacity(40);
+
+    // Row 1
+    result.push('[');
+    result.push_str(CFA_COLOR_NAMES.get(data[0] as usize).unwrap_or(&"Unknown"));
+    result.push(',');
+    result.push_str(CFA_COLOR_NAMES.get(data[1] as usize).unwrap_or(&"Unknown"));
+    result.push(']');
+
+    // Row 2
+    result.push('[');
+    result.push_str(CFA_COLOR_NAMES.get(data[2] as usize).unwrap_or(&"Unknown"));
+    result.push(',');
+    result.push_str(CFA_COLOR_NAMES.get(data[3] as usize).unwrap_or(&"Unknown"));
+    result.push(']');
 
     result
 }
@@ -289,6 +320,22 @@ mod tests {
 
         let data2 = [0, 2, 0, 100]; // width=2, height=100
         assert_eq!(decode_cfa_pattern(&data2), "[Invalid CFA data]");
+    }
+
+    // ==================== Simple Format Tests ====================
+
+    #[test]
+    fn test_simple_2x2_rggb() {
+        // Simple format: exactly 4 bytes, no header
+        // This is used by some cameras (0x828E tag)
+        let data = [0, 1, 1, 2]; // R,G,G,B
+        assert_eq!(decode_cfa_pattern(&data), "[Red,Green][Green,Blue]");
+    }
+
+    #[test]
+    fn test_simple_2x2_bggr() {
+        let data = [2, 1, 1, 0]; // B,G,G,R
+        assert_eq!(decode_cfa_pattern(&data), "[Blue,Green][Green,Red]");
     }
 
     // ==================== Edge Cases ====================

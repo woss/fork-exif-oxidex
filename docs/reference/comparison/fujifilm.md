@@ -9,11 +9,11 @@ title: FUJIFILM Compatibility
 ## Summary
 
 - **Files Tested:** 411
-- **Coverage:** 63.1%
-- **Matched Tags:** 316
+- **Coverage:** 63.3%
+- **Matched Tags:** 317
 - **Missing Tags:** 138
 - **Extra Tags:** 50
-- **Value Differences:** 47
+- **Value Differences:** 46
 
 ## Value Differences
 
@@ -24,7 +24,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `APP14:APP14Flags0` | [14], Encoded with Blend=1 downsampling | 49152 |
 | `EXIF:GPSLatitude` | 15 deg 9' 25.41" | 15 deg 9' 25.409" |
 | `EXIF:GPSLongitude` | 145 deg 42' 5.89" | 145 deg 42' 5.891" |
-| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | (Binary data 2014 bytes, use -b option t... |
 | `EXIF:XPKeywords` | 10.02.14 | 10.02.14 |
 | `EXIF:XPTitle` |  |                 |
 | `MakerNotes:AdvancedFilter` | Miniature | Unknown (262144) |
