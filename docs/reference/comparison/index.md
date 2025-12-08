@@ -4,52 +4,52 @@ title: ExifTool Compatibility Report
 
 # ExifTool Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 80.2%
+**Overall Coverage:** 12.5% | **⚠️ Regressions:** 1
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [jpeg](./jpeg.md) | 26 | 80.2% | 16 | 13 | 8 | 0 |
+| [APPLE](./apple.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [AVI](./avi.md) | 2 | 2.8% | 102 | 22 | 1 | 0 |
+| [CANON](./canon.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [CR2](./cr2.md) | 2 | 21.6% | 246 | 20 | 23 | ⚠️ 1 |
+| [DJI](./dji.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [DNG](./dng.md) | 1 | 13.2% | 207 | 44 | 23 | 0 |
+| [FUJIFILM](./fujifilm.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [GIF](./gif.md) | 1 | 0.0% | 35 | 0 | 0 | 0 |
+| [GOOGLE](./google.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [GOPRO](./gopro.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [HEIC](./heic.md) | 1 | 12.5% | 18 | 1 | 3 | 0 |
+| [JPEG](./jpeg.md) | 4085 | 10.7% | 3089 | 293 | 193 | 0 |
+| [LEICA](./leica.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [MKV](./mkv.md) | 1 | 28.6% | 18 | 13 | 2 | 0 |
+| [MP3](./mp3.md) | 1 | 0.0% | 26 | 16 | 0 | 0 |
+| [MP4](./mp4.md) | 1 | 0.0% | 80 | 0 | 0 | 0 |
+| [NEF](./nef.md) | 1 | 13.7% | 165 | 33 | 11 | 0 |
+| [NIKON](./nikon.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [OLYMPUS](./olympus.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [PANASONIC](./panasonic.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [PDF](./pdf.md) | 2 | 5.5% | 103 | 19 | 1 | 0 |
+| [PENTAX](./pentax.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [PNG](./png.md) | 1 | 90.9% | 1 | 1 | 0 | 0 |
+| [PSD](./psd.md) | 1 | 13.2% | 76 | 1 | 3 | 0 |
+| [RAF](./raf.md) | 1 | 40.6% | 54 | 8 | 6 | 0 |
+| [RW2](./rw2.md) | 1 | 9.8% | 134 | 33 | 4 | 0 |
+| [SAMSUNG](./samsung.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [SONY](./sony.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [TIFF](./tiff.md) | 2 | 61.8% | 29 | 8 | 5 | 0 |
+| [WAV](./wav.md) | 1 | 33.3% | 8 | 1 | 0 | 0 |
+| [WEBP](./webp.md) | 1 | 31.2% | 11 | 6 | 0 | 0 |
+| [XMP](./xmp.md) | 10 | 0.0% | 148 | 0 | 0 | 0 |
 
 ## Other Format Reports
 
 Additional format-specific reports:
 
-- [Apple](./apple.md)
-- [Avi](./avi.md)
-- [Canon](./canon.md)
-- [Cr2](./cr2.md)
-- [Dji](./dji.md)
-- [Dng](./dng.md)
-- [Fujifilm](./fujifilm.md)
-- [Gif](./gif.md)
-- [Google](./google.md)
-- [Gopro](./gopro.md)
-- [Heic](./heic.md)
-- [Leica](./leica.md)
-- [Mkv](./mkv.md)
-- [Mp3](./mp3.md)
-- [Mp4](./mp4.md)
-- [Nef](./nef.md)
-- [Nikon](./nikon.md)
-- [Olympus](./olympus.md)
-- [Panasonic](./panasonic.md)
-- [Pdf](./pdf.md)
-- [Pentax](./pentax.md)
-- [Png](./png.md)
-- [Psd](./psd.md)
-- [Raf](./raf.md)
 - [Raw](./raw.md)
-- [Rw2](./rw2.md)
-- [Samsung](./samsung.md)
-- [Sony](./sony.md)
-- [Tiff](./tiff.md)
-- [Wav](./wav.md)
-- [Webp](./webp.md)
-- [Xmp](./xmp.md)
 
 
 ---

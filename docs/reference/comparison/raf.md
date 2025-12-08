@@ -9,11 +9,11 @@ title: RAF Compatibility
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 39.6%
-- **Matched Tags:** 40
+- **Coverage:** 40.6%
+- **Matched Tags:** 41
 - **Missing Tags:** 54
 - **Extra Tags:** 8
-- **Value Differences:** 7
+- **Value Differences:** 6
 
 ## Value Differences
 
@@ -27,7 +27,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
 | `EXIF:ExposureTime` | 1/250 | 0.004 |
 | `EXIF:ShutterSpeedValue` | 1/256 | [Binary data] |
-| `EXIF:UserComment` |  | [Binary data] |
 
 ## Missing Tags
 
