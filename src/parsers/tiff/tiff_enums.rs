@@ -321,6 +321,49 @@ pub fn tiff_enum_to_string(tag_id: u16, value: i64) -> Option<String> {
             _ => None,
         },
 
+        // SceneType (EXIF tag 0xA301)
+        // Indicates the type of scene. Value 1 is the only defined value.
+        // Note: This tag is often stored as binary data and decoded by binary_decoders,
+        // but can also appear as an integer value in some files.
+        0xA301 => match value {
+            1 => Some("Directly photographed".to_string()),
+            _ => None,
+        },
+
+        // SensitivityType (EXIF tag 0x8830)
+        // Indicates which sensitivity parameters are used for ISO speed
+        0x8830 => match value {
+            0 => Some("Unknown".to_string()),
+            1 => Some("Standard Output Sensitivity".to_string()),
+            2 => Some("Recommended Exposure Index".to_string()),
+            3 => Some("ISO Speed".to_string()),
+            4 => Some("Standard Output Sensitivity and Recommended Exposure Index".to_string()),
+            5 => Some("Standard Output Sensitivity and ISO Speed".to_string()),
+            6 => Some("Recommended Exposure Index and ISO Speed".to_string()),
+            7 => Some(
+                "Standard Output Sensitivity, Recommended Exposure Index and ISO Speed".to_string(),
+            ),
+            _ => None,
+        },
+
+        // CompositeImage (EXIF tag 0xA460)
+        // Indicates if the image is a composite image
+        0xA460 => match value {
+            0 => Some("Unknown".to_string()),
+            1 => Some("Not a Composite Image".to_string()),
+            2 => Some("General Composite Image".to_string()),
+            3 => Some("Composite Image Captured While Shooting".to_string()),
+            _ => None,
+        },
+
+        // MakerNoteSafety (DNG tag 0xC635)
+        // Indicates whether it is safe to preserve MakerNote data
+        0xC635 => match value {
+            0 => Some("Unsafe".to_string()),
+            1 => Some("Safe".to_string()),
+            _ => None,
+        },
+
         _ => None,
     }
 }

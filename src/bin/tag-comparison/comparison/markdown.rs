@@ -242,9 +242,9 @@ fn truncate(s: &str, max_len: usize) -> String {
         .chars()
         .filter(|c| !c.is_control() || *c == ' ')
         .map(|c| match c {
-            '|' => '¦',  // Pipe breaks markdown tables
-            '<' => '‹',  // Less-than interpreted as HTML tag by VitePress
-            '>' => '›',  // Greater-than interpreted as HTML tag by VitePress
+            '|' => '¦', // Pipe breaks markdown tables
+            '<' => '‹', // Less-than interpreted as HTML tag by VitePress
+            '>' => '›', // Greater-than interpreted as HTML tag by VitePress
             _ => c,
         })
         .collect();

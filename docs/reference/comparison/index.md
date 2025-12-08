@@ -4,46 +4,20 @@ title: ExifTool Compatibility Report
 
 # ExifTool Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** v13.36 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 7.3%
+**Overall Coverage:** 90.2% | **⚠️ Regressions:** 160
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [APPLE](./apple.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [AVI](./avi.md) | 2 | 2.8% | 102 | 22 | 1 | 0 |
-| [CANON](./canon.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [CR2](./cr2.md) | 2 | 9.6% | 282 | 19 | 28 | 0 |
-| [DJI](./dji.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [DNG](./dng.md) | 1 | 12.8% | 207 | 44 | 24 | 0 |
-| [FUJIFILM](./fujifilm.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [GIF](./gif.md) | 1 | 0.0% | 35 | 0 | 0 | 0 |
-| [GOOGLE](./google.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [GOPRO](./gopro.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [HEIC](./heic.md) | 1 | 8.3% | 18 | 1 | 4 | 0 |
-| [JPEG](./jpeg.md) | 4085 | 4.6% | 3346 | 162 | 160 | 0 |
-| [LEICA](./leica.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [MKV](./mkv.md) | 1 | 28.6% | 18 | 13 | 2 | 0 |
-| [MP3](./mp3.md) | 1 | 0.0% | 26 | 16 | 0 | 0 |
-| [MP4](./mp4.md) | 1 | 0.0% | 80 | 0 | 0 | 0 |
-| [NEF](./nef.md) | 1 | 12.7% | 165 | 33 | 13 | 0 |
-| [NIKON](./nikon.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [OLYMPUS](./olympus.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [PANASONIC](./panasonic.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [PDF](./pdf.md) | 2 | 5.5% | 103 | 19 | 1 | 0 |
-| [PENTAX](./pentax.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [PNG](./png.md) | 1 | 81.8% | 2 | 1 | 0 | 0 |
-| [PSD](./psd.md) | 1 | 13.2% | 76 | 1 | 3 | 0 |
-| [RAF](./raf.md) | 1 | 35.6% | 54 | 8 | 11 | 0 |
-| [RW2](./rw2.md) | 1 | 9.2% | 134 | 33 | 5 | 0 |
-| [SAMSUNG](./samsung.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [SONY](./sony.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [TIFF](./tiff.md) | 2 | 48.3% | 29 | 8 | 17 | 0 |
-| [WAV](./wav.md) | 1 | 25.0% | 8 | 1 | 1 | 0 |
-| [WEBP](./webp.md) | 1 | 31.2% | 11 | 6 | 0 | 0 |
-| [XMP](./xmp.md) | 10 | 0.0% | 148 | 0 | 0 | 0 |
+| [JPEG](./jpeg.md) | 26 | 81.0% | 16 | 13 | 7 | ⚠️ 127 |
+| [MP4](./mp4.md) | 3 | 100.0% | 0 | 3 | 0 | 0 |
+| [PDF](./pdf.md) | 2 | 100.0% | 0 | 7 | 0 | ⚠️ 4 |
+| [PNG](./png.md) | 4 | 100.0% | 0 | 12 | 0 | ⚠️ 1 |
+| [RAW](./raw.md) | 2 | 0.0% | 0 | 0 | 0 | 0 |
+| [TIFF](./tiff.md) | 7 | 100.0% | 0 | 39 | 0 | ⚠️ 28 |
 
 ---
 

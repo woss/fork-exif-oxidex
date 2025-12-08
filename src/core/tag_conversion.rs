@@ -176,6 +176,9 @@ fn handle_rational_type(
     const GPS_DEST_LONGITUDE: u16 = 0x0016;
     const GPS_ALTITUDE: u16 = 0x0006;
 
+    // GPS timestamp (3 rationals: hours, minutes, seconds)
+    const GPS_TIMESTAMP: u16 = 0x0007;
+
     // GPS movement and tracking tags (single rational)
     const GPS_SPEED: u16 = 0x000D;
     const GPS_TRACK: u16 = 0x000F;
@@ -201,6 +204,12 @@ fn handle_rational_type(
         // Special handling for LensInfo (4 rationals: min_focal, max_focal, min_aperture_min, min_aperture_max)
         if tag_id == LENS_INFO && value_count == 4 {
             return format_lens_info(bytes, byte_order);
+        }
+
+        // Special handling for GPSTimeStamp (3 rationals: hours, minutes, seconds)
+        // ExifTool formats this as "HH:MM:SS" (e.g., "15:38:33")
+        if tag_id == GPS_TIMESTAMP && value_count == 3 {
+            return format_gps_timestamp(bytes, byte_order);
         }
 
         // Parse array of rationals and format as space-separated decimals
@@ -281,6 +290,46 @@ fn format_gps_coordinate(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
         }
     }
     let formatted = format!("{} deg {}' {:.2}\"", dms[0] as i32, dms[1] as i32, dms[2]);
+    TagValue::new_string(formatted)
+}
+
+/// Formats GPSTimeStamp from 3 rational values (hours, minutes, seconds).
+///
+/// ExifTool formats GPSTimeStamp as "HH:MM:SS" (e.g., "15:38:33").
+/// The GPS timestamp represents UTC time.
+///
+/// # Format Rules
+///
+/// - Hours and minutes are zero-padded to 2 digits (e.g., "08:05:03")
+/// - Seconds are displayed without decimal places if they are whole numbers
+/// - Fractional seconds are displayed with appropriate precision (e.g., "15:38:33.5")
+fn format_gps_timestamp(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
+    let mut hms = Vec::new();
+    for i in 0..3 {
+        let offset = i * 8;
+        let numerator = read_u32(&bytes[offset..offset + 4], byte_order);
+        let denominator = read_u32(&bytes[offset + 4..offset + 8], byte_order);
+        if denominator != 0 {
+            hms.push(numerator as f64 / denominator as f64);
+        } else {
+            hms.push(numerator as f64);
+        }
+    }
+
+    let hours = hms[0] as u32;
+    let minutes = hms[1] as u32;
+    let seconds = hms[2];
+
+    // Format seconds: no decimal places if whole number, otherwise show fractional part
+    let formatted = if seconds.fract() == 0.0 {
+        format!("{:02}:{:02}:{:02}", hours, minutes, seconds as u32)
+    } else {
+        // Trim trailing zeros from fractional seconds
+        let sec_str = format!("{:.6}", seconds);
+        let sec_str = sec_str.trim_end_matches('0').trim_end_matches('.');
+        format!("{:02}:{:02}:{}", hours, minutes, sec_str)
+    };
+
     TagValue::new_string(formatted)
 }
 
@@ -735,10 +784,10 @@ mod tests {
     }
 
     // ============================================================================
-    // DEVICE IDENTIFICATION TESTS - For Forensic Device Attribution
+    // GPS TIMESTAMP TESTS
     // ============================================================================
 
-    /// Helper function to create rational bytes array (for LensInfo)
+    /// Helper function to create rational bytes array (for LensInfo, GPSTimeStamp, etc.)
     fn make_rational_array_bytes(values: &[(u32, u32)], byte_order: ByteOrder) -> Vec<u8> {
         let mut bytes = Vec::new();
         for &(num, den) in values {
@@ -755,6 +804,86 @@ mod tests {
         }
         bytes
     }
+
+    #[test]
+    fn test_gps_timestamp_basic() {
+        // Test GPSTimeStamp (tag 0x0007) - should format as "HH:MM:SS"
+        // Input: 15 hours, 38 minutes, 33 seconds
+        let bytes = make_rational_array_bytes(&[(15, 1), (38, 1), (33, 1)], ByteOrder::BigEndian);
+
+        let result = raw_bytes_to_tag_value(&bytes, 5, 3, 0x0007, ByteOrder::BigEndian);
+
+        if let TagValue::String(s) = result {
+            assert_eq!(s, "15:38:33");
+        } else {
+            panic!("Expected String variant, got {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_gps_timestamp_zero_padded() {
+        // Test zero-padding for hours/minutes/seconds
+        // Input: 8 hours, 5 minutes, 3 seconds -> "08:05:03"
+        let bytes = make_rational_array_bytes(&[(8, 1), (5, 1), (3, 1)], ByteOrder::LittleEndian);
+
+        let result = raw_bytes_to_tag_value(&bytes, 5, 3, 0x0007, ByteOrder::LittleEndian);
+
+        if let TagValue::String(s) = result {
+            assert_eq!(s, "08:05:03");
+        } else {
+            panic!("Expected String variant, got {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_gps_timestamp_fractional_seconds() {
+        // Test fractional seconds (e.g., 33.5 seconds)
+        // Input: 15 hours, 38 minutes, 33.5 seconds
+        let bytes = make_rational_array_bytes(
+            &[(15, 1), (38, 1), (67, 2)], // 67/2 = 33.5
+            ByteOrder::BigEndian,
+        );
+
+        let result = raw_bytes_to_tag_value(&bytes, 5, 3, 0x0007, ByteOrder::BigEndian);
+
+        if let TagValue::String(s) = result {
+            assert_eq!(s, "15:38:33.5");
+        } else {
+            panic!("Expected String variant, got {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_gps_timestamp_midnight() {
+        // Test midnight (00:00:00)
+        let bytes = make_rational_array_bytes(&[(0, 1), (0, 1), (0, 1)], ByteOrder::LittleEndian);
+
+        let result = raw_bytes_to_tag_value(&bytes, 5, 3, 0x0007, ByteOrder::LittleEndian);
+
+        if let TagValue::String(s) = result {
+            assert_eq!(s, "00:00:00");
+        } else {
+            panic!("Expected String variant, got {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_gps_timestamp_end_of_day() {
+        // Test 23:59:59
+        let bytes = make_rational_array_bytes(&[(23, 1), (59, 1), (59, 1)], ByteOrder::BigEndian);
+
+        let result = raw_bytes_to_tag_value(&bytes, 5, 3, 0x0007, ByteOrder::BigEndian);
+
+        if let TagValue::String(s) = result {
+            assert_eq!(s, "23:59:59");
+        } else {
+            panic!("Expected String variant, got {:?}", result);
+        }
+    }
+
+    // ============================================================================
+    // DEVICE IDENTIFICATION TESTS - For Forensic Device Attribution
+    // ============================================================================
 
     #[test]
     fn test_lens_info_prime_lens() {

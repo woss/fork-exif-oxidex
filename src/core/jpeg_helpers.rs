@@ -259,6 +259,32 @@ pub fn process_iptc_segments(segments: &[Segment], metadata: &mut MetadataMap) {
     }
 }
 
+/// Processes MPF (Multi-Picture Format) APP2 segments.
+///
+/// MPF is used in dual-camera phones and 3D cameras to store multiple images
+/// in a single JPEG file. MPF segments are identified by the "MPF\x00" marker.
+///
+/// # Arguments
+///
+/// * `segments` - Parsed JPEG segments
+/// * `metadata` - MetadataMap to populate with MPF tags
+pub fn process_mpf_segments(segments: &[Segment], metadata: &mut MetadataMap) {
+    for segment in segments.iter().filter(|s| s.marker == 0xFFE2) {
+        // Check if this is an MPF segment (starts with "MPF\0")
+        if segment.data.len() >= 4 && &segment.data[0..4] == b"MPF\0" {
+            match crate::parsers::jpeg::mpf_parser::parse_mpf_segment(segment.data, metadata) {
+                Ok(()) => {
+                    // Successfully parsed MPF data
+                }
+                Err(e) => {
+                    // Log error but continue processing
+                    eprintln!("Warning: Failed to parse MPF segment: {}", e);
+                }
+            }
+        }
+    }
+}
+
 /// Processes ICC profile APP2 segments and extracts color profile metadata.
 ///
 /// ICC (International Color Consortium) profiles describe the color

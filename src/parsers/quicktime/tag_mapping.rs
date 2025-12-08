@@ -79,6 +79,64 @@ static ATOM_TO_TAG: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::ne
     // Sample-to-time atoms (stts) - video frame rate
     m.insert("stts_framerate", "QuickTime:VideoFrameRate");
 
+    // Additional version fields
+    m.insert("mvhd_version", "QuickTime:MovieHeaderVersion");
+    m.insert("tkhd_version", "QuickTime:TrackHeaderVersion");
+    m.insert("mdhd_version", "QuickTime:MediaHeaderVersion");
+
+    // Video media header (vmhd) atoms
+    m.insert("vmhd_graphicsmode", "QuickTime:GraphicsMode");
+    m.insert("vmhd_opcolor", "QuickTime:OpColor");
+
+    // Sound media header (smhd) atoms
+    m.insert("smhd_balance", "QuickTime:Balance");
+
+    // Additional movie header fields
+    m.insert("mvhd_nexttrackid", "QuickTime:NextTrackID");
+    m.insert("mvhd_currenttime", "QuickTime:CurrentTime");
+    m.insert("mvhd_postertime", "QuickTime:PosterTime");
+    m.insert("mvhd_previewtime", "QuickTime:PreviewTime");
+    m.insert("mvhd_previewduration", "QuickTime:PreviewDuration");
+    m.insert("mvhd_selectiontime", "QuickTime:SelectionTime");
+    m.insert("mvhd_selectionduration", "QuickTime:SelectionDuration");
+    m.insert("mvhd_matrix", "QuickTime:MatrixStructure");
+
+    // Handler class
+    m.insert("hdlr_class", "QuickTime:HandlerClass");
+
+    // Clean aperture and encoded pixels dimensions
+    m.insert("clap_width", "QuickTime:CleanApertureWidth");
+    m.insert("clap_height", "QuickTime:CleanApertureHeight");
+    m.insert("clap_dimensions", "QuickTime:CleanApertureDimensions");
+    m.insert("pasp_h", "QuickTime:PixelAspectRatioHorizontal");
+    m.insert("pasp_v", "QuickTime:PixelAspectRatioVertical");
+    m.insert("enof_dimensions", "QuickTime:EncodedPixelsDimensions");
+    m.insert("prof_dimensions", "QuickTime:ProductionApertureDimensions");
+
+    // GPS coordinates
+    m.insert("©xyz", "QuickTime:GPSCoordinates");
+
+    // Additional user data atoms (3GPP style)
+    m.insert("auth", "QuickTime:Author");
+    m.insert("titl", "QuickTime:Title");
+    m.insert("dscp", "QuickTime:Description");
+    m.insert("perf", "QuickTime:Performer");
+    m.insert("albm", "QuickTime:Album");
+    m.insert("yrrc", "QuickTime:Year");
+    m.insert("gnre", "QuickTime:Genre");
+    m.insert("fmt ", "QuickTime:Format");
+
+    // Additional format/vendor atoms
+    m.insert("stsd_vendor", "QuickTime:VendorID");
+    m.insert("MAKE", "QuickTime:Make");
+    m.insert("MODL", "QuickTime:Model");
+    m.insert("FIRM", "QuickTime:Information");
+    m.insert("INFO", "QuickTime:Information");
+
+    // Media data atoms
+    m.insert("mdat_offset", "QuickTime:MediaDataOffset");
+    m.insert("mdat_size", "QuickTime:MediaDataSize");
+
     m
 });
 

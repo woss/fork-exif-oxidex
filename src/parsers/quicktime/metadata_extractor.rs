@@ -78,6 +78,16 @@ fn extract_track_metadata(
         .find_child("minf")
         .ok_or_else(|| "missing minf atom".to_string())?;
 
+    // Extract video media header (vmhd) - optional, contains GraphicsMode and OpColor
+    if let Some(vmhd) = minf.find_child("vmhd") {
+        let _ = extract_video_media_header(&vmhd, metadata, index);
+    }
+
+    // Extract sound media header (smhd) - optional, contains Balance
+    if let Some(smhd) = minf.find_child("smhd") {
+        let _ = extract_sound_media_header(&smhd, metadata, index);
+    }
+
     // Sample table - required for sample descriptions
     let stbl = minf
         .find_child("stbl")
@@ -92,6 +102,123 @@ fn extract_track_metadata(
     // VideoFrameRate = MediaTimeScale * SampleCount / TotalDuration
     if let Some(stts) = stbl.find_child("stts") {
         let _ = extract_video_frame_rate(&stts, metadata, index);
+    }
+
+    Ok(())
+}
+
+/// Extract video media header (vmhd) metadata
+/// Contains GraphicsMode and OpColor for video tracks
+fn extract_video_media_header(
+    vmhd: &Atom,
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    // vmhd atom structure:
+    // 1 byte version
+    // 3 bytes flags
+    // 2 bytes graphics mode
+    // 6 bytes opcolor (3 x 2-byte RGB values)
+    if vmhd.data.len() < 12 {
+        return Ok(());
+    }
+
+    let r = EndianReader::big_endian(vmhd.data);
+
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    // Graphics mode (transfer mode for compositing)
+    if let Some(mode) = r.u16_at(4) {
+        let mode_name = match mode {
+            0x00 => "srcCopy",
+            0x01 => "srcOr",
+            0x02 => "srcXor",
+            0x03 => "srcBic",
+            0x04 => "notSrcCopy",
+            0x05 => "notSrcOr",
+            0x06 => "notSrcXor",
+            0x07 => "notSrcBic",
+            0x08 => "patCopy",
+            0x09 => "patOr",
+            0x0A => "patXor",
+            0x0B => "patBic",
+            0x0C => "notPatCopy",
+            0x0D => "notPatOr",
+            0x0E => "notPatXor",
+            0x0F => "notPatBic",
+            0x20 => "blend",
+            0x21 => "addPin",
+            0x22 => "addOver",
+            0x23 => "subPin",
+            0x24 => "transparent",
+            0x25 => "addMax",
+            0x26 => "subOver",
+            0x27 => "addMin",
+            0x40 => "ditherCopy",
+            0x100 => "alpha",
+            0x101 => "straightAlpha",
+            0x102 => "premulWhiteAlpha",
+            0x103 => "premulBlackAlpha",
+            0x104 => "straightAlphaBlend",
+            0x110 => "compositeOffer",
+            _ => "unknown",
+        };
+        metadata.insert(
+            format!("QuickTime:GraphicsMode{}", track_suffix),
+            TagValue::String(mode_name.to_string()),
+        );
+    }
+
+    // OpColor (RGB values used for certain graphics modes)
+    if vmhd.data.len() >= 12 {
+        let red = r.u16_at(6).unwrap_or(0);
+        let green = r.u16_at(8).unwrap_or(0);
+        let blue = r.u16_at(10).unwrap_or(0);
+        metadata.insert(
+            format!("QuickTime:OpColor{}", track_suffix),
+            TagValue::String(format!("{} {} {}", red, green, blue)),
+        );
+    }
+
+    Ok(())
+}
+
+/// Extract sound media header (smhd) metadata
+/// Contains Balance for audio tracks
+fn extract_sound_media_header(
+    smhd: &Atom,
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    // smhd atom structure:
+    // 1 byte version
+    // 3 bytes flags
+    // 2 bytes balance (fixed-point 8.8, -1.0 = full left, 0 = center, +1.0 = full right)
+    // 2 bytes reserved
+    if smhd.data.len() < 8 {
+        return Ok(());
+    }
+
+    let r = EndianReader::big_endian(smhd.data);
+
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    // Balance (fixed-point 8.8)
+    if let Some(balance_raw) = r.i16_at(4) {
+        let balance = balance_raw as f64 / 256.0;
+        // ExifTool outputs balance as an integer (0 for center)
+        metadata.insert(
+            format!("QuickTime:Balance{}", track_suffix),
+            TagValue::Integer(balance as i64),
+        );
     }
 
     Ok(())
@@ -439,26 +566,33 @@ fn extract_track_header(
     let flags = [tkhd.data[1], tkhd.data[2], tkhd.data[3]];
 
     // Parse time fields based on version (v0: 32-bit, v1: 64-bit)
-    let (creation_time, modification_time, track_id, duration, width_offset) = if version == 1 {
-        if r.len() < 36 {
-            return Ok(());
-        }
-        (
-            r.u64_at(4).unwrap_or(0),
-            r.u64_at(12).unwrap_or(0),
-            r.u32_at(20).unwrap_or(0),
-            r.u64_at(28).unwrap_or(0),
-            76usize,
-        )
-    } else {
-        (
-            r.u32_at(4).unwrap_or(0) as u64,
-            r.u32_at(8).unwrap_or(0) as u64,
-            r.u32_at(12).unwrap_or(0),
-            r.u32_at(20).unwrap_or(0) as u64,
-            60usize,
-        )
-    };
+    // tkhd v0 layout: version(1) flags(3) create(4) modify(4) trackID(4) reserved(4) duration(4)
+    //                 reserved(8) layer(2) altGroup(2) volume(2) reserved(2) matrix(36) width(4) height(4)
+    // tkhd v1 layout: version(1) flags(3) create(8) modify(8) trackID(4) reserved(4) duration(8)
+    //                 reserved(8) layer(2) altGroup(2) volume(2) reserved(2) matrix(36) width(4) height(4)
+    let (creation_time, modification_time, track_id, duration, volume_offset, width_offset) =
+        if version == 1 {
+            if r.len() < 36 {
+                return Ok(());
+            }
+            (
+                r.u64_at(4).unwrap_or(0),
+                r.u64_at(12).unwrap_or(0),
+                r.u32_at(20).unwrap_or(0),
+                r.u64_at(28).unwrap_or(0),
+                46usize, // layer(2) + altGroup(2) after duration
+                76usize,
+            )
+        } else {
+            (
+                r.u32_at(4).unwrap_or(0) as u64,
+                r.u32_at(8).unwrap_or(0) as u64,
+                r.u32_at(12).unwrap_or(0),
+                r.u32_at(20).unwrap_or(0) as u64,
+                36usize, // layer at offset 32, altGroup at 34, volume at 36
+                60usize,
+            )
+        };
 
     // Use track index for tag names if we have multiple tracks
     let track_suffix = if track_index > 0 {
@@ -466,6 +600,12 @@ fn extract_track_header(
     } else {
         String::new()
     };
+
+    // Track header version (ExifTool outputs this)
+    metadata.insert(
+        format!("QuickTime:TrackHeaderVersion{}", track_suffix),
+        TagValue::Integer(version as i64),
+    );
 
     // Add track-specific timestamp tags
     // Use shared timestamp utility for dates after 1970, fallback to legacy for older dates
@@ -489,7 +629,8 @@ fn extract_track_header(
         TagValue::Integer(track_id as i64),
     );
 
-    // Track duration
+    // Track duration - ExifTool formats this as "X.XX s" using timescale
+    // For now we output raw units; formatting with timescale happens at display time
     metadata.insert(
         format!("QuickTime:TrackDuration{}", track_suffix),
         TagValue::String(format!("{} units", duration)),
@@ -503,6 +644,20 @@ fn extract_track_header(
             TagValue::Integer(layer as i64),
         );
     }
+
+    // Track volume (fixed-point 8.8 format, 2 bytes after altGroup)
+    // Volume is at layer_offset + 4 (2 bytes altGroup + 2 bytes to volume)
+    if let Some(volume_raw) = r.i16_at(volume_offset) {
+        let volume_pct = (volume_raw as f64 / 256.0) * 100.0;
+        metadata.insert(
+            format!("QuickTime:TrackVolume{}", track_suffix),
+            TagValue::String(format!("{:.2}%", volume_pct)),
+        );
+    }
+
+    // Balance (not in tkhd, but typically 0 for video tracks)
+    // Balance is actually in smhd (sound media header) atom, not tkhd
+    // We'll add it when we parse smhd
 
     // Track enabled flag (bit 0 of flags)
     let enabled = (flags[2] & 0x01) != 0;
@@ -552,6 +707,12 @@ fn extract_media_header(
     } else {
         String::new()
     };
+
+    // Media header version (ExifTool outputs this)
+    metadata.insert(
+        format!("QuickTime:MediaHeaderVersion{}", track_suffix),
+        TagValue::Integer(version as i64),
+    );
 
     // Parse time fields based on version (v0: 32-bit, v1: 64-bit)
     let (creation_time, modification_time, timescale, duration, lang_offset) = if version == 1 {
@@ -1075,7 +1236,7 @@ fn days_to_month_day(mut days: u32, is_leap: bool) -> (u32, u32) {
     (12, 31)
 }
 
-/// Extract classic QuickTime user data atoms (©xxx)
+/// Extract classic QuickTime user data atoms (©xxx and others)
 fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<(), String> {
     let children = udta.parse_children().unwrap_or_default();
 
@@ -1110,8 +1271,29 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                     b"\xa9dir" => Some("Director"),
                     b"\xa9prd" => Some("Producer"),
                     b"\xa9prf" => Some("Performers"),
+                    b"\xa9wrt" => Some("Composer"),
+                    b"\xa9lyr" => Some("Lyrics"),
+                    b"\xa9grp" => Some("Grouping"),
                     _ => None,
                 };
+
+                // Handle GPS coordinates (©xyz atom)
+                if atom_bytes == b"\xa9xyz" {
+                    if let Some((lat, lon, alt)) = parse_iso6709(&value) {
+                        metadata.insert("QuickTime:GPSLatitude".to_string(), TagValue::Float(lat));
+                        metadata.insert("QuickTime:GPSLongitude".to_string(), TagValue::Float(lon));
+                        if let Some(altitude) = alt {
+                            metadata.insert(
+                                "QuickTime:GPSAltitude".to_string(),
+                                TagValue::Float(altitude),
+                            );
+                        }
+                        metadata.insert(
+                            "QuickTime:GPSCoordinates".to_string(),
+                            TagValue::new_string(value.clone()),
+                        );
+                    }
+                }
 
                 if let Some(suffix) = suffix {
                     metadata.insert(
@@ -1121,10 +1303,263 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                     metadata.insert(format!("UserData:{}", suffix), TagValue::new_string(value));
                 }
             }
+        } else {
+            // Handle non-© atoms (3GPP and other user data atoms)
+            let atom_type_str = std::str::from_utf8(atom_bytes).unwrap_or("");
+            match atom_type_str {
+                "cprt" => {
+                    // Copyright (3GPP style)
+                    if let Some(value) = extract_3gpp_string_value(atom.data) {
+                        metadata.insert(
+                            "QuickTime:Copyright".to_string(),
+                            TagValue::new_string(value),
+                        );
+                    }
+                }
+                "auth" => {
+                    // Author
+                    if let Some(value) = extract_3gpp_string_value(atom.data) {
+                        metadata
+                            .insert("QuickTime:Author".to_string(), TagValue::new_string(value));
+                    }
+                }
+                "titl" => {
+                    // Title (3GPP style)
+                    if let Some(value) = extract_3gpp_string_value(atom.data) {
+                        metadata.insert("QuickTime:Title".to_string(), TagValue::new_string(value));
+                    }
+                }
+                "dscp" => {
+                    // Description (3GPP style)
+                    if let Some(value) = extract_3gpp_string_value(atom.data) {
+                        metadata.insert(
+                            "QuickTime:Description".to_string(),
+                            TagValue::new_string(value),
+                        );
+                    }
+                }
+                "perf" => {
+                    // Performer (3GPP style)
+                    if let Some(value) = extract_3gpp_string_value(atom.data) {
+                        metadata.insert(
+                            "QuickTime:Performer".to_string(),
+                            TagValue::new_string(value),
+                        );
+                    }
+                }
+                "albm" => {
+                    // Album (3GPP style)
+                    if let Some(value) = extract_3gpp_string_value(atom.data) {
+                        metadata.insert("QuickTime:Album".to_string(), TagValue::new_string(value));
+                    }
+                }
+                "yrrc" => {
+                    // Recording year (3GPP style)
+                    if atom.data.len() >= 6 {
+                        let r = EndianReader::big_endian(atom.data);
+                        if let Some(year) = r.u16_at(4) {
+                            metadata.insert(
+                                "QuickTime:Year".to_string(),
+                                TagValue::Integer(year as i64),
+                            );
+                        }
+                    }
+                }
+                "gnre" => {
+                    // Genre (3GPP style) - numeric genre ID
+                    if atom.data.len() >= 6 {
+                        let r = EndianReader::big_endian(atom.data);
+                        if let Some(genre_id) = r.u16_at(4) {
+                            let genre_name = decode_id3_genre(genre_id);
+                            metadata.insert(
+                                "QuickTime:Genre".to_string(),
+                                TagValue::new_string(genre_name),
+                            );
+                        }
+                    }
+                }
+                "FIRM" | "INFO" => {
+                    // Firmware / Information
+                    if let Some(value) = extract_raw_string(atom.data) {
+                        metadata.insert(
+                            "QuickTime:Information".to_string(),
+                            TagValue::new_string(value),
+                        );
+                    }
+                }
+                "MAKE" | "MODL" => {
+                    // Camera make/model in some formats
+                    if let Some(value) = extract_raw_string(atom.data) {
+                        let tag = if atom_type_str == "MAKE" {
+                            "QuickTime:Make"
+                        } else {
+                            "QuickTime:Model"
+                        };
+                        metadata.insert(tag.to_string(), TagValue::new_string(value));
+                    }
+                }
+                "CNCV" | "CNFV" | "CNMN" => {
+                    // Camera info atoms (Canon, etc.)
+                    if let Some(value) = extract_raw_string(atom.data) {
+                        let tag = match atom_type_str {
+                            "CNCV" => "QuickTime:CompressorVersion",
+                            "CNFV" => "QuickTime:FirmwareVersion",
+                            "CNMN" => "QuickTime:Model",
+                            _ => "QuickTime:Unknown",
+                        };
+                        metadata.insert(tag.to_string(), TagValue::new_string(value));
+                    }
+                }
+                "PENT" | "PXTH" => {
+                    // Pentax-specific atoms
+                    if let Some(value) = extract_raw_string(atom.data) {
+                        metadata.insert(
+                            format!("QuickTime:{}", atom_type_str),
+                            TagValue::new_string(value),
+                        );
+                    }
+                }
+                "tmpo" => {
+                    // Beats per minute (tempo) - in udta directly
+                    if atom.data.len() >= 4 {
+                        let r = EndianReader::big_endian(atom.data);
+                        if let Some(bpm) = r.u16_at(2) {
+                            if bpm > 0 {
+                                metadata.insert(
+                                    "QuickTime:BeatsPerMinute".to_string(),
+                                    TagValue::Integer(bpm as i64),
+                                );
+                            }
+                        }
+                    }
+                }
+                "fmt " => {
+                    // Format atom (Pentax cameras)
+                    if let Some(value) = extract_raw_string(atom.data) {
+                        metadata
+                            .insert("QuickTime:Format".to_string(), TagValue::new_string(value));
+                    }
+                }
+                _ => {
+                    // Skip unknown atoms
+                }
+            }
         }
     }
 
     Ok(())
+}
+
+/// Extract 3GPP-style string value from atom data
+/// Format: 4 bytes version/flags, 2 bytes language, then UTF-8 string
+fn extract_3gpp_string_value(data: &[u8]) -> Option<String> {
+    if data.len() < 6 {
+        return None;
+    }
+    // Skip version/flags (4 bytes) and language (2 bytes)
+    let text_data = &data[6..];
+    // Remove null terminator if present
+    let text_end = text_data
+        .iter()
+        .position(|&b| b == 0)
+        .unwrap_or(text_data.len());
+    String::from_utf8(text_data[..text_end].to_vec()).ok()
+}
+
+/// Extract raw string from atom data (just read as UTF-8)
+fn extract_raw_string(data: &[u8]) -> Option<String> {
+    // Remove null terminator if present
+    let text_end = data.iter().position(|&b| b == 0).unwrap_or(data.len());
+    String::from_utf8(data[..text_end].to_vec()).ok()
+}
+
+/// Decode ID3 genre ID to genre name
+fn decode_id3_genre(genre_id: u16) -> String {
+    // Standard ID3v1 genres (partial list of most common)
+    match genre_id {
+        0 => "Blues",
+        1 => "Classic Rock",
+        2 => "Country",
+        3 => "Dance",
+        4 => "Disco",
+        5 => "Funk",
+        6 => "Grunge",
+        7 => "Hip-Hop",
+        8 => "Jazz",
+        9 => "Metal",
+        10 => "New Age",
+        11 => "Oldies",
+        12 => "Other",
+        13 => "Pop",
+        14 => "R&B",
+        15 => "Rap",
+        16 => "Reggae",
+        17 => "Rock",
+        18 => "Techno",
+        19 => "Industrial",
+        20 => "Alternative",
+        21 => "Ska",
+        22 => "Death Metal",
+        23 => "Pranks",
+        24 => "Soundtrack",
+        25 => "Euro-Techno",
+        26 => "Ambient",
+        27 => "Trip-Hop",
+        28 => "Vocal",
+        29 => "Jazz+Funk",
+        30 => "Fusion",
+        31 => "Trance",
+        32 => "Classical",
+        33 => "Instrumental",
+        34 => "Acid",
+        35 => "House",
+        36 => "Game",
+        37 => "Sound Clip",
+        38 => "Gospel",
+        39 => "Noise",
+        40 => "AlternRock",
+        41 => "Bass",
+        42 => "Soul",
+        43 => "Punk",
+        44 => "Space",
+        45 => "Meditative",
+        46 => "Instrumental Pop",
+        47 => "Instrumental Rock",
+        48 => "Ethnic",
+        49 => "Gothic",
+        50 => "Darkwave",
+        51 => "Techno-Industrial",
+        52 => "Electronic",
+        53 => "Pop-Folk",
+        54 => "Eurodance",
+        55 => "Dream",
+        56 => "Southern Rock",
+        57 => "Comedy",
+        58 => "Cult",
+        59 => "Gangsta",
+        60 => "Top 40",
+        61 => "Christian Rap",
+        62 => "Pop/Funk",
+        63 => "Jungle",
+        64 => "Native American",
+        65 => "Cabaret",
+        66 => "New Wave",
+        67 => "Psychedelic",
+        68 => "Rave",
+        69 => "Showtunes",
+        70 => "Trailer",
+        71 => "Lo-Fi",
+        72 => "Tribal",
+        73 => "Acid Punk",
+        74 => "Acid Jazz",
+        75 => "Polka",
+        76 => "Retro",
+        77 => "Musical",
+        78 => "Rock & Roll",
+        79 => "Hard Rock",
+        _ => return format!("Genre {}", genre_id),
+    }
+    .to_string()
 }
 
 /// Extract iTunes-style metadata from meta atom
@@ -1171,9 +1606,15 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
                         b"aART" => Cow::Borrowed("ItemList:AlbumArtist"),
                         b"\xa9wrt" => Cow::Borrowed("ItemList:Composer"),
                         b"\xa9grp" => Cow::Borrowed("ItemList:Grouping"),
+                        b"\xa9lyr" => Cow::Borrowed("ItemList:Lyrics"),
                         b"trkn" => Cow::Borrowed("ItemList:TrackNumber"),
                         b"disk" => Cow::Borrowed("ItemList:DiscNumber"),
                         b"cprt" | b"\xa9cpy" => Cow::Borrowed("ItemList:Copyright"),
+                        b"tmpo" => Cow::Borrowed("ItemList:BeatsPerMinute"),
+                        b"covr" => Cow::Borrowed("ItemList:CoverArt"),
+                        b"gnre" => Cow::Borrowed("ItemList:Genre"),
+                        b"desc" => Cow::Borrowed("ItemList:Description"),
+                        b"ldes" => Cow::Borrowed("ItemList:LongDescription"),
                         _ => {
                             if let Ok(s) = std::str::from_utf8(atom_bytes) {
                                 Cow::Owned(format!("ItemList:{}", s))
@@ -1186,6 +1627,32 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
                         }
                     };
 
+                    // Also insert into QuickTime: namespace for iTunes ilst metadata
+                    // This matches ExifTool behavior which uses QuickTime: prefix
+                    let qt_tag = match atom_bytes {
+                        b"\xa9nam" => Some("QuickTime:Title"),
+                        b"\xa9ART" => Some("QuickTime:Artist"),
+                        b"\xa9alb" => Some("QuickTime:Album"),
+                        b"\xa9day" => Some("QuickTime:ContentCreateDate"),
+                        b"\xa9cmt" => Some("QuickTime:Comment"),
+                        b"\xa9gen" => Some("QuickTime:Genre"),
+                        b"\xa9too" => Some("QuickTime:Encoder"),
+                        b"aART" => Some("QuickTime:AlbumArtist"),
+                        b"\xa9wrt" => Some("QuickTime:Composer"),
+                        b"\xa9grp" => Some("QuickTime:Grouping"),
+                        b"\xa9lyr" => Some("QuickTime:Lyrics"),
+                        b"cprt" | b"\xa9cpy" => Some("QuickTime:Copyright"),
+                        b"tmpo" => Some("QuickTime:BeatsPerMinute"),
+                        b"covr" => Some("QuickTime:CoverArt"),
+                        b"gnre" => Some("QuickTime:Genre"),
+                        b"desc" => Some("QuickTime:Description"),
+                        b"ldes" => Some("QuickTime:LongDescription"),
+                        _ => None,
+                    };
+                    if let Some(qt_tag_name) = qt_tag {
+                        metadata.insert(qt_tag_name.to_string(), value.clone());
+                    }
+
                     metadata.insert(tag_name.into_owned(), value.clone());
 
                     if add_year_tag {
@@ -1196,6 +1663,28 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
                                     "ItemList:Year".to_string(),
                                     TagValue::new_string(year),
                                 );
+                            }
+                        }
+                    }
+
+                    // Handle TrackNumber and DiscNumber formatted as "X of Y"
+                    if atom_bytes == b"trkn" || atom_bytes == b"disk" {
+                        if let TagValue::Binary(ref data) = value {
+                            if data.len() >= 6 {
+                                let r = EndianReader::big_endian(data);
+                                let current = r.u16_at(2).unwrap_or(0);
+                                let total = r.u16_at(4).unwrap_or(0);
+                                let formatted = if total > 0 {
+                                    format!("{} of {}", current, total)
+                                } else {
+                                    format!("{}", current)
+                                };
+                                let tag = if atom_bytes == b"trkn" {
+                                    "QuickTime:TrackNumber"
+                                } else {
+                                    "QuickTime:DiskNumber"
+                                };
+                                metadata.insert(tag.to_string(), TagValue::new_string(formatted));
                             }
                         }
                     }

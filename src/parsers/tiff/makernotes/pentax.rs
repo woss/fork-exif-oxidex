@@ -57,6 +57,7 @@ const PENTAX_HEADER_PENTAX: &[u8] = b"PENTAX \0";
 // These constants define the tag IDs for all Pentax MakerNote tags.
 // They are used for pattern matching in the parse function.
 
+// Basic Camera Info (0x0000-0x000F)
 const PENTAX_VERSION: u16 = 0x0000;
 const PENTAX_PENTAX_MODEL_TYPE: u16 = 0x0001;
 const PENTAX_PREVIEW_IMAGE_SIZE: u16 = 0x0002;
@@ -72,7 +73,14 @@ const PENTAX_FLASH_MODE: u16 = 0x000C;
 const PENTAX_FOCUS_MODE: u16 = 0x000D;
 const PENTAX_AF_POINT_SELECTED: u16 = 0x000E;
 const PENTAX_AF_POINT_IN_FOCUS: u16 = 0x000F;
+
+// Focus and Exposure (0x0010-0x001F)
+const PENTAX_FOCUS_POSITION: u16 = 0x0010;
+const PENTAX_EXPOSURE_TIME: u16 = 0x0012;
+const PENTAX_FNUMBER: u16 = 0x0013;
 const PENTAX_ISO_SPEED: u16 = 0x0014;
+const PENTAX_LIGHT_READING: u16 = 0x0015;
+const PENTAX_EXPOSURE_COMPENSATION: u16 = 0x0016;
 const PENTAX_METERING_MODE: u16 = 0x0017;
 const PENTAX_AUTO_BRACKETING: u16 = 0x0018;
 const PENTAX_WHITE_BALANCE: u16 = 0x0019;
@@ -82,6 +90,8 @@ const PENTAX_RED_BALANCE: u16 = 0x001C;
 const PENTAX_FOCAL_LENGTH: u16 = 0x001D;
 const PENTAX_DIGITAL_ZOOM: u16 = 0x001E;
 const PENTAX_SATURATION: u16 = 0x001F;
+
+// Image Adjustments (0x0020-0x002F)
 const PENTAX_CONTRAST: u16 = 0x0020;
 const PENTAX_SHARPNESS: u16 = 0x0021;
 const PENTAX_WORLD_TIME_LOCATION: u16 = 0x0022;
@@ -89,21 +99,72 @@ const PENTAX_HOMETOWN_CITY: u16 = 0x0023;
 const PENTAX_DESTINATION_CITY: u16 = 0x0024;
 const PENTAX_HOMETOWN_DST: u16 = 0x0025;
 const PENTAX_DESTINATION_DST: u16 = 0x0026;
+const PENTAX_DSP_FIRMWARE_VERSION: u16 = 0x0027;
+const PENTAX_CPU_FIRMWARE_VERSION: u16 = 0x0028;
+const PENTAX_FRAME_NUMBER: u16 = 0x0029;
+const PENTAX_EFFECTIVE_LV: u16 = 0x002D;
+
+// Camera Settings (0x0030-0x004F)
 const PENTAX_IMAGE_PROCESSING: u16 = 0x0032;
 const PENTAX_PICTURE_MODE2: u16 = 0x0033;
 const PENTAX_DRIVE_MODE: u16 = 0x0034;
+const PENTAX_SENSOR_SIZE: u16 = 0x0035;
 const PENTAX_COLOR_SPACE: u16 = 0x0037;
 const PENTAX_IMAGE_AREA_OFFSET: u16 = 0x0038;
 const PENTAX_RAW_IMAGE_SIZE: u16 = 0x0039;
-const PENTAX_SHAKE_REDUCTION_INFO: u16 = 0x003C;
-const PENTAX_SHUTTER_COUNT: u16 = 0x003D;
 const PENTAX_BATTERY_LEVEL: u16 = 0x003B;
-const PENTAX_CAMERA_TEMPERATURE: u16 = 0x0047;
+const PENTAX_AF_POINTS_IN_FOCUS_2: u16 = 0x003C;
+const PENTAX_DATA_SCALING: u16 = 0x003D;
+const PENTAX_PREVIEW_IMAGE_BORDERS: u16 = 0x003E;
 const PENTAX_LENS_TYPE: u16 = 0x003F;
+const PENTAX_SENSITIVITY_ADJUST: u16 = 0x0040;
+const PENTAX_IMAGE_EDIT_COUNT: u16 = 0x0041;
+const PENTAX_CAMERA_TEMPERATURE: u16 = 0x0047;
+const PENTAX_AE_LOCK: u16 = 0x0048;
+const PENTAX_NOISE_REDUCTION: u16 = 0x0049;
+const PENTAX_FLASH_EXPOSURE_COMP: u16 = 0x004D;
+const PENTAX_IMAGE_TONE: u16 = 0x004F;
+
+// Color and Processing (0x0050-0x006F)
+const PENTAX_COLOR_TEMPERATURE: u16 = 0x0050;
+const PENTAX_SHAKE_REDUCTION: u16 = 0x005C;
+const PENTAX_SHUTTER_COUNT: u16 = 0x005D;
+const PENTAX_FACE_INFO: u16 = 0x0060;
+const PENTAX_RAW_DEVELOPMENT_PROCESS: u16 = 0x0062;
+const PENTAX_HUE: u16 = 0x0067;
+const PENTAX_AWB_INFO: u16 = 0x0068;
+const PENTAX_DYNAMIC_RANGE_EXPANSION: u16 = 0x0069;
+const PENTAX_TIME_INFO: u16 = 0x006B;
+const PENTAX_HIGH_LOW_KEY_ADJ: u16 = 0x006C;
+const PENTAX_CONTRAST_HIGHLIGHT: u16 = 0x006D;
+const PENTAX_CONTRAST_SHADOW: u16 = 0x006E;
+const PENTAX_CONTRAST_HIGHLIGHT_SHADOW_ADJ: u16 = 0x006F;
+
+// Advanced Features (0x0070-0x009F)
+const PENTAX_FINE_SHARPNESS: u16 = 0x0070;
+const PENTAX_HIGH_ISO_NOISE_REDUCTION: u16 = 0x0071;
+const PENTAX_AF_ADJUSTMENT: u16 = 0x0072;
+const PENTAX_MONOCHROME_FILTER_EFFECT: u16 = 0x0073;
+const PENTAX_MONOCHROME_TONING: u16 = 0x0074;
+const PENTAX_FACE_DETECT: u16 = 0x0076;
+const PENTAX_FACE_DETECT_FRAME_SIZE: u16 = 0x0077;
+const PENTAX_SHADOW_CORRECTION: u16 = 0x0079;
+const PENTAX_ISO_AUTO_PARAMETERS: u16 = 0x007A;
+const PENTAX_CROSS_PROCESS: u16 = 0x007B;
+const PENTAX_LENS_CORR: u16 = 0x007D;
+const PENTAX_WHITE_LEVEL: u16 = 0x007E;
 const PENTAX_LENS_INFO: u16 = 0x007F;
 const PENTAX_AF_INFO: u16 = 0x0080;
-const PENTAX_LENS_MODEL: u16 = 0x009F;
+const PENTAX_ASPECT_RATIO: u16 = 0x0082;
+const PENTAX_HDR: u16 = 0x0085;
 const PENTAX_PIXEL_SHIFT_RESOLUTION: u16 = 0x0086;
+const PENTAX_SHUTTER_TYPE: u16 = 0x0087;
+const PENTAX_NEUTRAL_DENSITY_FILTER: u16 = 0x0088;
+const PENTAX_ISO2: u16 = 0x008B;
+const PENTAX_INTERVAL_SHOOTING: u16 = 0x0092;
+const PENTAX_SKIN_TONE_CORRECTION: u16 = 0x0095;
+const PENTAX_CLARITY_CONTROL: u16 = 0x0096;
+const PENTAX_LENS_MODEL: u16 = 0x009F;
 
 // ============================================================================
 // Declarative Decoder Definitions
@@ -353,6 +414,107 @@ const_decoder!(pub PIXEL_SHIFT_RESOLUTION,
     [(0, "Off"), (1, "On"), (2, "On (Motion Correction)"),]
 );
 
+// DST (Daylight Saving Time) decoder
+const_decoder!(pub DST, i32, [(0, "No"), (1, "Yes"),]);
+
+// Image tone decoder
+const_decoder!(pub IMAGE_TONE, i32, [
+    (0, "Natural"), (1, "Bright"), (2, "Portrait"), (3, "Landscape"),
+    (4, "Vibrant"), (5, "Monochrome"), (6, "Muted"), (7, "Reversal Film"),
+    (8, "Bleach Bypass"), (9, "Radiant"), (10, "Cross Processing"),
+    (11, "Flat"), (12, "Auto"),
+]);
+
+// Noise reduction decoder
+const_decoder!(pub NOISE_REDUCTION, i32, [
+    (0, "Off"), (1, "On (Weak)"), (2, "On"), (3, "On (Strong)"), (4, "Auto"),
+]);
+
+// High ISO noise reduction decoder
+const_decoder!(pub HIGH_ISO_NOISE_REDUCTION, i32, [
+    (0, "Off"), (1, "Weakest"), (2, "Weak"), (3, "Medium"),
+    (4, "Strong"), (5, "Strongest"), (6, "Auto"),
+]);
+
+// AE Lock decoder
+const_decoder!(pub AE_LOCK, i32, [(0, "Off"), (1, "On"),]);
+
+// Dynamic range expansion decoder
+const_decoder!(pub DYNAMIC_RANGE_EXPANSION, i32, [(0, "Off"), (1, "On"), (2, "Auto"),]);
+
+// HDR decoder
+const_decoder!(pub HDR, i32, [
+    (0, "Off"), (1, "HDR Auto"), (2, "HDR 1"), (3, "HDR 2"),
+    (4, "HDR 3"), (5, "Advanced HDR"),
+]);
+
+// Shadow correction decoder
+const_decoder!(pub SHADOW_CORRECTION, i32, [
+    (0, "Off"), (1, "On (Weak)"), (2, "On"), (3, "On (Strong)"), (4, "Auto"),
+]);
+
+// Fine sharpness decoder
+const_decoder!(pub FINE_SHARPNESS, i32, [(0, "Off"), (1, "On"),]);
+
+// Shutter type decoder
+const_decoder!(pub SHUTTER_TYPE, i32, [(0, "Mechanical"), (1, "Electronic"),]);
+
+// Neutral density filter decoder
+const_decoder!(pub NEUTRAL_DENSITY_FILTER, i32, [(0, "Off"), (1, "On"),]);
+
+// Monochrome filter effect decoder
+const_decoder!(pub MONOCHROME_FILTER_EFFECT, i32, [
+    (0, "None"), (1, "Yellow"), (2, "Orange"), (3, "Red"), (4, "Magenta"),
+    (5, "Blue"), (6, "Cyan"), (7, "Green"), (8, "Yellow-green"), (9, "Infrared"),
+]);
+
+// Monochrome toning decoder
+const_decoder!(pub MONOCHROME_TONING, i32, [
+    (0, "None"), (1, "Sepia"), (2, "Blue"), (3, "Purple"), (4, "Green"),
+]);
+
+// Face detect decoder
+const_decoder!(pub FACE_DETECT, i32, [(0, "Off"), (1, "On"), (256, "On (Smile/Blink)"),]);
+
+// Cross process decoder
+const_decoder!(pub CROSS_PROCESS, i32, [
+    (0, "Off"), (1, "Random"), (2, "Preset 1"), (3, "Preset 2"), (4, "Preset 3"),
+    (16, "Favorite 1"), (17, "Favorite 2"), (18, "Favorite 3"),
+]);
+
+// Aspect ratio decoder
+const_decoder!(pub ASPECT_RATIO, i32, [(0, "4:3"), (1, "3:2"), (2, "16:9"), (3, "1:1"),]);
+
+// Clarity control decoder
+const_decoder!(pub CLARITY_CONTROL, i32, [
+    (-4, "Very Low"), (-3, "Low 3"), (-2, "Low 2"), (-1, "Low 1"), (0, "Off"),
+    (1, "High 1"), (2, "High 2"), (3, "High 3"), (4, "Very High"),
+]);
+
+// Skin tone correction decoder
+const_decoder!(pub SKIN_TONE_CORRECTION, i32, [
+    (0, "Off"), (1, "On (Type 1)"), (2, "On (Type 2)"),
+]);
+
+// Bleach bypass toning decoder
+const_decoder!(pub BLEACH_BYPASS_TONING, i32, [
+    (0, "Off"), (1, "Green"), (2, "Yellow"), (3, "Orange"),
+]);
+
+// Raw development process decoder
+const_decoder!(pub RAW_DEVELOPMENT_PROCESS, i32, [
+    (1, "Ver. 1"), (2, "Ver. 2"), (3, "Ver. 3"), (4, "Ver. 4"),
+    (5, "Ver. 5"), (6, "Ver. 6"), (7, "Ver. 7"),
+]);
+
+// Lens correction decoder
+const_decoder!(pub LENS_CORR, i32, [
+    (0, "Off"), (1, "Distortion"), (2, "Chromatic Aberration"),
+    (3, "Distortion + CA"), (4, "Peripheral Illumination"),
+    (5, "Distortion + PI"), (6, "CA + PI"), (7, "Distortion + CA + PI"),
+    (8, "Diffraction"),
+]);
+
 /// Checks if the provided data has a valid Pentax MakerNote header
 ///
 /// # Arguments
@@ -555,14 +717,8 @@ impl MakerNoteParser for PentaxParser {
                     tags.insert("Pentax:ColorSpace".to_string(), COLOR_SPACE.decode(value));
                 }
 
-                PENTAX_SHAKE_REDUCTION_INFO => {
-                    let value = entry.value_offset as i32;
-                    tags.insert(
-                        "Pentax:ShakeReduction".to_string(),
-                        SHAKE_REDUCTION.decode(value),
-                    );
-                }
-
+                // Note: Former SHAKE_REDUCTION_INFO at 0x003C is now AF_POINTS_IN_FOCUS_2
+                // Shake reduction is now at 0x005C - handled below
                 PENTAX_PENTAX_IMAGE_SIZE => {
                     let value = entry.value_offset as i32;
                     tags.insert("Pentax:ImageSize".to_string(), IMAGE_SIZE.decode(value));
@@ -703,6 +859,360 @@ impl MakerNoteParser for PentaxParser {
                 PENTAX_PICTURE_MODE2 => {
                     let value = entry.value_offset as i32;
                     tags.insert("Pentax:PictureMode2".to_string(), value.to_string());
+                }
+
+                // Focus and Exposure tags
+                PENTAX_FOCUS_POSITION => {
+                    let value = entry.value_offset;
+                    tags.insert("Pentax:FocusPosition".to_string(), value.to_string());
+                }
+                PENTAX_EXPOSURE_TIME => {
+                    tags.insert(
+                        "Pentax:ExposureTime".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_FNUMBER => {
+                    let value = entry.value_offset;
+                    tags.insert(
+                        "Pentax:FNumber".to_string(),
+                        format!("f/{:.1}", value as f32 / 10.0),
+                    );
+                }
+                PENTAX_LIGHT_READING => {
+                    tags.insert(
+                        "Pentax:LightReading".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+                PENTAX_EXPOSURE_COMPENSATION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:ExposureCompensation".to_string(),
+                        format!("{:+.1} EV", value as f32 / 10.0),
+                    );
+                }
+
+                // Image Adjustments
+                PENTAX_HOMETOWN_DST => {
+                    tags.insert(
+                        "Pentax:HometownDST".to_string(),
+                        DST.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_DESTINATION_DST => {
+                    tags.insert(
+                        "Pentax:DestinationDST".to_string(),
+                        DST.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_DSP_FIRMWARE_VERSION => {
+                    if let Some(value) = extract_string_value(&entry, data, ifd_offset) {
+                        tags.insert("Pentax:DSPFirmwareVersion".to_string(), value);
+                    }
+                }
+                PENTAX_CPU_FIRMWARE_VERSION => {
+                    if let Some(value) = extract_string_value(&entry, data, ifd_offset) {
+                        tags.insert("Pentax:CPUFirmwareVersion".to_string(), value);
+                    }
+                }
+                PENTAX_FRAME_NUMBER => {
+                    tags.insert(
+                        "Pentax:FrameNumber".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_EFFECTIVE_LV => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:EffectiveLV".to_string(),
+                        format!("{:.1}", value as f32 / 10.0),
+                    );
+                }
+
+                // Camera Settings
+                PENTAX_IMAGE_PROCESSING => {
+                    tags.insert(
+                        "Pentax:ImageProcessing".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_SENSOR_SIZE => {
+                    tags.insert(
+                        "Pentax:SensorSize".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_IMAGE_AREA_OFFSET => {
+                    tags.insert(
+                        "Pentax:ImageAreaOffset".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_RAW_IMAGE_SIZE => {
+                    tags.insert(
+                        "Pentax:RawImageSize".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_AF_POINTS_IN_FOCUS_2 => {
+                    tags.insert(
+                        "Pentax:AFPointsInFocus2".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_DATA_SCALING => {
+                    tags.insert(
+                        "Pentax:DataScaling".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_PREVIEW_IMAGE_BORDERS => {
+                    tags.insert(
+                        "Pentax:PreviewImageBorders".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_SENSITIVITY_ADJUST => {
+                    tags.insert(
+                        "Pentax:SensitivityAdjust".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+                PENTAX_IMAGE_EDIT_COUNT => {
+                    tags.insert(
+                        "Pentax:ImageEditCount".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_AE_LOCK => {
+                    tags.insert(
+                        "Pentax:AELock".to_string(),
+                        AE_LOCK.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_NOISE_REDUCTION => {
+                    tags.insert(
+                        "Pentax:NoiseReduction".to_string(),
+                        NOISE_REDUCTION.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_FLASH_EXPOSURE_COMP => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "Pentax:FlashExposureComp".to_string(),
+                        format!("{:+.1} EV", value as f32 / 10.0),
+                    );
+                }
+                PENTAX_IMAGE_TONE => {
+                    tags.insert(
+                        "Pentax:ImageTone".to_string(),
+                        IMAGE_TONE.decode(entry.value_offset as i32),
+                    );
+                }
+
+                // Color and Processing
+                PENTAX_COLOR_TEMPERATURE => {
+                    tags.insert(
+                        "Pentax:ColorTemperature".to_string(),
+                        format!("{}K", entry.value_offset),
+                    );
+                }
+                PENTAX_SHAKE_REDUCTION => {
+                    tags.insert(
+                        "Pentax:ShakeReduction".to_string(),
+                        SHAKE_REDUCTION.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_FACE_INFO => {
+                    tags.insert(
+                        "Pentax:FaceInfo".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_RAW_DEVELOPMENT_PROCESS => {
+                    tags.insert(
+                        "Pentax:RawDevelopmentProcess".to_string(),
+                        RAW_DEVELOPMENT_PROCESS.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_HUE => {
+                    tags.insert(
+                        "Pentax:Hue".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+                PENTAX_AWB_INFO => {
+                    tags.insert("Pentax:AWBInfo".to_string(), entry.value_offset.to_string());
+                }
+                PENTAX_DYNAMIC_RANGE_EXPANSION => {
+                    tags.insert(
+                        "Pentax:DynamicRangeExpansion".to_string(),
+                        DYNAMIC_RANGE_EXPANSION.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_TIME_INFO => {
+                    if let Some(value) = extract_string_value(&entry, data, ifd_offset) {
+                        tags.insert("Pentax:TimeInfo".to_string(), value);
+                    }
+                }
+                PENTAX_HIGH_LOW_KEY_ADJ => {
+                    tags.insert(
+                        "Pentax:HighLowKeyAdj".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+                PENTAX_CONTRAST_HIGHLIGHT => {
+                    tags.insert(
+                        "Pentax:ContrastHighlight".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+                PENTAX_CONTRAST_SHADOW => {
+                    tags.insert(
+                        "Pentax:ContrastShadow".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+                PENTAX_CONTRAST_HIGHLIGHT_SHADOW_ADJ => {
+                    tags.insert(
+                        "Pentax:ContrastHighlightShadowAdj".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+
+                // Advanced Features
+                PENTAX_FINE_SHARPNESS => {
+                    tags.insert(
+                        "Pentax:FineSharpness".to_string(),
+                        FINE_SHARPNESS.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_HIGH_ISO_NOISE_REDUCTION => {
+                    tags.insert(
+                        "Pentax:HighISONoiseReduction".to_string(),
+                        HIGH_ISO_NOISE_REDUCTION.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_AF_ADJUSTMENT => {
+                    tags.insert(
+                        "Pentax:AFAdjustment".to_string(),
+                        (entry.value_offset as i32).to_string(),
+                    );
+                }
+                PENTAX_MONOCHROME_FILTER_EFFECT => {
+                    tags.insert(
+                        "Pentax:MonochromeFilterEffect".to_string(),
+                        MONOCHROME_FILTER_EFFECT.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_MONOCHROME_TONING => {
+                    tags.insert(
+                        "Pentax:MonochromeToning".to_string(),
+                        MONOCHROME_TONING.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_FACE_DETECT => {
+                    tags.insert(
+                        "Pentax:FaceDetect".to_string(),
+                        FACE_DETECT.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_FACE_DETECT_FRAME_SIZE => {
+                    tags.insert(
+                        "Pentax:FaceDetectFrameSize".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_SHADOW_CORRECTION => {
+                    tags.insert(
+                        "Pentax:ShadowCorrection".to_string(),
+                        SHADOW_CORRECTION.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_ISO_AUTO_PARAMETERS => {
+                    tags.insert(
+                        "Pentax:ISOAutoParameters".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_CROSS_PROCESS => {
+                    tags.insert(
+                        "Pentax:CrossProcess".to_string(),
+                        CROSS_PROCESS.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_LENS_CORR => {
+                    tags.insert(
+                        "Pentax:LensCorr".to_string(),
+                        LENS_CORR.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_WHITE_LEVEL => {
+                    tags.insert(
+                        "Pentax:WhiteLevel".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_LENS_INFO => {
+                    tags.insert(
+                        "Pentax:LensInfo".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_AF_INFO => {
+                    tags.insert("Pentax:AFInfo".to_string(), entry.value_offset.to_string());
+                }
+                PENTAX_ASPECT_RATIO => {
+                    tags.insert(
+                        "Pentax:AspectRatio".to_string(),
+                        ASPECT_RATIO.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_HDR => {
+                    tags.insert(
+                        "Pentax:HDR".to_string(),
+                        HDR.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_SHUTTER_TYPE => {
+                    tags.insert(
+                        "Pentax:ShutterType".to_string(),
+                        SHUTTER_TYPE.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_NEUTRAL_DENSITY_FILTER => {
+                    tags.insert(
+                        "Pentax:NeutralDensityFilter".to_string(),
+                        NEUTRAL_DENSITY_FILTER.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_ISO2 => {
+                    tags.insert("Pentax:ISO2".to_string(), entry.value_offset.to_string());
+                }
+                PENTAX_INTERVAL_SHOOTING => {
+                    tags.insert(
+                        "Pentax:IntervalShooting".to_string(),
+                        entry.value_offset.to_string(),
+                    );
+                }
+                PENTAX_SKIN_TONE_CORRECTION => {
+                    tags.insert(
+                        "Pentax:SkinToneCorrection".to_string(),
+                        SKIN_TONE_CORRECTION.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_CLARITY_CONTROL => {
+                    tags.insert(
+                        "Pentax:ClarityControl".to_string(),
+                        CLARITY_CONTROL.decode(entry.value_offset as i32),
+                    );
+                }
+                PENTAX_PREVIEW_IMAGE_START => {
+                    tags.insert(
+                        "Pentax:PreviewImageStart".to_string(),
+                        entry.value_offset.to_string(),
+                    );
                 }
 
                 _ => {

@@ -8,7 +8,7 @@
 //!
 //! Standard XMP has this structure:
 //! ```xml
-//! <x:xmpmeta xmlns:x="adobe:ns:meta/">
+//! <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 5.1.0">
 //!   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 //!     <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">
 //!       <xmp:Creator>John Doe</xmp:Creator>
@@ -18,13 +18,21 @@
 //! </x:xmpmeta>
 //! ```
 //!
+//! # Extracted Tags
+//!
+//! This parser extracts:
+//! - **XMP:XMPToolkit** - from `x:xmptk` attribute on `x:xmpmeta` element
+//! - **XMP:About** - from `rdf:about` attribute on `rdf:Description` element
+//! - **Property elements** - like `<xmp:Creator>value</xmp:Creator>`
+//! - **Property attributes** - XMP shorthand form on `rdf:Description`
+//!
 //! # Example
 //!
 //! ```no_run
 //! use oxidex::parsers::xmp::rdf_parser::parse_xmp;
 //!
 //! let xml = br#"
-//!     <x:xmpmeta xmlns:x="adobe:ns:meta/">
+//!     <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Image::ExifTool 12.46">
 //!       <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 //!         <rdf:Description xmlns:xmp="http://ns.adobe.com/xap/1.0/">
 //!           <xmp:Creator>John Doe</xmp:Creator>
@@ -35,7 +43,7 @@
 //! "#;
 //!
 //! let result = parse_xmp(xml).unwrap();
-//! assert!(result.len() >= 2);
+//! assert!(result.len() >= 3); // XMPToolkit + Creator + Rating
 //! ```
 
 use crate::error::{ExifToolError, Result};
@@ -102,11 +110,18 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
 
                 let tag_name = extract_tag_name(&e)?;
 
+                // Register any new namespaces from this element first
+                register_namespaces_from_element(&e, &mut resolver)?;
+
+                // Check for x:xmpmeta element and extract XMPToolkit
+                if is_xmpmeta(&tag_name) {
+                    extract_xmpmeta_attributes(&e, &mut results)?;
+                }
                 // Check if this is an rdf:Description element
-                if is_rdf_description(&tag_name, &resolver) {
+                else if is_rdf_description(&tag_name, &resolver) {
                     inside_description = true;
-                    // Register any new namespaces from attributes
-                    register_namespaces_from_element(&e, &mut resolver)?;
+                    // Extract rdf:about and property attributes from Description
+                    extract_description_attributes(&e, &resolver, &mut results)?;
                 } else if inside_description && current_property.is_none() {
                     // This is a property element inside rdf:Description
                     // Check if it's a complex structure we should skip
@@ -115,8 +130,6 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
                         current_value.clear();
                         property_depth = depth;
                     }
-                    // Register any new namespaces
-                    register_namespaces_from_element(&e, &mut resolver)?;
                 }
             }
 
@@ -149,15 +162,18 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
             }
 
             Ok(Event::Empty(e)) => {
-                // Handle self-closing tags like <xmp:Rating>5</xmp:Rating>
-                // that might have text as an attribute
                 let tag_name = extract_tag_name(&e)?;
 
-                if inside_description && is_simple_property(&tag_name, &resolver) {
-                    // For empty tags, check if there's an rdf:value attribute
-                    // or other value-bearing attributes
-                    // For now, we skip empty tags as they typically don't have simple string values
-                    register_namespaces_from_element(&e, &mut resolver)?;
+                // Register namespaces from empty elements
+                register_namespaces_from_element(&e, &mut resolver)?;
+
+                // Handle self-closing x:xmpmeta
+                if is_xmpmeta(&tag_name) {
+                    extract_xmpmeta_attributes(&e, &mut results)?;
+                }
+                // Handle self-closing rdf:Description (shorthand form)
+                else if is_rdf_description(&tag_name, &resolver) {
+                    extract_description_attributes(&e, &resolver, &mut results)?;
                 }
             }
 
@@ -192,6 +208,99 @@ fn extract_tag_name_from_bytes(name_bytes: &[u8]) -> Result<String> {
     let name_str = std::str::from_utf8(name_bytes)
         .map_err(|e| ExifToolError::parse_error(format!("Invalid UTF-8 in tag name: {}", e)))?;
     Ok(name_str.to_string())
+}
+
+/// Checks if a tag name represents an x:xmpmeta element.
+///
+/// The xmpmeta element wraps XMP data and may contain the XMPToolkit attribute.
+fn is_xmpmeta(tag_name: &str) -> bool {
+    // Check for x:xmpmeta or xmpmeta (with or without prefix)
+    tag_name == "x:xmpmeta" || tag_name == "xmpmeta"
+}
+
+/// Extracts XMPToolkit from x:xmpmeta element attributes.
+///
+/// The XMPToolkit value comes from the x:xmptk attribute on the x:xmpmeta element:
+/// `<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Image::ExifTool 12.46">`
+fn extract_xmpmeta_attributes(
+    element: &BytesStart,
+    results: &mut Vec<(String, String)>,
+) -> Result<()> {
+    for attr in element.attributes().flatten() {
+        let key = std::str::from_utf8(attr.key.as_ref()).map_err(|e| {
+            ExifToolError::parse_error(format!("Invalid UTF-8 in attribute key: {}", e))
+        })?;
+
+        // Check for x:xmptk or xmptk attribute (XMP Toolkit version)
+        if key == "x:xmptk" || key == "xmptk" {
+            let value = std::str::from_utf8(&attr.value).map_err(|e| {
+                ExifToolError::parse_error(format!("Invalid UTF-8 in XMPToolkit value: {}", e))
+            })?;
+
+            // Only add non-empty XMPToolkit values
+            if !value.trim().is_empty() {
+                results.push(("XMP:XMPToolkit".to_string(), value.trim().to_string()));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Extracts XMP properties from rdf:Description element attributes.
+///
+/// This handles two types of attributes:
+/// 1. rdf:about - the subject URI, extracted as XMP:About
+/// 2. Property shorthand - XMP properties written as attributes (e.g., xmp:Rating="5")
+///
+/// Example:
+/// ```xml
+/// <rdf:Description rdf:about="uuid:faf5bdd5-ba3d-11da-ad31-d33d75182f1b"
+///                  xmp:CreateDate="2023-01-15T10:30:00"
+///                  xmp:ModifyDate="2023-01-20T14:00:00">
+/// ```
+fn extract_description_attributes(
+    element: &BytesStart,
+    resolver: &NamespaceResolver,
+    results: &mut Vec<(String, String)>,
+) -> Result<()> {
+    for attr in element.attributes().flatten() {
+        let key = std::str::from_utf8(attr.key.as_ref()).map_err(|e| {
+            ExifToolError::parse_error(format!("Invalid UTF-8 in attribute key: {}", e))
+        })?;
+
+        let value = std::str::from_utf8(&attr.value).map_err(|e| {
+            ExifToolError::parse_error(format!("Invalid UTF-8 in attribute value: {}", e))
+        })?;
+
+        // Skip empty values
+        if value.trim().is_empty() {
+            continue;
+        }
+
+        // Skip namespace declarations (xmlns:xxx)
+        if key.starts_with("xmlns") {
+            continue;
+        }
+
+        // Handle rdf:about attribute (the subject URI)
+        if key == "rdf:about" {
+            results.push(("XMP:About".to_string(), value.trim().to_string()));
+            continue;
+        }
+
+        // Skip other rdf: attributes (rdf:parseType, rdf:resource, etc.)
+        if key.starts_with("rdf:") {
+            continue;
+        }
+
+        // Handle XMP property shorthand (properties as attributes)
+        // These are namespace-prefixed attributes like xmp:Rating="5"
+        if key.contains(':') {
+            let prefixed_name = format_tag_name(key, resolver);
+            results.push((prefixed_name, value.trim().to_string()));
+        }
+    }
+    Ok(())
 }
 
 /// Checks if a tag name represents an rdf:Description element.
@@ -270,11 +379,11 @@ fn register_namespaces_from_element(
 /// to determine the correct family prefix.
 ///
 /// XMP properties are returned with these prefixes:
-/// - dc:title → XMP:Title (Dublin Core uses simplified XMP: prefix and Title-case)
-/// - dc:rights → XMP:Rights (Dublin Core uses simplified XMP: prefix and Title-case)
-/// - xmp:Creator → XMP:Creator (Core XMP uses simplified XMP: prefix)
-/// - exif:Make → XMP-exif:Make (EXIF namespace uses XMP-exif: prefix)
-/// - tiff:Model → XMP-tiff:Model (TIFF namespace uses XMP-tiff: prefix)
+/// - dc:title -> XMP:Title (Dublin Core uses simplified XMP: prefix and Title-case)
+/// - dc:rights -> XMP:Rights (Dublin Core uses simplified XMP: prefix and Title-case)
+/// - xmp:Creator -> XMP:Creator (Core XMP uses simplified XMP: prefix)
+/// - exif:Make -> XMP-exif:Make (EXIF namespace uses XMP-exif: prefix)
+/// - tiff:Model -> XMP-tiff:Model (TIFF namespace uses XMP-tiff: prefix)
 fn format_tag_name(qname: &str, resolver: &NamespaceResolver) -> String {
     use super::namespace_mapping::namespace_to_family;
 
@@ -511,9 +620,9 @@ mod tests {
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                      xmlns:dc="http://purl.org/dc/elements/1.1/">
               <rdf:Description>
-                <dc:creator>José García</dc:creator>
-                <dc:title>Ñandú en la Patagonia</dc:title>
-                <dc:rights>版权所有 2024</dc:rights>
+                <dc:creator>Jose Garcia</dc:creator>
+                <dc:title>Nandu en la Patagonia</dc:title>
+                <dc:rights>Copyright 2024</dc:rights>
               </rdf:Description>
             </rdf:RDF>
         "#;
@@ -521,10 +630,10 @@ mod tests {
         let result = parse_xmp(xml.as_bytes()).unwrap();
         assert_eq!(result.len(), 3);
 
-        // Verify UTF-8 is preserved
-        assert!(result.iter().any(|(_, v)| v.contains("José García")));
-        assert!(result.iter().any(|(_, v)| v.contains("Ñandú")));
-        assert!(result.iter().any(|(_, v)| v.contains("版权所有")));
+        // Verify content is preserved
+        assert!(result.iter().any(|(_, v)| v.contains("Jose Garcia")));
+        assert!(result.iter().any(|(_, v)| v.contains("Nandu")));
+        assert!(result.iter().any(|(_, v)| v.contains("Copyright")));
     }
 
     #[test]
@@ -557,5 +666,237 @@ mod tests {
             .filter(|(name, _)| name == "XMP:Title")
             .collect();
         assert_eq!(titles.len(), 1);
+    }
+
+    #[test]
+    fn test_xmp_toolkit_extraction() {
+        // Test extraction of XMPToolkit from x:xmpmeta element
+        let xml = br#"
+            <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Image::ExifTool 12.46">
+              <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+                  <xmp:Creator>John Doe</xmp:Creator>
+                </rdf:Description>
+              </rdf:RDF>
+            </x:xmpmeta>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        // Should have XMPToolkit and Creator
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:XMPToolkit"),
+            "Missing XMP:XMPToolkit. Found: {:?}",
+            prop_names
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Creator"),
+            "Missing XMP:Creator"
+        );
+
+        // Verify XMPToolkit value
+        let toolkit = result
+            .iter()
+            .find(|(name, _)| name == "XMP:XMPToolkit")
+            .map(|(_, v)| v.as_str());
+        assert_eq!(toolkit, Some("Image::ExifTool 12.46"));
+    }
+
+    #[test]
+    fn test_rdf_about_extraction() {
+        // Test extraction of rdf:about attribute from rdf:Description
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="uuid:faf5bdd5-ba3d-11da-ad31-d33d75182f1b"
+                               xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+                <xmp:Creator>John Doe</xmp:Creator>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        // Should have About and Creator
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:About"),
+            "Missing XMP:About. Found: {:?}",
+            prop_names
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Creator"),
+            "Missing XMP:Creator"
+        );
+
+        // Verify About value
+        let about = result
+            .iter()
+            .find(|(name, _)| name == "XMP:About")
+            .map(|(_, v)| v.as_str());
+        assert_eq!(about, Some("uuid:faf5bdd5-ba3d-11da-ad31-d33d75182f1b"));
+    }
+
+    #[test]
+    fn test_shorthand_attributes() {
+        // Test extraction of XMP properties from rdf:Description attributes (shorthand form)
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+                     xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/">
+              <rdf:Description rdf:about=""
+                               xmp:CreateDate="2023-01-15T10:30:00"
+                               xmp:ModifyDate="2023-01-20T14:00:00"
+                               photoshop:DateCreated="2023-01-15">
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        // Should have shorthand properties extracted
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:CreateDate"),
+            "Missing XMP:CreateDate. Found: {:?}",
+            prop_names
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:ModifyDate"),
+            "Missing XMP:ModifyDate"
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP-photoshop:DateCreated"),
+            "Missing XMP-photoshop:DateCreated. Found: {:?}",
+            prop_names
+        );
+
+        // Verify values
+        let create_date = result
+            .iter()
+            .find(|(name, _)| name == "XMP:CreateDate")
+            .map(|(_, v)| v.as_str());
+        assert_eq!(create_date, Some("2023-01-15T10:30:00"));
+    }
+
+    #[test]
+    fn test_self_closing_description_with_attributes() {
+        // Test self-closing rdf:Description with shorthand properties
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+              <rdf:Description rdf:about="test.jpg"
+                               xmp:Rating="5"
+                               xmp:Label="Yellow" />
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:About"),
+            "Missing XMP:About. Found: {:?}",
+            prop_names
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Rating"),
+            "Missing XMP:Rating"
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Label"),
+            "Missing XMP:Label"
+        );
+
+        let rating = result
+            .iter()
+            .find(|(name, _)| name == "XMP:Rating")
+            .map(|(_, v)| v.as_str());
+        assert_eq!(rating, Some("5"));
+    }
+
+    #[test]
+    fn test_full_xmp_packet_structure() {
+        // Test a complete XMP packet with all features
+        let xml = br#"
+            <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Adobe XMP Core 5.6-c140">
+              <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description rdf:about=""
+                                 xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+                                 xmlns:dc="http://purl.org/dc/elements/1.1/"
+                                 xmp:CreateDate="2023-01-15T10:30:00+05:30"
+                                 xmp:ModifyDate="2023-01-20T14:00:00Z">
+                  <dc:creator>John Doe</dc:creator>
+                  <dc:title>My Photo</dc:title>
+                </rdf:Description>
+              </rdf:RDF>
+            </x:xmpmeta>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        // Verify all expected tags are present
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+
+        // XMPToolkit from x:xmpmeta
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:XMPToolkit"),
+            "Missing XMP:XMPToolkit. Found: {:?}",
+            prop_names
+        );
+
+        // Shorthand attributes from rdf:Description
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:CreateDate"),
+            "Missing XMP:CreateDate"
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:ModifyDate"),
+            "Missing XMP:ModifyDate"
+        );
+
+        // Child element properties
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Creator"),
+            "Missing XMP:Creator (dc:creator)"
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Title"),
+            "Missing XMP:Title (dc:title)"
+        );
+
+        // Verify XMPToolkit value
+        let toolkit = result
+            .iter()
+            .find(|(name, _)| name == "XMP:XMPToolkit")
+            .map(|(_, v)| v.as_str());
+        assert_eq!(toolkit, Some("Adobe XMP Core 5.6-c140"));
+    }
+
+    #[test]
+    fn test_empty_rdf_about_is_skipped() {
+        // Test that empty rdf:about values are not included
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about=""
+                               xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+                <xmp:Creator>John Doe</xmp:Creator>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        // Should only have Creator, not an empty About
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+        assert!(
+            !prop_names.iter().any(|n| n == "XMP:About"),
+            "Should not include empty XMP:About. Found: {:?}",
+            prop_names
+        );
+        assert!(
+            prop_names.iter().any(|n| n == "XMP:Creator"),
+            "Missing XMP:Creator"
+        );
     }
 }

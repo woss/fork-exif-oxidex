@@ -319,6 +319,97 @@ const_decoder!(pub BURST_MODE,
 // Face detection decoder - maps values to face detection on/off
 const_decoder!(pub FACE_DETECTION, i32, [(0, "Off"), (1, "On"),]);
 
+// ============================================================================
+// Additional Decoders for Extended Tag Coverage
+// ============================================================================
+// These decoders handle additional Panasonic MakerNote tags for improved
+// ExifTool compatibility. Tag IDs are from ExifTool's Panasonic.pm module.
+
+// Audio recording mode decoder (tag 0x0020)
+const_decoder!(pub AUDIO, i32, [(1, "Yes"), (2, "No"), (3, "Stereo"),]);
+
+// Color effect decoder (tag 0x0028)
+const_decoder!(pub COLOR_EFFECT, i32,
+    [(1, "Off"), (2, "Warm"), (3, "Cool"), (4, "Black & White"),
+     (5, "Sepia"), (6, "Happy"), (8, "Vivid"),]
+);
+
+// Self timer mode decoder (tag 0x002E)
+const_decoder!(pub SELF_TIMER_MODE, i32,
+    [(1, "Off"), (2, "10 s"), (3, "2 s"), (4, "10 s / 3 shots"),]
+);
+
+// AF assist lamp decoder (tag 0x0031)
+const_decoder!(pub AF_ASSIST_LAMP, i32,
+    [(1, "Fired"), (2, "Enabled but Not Used"),
+     (3, "Disabled but Required"), (4, "Disabled and Not Required"),]
+);
+
+// Optical zoom mode decoder (tag 0x0034)
+const_decoder!(pub OPTICAL_ZOOM_MODE, i32, [(1, "Standard"), (2, "Extended"),]);
+
+// Conversion lens decoder (tag 0x0035)
+const_decoder!(pub CONVERSION_LENS, i32,
+    [(1, "Off"), (2, "Wide"), (3, "Telephoto"), (4, "Macro"),]
+);
+
+// World time location decoder (tag 0x003A)
+const_decoder!(pub WORLD_TIME_LOCATION, i32, [(1, "Home"), (2, "Destination"),]);
+
+// Text stamp decoder (tag 0x003B, 0x003E, 0x8008, 0x8009)
+const_decoder!(pub TEXT_STAMP, i32, [(1, "Off"), (2, "On"),]);
+
+// Advanced scene type decoder (tag 0x003D)
+const_decoder!(pub ADVANCED_SCENE_TYPE, i32,
+    [(1, "Normal"), (2, "Outdoor/Illuminations/Flower/HDR Art"),
+     (3, "Indoor/Architecture/Objects/HDR B&W"), (4, "Creative"), (5, "Auto"),
+     (7, "Expressive"), (8, "Retro"), (9, "Pure"), (10, "Elegant"),
+     (12, "Monochrome"), (13, "Dynamic Art"), (14, "Silhouette"),]
+);
+
+// Bracket settings decoder (tag 0x0045)
+const_decoder!(pub BRACKET_SETTINGS, i32,
+    [(0, "No Bracket"), (1, "3 Images, Sequence 0/-/+"), (2, "3 Images, Sequence -/0/+"),
+     (3, "5 Images, Sequence 0/-/+"), (4, "5 Images, Sequence -/0/+"),
+     (5, "7 Images, Sequence 0/-/+"), (6, "7 Images, Sequence -/0/+"),]
+);
+
+// Flash curtain decoder (tag 0x0048)
+const_decoder!(pub FLASH_CURTAIN, i32, [(0, "n/a"), (1, "1st"), (2, "2nd"),]);
+
+// Flash warning decoder (tag 0x0062)
+const_decoder!(pub FLASH_WARNING, i32,
+    [(0, "No"), (1, "Yes (flash required but disabled)"),]
+);
+
+// Burst speed decoder (tag 0x0077)
+const_decoder!(pub BURST_SPEED, i32, [(0, "Low"), (1, "Mid"), (2, "High"),]);
+
+// Clear retouch decoder (tag 0x007C)
+const_decoder!(pub CLEAR_RETOUCH, i32, [(0, "Off"), (1, "On"),]);
+
+// Shading compensation decoder (tag 0x008A)
+const_decoder!(pub SHADING_COMPENSATION, i32, [(0, "Off"), (1, "On"),]);
+
+// Sweep panorama direction decoder (tag 0x0093)
+const_decoder!(pub SWEEP_PANORAMA_DIRECTION, i32,
+    [(0, "Off"), (1, "Left to Right"), (2, "Right to Left"),
+     (3, "Top to Bottom"), (4, "Bottom to Top"),]
+);
+
+// Timer recording decoder (tag 0x0096)
+const_decoder!(pub TIMER_RECORDING, i32,
+    [(0, "Off"), (1, "Time Lapse"), (2, "Stop-motion Animation"),]
+);
+
+// Shutter type decoder (tag 0x009F)
+const_decoder!(pub SHUTTER_TYPE, i32,
+    [(0, "Mechanical"), (1, "Electronic"), (2, "Hybrid"),]
+);
+
+// Touch AE decoder (tag 0x00AB)
+const_decoder!(pub TOUCH_AE, i32, [(0, "Off"), (1, "On"),]);
+
 /// Represents a Panasonic MakerNote parser
 pub struct PanasonicParser;
 
@@ -403,9 +494,14 @@ impl PanasonicParser {
         let tag_id = entry.tag_id;
 
         // Special handling for string tags (must read from data buffer)
+        // These tags contain text data that needs to be extracted from the makernote
         match tag_id {
-            0x0001 | 0x0002 | 0x0004 | 0x0025 | 0x0052 => {
-                // Version, CameraModel, FirmwareVersion, InternalSerialNumber, LensSerialNumber
+            // Basic info strings
+            0x0001 | 0x0002 | 0x0025 | 0x0026 | 0x0052 | 0x0054 |
+            // Supplementary info strings (BabyAge, Title, BabyName)
+            0x0033 | 0x0065 | 0x0066 |
+            // Location-related strings
+            0x0067 | 0x0069 | 0x006B | 0x006D | 0x006F | 0x0080 => {
                 if let Some(value) = extract_string_value(entry, data, ifd_offset) {
                     if let Some(tag_name) = registry.get_tag_name(tag_id) {
                         tags.insert(format!("Panasonic:{}", tag_name), value);

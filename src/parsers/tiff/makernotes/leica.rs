@@ -642,6 +642,91 @@ impl MakerNoteParser for LeicaMakerNoteParser {
                     tags.insert("Leica:CameraRollAngle".to_string(), format!("{}°", value));
                 }
 
+                // 35mm equivalent focal length
+                LEICA_FOCAL_LENGTH_35MM => {
+                    let value = entry.value_offset;
+                    tags.insert("Leica:FocalLength35mm".to_string(), format!("{} mm", value));
+                }
+
+                // Lens serial number
+                LEICA_LENS_SERIAL_NUMBER => {
+                    if entry.value_count <= 4 {
+                        tags.insert(
+                            "Leica:LensSerialNumber".to_string(),
+                            entry.value_offset.to_string(),
+                        );
+                    }
+                }
+
+                // Contrast detect AF (phase detection/contrast detection mode)
+                LEICA_CONTRAST_DETECT_AF => {
+                    let value = entry.value_offset as i32;
+                    let af_str = match value {
+                        0 => "Off",
+                        1 => "On",
+                        _ => "Unknown",
+                    };
+                    tags.insert("Leica:ContrastDetectAF".to_string(), af_str.to_string());
+                }
+
+                // DNG version
+                LEICA_DNG_VERSION => {
+                    let value = entry.value_offset;
+                    // DNG version is typically stored as 4 bytes (e.g., 1.4.0.0)
+                    let major = (value >> 24) & 0xFF;
+                    let minor = (value >> 16) & 0xFF;
+                    let patch = (value >> 8) & 0xFF;
+                    let build = value & 0xFF;
+                    tags.insert(
+                        "Leica:DNGVersion".to_string(),
+                        format!("{}.{}.{}.{}", major, minor, patch, build),
+                    );
+                }
+
+                // Perspective control (tilt-shift)
+                LEICA_PERSPECTIVE_CONTROL => {
+                    let value = entry.value_offset as i32;
+                    let pc_str = match value {
+                        0 => "Off",
+                        1 => "On",
+                        _ => "Unknown",
+                    };
+                    tags.insert("Leica:PerspectiveControl".to_string(), pc_str.to_string());
+                }
+
+                // AF point
+                LEICA_AF_POINT => {
+                    let value = entry.value_offset;
+                    tags.insert("Leica:AFPoint".to_string(), value.to_string());
+                }
+
+                // Picture control / photo style
+                LEICA_PICTURE_CONTROL => {
+                    let value = entry.value_offset;
+                    tags.insert("Leica:PictureControl".to_string(), value.to_string());
+                }
+
+                // Image ID
+                LEICA_IMAGE_ID => {
+                    let value = entry.value_offset;
+                    tags.insert("Leica:ImageID".to_string(), value.to_string());
+                }
+
+                // APEX brightness value
+                LEICA_APEX_BRIGHTNESS => {
+                    let value = entry.value_offset as f32 / 10.0;
+                    tags.insert("Leica:APEXBrightness".to_string(), format!("{:.1}", value));
+                }
+
+                // External sensor brightness value
+                LEICA_EXTERNAL_SENSOR_BRIGHTNESS_VALUE => {
+                    let value = entry.value_offset as f32 / 10.0;
+                    tags.insert(
+                        "Leica:ExternalSensorBrightnessValue".to_string(),
+                        format!("{:.1} EV", value),
+                    );
+                }
+
                 _ => {
                     // Unknown tags - optionally store for debugging
                     // Uncomment to see all unknown tags:
@@ -658,47 +743,61 @@ impl MakerNoteParser for LeicaMakerNoteParser {
 }
 
 /// Maps Leica tag ID to human-readable tag name
+///
+/// Provides a comprehensive mapping of all known Leica MakerNote tag IDs to their
+/// corresponding tag names. This function is used for debugging and for generating
+/// human-readable tag names in the output.
 fn leica_tag_to_name(tag_id: u16) -> String {
     let tag_name = match tag_id {
         LEICA_QUALITY => "Quality",
         LEICA_USER_PROFILE => "UserProfile",
         LEICA_SERIAL_NUMBER => "SerialNumber",
         LEICA_WHITE_BALANCE => "WhiteBalance",
+        LEICA_EXTERNAL_SENSOR_BRIGHTNESS_VALUE => "ExternalSensorBrightnessValue",
+        LEICA_MEASURED_LV => "MeasuredLV",
+        LEICA_APPROXIMATE_F_NUMBER => "ApproximateFNumber",
+        LEICA_CAMERA_TEMPERATURE => "CameraTemperature",
         LEICA_COLOR_TEMPERATURE => "ColorTemperature",
         LEICA_WB_RED_LEVEL => "WBRedLevel",
         LEICA_WB_GREEN_LEVEL => "WBGreenLevel",
         LEICA_WB_BLUE_LEVEL => "WBBlueLevel",
-        LEICA_CAMERA_TEMPERATURE => "CameraTemperature",
         LEICA_SHARPENING => "Sharpening",
         LEICA_CONTRAST => "Contrast",
         LEICA_SATURATION => "Saturation",
         LEICA_LENS_ID => "LensID",
         LEICA_LENS_TYPE => "LensType",
         LEICA_LENS_MODEL => "LensModel",
+        LEICA_ORIGINAL_FILE_NAME => "OriginalFileName",
+        LEICA_ORIGINAL_DIRECTORY => "OriginalDirectory",
         LEICA_EXPOSURE_MODE => "ExposureMode",
         LEICA_METERING_MODE => "MeteringMode",
+        LEICA_FILM_MODE => "FilmMode",
+        LEICA_WB_MODE => "WBMode",
+        LEICA_APEX_BRIGHTNESS => "APEXBrightness",
         LEICA_FLASH_MODE => "FlashMode",
         LEICA_FLASH_ENERGY => "FlashEnergy",
+        LEICA_INTERNAL_SERIAL_NUMBER => "InternalSerialNumber",
+        LEICA_FOCAL_LENGTH_35MM => "FocalLength35mm",
+        LEICA_LENS_SERIAL_NUMBER => "LensSerialNumber",
+        LEICA_CONTRAST_DETECT_AF => "ContrastDetectAF",
         LEICA_SHUTTER_COUNT => "ShutterCount",
         LEICA_FOCUS_DISTANCE => "FocusDistance",
+        LEICA_FRAME_SELECTOR => "FrameSelector",
+        LEICA_BASE_ISO => "BaseISO",
+        LEICA_IMAGE_ID => "ImageID",
+        LEICA_USER_COMMENT => "UserComment",
+        LEICA_PICTURE_CONTROL => "PictureControl",
+        LEICA_AF_POINT => "AFPoint",
         LEICA_AF_MODE => "AFMode",
         LEICA_IMAGE_STABILIZATION => "ImageStabilization",
         LEICA_DIGITAL_ZOOM => "DigitalZoom",
-        LEICA_MACRO_MODE => "MacroMode",
-        LEICA_SCENE_MODE => "SceneMode",
+        LEICA_DNG_VERSION => "DNGVersion",
         LEICA_CROP_MODE => "CropMode",
-        LEICA_BASE_ISO => "BaseISO",
-        LEICA_MEASURED_LV => "MeasuredLV",
-        LEICA_APPROXIMATE_F_NUMBER => "ApproximateFNumber",
-        LEICA_FILM_MODE => "FilmMode",
-        LEICA_FRAME_SELECTOR => "FrameSelector",
+        LEICA_PERSPECTIVE_CONTROL => "PerspectiveControl",
         LEICA_CAMERA_PITCH_ANGLE => "CameraPitchAngle",
         LEICA_CAMERA_ROLL_ANGLE => "CameraRollAngle",
-        LEICA_INTERNAL_SERIAL_NUMBER => "InternalSerialNumber",
-        LEICA_WB_MODE => "WBMode",
-        LEICA_LENS_SERIAL_NUMBER => "LensSerialNumber",
-        LEICA_ORIGINAL_FILE_NAME => "OriginalFileName",
-        LEICA_ORIGINAL_DIRECTORY => "OriginalDirectory",
+        LEICA_MACRO_MODE => "MacroMode",
+        LEICA_SCENE_MODE => "SceneMode",
         _ => return format!("Unknown-{:#06X}", tag_id),
     };
     tag_name.to_string()

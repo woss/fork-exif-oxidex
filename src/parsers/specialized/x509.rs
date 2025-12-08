@@ -439,7 +439,7 @@ impl X509Parser {
         let now = chrono::Utc::now();
         let now_str = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
-        let is_expired = not_after_str < &now_str;
+        let is_expired = not_after_str < now_str.as_str();
 
         // Calculate days until expiry (simplified)
         let days_remaining = if is_expired { -1 } else { 0 };

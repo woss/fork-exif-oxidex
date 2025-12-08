@@ -5,7 +5,8 @@
 
 use super::binary::{read_s15fixed16, read_signature, read_u16_be, read_u32_be, read_u64_be};
 use super::registries::{
-    lookup_in_table, HeaderField, PLATFORMS, PROFILE_CLASSES, RENDERING_INTENTS,
+    lookup_in_table, HeaderField, CMM_TYPES, MANUFACTURERS, PLATFORMS, PROFILE_CLASSES,
+    RENDERING_INTENTS,
 };
 use crate::core::TagValue;
 use crate::error::Result;
@@ -121,14 +122,23 @@ pub fn parse_header_registry(data: &[u8], metadata: &mut HashMap<String, TagValu
 // ============================================================================
 
 /// Extracts CMM type from header
+///
+/// Reads the 4-character CMM signature and converts it to a human-readable
+/// name using the CMM_TYPES lookup table.
 fn extract_cmm_type(
     data: &[u8],
     offset: usize,
     metadata: &mut HashMap<String, TagValue>,
 ) -> Result<()> {
     let cmm_type = read_signature(data, offset)?;
-    if !cmm_type.is_empty() {
-        metadata.insert("ProfileCMMType".to_string(), TagValue::new_string(cmm_type));
+    let trimmed = cmm_type.trim();
+    if !trimmed.is_empty() {
+        // Look up the CMM type in the registry to get a human-readable name
+        let cmm_name = lookup_in_table(CMM_TYPES, trimmed);
+        metadata.insert(
+            "ProfileCMMType".to_string(),
+            TagValue::new_string(cmm_name.to_string()),
+        );
     }
     Ok(())
 }
@@ -272,6 +282,9 @@ fn extract_flags(
 }
 
 /// Extracts device manufacturer from header
+///
+/// Reads the 4-character manufacturer signature and converts it to a
+/// human-readable name using the MANUFACTURERS lookup table.
 fn extract_manufacturer(
     data: &[u8],
     offset: usize,
@@ -279,11 +292,18 @@ fn extract_manufacturer(
 ) -> Result<()> {
     if data.len() >= offset + 4 {
         let manufacturer = read_signature(data, offset)?;
-        if !manufacturer.trim().is_empty() {
-            metadata.insert(
-                "DeviceManufacturer".to_string(),
-                TagValue::new_string(manufacturer),
-            );
+        let trimmed = manufacturer.trim();
+        if !trimmed.is_empty() {
+            // Look up the manufacturer in the registry to get a human-readable name
+            let manufacturer_name = lookup_in_table(MANUFACTURERS, trimmed);
+            // Only include if the lookup returned a non-empty name
+            // (handles the "none" -> "" case)
+            if !manufacturer_name.is_empty() {
+                metadata.insert(
+                    "DeviceManufacturer".to_string(),
+                    TagValue::new_string(manufacturer_name.to_string()),
+                );
+            }
         }
     }
     Ok(())
@@ -379,6 +399,9 @@ fn extract_illuminant(
 }
 
 /// Extracts profile creator from header
+///
+/// Reads the 4-character creator signature and converts it to a
+/// human-readable name using the MANUFACTURERS lookup table.
 fn extract_creator(
     data: &[u8],
     offset: usize,
@@ -386,8 +409,18 @@ fn extract_creator(
 ) -> Result<()> {
     if data.len() >= offset + 4 {
         let creator = read_signature(data, offset)?;
-        if !creator.trim().is_empty() {
-            metadata.insert("ProfileCreator".to_string(), TagValue::new_string(creator));
+        let trimmed = creator.trim();
+        if !trimmed.is_empty() {
+            // Look up the creator in the registry to get a human-readable name
+            let creator_name = lookup_in_table(MANUFACTURERS, trimmed);
+            // Only include if the lookup returned a non-empty name
+            // (handles the "none" -> "" case)
+            if !creator_name.is_empty() {
+                metadata.insert(
+                    "ProfileCreator".to_string(),
+                    TagValue::new_string(creator_name.to_string()),
+                );
+            }
         }
     }
     Ok(())

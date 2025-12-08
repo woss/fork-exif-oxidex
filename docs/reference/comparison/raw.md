@@ -4,7 +4,7 @@ title: RAW Compatibility
 
 # RAW Compatibility Report
 
-**Generated:** 2025-12-07 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.36 | **OxiDex:** v1.2.1
 
 ## Summary
 

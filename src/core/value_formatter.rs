@@ -525,6 +525,102 @@ pub fn needs_unit_suffix(tag_name: &str) -> bool {
     MM_SUFFIX_TAGS.contains(&base_name) || METER_SUFFIX_TAGS.contains(&base_name)
 }
 
+// ============================================================================
+// GPS REFERENCE VALUE FORMATTING
+// ============================================================================
+
+/// Format GPS reference values to human-readable descriptions.
+///
+/// GPS tags store reference values as single characters or numeric codes,
+/// but ExifTool displays them as human-readable descriptions. This function
+/// converts the raw values to match ExifTool's output format.
+///
+/// # Arguments
+///
+/// * `tag_name` - The tag name (e.g., "GPSLatitudeRef", "GPS:GPSAltitudeRef")
+/// * `value` - The raw value (string or numeric)
+///
+/// # Returns
+///
+/// The human-readable description, or None if no mapping exists.
+pub fn format_gps_reference(tag_name: &str, value: &str) -> Option<String> {
+    let base_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
+
+    match base_name {
+        "GPSLatitudeRef" | "GPSDestLatitudeRef" => match value.trim() {
+            "N" => Some("North".to_string()),
+            "S" => Some("South".to_string()),
+            _ => None,
+        },
+        "GPSLongitudeRef" | "GPSDestLongitudeRef" => match value.trim() {
+            "E" => Some("East".to_string()),
+            "W" => Some("West".to_string()),
+            _ => None,
+        },
+        "GPSAltitudeRef" => match value.trim() {
+            "0" | "\x00" => Some("Above Sea Level".to_string()),
+            "1" | "\x01" => Some("Below Sea Level".to_string()),
+            _ => None,
+        },
+        "GPSImgDirectionRef" | "GPSDestBearingRef" | "GPSTrackRef" => match value.trim() {
+            "T" => Some("True North".to_string()),
+            "M" => Some("Magnetic North".to_string()),
+            _ => None,
+        },
+        "GPSSpeedRef" => match value.trim() {
+            "K" => Some("km/h".to_string()),
+            "M" => Some("mph".to_string()),
+            "N" => Some("knots".to_string()),
+            _ => None,
+        },
+        "GPSDestDistanceRef" => match value.trim() {
+            "K" => Some("Kilometers".to_string()),
+            "M" => Some("Miles".to_string()),
+            "N" => Some("Nautical Miles".to_string()),
+            _ => None,
+        },
+        "GPSMeasureMode" => match value.trim() {
+            "2" => Some("2-Dimensional Measurement".to_string()),
+            "3" => Some("3-Dimensional Measurement".to_string()),
+            _ => None,
+        },
+        "GPSStatus" => match value.trim() {
+            "A" => Some("Measurement Active".to_string()),
+            "V" => Some("Measurement Void".to_string()),
+            _ => None,
+        },
+        "GPSDifferential" => match value.trim() {
+            "0" => Some("No Correction".to_string()),
+            "1" => Some("Differential Corrected".to_string()),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// List of GPS reference tag names that should have their values formatted.
+pub const GPS_REFERENCE_TAGS: &[&str] = &[
+    "GPSLatitudeRef",
+    "GPSLongitudeRef",
+    "GPSAltitudeRef",
+    "GPSImgDirectionRef",
+    "GPSDestBearingRef",
+    "GPSTrackRef",
+    "GPSSpeedRef",
+    "GPSDestDistanceRef",
+    "GPSMeasureMode",
+    "GPSStatus",
+    "GPSDifferential",
+    "GPSDestLatitudeRef",
+    "GPSDestLongitudeRef",
+];
+
+/// Check if a tag name is a GPS reference tag that needs formatting.
+pub fn is_gps_reference_tag(tag_name: &str) -> bool {
+    let base_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
+    GPS_REFERENCE_TAGS.contains(&base_name)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

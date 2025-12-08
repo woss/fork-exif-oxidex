@@ -11,6 +11,97 @@ use crate::parsers::tiff::makernotes::canon;
 use crate::tag_db::lookup_tag_name;
 use std::collections::HashMap;
 
+// =============================================================================
+// Interoperability IFD Tag Constants
+// =============================================================================
+//
+// The Interoperability IFD is a sub-IFD within the EXIF IFD that stores
+// compatibility information for DCF (Design Rule for Camera File System) files.
+// These tags specify the color space and format conformance of the image.
+
+/// InteropIndex (0x0001): Identifies the conformance standard.
+/// Common values: "R98" (DCF basic), "R03" (DCF option/Adobe RGB), "THM" (thumbnail)
+const INTEROP_INDEX: u16 = 0x0001;
+
+/// InteropVersion (0x0002): Version of the interoperability standard.
+/// Typically "0100" encoded as four ASCII digits.
+const INTEROP_VERSION: u16 = 0x0002;
+
+/// RelatedImageWidth (0x1001): Width of the related full-resolution image.
+/// Stored in the Interoperability IFD to indicate dimensions.
+const RELATED_IMAGE_WIDTH: u16 = 0x1001;
+
+/// RelatedImageHeight (0x1002): Height of the related full-resolution image.
+/// Stored in the Interoperability IFD to indicate dimensions.
+const RELATED_IMAGE_HEIGHT: u16 = 0x1002;
+
+/// InteroperabilityIFDPointer (0xA005): Offset to the Interoperability IFD.
+/// Found in the EXIF IFD, points to a sub-IFD containing interop tags.
+const INTEROPERABILITY_IFD_POINTER: u16 = 0xA005;
+
+// =============================================================================
+// Interoperability IFD Helper Functions
+// =============================================================================
+
+/// Maps an Interoperability IFD tag ID to its canonical name.
+///
+/// The Interoperability IFD contains only a few defined tags. This function
+/// returns the ExifTool-compatible tag name for known tags, or "Unknown" for
+/// unrecognized tag IDs.
+///
+/// # Arguments
+///
+/// * `tag_id` - The numeric tag identifier from the Interoperability IFD
+///
+/// # Returns
+///
+/// A static string with the tag name (e.g., "InteropIndex", "InteropVersion")
+fn interop_tag_to_name(tag_id: u16) -> &'static str {
+    match tag_id {
+        INTEROP_INDEX => "InteropIndex",
+        INTEROP_VERSION => "InteropVersion",
+        RELATED_IMAGE_WIDTH => "RelatedImageWidth",
+        RELATED_IMAGE_HEIGHT => "RelatedImageHeight",
+        _ => "Unknown",
+    }
+}
+
+/// Formats the InteropIndex value with a human-readable description.
+///
+/// The InteropIndex tag (0x0001) contains a short identifier indicating which
+/// DCF (Design rule for Camera File system) specification the image conforms to.
+/// This function expands the identifier to include the full description as
+/// ExifTool does.
+///
+/// # Arguments
+///
+/// * `raw_index` - The raw InteropIndex string (e.g., "R98", "R03", "THM")
+///
+/// # Returns
+///
+/// A formatted string with the index and its description:
+/// - "R98" -> "R98 - DCF basic file (sRGB)"
+/// - "R03" -> "R03 - DCF option file (Adobe RGB)"
+/// - "THM" -> "THM - DCF thumbnail file"
+/// - Other values are returned as-is
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_eq!(format_interop_index("R98"), "R98 - DCF basic file (sRGB)");
+/// assert_eq!(format_interop_index("R03"), "R03 - DCF option file (Adobe RGB)");
+/// assert_eq!(format_interop_index("THM"), "THM - DCF thumbnail file");
+/// assert_eq!(format_interop_index("UNKNOWN"), "UNKNOWN");
+/// ```
+fn format_interop_index(raw_index: &str) -> String {
+    match raw_index {
+        "R98" => "R98 - DCF basic file (sRGB)".to_string(),
+        "R03" => "R03 - DCF option file (Adobe RGB)".to_string(),
+        "THM" => "THM - DCF thumbnail file".to_string(),
+        other => other.to_string(),
+    }
+}
+
 /// Parses a chain of IFDs in a TIFF file.
 ///
 /// TIFF files can contain multiple IFDs linked together. This function
@@ -185,7 +276,9 @@ fn process_tiff_ifd_tags<'a>(
 /// Parses an EXIF sub-IFD and extracts tags.
 ///
 /// The EXIF sub-IFD contains detailed camera settings and shooting parameters.
-/// It may also contain MakerNote data specific to camera manufacturers.
+/// It may also contain:
+/// - MakerNote data specific to camera manufacturers
+/// - InteroperabilityIFDPointer (0xA005) pointing to the Interoperability sub-IFD
 ///
 /// # Arguments
 ///
@@ -200,17 +293,28 @@ pub fn parse_exif_subifd(
     metadata: &mut MetadataMap,
 ) {
     if let Ok(exif_tags) = parse_ifd(reader, offset, byte_order) {
-        // Track MakerNote in EXIF IFD
+        // Track MakerNote and InteroperabilityIFD pointer in EXIF IFD
         let mut exif_makernote_data: Option<&[u8]> = None;
+        let mut interop_ifd_offset: Option<u64> = None;
 
-        // First pass: convert tags and capture MakerNote
+        // First pass: convert tags and capture special pointers
         for (tag_id, field_type, value_count, raw_bytes) in &exif_tags {
             // Convert Cow<[u8]> to &[u8] for processing
             let bytes = raw_bytes.as_ref();
 
-            // Check for MakerNote in EXIF IFD
+            // Check for MakerNote in EXIF IFD (tag 0x927C)
             if *tag_id == 0x927C {
                 exif_makernote_data = Some(bytes);
+            }
+
+            // Check for InteroperabilityIFDPointer (tag 0xA005)
+            // This pointer leads to the Interoperability sub-IFD containing
+            // DCF conformance information (InteropIndex, InteropVersion, etc.)
+            if *tag_id == INTEROPERABILITY_IFD_POINTER && bytes.len() >= 4 {
+                let iop_offset = read_u32(bytes, byte_order);
+                interop_ifd_offset = Some(iop_offset as u64);
+                // Don't add the pointer tag to metadata - we'll parse the sub-IFD instead
+                continue;
             }
 
             let tag_name = lookup_tag_name(*tag_id, "ExifIFD");
@@ -222,6 +326,73 @@ pub fn parse_exif_subifd(
         // Second pass: Parse Canon MakerNote if found in EXIF IFD
         if let Some(makernote_bytes) = exif_makernote_data {
             parse_makernote_if_canon(makernote_bytes, byte_order, metadata);
+        }
+
+        // Third pass: Parse Interoperability IFD if pointer was found
+        // The Interop IFD contains DCF conformance tags like InteropIndex and InteropVersion
+        if let Some(iop_offset) = interop_ifd_offset {
+            parse_interop_subifd(reader, iop_offset, byte_order, metadata);
+        }
+    }
+}
+
+/// Parses an Interoperability sub-IFD and extracts Interop tags.
+///
+/// The Interoperability IFD is a sub-IFD referenced from the EXIF IFD via tag 0xA005.
+/// It contains DCF (Design Rule for Camera File System) conformance information:
+///
+/// - **InteropIndex (0x0001)**: Conformance standard identifier
+///   - "R98": DCF basic file (sRGB color space)
+///   - "R03": DCF option file (Adobe RGB color space)
+///   - "THM": DCF thumbnail file
+/// - **InteropVersion (0x0002)**: Version of the interoperability standard (usually "0100")
+/// - **RelatedImageWidth (0x1001)**: Width of the related full-resolution image
+/// - **RelatedImageHeight (0x1002)**: Height of the related full-resolution image
+///
+/// All tags are output with the "EXIF:" prefix to match ExifTool's output format.
+///
+/// # Arguments
+///
+/// * `reader` - File reader providing access to the file
+/// * `offset` - Offset to the Interoperability sub-IFD
+/// * `byte_order` - Byte order for interpreting multi-byte values
+/// * `metadata` - MetadataMap to populate with Interop tags
+fn parse_interop_subifd(
+    reader: &dyn FileReader,
+    offset: u64,
+    byte_order: ByteOrder,
+    metadata: &mut MetadataMap,
+) {
+    // Attempt to parse the Interoperability IFD structure
+    if let Ok(interop_tags) = parse_ifd(reader, offset, byte_order) {
+        for (tag_id, field_type, value_count, raw_bytes) in interop_tags {
+            let bytes = raw_bytes.as_ref();
+
+            // Get the Interop tag name - use our local mapping for known tags
+            let tag_base_name = interop_tag_to_name(tag_id);
+
+            // Skip unknown tags (they would return "Unknown" from interop_tag_to_name)
+            if tag_base_name == "Unknown" {
+                continue;
+            }
+
+            // Build the full tag name with "EXIF:" prefix to match ExifTool output
+            let tag_name = format!("EXIF:{}", tag_base_name);
+
+            // Convert the raw bytes to a TagValue
+            let mut tag_value =
+                raw_bytes_to_tag_value(bytes, field_type, value_count, tag_id, byte_order);
+
+            // Apply special formatting for InteropIndex
+            // ExifTool formats this as "R98 - DCF basic file (sRGB)" etc.
+            if tag_id == INTEROP_INDEX {
+                if let Some(raw_index) = tag_value.as_string() {
+                    let formatted = format_interop_index(raw_index);
+                    tag_value = TagValue::String(formatted);
+                }
+            }
+
+            metadata.insert(tag_name, tag_value);
         }
     }
 }

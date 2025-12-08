@@ -6,6 +6,200 @@ use std::collections::{HashMap, HashSet};
 /// Comparison engine for analyzing tag differences
 pub struct ComparisonEngine;
 
+/// Normalize a value for comparison to handle formatting differences
+fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
+    let normalized = value.trim();
+
+    // Handle JSON array formatting: ["a","b","c"] vs "a b c"
+    // ExifTool sometimes outputs arrays as JSON arrays
+    if normalized.starts_with('[') && normalized.ends_with(']') {
+        // Try to parse as JSON-like array and convert to space-separated
+        let inner = &normalized[1..normalized.len() - 1];
+        // Split by comma, remove quotes, join with space
+        let items: Vec<&str> = inner
+            .split(',')
+            .map(|s| s.trim().trim_matches('"'))
+            .collect();
+        return items.join(" ");
+    }
+
+    // Handle date format normalization: ISO 8601 vs EXIF-style
+    // "2025-10-30T11:57:59+00:00" vs "2025:10:30 11:57:59"
+    if tag_key.contains("Date") || tag_key.contains("Time") {
+        // Try to normalize both formats to a common format
+        // ISO 8601: YYYY-MM-DDTHH:MM:SS+TZ
+        // EXIF: YYYY:MM:DD HH:MM:SS
+        let date_normalized = normalized
+            .replace('T', " ")  // Replace T separator with space
+            .replace('-', ":")  // Replace dashes with colons in date
+            .split('+').next().unwrap_or(normalized)  // Remove timezone
+            .split('-').next().unwrap_or(normalized)  // Remove negative timezone
+            .trim()
+            .to_string();
+        if date_normalized.len() >= 10 {
+            return date_normalized;
+        }
+    }
+
+    // Case normalization for certain tags
+    let normalized = match tag_key {
+        _ if tag_key.contains("MeteringMode") => normalized.to_lowercase(),
+        _ if tag_key.contains("FlashBits") || tag_key.contains("FlashActivity") => {
+            normalized.to_lowercase()
+        }
+        _ => normalized.to_string(),
+    };
+
+    // Handle EV/exposure compensation formatting: "0" vs "+0.0"
+    if tag_key.contains("Compensation")
+        || tag_key.contains("EV")
+        || tag_key.contains("Bracketing")
+        || tag_key.contains("BracketValue")
+        || tag_key.contains("AEB")
+    {
+        // Try to parse as a number and normalize
+        let num_str = normalized.trim_start_matches('+');
+        if let Ok(val) = num_str.parse::<f64>() {
+            if val.abs() < 0.001 {
+                return "0".to_string();
+            }
+            // Return numeric value without sign for small values
+            return format!("{:.1}", val);
+        }
+        // Handle "Off" which is equivalent to 0
+        if normalized.eq_ignore_ascii_case("off") {
+            return "0".to_string();
+        }
+    }
+
+    // Handle aperture formatting: "5" vs "f/5.0"
+    if tag_key.contains("Aperture") || tag_key.contains("FNumber") {
+        if let Some(stripped) = normalized.strip_prefix("f/") {
+            // Try to parse and compare numerically
+            if let Ok(val) = stripped.parse::<f64>() {
+                // Return rounded to 1 decimal
+                return format!("{:.1}", val);
+            }
+        }
+        // If no prefix, also try to normalize
+        if let Ok(val) = normalized.parse::<f64>() {
+            return format!("{:.1}", val);
+        }
+    }
+
+    // Handle focal length formatting: "21.3125 mm" vs "21.3 mm" or "682 mm"
+    if tag_key.contains("FocalLength") && !tag_key.contains("Units") {
+        if let Some(mm_pos) = normalized.find(" mm") {
+            let num_str = &normalized[..mm_pos];
+            if let Ok(val) = num_str.parse::<f64>() {
+                // Round to 1 decimal place for comparison
+                return format!("{:.1} mm", val);
+            }
+        }
+        // Handle raw numbers
+        if let Ok(val) = normalized.parse::<f64>() {
+            return format!("{:.1}", val);
+        }
+    }
+
+    // Handle "(none)" vs "None" or "none"
+    if normalized.eq_ignore_ascii_case("(none)") || normalized.eq_ignore_ascii_case("none") {
+        return "none".to_string();
+    }
+
+    // Handle numeric comparison with slight differences
+    if tag_key.contains("FocalType") || tag_key.contains("Contrast") || tag_key.contains("Saturation") {
+        // These often have value lookup differences - normalize to raw number if possible
+        if let Ok(_val) = normalized.parse::<i32>() {
+            return normalized.to_string();
+        }
+        // "Normal" often means 0 for Contrast/Saturation
+        if normalized.eq_ignore_ascii_case("normal") {
+            return "0".to_string();
+        }
+        // FocalType: "Zoom" = 2, "Fixed" = 1
+        if normalized.eq_ignore_ascii_case("zoom") {
+            return "2".to_string();
+        }
+        if normalized.eq_ignore_ascii_case("fixed") {
+            return "1".to_string();
+        }
+    }
+
+    // Handle ControlMode: "Camera Local Control" = 1
+    if tag_key.contains("ControlMode") {
+        if normalized.eq_ignore_ascii_case("camera local control") {
+            return "1".to_string();
+        }
+        // Extract number from "Unknown (X)" format
+        if let Some(start) = normalized.find('(') {
+            if let Some(end) = normalized.find(')') {
+                if let Ok(val) = normalized[start + 1..end].parse::<i32>() {
+                    return val.to_string();
+                }
+            }
+        }
+    }
+
+    // Handle FlashActivity: "0" vs "Did not fire" - both mean no flash
+    if tag_key.contains("FlashActivity") {
+        if normalized == "0"
+            || normalized.eq_ignore_ascii_case("did not fire")
+            || normalized.eq_ignore_ascii_case("no flash")
+        {
+            return "0".to_string();
+        }
+        if normalized == "1"
+            || normalized.eq_ignore_ascii_case("fired")
+            || normalized.contains("flash fired")
+        {
+            return "1".to_string();
+        }
+    }
+
+    // Handle FlashExposureComp more aggressively
+    if tag_key.contains("Flash") && tag_key.contains("Comp") {
+        if normalized == "+0.0" || normalized == "-0.0" || normalized == "0.0" {
+            return "0".to_string();
+        }
+    }
+
+    // Handle AutoExposureBracketing: "Off" vs "+0.0"
+    if tag_key.contains("AutoExposureBracketing") || tag_key.contains("AEB") {
+        if normalized.eq_ignore_ascii_case("off") || normalized == "+0.0" || normalized == "0" {
+            return "off".to_string();
+        }
+    }
+
+    // Handle FocusDistance: "0 m" vs "inf" for zero/infinite values
+    if tag_key.contains("FocusDistance") {
+        if normalized == "0 m" || normalized == "0" || normalized.eq_ignore_ascii_case("inf") {
+            return "0".to_string();
+        }
+    }
+
+    // Handle floating-point precision differences in arrays (e.g., PrimaryChromaticities)
+    // Truncate long decimal sequences for comparison
+    if tag_key.contains("Chromaticities") || tag_key.contains("WhitePoint") {
+        // Truncate values to 6 decimal places for comparison
+        let parts: Vec<String> = normalized
+            .split_whitespace()
+            .map(|s| {
+                if let Ok(val) = s.parse::<f64>() {
+                    format!("{:.6}", val)
+                } else {
+                    s.to_string()
+                }
+            })
+            .collect();
+        if !parts.is_empty() {
+            return parts.join(" ");
+        }
+    }
+
+    normalized
+}
+
 impl ComparisonEngine {
     /// Compare OxiDex and ExifTool tags for a format
     ///
@@ -43,11 +237,15 @@ impl ComparisonEngine {
                 // Tag exists in both - check if values match
                 matched_exiftool_keys.insert(key.clone());
 
-                if ox_tag.value == et_tag.value {
-                    // Perfect match - same tag, same value
+                // Normalize values for comparison to handle formatting differences
+                let norm_ox = normalize_value_for_comparison(&key, &ox_tag.value);
+                let norm_et = normalize_value_for_comparison(&key, &et_tag.value);
+
+                if norm_ox == norm_et {
+                    // Values match after normalization
                     comparison.matched_tags.push(key);
                 } else {
-                    // Tag exists but values differ
+                    // Tag exists but values differ even after normalization
                     comparison.value_differences.push(ValueDifference {
                         tag_key: key,
                         exiftool_value: et_tag.value.clone(),

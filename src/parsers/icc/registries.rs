@@ -325,6 +325,188 @@ pub static RENDERING_INTENTS: &[&str] = &[
     "Absolute Colorimetric",
 ];
 
+/// CMM (Color Management Module) type lookup table
+///
+/// Maps 4-character CMM signature codes to human-readable CMM names.
+/// These codes identify the Color Management Module used to create the profile.
+pub static CMM_TYPES: &[LookupEntry] = &[
+    LookupEntry {
+        code: "ADBE",
+        name: "Adobe",
+    },
+    LookupEntry {
+        code: "ACMS",
+        name: "Agfa",
+    },
+    LookupEntry {
+        code: "appl",
+        name: "Apple CMM",
+    },
+    LookupEntry {
+        code: "APPL",
+        name: "Apple CMM",
+    },
+    LookupEntry {
+        code: "CCMS",
+        name: "ColorGear",
+    },
+    LookupEntry {
+        code: "Efi",
+        name: "EFI",
+    },
+    LookupEntry {
+        code: "EFI",
+        name: "EFI",
+    },
+    LookupEntry {
+        code: "FF",
+        name: "Fuji Film",
+    },
+    LookupEntry {
+        code: "EXAC",
+        name: "ExactCode",
+    },
+    LookupEntry {
+        code: "Hcmm",
+        name: "Harlequin",
+    },
+    LookupEntry {
+        code: "argl",
+        name: "Argyll CMS",
+    },
+    LookupEntry {
+        code: "LgoS",
+        name: "Logo Sync",
+    },
+    LookupEntry {
+        code: "HDM",
+        name: "Heidelberg",
+    },
+    LookupEntry {
+        code: "lcms",
+        name: "Little CMS",
+    },
+    LookupEntry {
+        code: "KCMS",
+        name: "Kodak",
+    },
+    LookupEntry {
+        code: "MCML",
+        name: "Konica Minolta",
+    },
+    LookupEntry {
+        code: "WCS",
+        name: "Microsoft WCS",
+    },
+    LookupEntry {
+        code: "MSFT",
+        name: "Microsoft",
+    },
+    LookupEntry {
+        code: "SIGN",
+        name: "Mutoh",
+    },
+    LookupEntry {
+        code: "ONYX",
+        name: "Onyx Graphics",
+    },
+    LookupEntry {
+        code: "RGMS",
+        name: "DeviceLink",
+    },
+    LookupEntry {
+        code: "SICC",
+        name: "SampleICC",
+    },
+    LookupEntry {
+        code: "TCMM",
+        name: "Toshiba",
+    },
+    LookupEntry {
+        code: "32BT",
+        name: "the imaging factory",
+    },
+    LookupEntry {
+        code: "vivo",
+        name: "Vivo Mobile",
+    },
+    LookupEntry {
+        code: "WTG",
+        name: "Ware to Go",
+    },
+    LookupEntry {
+        code: "zc00",
+        name: "Zoran",
+    },
+];
+
+/// Device manufacturer / profile creator lookup table
+///
+/// Maps 4-character manufacturer signature codes to human-readable names.
+/// Used for DeviceManufacturer and ProfileCreator header fields.
+pub static MANUFACTURERS: &[LookupEntry] = &[
+    LookupEntry {
+        code: "ADBE",
+        name: "Adobe",
+    },
+    LookupEntry {
+        code: "APPL",
+        name: "Apple",
+    },
+    LookupEntry {
+        code: "appl",
+        name: "Apple",
+    },
+    LookupEntry {
+        code: "MSFT",
+        name: "Microsoft",
+    },
+    LookupEntry {
+        code: "SGI",
+        name: "Silicon Graphics",
+    },
+    LookupEntry {
+        code: "SUNW",
+        name: "Sun Microsystems",
+    },
+    LookupEntry {
+        code: "TOSH",
+        name: "Toshiba",
+    },
+    LookupEntry {
+        code: "HP",
+        name: "Hewlett-Packard",
+    },
+    LookupEntry {
+        code: "EPSO",
+        name: "Epson",
+    },
+    LookupEntry {
+        code: "KODA",
+        name: "Kodak",
+    },
+    LookupEntry {
+        code: "CANO",
+        name: "Canon",
+    },
+    LookupEntry {
+        code: "NKON",
+        name: "Nikon",
+    },
+    LookupEntry {
+        code: "argl",
+        name: "Argyll CMS",
+    },
+    LookupEntry {
+        code: "lcms",
+        name: "Little CMS",
+    },
+    LookupEntry {
+        code: "none",
+        name: "",
+    },
+];
+
 /// Illuminant type names (indexed by code 1-8)
 pub static ILLUMINANT_TYPES: &[&str] = &[
     "Unknown",        // 0 - not used

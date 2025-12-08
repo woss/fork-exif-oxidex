@@ -307,6 +307,11 @@ impl OxiDexExtractor {
             "PlanarConfiguration" => 0x011C,
             "Predictor" => 0x013D,
             "SubfileType" => 0x00FE,
+            "SceneType" => 0xA301,
+            "SensitivityType" => 0x8830,
+            "CompositeImage" => 0xA460,
+            "MakerNoteSafety" => 0xC635,
+            "PhotometricInterpretation" => 0x0106,
             _ => return None,
         };
 
@@ -372,6 +377,30 @@ impl OxiDexExtractor {
     }
 
     fn normalize_for_comparison(tag_key: &str) -> String {
+        // Handle PNG special cases first
+        // PNG:tEXt:Author → PNG:Author
+        // PNG:tEXt:date:create → PNG:Datecreate
+        // PNG-pHYs:PixelUnits → PNG:PixelUnits
+        if tag_key.starts_with("PNG:tEXt:") {
+            let rest = &tag_key[9..]; // After "PNG:tEXt:"
+            // Handle date:create → Datecreate format
+            // ExifTool uses lowercase after "Date" (Datecreate, not DateCreate)
+            if rest.starts_with("date:") {
+                // date:create → Datecreate, date:modify → Datemodify, date:timestamp → Datetimestamp
+                let date_part = &rest[5..]; // After "date:"
+                return format!("PNG:Date{}", date_part);
+            }
+            return format!("PNG:{}", rest);
+        }
+        if tag_key.starts_with("PNG-pHYs:") {
+            let rest = &tag_key[9..]; // After "PNG-pHYs:"
+            return format!("PNG:{}", rest);
+        }
+        if tag_key.starts_with("PNG:iTXt:") {
+            let rest = &tag_key[9..]; // After "PNG:iTXt:"
+            return format!("PNG:{}", rest);
+        }
+
         if let Some((family, name)) = tag_key.split_once(':') {
             let normalized_family = match family {
                 // ExifIFD, IFD0, and GPS tags are output as EXIF in comparison reports

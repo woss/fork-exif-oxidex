@@ -26,6 +26,7 @@
 
 use crate::core::metadata_map::MetadataMap;
 use crate::core::tag_value::TagValue;
+use crate::core::value_formatter::format_gps_reference;
 use crate::parsers::tiff::tiff_enums::tiff_enum_to_string;
 use csv::Writer;
 
@@ -526,11 +527,30 @@ fn format_tag_value(tag_name: &str, value: &TagValue) -> String {
     }
 }
 
-/// Resolves TIFF enumeration names while leaving raw numeric values intact.
+/// Resolves TIFF enumeration names and GPS reference values to human-readable text.
 ///
-/// This looks up the tag descriptor to retrieve the numeric tag ID and uses
-/// the TIFF enum table to translate well-known values (e.g., Orientation).
+/// This function handles two types of value formatting:
+/// 1. TIFF enums: Looks up the tag descriptor to retrieve the numeric tag ID and uses
+///    the TIFF enum table to translate well-known values (e.g., Orientation).
+/// 2. GPS reference values: Converts single-character codes to human-readable descriptions
+///    (e.g., "N" -> "North", "T" -> "True North").
 fn friendly_enum_name(tag_name: &str, value: &TagValue) -> Option<String> {
+    // First, check if this is a GPS reference value (string-based)
+    if let TagValue::String(s) = value {
+        if let Some(formatted) = format_gps_reference(tag_name, s) {
+            return Some(formatted);
+        }
+    }
+
+    // Also handle GPS reference values that may be stored as integers
+    // (e.g., GPSAltitudeRef 0/1 or GPSDifferential 0/1)
+    if let TagValue::Integer(i) = value {
+        if let Some(formatted) = format_gps_reference(tag_name, &i.to_string()) {
+            return Some(formatted);
+        }
+    }
+
+    // Then try TIFF enum lookup for integer values
     let tag_id = lookup_tiff_enum_tag_id(tag_name)?;
 
     match value {
@@ -596,6 +616,58 @@ fn lookup_tiff_enum_tag_id(tag_name: &str) -> Option<u16> {
 
         // ColorSpace (tag 0xA001)
         "ExifIFD:ColorSpace" | "EXIF:ColorSpace" => Some(0xA001),
+
+        // SceneType (tag 0xA301)
+        // Note: Often stored as binary data, but may appear as integer in some files
+        "ExifIFD:SceneType" | "EXIF:SceneType" => Some(0xA301),
+
+        // SensitivityType (tag 0x8830)
+        "ExifIFD:SensitivityType" | "EXIF:SensitivityType" => Some(0x8830),
+
+        // CompositeImage (tag 0xA460)
+        "ExifIFD:CompositeImage" | "EXIF:CompositeImage" => Some(0xA460),
+
+        // MakerNoteSafety (DNG tag 0xC635)
+        "IFD0:MakerNoteSafety" | "EXIF:MakerNoteSafety" => Some(0xC635),
+
+        // MeteringMode (tag 0x9207)
+        "ExifIFD:MeteringMode" | "EXIF:MeteringMode" => Some(0x9207),
+
+        // SensingMethod (tag 0xA217)
+        "ExifIFD:SensingMethod" | "EXIF:SensingMethod" => Some(0xA217),
+
+        // CustomRendered (tag 0xA401)
+        "ExifIFD:CustomRendered" | "EXIF:CustomRendered" => Some(0xA401),
+
+        // ExposureMode (tag 0xA402)
+        "ExifIFD:ExposureMode" | "EXIF:ExposureMode" => Some(0xA402),
+
+        // WhiteBalance (tag 0xA403)
+        "ExifIFD:WhiteBalance" | "EXIF:WhiteBalance" => Some(0xA403),
+
+        // SceneCaptureType (tag 0xA406)
+        "ExifIFD:SceneCaptureType" | "EXIF:SceneCaptureType" => Some(0xA406),
+
+        // ExposureProgram (tag 0x8822)
+        "ExifIFD:ExposureProgram" | "EXIF:ExposureProgram" => Some(0x8822),
+
+        // LightSource (tag 0x9208)
+        "ExifIFD:LightSource" | "EXIF:LightSource" => Some(0x9208),
+
+        // GainControl (tag 0xA407)
+        "ExifIFD:GainControl" | "EXIF:GainControl" => Some(0xA407),
+
+        // Contrast (tag 0xA408)
+        "ExifIFD:Contrast" | "EXIF:Contrast" => Some(0xA408),
+
+        // Saturation (tag 0xA409)
+        "ExifIFD:Saturation" | "EXIF:Saturation" => Some(0xA409),
+
+        // Sharpness (tag 0xA40A)
+        "ExifIFD:Sharpness" | "EXIF:Sharpness" => Some(0xA40A),
+
+        // SubjectDistanceRange (tag 0xA40C)
+        "ExifIFD:SubjectDistanceRange" | "EXIF:SubjectDistanceRange" => Some(0xA40C),
 
         _ => None,
     }

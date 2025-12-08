@@ -93,7 +93,52 @@ const FUJI_IMAGE_GENERATION: u16 = 0x1047;
 const FUJI_RATING: u16 = 0x1431;
 const FUJI_IMAGE_COUNT: u16 = 0x1438;
 const FUJI_DRIVE_MODE: u16 = 0x1039;
-const FUJI_PIXEL_SHIFT_OFFSET: u16 = 0x9650;
+
+// ===== NEW TAGS - Additional MakerNotes coverage =====
+
+// Additional Image Quality Tags
+const FUJI_WHITE_BALANCE_FINE_TUNE: u16 = 0x100A;
+const FUJI_NOISE_REDUCTION: u16 = 0x100B;
+const FUJI_HIGH_ISO_NOISE_REDUCTION: u16 = 0x100E;
+const FUJI_AF_MODE: u16 = 0x1022;
+const FUJI_EXR_MODE_SETTING: u16 = 0x1034; // Note: maps to 0x1034 (EXR_MODE is 0x1034 in original)
+const FUJI_LENS_MODULATION_OPTIMIZER: u16 = 0x1045;
+const FUJI_GRAIN_EFFECT_ROUGHNESS: u16 = 0x1046; // Note: different from IMAGE_GENERATION at 0x1047
+const FUJI_COLOR_CHROME_EFFECT: u16 = 0x1048;
+const FUJI_BW_ADJUSTMENT: u16 = 0x1049;
+const FUJI_CROP_MODE: u16 = 0x104D;
+const FUJI_COLOR_CHROME_FX_BLUE: u16 = 0x104E;
+
+// Shooting Mode Tags
+const FUJI_PIXEL_SHIFT_SHOTS: u16 = 0x1105;
+const FUJI_PIXEL_SHIFT_OFFSET_NEW: u16 = 0x1106;
+const FUJI_PANORAMA_ANGLE: u16 = 0x1153;
+const FUJI_PANORAMA_DIRECTION: u16 = 0x1154;
+
+// Advanced Filter Tags
+const FUJI_ADVANCED_FILTER: u16 = 0x1201;
+const FUJI_COLOR_MODE: u16 = 0x1210;
+
+// Additional Dynamic Range Tags
+const FUJI_IMAGE_STABILIZATION: u16 = 0x1422;
+const FUJI_SCENE_RECOGNITION: u16 = 0x1425;
+const FUJI_DRANGE_PRIORITY: u16 = 0x1443;
+const FUJI_DRANGE_PRIORITY_AUTO: u16 = 0x1444;
+const FUJI_DRANGE_PRIORITY_FIXED: u16 = 0x1445;
+
+// Video Tags
+const FUJI_VIDEO_RECORDING_MODE: u16 = 0x3803;
+const FUJI_PERIPHERAL_LIGHTING: u16 = 0x3804;
+const FUJI_VIDEO_COMPRESSION: u16 = 0x3806;
+const FUJI_FRAME_RATE: u16 = 0x3820;
+const FUJI_FRAME_WIDTH: u16 = 0x3821;
+const FUJI_FRAME_HEIGHT: u16 = 0x3822;
+
+// Additional Face Detection Tags
+const FUJI_FACE_ELEMENT_SELECTED: u16 = 0x4005;
+const FUJI_NUM_FACE_ELEMENTS: u16 = 0x4200;
+const FUJI_FACE_ELEMENT_TYPES: u16 = 0x4201;
+const FUJI_FACE_ELEMENT_POSITIONS: u16 = 0x4203;
 
 // Fujifilm MakerNote header signature
 // Fujifilm uses "FUJIFILM" followed by IFD offset
@@ -272,6 +317,161 @@ const_decoder!(pub
     ]
 );
 
+// ===== NEW DECODERS =====
+
+// Decodes AF mode
+const_decoder!(pub
+    DECODE_AF_MODE, i32, [
+        (0, "No"),
+        (1, "Single Point"),
+        (256, "Zone"),
+        (512, "Wide/Tracking"),
+    ]
+);
+
+// Decodes noise reduction
+const_decoder!(pub
+    DECODE_NOISE_REDUCTION, i32, [
+        (0, "Normal"),
+        (256, "Strong"),
+        (512, "Weak"),
+    ]
+);
+
+// Decodes high ISO noise reduction
+const_decoder!(pub
+    DECODE_HIGH_ISO_NR, i32, [
+        (-2, "Very Weak"),
+        (-1, "Weak"),
+        (0, "Normal"),
+        (1, "Strong"),
+        (2, "Very Strong"),
+    ]
+);
+
+// Decodes grain effect roughness / Color Chrome levels
+const_decoder!(pub
+    DECODE_EFFECT_STRENGTH, i32, [
+        (0, "Off"),
+        (32, "Weak"),
+        (64, "Strong"),
+    ]
+);
+
+// Decodes crop mode
+const_decoder!(pub
+    DECODE_CROP_MODE, i32, [
+        (0, "None"),
+        (1, "Sports Finder Mode"),
+        (2, "1.25x Crop"),
+        (4, "Digital Teleconverter x1.4"),
+        (8, "Digital Teleconverter x2.0"),
+    ]
+);
+
+// Decodes auto bracketing
+const_decoder!(pub
+    DECODE_AUTO_BRACKETING, i32, [
+        (0, "Off"),
+        (1, "On"),
+        (2, "No Flash/Flash"),
+        (3, "Film Simulation"),
+        (4, "Dynamic Range"),
+    ]
+);
+
+// Decodes panorama direction
+const_decoder!(pub
+    DECODE_PANORAMA_DIRECTION, i32, [
+        (1, "Right"),
+        (2, "Up"),
+        (3, "Left"),
+        (4, "Down"),
+    ]
+);
+
+// Decodes advanced filter
+const_decoder!(pub
+    DECODE_ADVANCED_FILTER, i32, [
+        (0x0000, "Off"),
+        (0x0001, "Toy Camera"),
+        (0x0002, "Miniature"),
+        (0x0003, "Pop Color"),
+        (0x0004, "High Key"),
+        (0x0005, "Low Key"),
+        (0x0006, "Dynamic Tone"),
+        (0x0007, "Soft Focus"),
+        (0x0008, "Partial Color (Red)"),
+        (0x0009, "Partial Color (Yellow)"),
+        (0x000A, "Partial Color (Green)"),
+        (0x000B, "Partial Color (Blue)"),
+        (0x000C, "Partial Color (Orange)"),
+        (0x000D, "Partial Color (Purple)"),
+        (0x0010, "Rich & Fine"),
+    ]
+);
+
+// Decodes color mode
+const_decoder!(pub
+    DECODE_COLOR_MODE, i32, [
+        (0, "Standard"),
+        (16, "Chrome"),
+        (32, "B&W"),
+    ]
+);
+
+// Decodes image stabilization
+const_decoder!(pub
+    DECODE_IMAGE_STABILIZATION, i32, [
+        (0, "None"),
+        (1, "Optical"),
+        (2, "Sensor-Shift"),
+        (3, "Optical + Sensor-Shift"),
+        (256, "Lens-Sensor Shift"),
+        (512, "Lens-5-Axis"),
+    ]
+);
+
+// Decodes scene recognition
+const_decoder!(pub
+    DECODE_SCENE_RECOGNITION, i32, [
+        (0, "Unrecognized"),
+        (0x100, "Portrait"),
+        (0x103, "Night Portrait"),
+        (0x105, "Backlit Portrait"),
+        (0x200, "Landscape"),
+        (0x300, "Night Scene"),
+        (0x400, "Macro"),
+    ]
+);
+
+// Decodes D-Range priority
+const_decoder!(pub
+    DECODE_DRANGE_PRIORITY, i32, [
+        (0, "Auto"),
+        (1, "Weak"),
+        (2, "Strong"),
+    ]
+);
+
+// Decodes video recording mode
+const_decoder!(pub
+    DECODE_VIDEO_RECORDING_MODE, i32, [
+        (0, "Normal"),
+        (1, "F-Log"),
+        (2, "HLG"),
+    ]
+);
+
+// Decodes video compression
+const_decoder!(pub
+    DECODE_VIDEO_COMPRESSION, i32, [
+        (1, "H.264"),
+        (2, "H.265"),
+        (3, "ProRes"),
+    ]
+);
+
 /// Represents a Fujifilm MakerNote parser
 pub struct FujifilmParser;
 
@@ -292,7 +492,7 @@ impl MakerNoteParser for FujifilmParser {
     fn parse(
         &self,
         data: &[u8],
-        byte_order: ByteOrder,
+        _byte_order: ByteOrder,
         tags: &mut HashMap<String, String>,
     ) -> std::result::Result<(), String> {
         if data.is_empty() {
@@ -304,13 +504,18 @@ impl MakerNoteParser for FujifilmParser {
             return Err("Invalid Fujifilm MakerNote header".to_string());
         }
 
+        // CRITICAL: Fujifilm MakerNotes ALWAYS use little-endian byte order,
+        // regardless of the main EXIF byte order. This is a Fujifilm-specific
+        // quirk that differs from most other camera manufacturers.
+        let fuji_byte_order = ByteOrder::LittleEndian;
+
         // Fujifilm header structure:
         // - Bytes 0-7: "FUJIFILM" signature
-        // - Bytes 8-11: IFD offset (4 bytes, always 0x0000000C = 12)
+        // - Bytes 8-11: IFD offset (4 bytes, little-endian, typically 0x0C = 12)
         // - Byte 12+: IFD data starts
 
-        // Read IFD offset (should be 12, but we'll use it anyway) using EndianReader
-        let reader = EndianReader::new(data, byte_order.to_io_byte_order());
+        // Read IFD offset using little-endian byte order
+        let reader = EndianReader::new(data, fuji_byte_order.to_io_byte_order());
         let ifd_offset = reader.u32_at(8).unwrap_or(0) as usize;
 
         // Fujifilm offsets are relative to the MakerNote start
@@ -320,17 +525,17 @@ impl MakerNoteParser for FujifilmParser {
 
         let ifd_data = &data[ifd_offset..];
 
-        // Parse IFD entry count using EndianReader
+        // Parse IFD entry count using little-endian byte order
         if ifd_data.len() < 2 {
             return Ok(());
         }
 
-        let ifd_reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
+        let ifd_reader = EndianReader::new(ifd_data, fuji_byte_order.to_io_byte_order());
         let entry_count = ifd_reader.u16_at(0).unwrap_or(0);
 
-        // Parse IFD entries
+        // Parse IFD entries (always little-endian for Fujifilm)
         let entries_start = &ifd_data[2..];
-        let entries = match parse_ifd_entries(entries_start, entry_count, byte_order) {
+        let entries = match parse_ifd_entries(entries_start, entry_count, fuji_byte_order) {
             Ok((_, entries)) => entries,
             Err(_) => return Ok(()), // Return empty on parse failure
         };
@@ -534,10 +739,10 @@ impl MakerNoteParser for FujifilmParser {
 
                 // Focus pixel coordinates (array)
                 FUJI_FOCUS_PIXEL => {
-                    if let Some(array) = extract_u16_array(&entry, data, byte_order) {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
                         if array.len() >= 2 {
                             tags.insert(
-                                "Fujifilm:FocusPixel".to_string(),
+                                "MakerNotes:FocusPixel".to_string(),
                                 format!("X:{} Y:{}", array[0], array[1]),
                             );
                         }
@@ -546,17 +751,286 @@ impl MakerNoteParser for FujifilmParser {
 
                 // Face positions (array) - complex structure, basic extraction
                 FUJI_FACE_POSITIONS => {
-                    if let Some(array) = extract_u16_array(&entry, data, byte_order) {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
                         if !array.is_empty() {
                             tags.insert(
-                                "Fujifilm:FacePositions".to_string(),
+                                "MakerNotes:FacePositions".to_string(),
                                 format!("{} coordinates", array.len() / 4),
                             );
                         }
                     }
                 }
 
-                // Other tags - skip for now
+                // ===== NEW TAG HANDLING =====
+
+                // AF Mode
+                FUJI_AF_MODE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:AFMode".to_string(),
+                        DECODE_AF_MODE.decode(value).to_string(),
+                    );
+                }
+
+                // Noise reduction tags
+                FUJI_NOISE_REDUCTION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:NoiseReduction".to_string(),
+                        DECODE_NOISE_REDUCTION.decode(value).to_string(),
+                    );
+                }
+
+                FUJI_HIGH_ISO_NOISE_REDUCTION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:HighISONoiseReduction".to_string(),
+                        DECODE_HIGH_ISO_NR.decode(value).to_string(),
+                    );
+                }
+
+                // White balance fine tune
+                FUJI_WHITE_BALANCE_FINE_TUNE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:WhiteBalanceFineTune".to_string(),
+                        format!("{:+}", value),
+                    );
+                }
+
+                // Lens Modulation Optimizer
+                FUJI_LENS_MODULATION_OPTIMIZER => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:LensModulationOptimizer".to_string(),
+                        DECODE_OFF_ON.decode(value).to_string(),
+                    );
+                }
+
+                // Grain Effect Roughness
+                FUJI_GRAIN_EFFECT_ROUGHNESS => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:GrainEffectRoughness".to_string(),
+                        DECODE_EFFECT_STRENGTH.decode(value).to_string(),
+                    );
+                }
+
+                // Color Chrome Effect
+                FUJI_COLOR_CHROME_EFFECT => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:ColorChromeEffect".to_string(),
+                        DECODE_EFFECT_STRENGTH.decode(value).to_string(),
+                    );
+                }
+
+                // B&W Adjustment
+                FUJI_BW_ADJUSTMENT => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:BWAdjustment".to_string(),
+                        format!("{:+}", value),
+                    );
+                }
+
+                // Crop Mode
+                FUJI_CROP_MODE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:CropMode".to_string(),
+                        DECODE_CROP_MODE.decode(value).to_string(),
+                    );
+                }
+
+                // Color Chrome FX Blue
+                FUJI_COLOR_CHROME_FX_BLUE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:ColorChromeFXBlue".to_string(),
+                        DECODE_EFFECT_STRENGTH.decode(value).to_string(),
+                    );
+                }
+
+                // Pixel Shift
+                FUJI_PIXEL_SHIFT_SHOTS => {
+                    let value = entry.value_offset;
+                    tags.insert("MakerNotes:PixelShiftShots".to_string(), value.to_string());
+                }
+
+                FUJI_PIXEL_SHIFT_OFFSET_NEW => {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
+                        if array.len() >= 2 {
+                            tags.insert(
+                                "MakerNotes:PixelShiftOffset".to_string(),
+                                format!("X:{} Y:{}", array[0], array[1]),
+                            );
+                        }
+                    }
+                }
+
+                // Panorama tags
+                FUJI_PANORAMA_ANGLE => {
+                    let value = entry.value_offset;
+                    tags.insert(
+                        "MakerNotes:PanoramaAngle".to_string(),
+                        format!("{} deg", value),
+                    );
+                }
+
+                FUJI_PANORAMA_DIRECTION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:PanoramaDirection".to_string(),
+                        DECODE_PANORAMA_DIRECTION.decode(value).to_string(),
+                    );
+                }
+
+                // Advanced Filter
+                FUJI_ADVANCED_FILTER => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:AdvancedFilter".to_string(),
+                        DECODE_ADVANCED_FILTER.decode(value).to_string(),
+                    );
+                }
+
+                // Color Mode
+                FUJI_COLOR_MODE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:ColorMode".to_string(),
+                        DECODE_COLOR_MODE.decode(value).to_string(),
+                    );
+                }
+
+                // Image Stabilization
+                FUJI_IMAGE_STABILIZATION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:ImageStabilization".to_string(),
+                        DECODE_IMAGE_STABILIZATION.decode(value).to_string(),
+                    );
+                }
+
+                // Scene Recognition
+                FUJI_SCENE_RECOGNITION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:SceneRecognition".to_string(),
+                        DECODE_SCENE_RECOGNITION.decode(value).to_string(),
+                    );
+                }
+
+                // D-Range Priority tags
+                FUJI_DRANGE_PRIORITY => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:DRangePriority".to_string(),
+                        DECODE_DRANGE_PRIORITY.decode(value).to_string(),
+                    );
+                }
+
+                FUJI_DRANGE_PRIORITY_AUTO => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:DRangePriorityAuto".to_string(),
+                        DECODE_DRANGE_PRIORITY.decode(value).to_string(),
+                    );
+                }
+
+                FUJI_DRANGE_PRIORITY_FIXED => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:DRangePriorityFixed".to_string(),
+                        DECODE_DRANGE_PRIORITY.decode(value).to_string(),
+                    );
+                }
+
+                // Video tags
+                FUJI_VIDEO_RECORDING_MODE => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:VideoRecordingMode".to_string(),
+                        DECODE_VIDEO_RECORDING_MODE.decode(value).to_string(),
+                    );
+                }
+
+                FUJI_PERIPHERAL_LIGHTING => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:PeripheralLighting".to_string(),
+                        DECODE_OFF_ON.decode(value).to_string(),
+                    );
+                }
+
+                FUJI_VIDEO_COMPRESSION => {
+                    let value = entry.value_offset as i32;
+                    tags.insert(
+                        "MakerNotes:VideoCompression".to_string(),
+                        DECODE_VIDEO_COMPRESSION.decode(value).to_string(),
+                    );
+                }
+
+                FUJI_FRAME_RATE => {
+                    let value = entry.value_offset as f32 / 1000.0;
+                    tags.insert(
+                        "MakerNotes:FrameRate".to_string(),
+                        format!("{:.3} fps", value),
+                    );
+                }
+
+                FUJI_FRAME_WIDTH => {
+                    let value = entry.value_offset;
+                    tags.insert("MakerNotes:FrameWidth".to_string(), format!("{} px", value));
+                }
+
+                FUJI_FRAME_HEIGHT => {
+                    let value = entry.value_offset;
+                    tags.insert(
+                        "MakerNotes:FrameHeight".to_string(),
+                        format!("{} px", value),
+                    );
+                }
+
+                // Face element tags
+                FUJI_FACE_ELEMENT_SELECTED => {
+                    let value = entry.value_offset;
+                    tags.insert(
+                        "MakerNotes:FaceElementSelected".to_string(),
+                        value.to_string(),
+                    );
+                }
+
+                FUJI_NUM_FACE_ELEMENTS => {
+                    let value = entry.value_offset;
+                    tags.insert("MakerNotes:NumFaceElements".to_string(), value.to_string());
+                }
+
+                FUJI_FACE_ELEMENT_TYPES => {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
+                        if !array.is_empty() {
+                            let types: Vec<String> = array.iter().map(|v| v.to_string()).collect();
+                            tags.insert(
+                                "MakerNotes:FaceElementTypes".to_string(),
+                                types.join(", "),
+                            );
+                        }
+                    }
+                }
+
+                FUJI_FACE_ELEMENT_POSITIONS => {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
+                        if !array.is_empty() {
+                            tags.insert(
+                                "MakerNotes:FaceElementPositions".to_string(),
+                                format!("{} coordinates", array.len() / 4),
+                            );
+                        }
+                    }
+                }
+
+                // Other tags - skip unknown tags
                 _ => continue,
             }
         }
