@@ -10,13 +10,13 @@ This document is automatically updated on each push to `main`. Last updated: **2
 
 | Metric | Value |
 |--------|-------|
-| Total Tags | 32,683 |
+| Total Tags | 32,684 |
 | Tag Tables | 979 |
 | Domains | 6 |
 | Format Parsers | 37 |
 | ExifTool Parity | 113%* |
 
-*ExifTool officially documents ~28,853 unique tags. OxiDex defines 32,683 tags (including variant definitions).
+*ExifTool officially documents ~28,853 unique tags. OxiDex defines 32,684 tags (including variant definitions).
 
 ---
 
@@ -25,12 +25,12 @@ This document is automatically updated on each push to `main`. Last updated: **2
 | Domain | Tables | Tags | Description |
 |--------|--------|------|-------------|
 | Camera | 599 | 17,432 | MakerNotes from 40+ manufacturers |
-| Core | 118 | 4,166 | EXIF, GPS, XMP, IPTC standards |
+| Core | 118 | 4,167 | EXIF, GPS, XMP, IPTC standards |
 | Document | 55 | 746 | PDF, Office, HTML metadata |
 | Image | 64 | 1,083 | PNG, GIF, BMP, WebP, etc. |
 | Media | 125 | 5,537 | Audio/video containers |
 | Specialty | 18 | 3,719 | FLIR, DICOM, DJI, etc. |
-| **Total** | **979** | **32,683** | |
+| **Total** | **979** | **32,684** | |
 
 ---
 
