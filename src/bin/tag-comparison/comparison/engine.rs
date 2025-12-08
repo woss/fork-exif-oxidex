@@ -6,6 +6,40 @@ use std::collections::{HashMap, HashSet};
 /// Comparison engine for analyzing tag differences
 pub struct ComparisonEngine;
 
+/// Normalize a family name for comparison purposes
+/// Maps manufacturer-specific families to MakerNotes for matching
+fn normalize_family_for_comparison(family: &str) -> &str {
+    match family {
+        // Camera manufacturers -> MakerNotes
+        "Canon" | "Nikon" | "Sony" | "Fujifilm" | "Panasonic" | "Olympus" | "Pentax"
+        | "Samsung" | "Leica" | "Casio" | "Minolta" | "Sigma" | "Ricoh" | "Kodak"
+        | "Sanyo" | "JVC" | "Motorola" | "HP" | "GoPro" | "DJI" | "Apple" | "Google"
+        | "Reconyx" | "Parrot" | "Infiray" | "Lytro" | "PhaseOne" | "Leaf" | "Red"
+        | "Qualcomm" | "Nintendo" | "GE" | "LG" => "MakerNotes",
+        // XMP namespace variants -> XMP (ExifTool often simplifies these)
+        "XMP-exif" | "XMP-tiff" | "XMP-photoshop" | "XMP-iptcCore" | "XMP-iptcExt"
+        | "XMP-xmpMM" | "XMP-xmpRights" | "XMP-dc" | "XMP-xmp" | "XMP-crs"
+        | "XMP-plus" | "XMP-GDepth" | "XMP-GCamera" | "XMP-Device" | "XMP-darktable"
+        | "XMP-xmpDM" => "XMP",
+        // FLIR -> APP1 (ExifTool convention)
+        "FLIR" => "APP1",
+        // HDR -> APP11
+        "HDR" => "APP11",
+        // Keep everything else as-is
+        _ => family,
+    }
+}
+
+/// Normalize a tag key (family:name) for comparison
+fn normalize_key_for_comparison(key: &str) -> String {
+    if let Some((family, name)) = key.split_once(':') {
+        let norm_family = normalize_family_for_comparison(family);
+        format!("{}:{}", norm_family, name)
+    } else {
+        key.to_string()
+    }
+}
+
 /// Check if a value looks like an enum (alphabetic with optional numbers/separators)
 /// Examples: "Mode3", "COLOR", "Normal", "Non-Frame/Portrait", "AF-S"
 fn is_enum_like_value(value: &str) -> bool {
@@ -615,20 +649,35 @@ impl ComparisonEngine {
         let mut comparison = FormatComparison::new(format.to_string(), files_tested);
         comparison.total_exiftool_tags = exiftool_tags.len();
 
-        // Build lookup map for efficient OxiDex tag lookup by key
-        let oxidex_by_key: HashMap<String, &TagInfo> =
-            oxidex_tags.iter().map(|t| (t.key(), t)).collect();
+        // Build lookup maps using both original and normalized keys
+        // This allows matching Canon:Make with MakerNotes:Make, etc.
+        let mut oxidex_by_key: HashMap<String, &TagInfo> = HashMap::new();
+        let mut oxidex_by_normalized_key: HashMap<String, &TagInfo> = HashMap::new();
+        for tag in &oxidex_tags {
+            let key = tag.key();
+            let norm_key = normalize_key_for_comparison(&key);
+            oxidex_by_key.insert(key, tag);
+            oxidex_by_normalized_key.insert(norm_key, tag);
+        }
 
-        // Track which ExifTool tags were matched
+        // Track which OxiDex keys were matched (both original and normalized)
+        let mut matched_oxidex_keys = HashSet::new();
         let mut matched_exiftool_keys = HashSet::new();
 
         // Compare each ExifTool tag
         for et_tag in &exiftool_tags {
             let key = et_tag.key();
+            let norm_key = normalize_key_for_comparison(&key);
 
-            if let Some(ox_tag) = oxidex_by_key.get(&key) {
+            // Try exact match first, then normalized match
+            let ox_tag = oxidex_by_key
+                .get(&key)
+                .or_else(|| oxidex_by_normalized_key.get(&norm_key));
+
+            if let Some(ox_tag) = ox_tag {
                 // Tag exists in both - check if values match
                 matched_exiftool_keys.insert(key.clone());
+                matched_oxidex_keys.insert(ox_tag.key());
 
                 // Normalize values for comparison to handle formatting differences
                 let norm_ox = normalize_value_for_comparison(&key, &ox_tag.value);
@@ -652,10 +701,10 @@ impl ComparisonEngine {
             }
         }
 
-        // Find extra tags in OxiDex (not in ExifTool)
+        // Find extra tags in OxiDex (not matched to any ExifTool tag)
         for ox_tag in &oxidex_tags {
             let key = ox_tag.key();
-            if !matched_exiftool_keys.contains(&key) {
+            if !matched_oxidex_keys.contains(&key) {
                 comparison.extra_in_oxidex.push(ox_tag.clone());
             }
         }
