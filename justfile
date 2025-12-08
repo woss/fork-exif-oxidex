@@ -706,11 +706,32 @@ compare-exiftool-full-update:
     trap cleanup EXIT
 
     echo "📥 Fetching latest ExifTool version..."
-    # Try exiftool.org first with User-Agent, fall back to GitHub tags API
-    VERSION=$(curl -sA "OxiDex/1.0" https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || \
-              curl -s https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | grep -m1 '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/')
-    if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
-        echo "   ❌ Failed to fetch ExifTool version from exiftool.org and GitHub API"
+    # Try multiple sources for version with explicit error handling
+    VERSION=""
+
+    # Try exiftool.org first
+    VERSION=$(curl -sA "OxiDex/1.0" --connect-timeout 10 --max-time 30 https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || true)
+
+    # Fall back to GitHub tags API (ExifTool doesn't use GitHub releases)
+    if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   Trying GitHub tags API..."
+        if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+            VERSION=$(curl -sL --connect-timeout 10 --max-time 30 \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer $GITHUB_TOKEN" \
+                https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | \
+                grep -m1 '"name"' | sed 's/.*"name"[^"]*"\([^"]*\)".*/\1/' || true)
+        else
+            VERSION=$(curl -sL --connect-timeout 10 --max-time 30 \
+                -H "Accept: application/vnd.github+json" \
+                https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | \
+                grep -m1 '"name"' | sed 's/.*"name"[^"]*"\([^"]*\)".*/\1/' || true)
+        fi
+    fi
+
+    if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   ❌ Failed to fetch ExifTool version from all sources"
+        echo "   Tried: exiftool.org, GitHub tags API"
         exit 1
     fi
     echo "   Version: $VERSION"

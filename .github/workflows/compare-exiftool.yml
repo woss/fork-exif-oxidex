@@ -43,6 +43,8 @@ jobs:
 
       - name: Run full ExifTool comparison
         run: just compare-exiftool-full-update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit reports
         run: |
