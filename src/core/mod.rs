@@ -15,6 +15,7 @@ pub mod file_reader_trait;
 pub mod flag_utils;
 pub mod format_dispatch;
 pub mod format_parser_trait;
+pub mod formatters;
 pub mod jpeg_helpers;
 pub mod metadata;
 pub mod metadata_map;

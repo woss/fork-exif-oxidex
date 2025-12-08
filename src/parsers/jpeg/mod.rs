@@ -5,9 +5,12 @@
 #![allow(dead_code)]
 
 pub mod app_parsers;
+pub mod app_segments;
 pub mod exif_parser;
 pub mod flir_parser;
+pub mod icc_chunk_assembler;
 pub mod iptc_parser;
+pub mod iptc_record1;
 pub mod jfif_parser;
 pub mod jpeg_hdr_parser;
 pub mod mpf_parser;

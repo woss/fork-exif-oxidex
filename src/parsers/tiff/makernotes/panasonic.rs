@@ -21,6 +21,9 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+// Submodules for extended tag parsing
+pub mod extended;
+
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};

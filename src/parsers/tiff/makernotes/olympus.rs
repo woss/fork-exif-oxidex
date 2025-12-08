@@ -20,6 +20,9 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+// Submodules for extended tag parsing
+pub mod camera_settings;
+
 use crate::const_decoder;
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;

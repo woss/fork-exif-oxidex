@@ -8,6 +8,11 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+// Submodules for extended tag parsing
+pub mod color_balance;
+pub mod lens_data;
+pub mod shot_info;
+
 use crate::error::{ExifToolError, Result};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{

@@ -10,6 +10,7 @@ pub mod makernote_dispatcher;
 pub mod makernote_parser;
 pub mod makernotes;
 pub mod tag_parser;
+pub mod thumbnail_extractor;
 pub mod tiff_enums;
 pub mod tiff_subreader;
 
