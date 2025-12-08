@@ -9,6 +9,7 @@ use oxidex::cli::output_formatter::{
 };
 use oxidex::cli::rename;
 use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
+use oxidex::core::exiftool_compat::format_for_exiftool;
 use oxidex::core::operations::{
     clear_all_metadata, copy_metadata, modify_tag, read_metadata, remove_tag,
 };
@@ -184,6 +185,13 @@ fn handle_read_operation(file: &std::path::Path, args: &CliArgs) {
                 println!("No metadata found in file: {}", file.display());
                 return;
             }
+
+            // Apply ExifTool-compatible formatting if requested
+            let metadata = if args.exiftool_compat() {
+                format_for_exiftool(&metadata)
+            } else {
+                metadata
+            };
 
             // Get specific tags filter if provided (e.g., oxidex -Make -Model photo.jpg)
             let tag_filter = args.specific_tags();

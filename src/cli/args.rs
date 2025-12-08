@@ -39,6 +39,13 @@ pub struct CliArgs {
     /// measure to prevent accidental modifications.
     pub readonly: bool,
 
+    /// Format output for ExifTool compatibility.
+    /// When enabled, tag values are formatted to match ExifTool's output format,
+    /// including enum descriptions, unit suffixes, and precision formatting.
+    /// This is useful for comparing OxiDex output with ExifTool or for scripts
+    /// that expect ExifTool-compatible output.
+    pub exiftool_compat: bool,
+
     /// Copy metadata from source file (ExifTool -TagsFromFile syntax).
     /// Use with optional tag names to copy specific tags, or without to copy all tags.
     /// Example: oxidex -TagsFromFile src.jpg dest.jpg (copy all)
@@ -89,6 +96,7 @@ impl CliArgs {
         let mut preserve_file_times = false;
         let mut backup = false;
         let mut readonly = false;
+        let mut exiftool_compat = false;
         let mut tags_from_file = None;
         let mut date_format = None;
         let mut dry_run = false;
@@ -202,6 +210,10 @@ impl CliArgs {
                 Long("readonly") => {
                     readonly = true;
                 }
+                // ExifTool compatibility mode
+                Short('e') | Long("exiftool-compat") => {
+                    exiftool_compat = true;
+                }
                 // TagsFromFile (copy metadata from source file)
                 Long("TagsFromFile") => {
                     tags_from_file = Some(parser.value()?.string()?);
@@ -267,6 +279,7 @@ impl CliArgs {
             preserve_file_times,
             backup,
             readonly,
+            exiftool_compat,
             tags_from_file,
             date_format,
             dry_run,
@@ -424,6 +437,19 @@ impl CliArgs {
             let lower = arg.to_lowercase();
             lower == "-all=" || lower == "--all="
         })
+    }
+
+    /// Returns whether ExifTool compatibility mode is enabled.
+    ///
+    /// When enabled, tag values are formatted to match ExifTool's output format,
+    /// including enum descriptions, unit suffixes, and precision formatting.
+    ///
+    /// # Examples
+    ///
+    /// - `oxidex -e photo.jpg` → ExifTool-compatible output
+    /// - `oxidex --exiftool-compat photo.jpg` → ExifTool-compatible output
+    pub fn exiftool_compat(&self) -> bool {
+        self.exiftool_compat
     }
 
     /// Extracts the filename pattern from -FileName<pattern> argument.
@@ -618,6 +644,7 @@ fn print_help() {
         "        --backup                Create backup copy before modifying file (.bak extension)"
     );
     println!("        --readonly              Enable read-only mode to prevent file modifications");
+    println!("    -e, --exiftool-compat       Format output for ExifTool compatibility");
     println!("        --TagsFromFile VALUE    Copy metadata from source file");
     println!(
         "    -d VALUE                    Date format string for DateTime tags in filename patterns"

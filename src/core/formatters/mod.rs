@@ -19,7 +19,7 @@ pub mod unit_suffixes;
 // Re-export main formatting functions for convenience
 pub use cfa_pattern::decode_cfa_pattern;
 pub use exposure_program::format_exposure_program;
-pub use gps_altitude_ref::format_gps_altitude_ref;
+pub use gps_altitude_ref::{format_gps_altitude_ref, format_gps_altitude_ref_byte};
 pub use gps_direction_ref::format_gps_direction_ref;
 pub use gps_lat_lon_ref::{format_gps_lat_ref, format_gps_lon_ref};
 pub use gps_processing_method::decode_gps_processing_method;

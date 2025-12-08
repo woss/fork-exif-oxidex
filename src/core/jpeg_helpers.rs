@@ -8,6 +8,9 @@ use crate::core::operations_helpers::read_u32;
 use crate::core::tag_conversion::{parse_string_to_tag_value, raw_bytes_to_tag_value};
 use crate::core::tiff_helpers::{parse_exif_subifd, parse_gps_subifd};
 use crate::io::EndianReader;
+use crate::parsers::jpeg::app_segments::{
+    parse_app10_hdr, parse_app11_jpeg_hdr, parse_app12_agfa, parse_app12_olympus,
+};
 use crate::parsers::jpeg::segment_parser::Segment;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
 use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
@@ -362,5 +365,189 @@ pub fn process_sof_segments(segments: &[Segment], metadata: &mut MetadataMap) {
             // Only process the first SOF segment found
             break;
         }
+    }
+}
+
+/// Processes APP10 segments and extracts HDR gain curve metadata.
+///
+/// APP10 segments (marker 0xFFEA) may contain HDR (High Dynamic Range) gain curve
+/// data used for tone mapping and HDR image reconstruction.
+///
+/// # Arguments
+///
+/// * `segments` - Parsed JPEG segments
+/// * `metadata` - MetadataMap to populate with HDR tags
+///
+/// # HDR Formats Supported
+///
+/// - Standard HDR with "HDR\0" prefix
+/// - Android AROT gain map format
+/// - Generic/unknown HDR formats (stored as raw data)
+pub fn process_app10_segments(segments: &[Segment], metadata: &mut MetadataMap) {
+    // APP10 marker is 0xFFEA
+    const APP10_MARKER: u16 = 0xFFEA;
+
+    for segment in segments.iter().filter(|s| s.marker == APP10_MARKER) {
+        // Attempt to parse as HDR gain curve data
+        match parse_app10_hdr(segment.data) {
+            Ok(hdr_metadata) => {
+                // Merge HDR metadata into the main metadata map
+                for (key, value) in hdr_metadata.iter() {
+                    metadata.insert(key.clone(), value.clone());
+                }
+            }
+            Err(e) => {
+                // Log warning but continue processing other segments
+                // HDR data is optional, so parse failures are not fatal
+                eprintln!("Warning: Failed to parse APP10 HDR segment: {}", e);
+            }
+        }
+    }
+}
+
+/// Processes APP11 segments and extracts JPEG-HDR metadata.
+///
+/// APP11 segments (marker 0xFFEB) may contain JPEG-HDR (High Dynamic Range)
+/// metadata including tone mapping parameters, ratio image data, and HDR
+/// reconstruction coefficients.
+///
+/// # Arguments
+///
+/// * `segments` - Parsed JPEG segments
+/// * `metadata` - MetadataMap to populate with JPEG-HDR tags
+///
+/// # JPEG-HDR Identifiers
+///
+/// - "HDR_RI" - HDR Ratio Image segment containing reconstruction data
+/// - "JPEG-HDR" - Generic JPEG-HDR parameter segment
+///
+/// # Extracted Tags
+///
+/// - JPEG-HDR:Version - Format version
+/// - JPEG-HDR:Alpha/Beta - Tone mapping coefficients
+/// - JPEG-HDR:Ln0/Ln1 - Luminance bounds
+/// - JPEG-HDR:CorrectionMethod - HDR correction method
+/// - JPEG-HDR:RatioImageSize - Size of embedded ratio image
+pub fn process_app11_segments(segments: &[Segment], metadata: &mut MetadataMap) {
+    // APP11 marker is 0xFFEB
+    const APP11_MARKER: u16 = 0xFFEB;
+
+    // Known JPEG-HDR identifier prefixes
+    const HDR_RI_PREFIX: &[u8] = b"HDR_RI";
+    const JPEG_HDR_PREFIX: &[u8] = b"JPEG-HDR";
+
+    for segment in segments.iter().filter(|s| s.marker == APP11_MARKER) {
+        // Check if segment contains JPEG-HDR data by looking for known identifiers
+        let has_hdr_ri = segment.data.len() >= HDR_RI_PREFIX.len()
+            && &segment.data[..HDR_RI_PREFIX.len()] == HDR_RI_PREFIX;
+
+        let has_jpeg_hdr = segment.data.len() >= JPEG_HDR_PREFIX.len()
+            && &segment.data[..JPEG_HDR_PREFIX.len()] == JPEG_HDR_PREFIX;
+
+        // Only attempt parsing if this looks like a JPEG-HDR segment
+        if has_hdr_ri || has_jpeg_hdr {
+            match parse_app11_jpeg_hdr(segment.data) {
+                Ok(hdr_metadata) => {
+                    // Merge JPEG-HDR metadata into the main metadata map
+                    for (key, value) in hdr_metadata.iter() {
+                        metadata.insert(key.clone(), value.clone());
+                    }
+                }
+                Err(e) => {
+                    // Log warning but continue processing other segments
+                    // JPEG-HDR data is optional, so parse failures are not fatal
+                    eprintln!("Warning: Failed to parse APP11 JPEG-HDR segment: {}", e);
+                }
+            }
+        }
+    }
+}
+
+/// Processes APP12 segments and extracts manufacturer-specific metadata.
+///
+/// APP12 segments (marker 0xFFEC) contain various proprietary metadata formats:
+/// - Olympus Picture Info (cameras store camera settings and serial numbers)
+/// - Agfa Picture Info (Agfa camera metadata)
+/// - Ducky (Adobe Photoshop "Save for Web" quality settings)
+///
+/// # Arguments
+///
+/// * `segments` - Parsed JPEG segments
+/// * `metadata` - MetadataMap to populate with manufacturer-specific tags
+///
+/// # Identifier Dispatch
+///
+/// The function examines the beginning of each APP12 segment to determine
+/// which parser to use:
+/// - "OLYM" or "OLYMP" prefix -> Olympus parser
+/// - "AGFA" prefix -> Agfa parser
+/// - "Ducky" prefix -> Already handled by existing parse_ducky_segment
+///
+/// # Error Handling
+///
+/// Parse errors for individual segments are logged as warnings but do not
+/// prevent processing of remaining segments. This ensures robust handling
+/// of files with partially corrupt or unsupported APP12 data.
+pub fn process_app12_segments(segments: &[Segment], metadata: &mut MetadataMap) {
+    // APP12 marker is 0xFFEC
+    const APP12_MARKER: u16 = 0xFFEC;
+
+    for segment in segments.iter().filter(|s| s.marker == APP12_MARKER) {
+        // Dispatch to appropriate parser based on identifier prefix
+        // We need at least 4-5 bytes to identify the format
+
+        if segment.data.len() < 4 {
+            // Segment too short to identify, skip it
+            continue;
+        }
+
+        // Check for Olympus identifier ("OLYM" or "OLYMP" prefix)
+        // Olympus uses various identifiers including "OLYMPUS", "[picture info]", etc.
+        let is_olympus = (segment.data.len() >= 4 && &segment.data[..4] == b"OLYM")
+            || (segment.data.len() >= 5 && &segment.data[..5] == b"OLYMP")
+            || (segment.data.len() >= 7 && &segment.data[..7] == b"OLYMPUS");
+
+        // Check for Agfa identifier
+        let is_agfa = segment.data.len() >= 4 && &segment.data[..4] == b"AGFA";
+
+        // Check for Ducky identifier (handled by existing parser in app_parsers.rs)
+        let is_ducky = segment.data.len() >= 5 && &segment.data[..5] == b"Ducky";
+
+        if is_olympus {
+            // Parse Olympus Picture Info segment
+            match parse_app12_olympus(segment.data) {
+                Ok(olympus_metadata) => {
+                    // Merge Olympus metadata into the main metadata map
+                    for (key, value) in olympus_metadata.iter() {
+                        metadata.insert(key.clone(), value.clone());
+                    }
+                }
+                Err(e) => {
+                    // Log warning but continue processing
+                    // Olympus data may have variations that our parser doesn't handle
+                    eprintln!("Warning: Failed to parse APP12 Olympus segment: {}", e);
+                }
+            }
+        } else if is_agfa {
+            // Parse Agfa Picture Info segment
+            match parse_app12_agfa(segment.data) {
+                Ok(agfa_metadata) => {
+                    // Merge Agfa metadata into the main metadata map
+                    for (key, value) in agfa_metadata.iter() {
+                        metadata.insert(key.clone(), value.clone());
+                    }
+                }
+                Err(e) => {
+                    // Log warning but continue processing
+                    eprintln!("Warning: Failed to parse APP12 Agfa segment: {}", e);
+                }
+            }
+        } else if is_ducky {
+            // Ducky segments are already handled by the existing parse_ducky_segment
+            // function in app_parsers.rs. We call it here for consistency.
+            let _ = crate::parsers::jpeg::app_parsers::parse_ducky_segment(segment.data, metadata);
+        }
+        // Unknown APP12 formats are silently ignored - they may be proprietary
+        // formats from other manufacturers that we don't support yet.
     }
 }

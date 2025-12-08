@@ -3,9 +3,16 @@
 //! This module extracts metadata tags from test fixture files using the OxiDex
 //! library. It handles conversion of internal TagValue types to string representations
 //! that match ExifTool's output format.
+//!
+//! # ExifTool Compatibility
+//!
+//! Before comparison, all metadata is passed through `format_for_exiftool()` to ensure
+//! values are formatted consistently with ExifTool's output. This handles GPS references,
+//! binary decoders, enum values, unit suffixes, and numeric precision.
 
 use super::ExtractionResult;
 use crate::models::TagInfo;
+use oxidex::core::exiftool_compat::format_for_exiftool;
 use oxidex::core::tag_normalization::normalize_tag_family;
 use oxidex::core::value_formatter::{
     format_date_exif_style, format_rational_as_decimal, format_with_unit, is_decimal_rational_tag,
@@ -105,12 +112,25 @@ impl OxiDexExtractor {
     }
 
     /// Extract tags from a single file using OxiDex
+    ///
+    /// This method reads raw metadata from the file and applies ExifTool-compatible
+    /// formatting before flattening into TagInfo structures. The formatting ensures
+    /// that GPS references, binary values, enums, and numeric precision match
+    /// ExifTool's output format for accurate comparison.
     fn extract_tags_from_file(
         &self,
         file_path: &Path,
     ) -> Result<Vec<TagInfo>, Box<dyn std::error::Error>> {
-        let metadata = oxidex::core::operations::read_metadata(file_path)?;
-        let tags = self.flatten_metadata(&metadata);
+        // Step 1: Read raw metadata from the file
+        let raw_metadata = oxidex::core::operations::read_metadata(file_path)?;
+
+        // Step 2: Apply ExifTool-compatible formatting to all values
+        // This ensures GPS refs, binary decoders, enums, units, and precision
+        // match ExifTool's output before we compare the results
+        let formatted_metadata = format_for_exiftool(&raw_metadata);
+
+        // Step 3: Flatten the formatted metadata into TagInfo structures
+        let tags = self.flatten_metadata(&formatted_metadata);
         Ok(tags)
     }
 

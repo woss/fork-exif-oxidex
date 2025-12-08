@@ -7,6 +7,7 @@
 #![allow(dead_code)]
 
 pub mod binary_decoders;
+pub mod exiftool_compat;
 pub mod date_shift;
 pub mod exif_enums;
 pub mod file_format;
