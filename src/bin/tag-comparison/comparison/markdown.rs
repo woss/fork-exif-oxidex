@@ -55,7 +55,7 @@ fn generate_index(
     }
     content.push_str("\n\n");
 
-    // Summary table
+    // Summary table for tested formats
     content.push_str("## Coverage by Format\n\n");
     content
         .push_str("| Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |\n");
@@ -64,6 +64,9 @@ fn generate_index(
 
     let mut formats: Vec<_> = report.by_format.iter().collect();
     formats.sort_by(|a, b| a.0.cmp(b.0));
+
+    // Track which formats we've listed
+    let mut listed_formats: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for (format, comp) in formats {
         let regression_cell = if comp.regressions.is_empty() {
@@ -83,6 +86,43 @@ fn generate_index(
             comp.value_differences.len(),
             regression_cell
         ));
+        listed_formats.insert(format.to_lowercase());
+    }
+
+    // Scan for other existing .md files in the output directory
+    let mut other_formats: Vec<String> = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(output_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().is_some_and(|e| e == "md") {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    // Skip index, baseline, and already-listed formats
+                    if stem != "index"
+                        && !stem.contains("baseline")
+                        && !listed_formats.contains(&stem.to_lowercase())
+                    {
+                        other_formats.push(stem.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Add section for other available format pages
+    if !other_formats.is_empty() {
+        other_formats.sort();
+        content.push_str("\n## Other Format Reports\n\n");
+        content.push_str("Additional format-specific reports:\n\n");
+        for format in &other_formats {
+            // Capitalize first letter for display
+            let display_name = format
+                .chars()
+                .next()
+                .map(|c| c.to_uppercase().to_string() + &format[1..])
+                .unwrap_or_else(|| format.clone());
+            content.push_str(&format!("- [{}](./{}.md)\n", display_name, format));
+        }
+        content.push('\n');
     }
 
     content.push_str("\n---\n\n");
