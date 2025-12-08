@@ -6,25 +6,44 @@ title: ExifTool Compatibility Report
 
 **Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 37.4%
+**Overall Coverage:** 15.4% | **⚠️ Regressions:** 8
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [APPLE](./apple.md) | 66 | 59.9% | 79 | 40 | 12 | 0 |
-| [CANON](./canon.md) | 725 | 24.0% | 632 | 82 | 34 | 0 |
-| [DJI](./dji.md) | 21 | 52.6% | 126 | 46 | 9 | 0 |
-| [FUJIFILM](./fujifilm.md) | 411 | 64.1% | 138 | 50 | 42 | 0 |
-| [GOOGLE](./google.md) | 24 | 43.8% | 172 | 31 | 10 | 0 |
-| [GOPRO](./gopro.md) | 23 | 64.4% | 64 | 30 | 3 | 0 |
-| [LEICA](./leica.md) | 67 | 35.7% | 337 | 131 | 23 | 0 |
-| [NIKON](./nikon.md) | 307 | 22.9% | 589 | 95 | 48 | 0 |
-| [OLYMPUS](./olympus.md) | 315 | 26.9% | 367 | 97 | 14 | 0 |
-| [PANASONIC](./panasonic.md) | 477 | 58.4% | 200 | 114 | 50 | 0 |
-| [PENTAX](./pentax.md) | 145 | 29.8% | 339 | 69 | 42 | 0 |
-| [SAMSUNG](./samsung.md) | 702 | 44.6% | 261 | 91 | 15 | 0 |
-| [SONY](./sony.md) | 761 | 22.0% | 566 | 82 | 33 | 0 |
+| [APPLE](./apple.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [AVI](./avi.md) | 2 | 2.8% | 102 | 22 | 1 | 0 |
+| [CANON](./canon.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [CR2](./cr2.md) | 2 | 21.9% | 240 | 19 | 28 | ⚠️ 3 |
+| [DJI](./dji.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [DNG](./dng.md) | 1 | 13.6% | 206 | 43 | 23 | 0 |
+| [FUJIFILM](./fujifilm.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [GIF](./gif.md) | 1 | 0.0% | 35 | 0 | 0 | 0 |
+| [GOOGLE](./google.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [GOPRO](./gopro.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [HEIC](./heic.md) | 1 | 12.5% | 18 | 1 | 3 | 0 |
+| [JPEG](./jpeg.md) | 4085 | 14.5% | 2879 | 415 | 262 | ⚠️ 5 |
+| [LEICA](./leica.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [MKV](./mkv.md) | 1 | 28.6% | 18 | 13 | 2 | 0 |
+| [MP3](./mp3.md) | 1 | 0.0% | 26 | 16 | 0 | 0 |
+| [MP4](./mp4.md) | 1 | 0.0% | 80 | 0 | 0 | 0 |
+| [NEF](./nef.md) | 1 | 19.6% | 137 | 36 | 27 | 0 |
+| [NIKON](./nikon.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [OLYMPUS](./olympus.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [PANASONIC](./panasonic.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [PDF](./pdf.md) | 2 | 5.5% | 103 | 19 | 1 | 0 |
+| [PENTAX](./pentax.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [PNG](./png.md) | 1 | 90.9% | 1 | 1 | 0 | 0 |
+| [PSD](./psd.md) | 1 | 13.2% | 76 | 1 | 3 | 0 |
+| [RAF](./raf.md) | 1 | 41.6% | 53 | 7 | 6 | 0 |
+| [RW2](./rw2.md) | 1 | 10.5% | 133 | 32 | 4 | 0 |
+| [SAMSUNG](./samsung.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [SONY](./sony.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
+| [TIFF](./tiff.md) | 2 | 65.2% | 29 | 8 | 2 | 0 |
+| [WAV](./wav.md) | 1 | 33.3% | 8 | 1 | 0 | 0 |
+| [WEBP](./webp.md) | 1 | 31.2% | 11 | 6 | 0 | 0 |
+| [XMP](./xmp.md) | 10 | 0.0% | 148 | 0 | 0 | 0 |
 
 ---
 
