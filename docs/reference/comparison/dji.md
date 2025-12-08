@@ -9,11 +9,11 @@ title: DJI Compatibility
 ## Summary
 
 - **Files Tested:** 21
-- **Coverage:** 51.2%
-- **Matched Tags:** 146
+- **Coverage:** 52.6%
+- **Matched Tags:** 150
 - **Missing Tags:** 126
 - **Extra Tags:** 46
-- **Value Differences:** 13
+- **Value Differences:** 9
 
 ## Value Differences
 
@@ -22,14 +22,10 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `EXIF:FocalPlaneResolutionUnit` | mm | 4 |
-| `EXIF:GPSAltitude` | 42.904 m | 42.9 m |
-| `EXIF:GPSLatitude` | 53 deg 22' 40.26" | 53 deg 22' 40.2628" |
-| `EXIF:GPSLongitude` | 1 deg 27' 35.35" | 1 deg 27' 35.3515" |
 | `EXIF:SerialNumber` | 0b265914ffff2cff7c4e6fff56ff4910 | 0b265914ffff2cff7c4e6fff56ff4910b |
 | `EXIF:XPComment` | 0.91.142 | 0.91.142 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 4857269 | 4798452 |
-| `XMP:MetadataDate` | 2020:11:04 14:48:31-08:00 | 2020:11:04 14:48:31 |
 | `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:1, FrameN... | 0:0:1:000158 |
 | `XMP:SelfData` |  | Self data |
 | `XMP:UTCAtExposure` | 2022:10:27 05:08:32.100476 | 2022-10-27T05:08:32.100476 |

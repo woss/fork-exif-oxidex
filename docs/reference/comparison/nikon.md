@@ -9,11 +9,11 @@ title: NIKON Compatibility
 ## Summary
 
 - **Files Tested:** 307
-- **Coverage:** 22.4%
-- **Matched Tags:** 185
+- **Coverage:** 22.9%
+- **Matched Tags:** 189
 - **Missing Tags:** 589
 - **Extra Tags:** 95
-- **Value Differences:** 52
+- **Value Differences:** 48
 
 ## Value Differences
 
@@ -23,8 +23,6 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `EXIF:CFAPattern` | [Red,Green][Green,Blue] | [Invalid CFA data] |
 | `EXIF:FocalPlaneResolutionUnit` | Unknown (0) | 0 |
-| `EXIF:GPSLatitude` | 7 deg 11' 47.27" | 7 deg 11' 47.274" |
-| `EXIF:GPSLongitude` | 134 deg 22' 36.50" | 134 deg 22' 36.504" |
 | `EXIF:GPSProcessingMethod` |  | (Binary data 64 bytes, use -b option to ... |
 | `EXIF:LensSerialNumber` | 20147348 | 20147348  |
 | `ICC_Profile:DeviceModel` |  |  |
@@ -70,9 +68,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:WB_RBLevels` | 1.859375 1.2578125 1 1 | 3813 17999 |
 | `MakerNotes:WhiteBalance` | Auto1 | Unknown |
 | `MakerNotes:WhiteBalanceFineTune` | 0 0 | 0 |
-| `XMP:CreateDate` | 2020:12:11 14:55:22.09Z | 2020:12:11 14:55:22.09 |
-
-*...and 2 more differences*
+| `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:0, FrameN... | 0:0:0:000620 |
 
 ## Missing Tags
 

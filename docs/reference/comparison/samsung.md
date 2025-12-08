@@ -9,11 +9,11 @@ title: SAMSUNG Compatibility
 ## Summary
 
 - **Files Tested:** 702
-- **Coverage:** 43.2%
-- **Matched Tags:** 215
+- **Coverage:** 44.6%
+- **Matched Tags:** 222
 - **Missing Tags:** 261
 - **Extra Tags:** 91
-- **Value Differences:** 22
+- **Value Differences:** 15
 
 ## Value Differences
 
@@ -23,12 +23,6 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `APP14:APP14Flags0` | [14] | 16384 |
 | `EXIF:GPSAreaInformation` |  | (Binary data 46 bytes, use -b option to ... |
-| `EXIF:GPSDestLatitude` | 35 deg 48' 8.00" | 35 deg 48' 8" |
-| `EXIF:GPSDestLatitudeRef` | North | N |
-| `EXIF:GPSDestLongitude` | 139 deg 34' 55.00" | 139 deg 34' 55" |
-| `EXIF:GPSDestLongitudeRef` | East | E |
-| `EXIF:GPSLatitude` | 51 deg 26' 35.00" | 51 deg 26' 35" |
-| `EXIF:GPSLongitude` | 3 deg 18' 10.00" | 3 deg 18' 10" |
 | `EXIF:GPSSatellites` | ??B?? | ��B��C� |
 | `EXIF:Saturation` | Unknown (57584) | 57584 |
 | `EXIF:UserComment` | KJKJS | KJKJS���Xd4n����L�/A�v=��3���a����*M����... |
@@ -37,7 +31,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:XResolution` | 0.3333333333 | 0.333333333 |
 | `EXIF:YCbCrSubSampling` | YCbCr4:2:0 (2 2) | 2 1 |
 | `EXIF:YResolution` | 0.3333333333 | 0.333333333 |
-| `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 8085319 | 8035733 |
 | `XMP:Data` | (Binary data 648421 bytes, use -b option... | iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAAAAAC/... |

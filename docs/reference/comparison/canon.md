@@ -9,11 +9,11 @@ title: CANON Compatibility
 ## Summary
 
 - **Files Tested:** 725
-- **Coverage:** 23.9%
-- **Matched Tags:** 209
+- **Coverage:** 24.0%
+- **Matched Tags:** 210
 - **Missing Tags:** 632
 - **Extra Tags:** 82
-- **Value Differences:** 35
+- **Value Differences:** 34
 
 ## Value Differences
 
@@ -22,7 +22,6 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `EXIF:GPSDestBearingRef` | Unknown () |  |
-| `EXIF:GPSLongitude` | 122 deg 5' 46.54" | 122 deg 5' 46.536" |
 | `IPTC:By-line` |  | Picasa |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 6690816 | 6658136 |

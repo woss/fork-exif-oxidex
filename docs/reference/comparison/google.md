@@ -9,11 +9,11 @@ title: GOOGLE Compatibility
 ## Summary
 
 - **Files Tested:** 24
-- **Coverage:** 42.6%
-- **Matched Tags:** 138
+- **Coverage:** 43.8%
+- **Matched Tags:** 142
 - **Missing Tags:** 172
 - **Extra Tags:** 31
-- **Value Differences:** 14
+- **Value Differences:** 10
 
 ## Value Differences
 
@@ -21,7 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:GainControl` | Unknown (256) | 256 |
 | `EXIF:UserComment` | ??? | ��� |
 | `ICC_Profile:DeviceModel` |  |  |
 | `ICC_Profile:PrimaryPlatform` | Unknown () |  |
@@ -29,10 +28,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `ICC_Profile:ProfileCopyright` | Copyright (c) 2016 Google Inc. | Copyright International Color Consortium... |
 | `ICC_Profile:ProfileDescription` | sRGB IEC61966-2.1 | sRGB IEC61966-2-1 black scaled |
 | `MPF:MPImageStart` | 3639231 | 3570231 |
-| `XMP:CreateDate` | 2025:08:23 19:41:40.318-04:00 | 2025:08:23 19:41:40.318 |
 | `XMP:DisableAutoCreation` | ["Animation","Collage"] | AnimationCollage |
-| `XMP:MetadataDate` | 2025:08:25 10:52:21-04:00 | 2025:08:25 10:52:21 |
-| `XMP:ModifyDate` | 2025:08:23 19:41:40.318-04:00 | 2025:08:23 19:41:40.318 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:-00001 |
 | `XMP:Version` | 1.0 | 1 |
 

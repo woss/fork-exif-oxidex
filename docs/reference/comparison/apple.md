@@ -9,11 +9,11 @@ title: APPLE Compatibility
 ## Summary
 
 - **Files Tested:** 66
-- **Coverage:** 59.0%
-- **Matched Tags:** 134
+- **Coverage:** 59.9%
+- **Matched Tags:** 136
 - **Missing Tags:** 79
 - **Extra Tags:** 40
-- **Value Differences:** 14
+- **Value Differences:** 12
 
 ## Value Differences
 
@@ -24,7 +24,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:CompositeImageExposureTimes` | 0 3.4 0 0.4 0 0.4 0 0 | (Binary data 58 bytes, use -b option to ... |
 | `EXIF:Compression` | JPEG (old-style) | Uncompressed |
 | `EXIF:CustomRendered` | Portrait HDR | 7 |
-| `EXIF:GPSAltitude` | 27.99831776 m | 28.0 m |
 | `EXIF:GPSDestBearing` | 358.8270572 | 358.827057183 |
 | `EXIF:GPSImgDirection` | 358.8270572 | 358.827057183 |
 | `EXIF:GPSLatitude` | 46 deg 8' 36.00" | 46 deg 8' 0" |
@@ -32,7 +31,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSSpeed` | 0.2700000107 | 0.270000011 |
 | `ICC_Profile:DeviceModel` |  |  |
 | `ICC_Profile:ProfileCopyright` | Copyright Apple Inc., 2022 | Copyright Apple Inc., 2017 |
-| `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageStart` | 3406314 | 3387627 |
 | `XMP:LensInfo` | 1.57000005246397-9mm f/1.5-2.8 | 1.6-9mm f/1.5-2.8 |
 

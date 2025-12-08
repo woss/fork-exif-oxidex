@@ -9,11 +9,11 @@ title: PANASONIC Compatibility
 ## Summary
 
 - **Files Tested:** 477
-- **Coverage:** 57.9%
-- **Matched Tags:** 348
+- **Coverage:** 58.4%
+- **Matched Tags:** 351
 - **Missing Tags:** 200
 - **Extra Tags:** 114
-- **Value Differences:** 53
+- **Value Differences:** 50
 
 ## Value Differences
 
@@ -67,12 +67,10 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:TravelDay` | n/a | 65535 |
 | `MakerNotes:WBShiftGM` | -3 | 65533 |
 | `MakerNotes:WhiteBalanceBias` | +26/3 | 26 |
-| `XMP:CreateDate` | 2025:05:10 15:02:36.01-06:00 | 2025:05:10 15:02:36.01 |
-| `XMP:DateAcquired` | 2008:09:13 04:53:14Z | 2008:09:13 04:53:14 |
 | `XMP:FocalLength` | 6.9 mm | 40 mm |
-| `XMP:MetadataDate` | 2017:01:03 17:42:43Z | 2017:01:03 17:42:43 |
-
-*...and 3 more differences*
+| `XMP:Model` | DMC-ZS19 | DC-S9 |
+| `XMP:PerspectiveUpright` | Off | 0 |
+| `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:5, FrameN... | 0:0:5:001219 |
 
 ## Missing Tags
 

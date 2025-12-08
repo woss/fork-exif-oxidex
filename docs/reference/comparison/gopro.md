@@ -9,11 +9,11 @@ title: GOPRO Compatibility
 ## Summary
 
 - **Files Tested:** 23
-- **Coverage:** 62.2%
-- **Matched Tags:** 117
+- **Coverage:** 64.4%
+- **Matched Tags:** 121
 - **Missing Tags:** 64
 - **Extra Tags:** 30
-- **Value Differences:** 7
+- **Value Differences:** 3
 
 ## Value Differences
 
@@ -21,11 +21,7 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:GPSAltitude` | 9.046 m | 9.0 m |
-| `EXIF:GPSLatitude` | 40 deg 39' 30.67" | 40 deg 39' 30.6705599" |
-| `EXIF:GPSLongitude` | 73 deg 59' 36.18" | 73 deg 59' 36.17988" |
 | `ICC_Profile:DeviceModel` |  |  |
-| `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 6405694 | 6343213 |
 

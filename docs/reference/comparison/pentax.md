@@ -9,11 +9,11 @@ title: PENTAX Compatibility
 ## Summary
 
 - **Files Tested:** 145
-- **Coverage:** 29.5%
-- **Matched Tags:** 160
+- **Coverage:** 29.8%
+- **Matched Tags:** 162
 - **Missing Tags:** 339
 - **Extra Tags:** 69
-- **Value Differences:** 44
+- **Value Differences:** 42
 
 ## Value Differences
 
@@ -21,8 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:GPSLatitude` | 11 deg 58' 4.67" | 11 deg 58' 4.674" |
-| `EXIF:GPSLongitude` | 121 deg 55' 6.47" | 121 deg 55' 6.474" |
 | `EXIF:UserComment` | A409451B392442A465403t577390B402434t4984... | 392442A465403t577390B402434t498419t53242... |
 | `ICC_Profile:ProfileCMMType` |  |  |
 | `MakerNotes:AFPointSelected` | Auto | 65535 |

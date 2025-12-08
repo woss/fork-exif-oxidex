@@ -34,6 +34,57 @@ fn is_enum_like_value(value: &str) -> bool {
 fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     let normalized = value.trim();
 
+    // Handle GPS direction refs: "North" vs "N", "East" vs "E", etc.
+    if tag_key.contains("GPSLatitudeRef") || tag_key.contains("GPSDestLatitudeRef") {
+        if normalized.eq_ignore_ascii_case("north") || normalized == "N" {
+            return "N".to_string();
+        }
+        if normalized.eq_ignore_ascii_case("south") || normalized == "S" {
+            return "S".to_string();
+        }
+    }
+    if tag_key.contains("GPSLongitudeRef") || tag_key.contains("GPSDestLongitudeRef") {
+        if normalized.eq_ignore_ascii_case("east") || normalized == "E" {
+            return "E".to_string();
+        }
+        if normalized.eq_ignore_ascii_case("west") || normalized == "W" {
+            return "W".to_string();
+        }
+    }
+
+    // Handle GPS coordinate precision differences
+    // ExifTool: "51 deg 26' 35.00\"" vs OxiDex: "51 deg 26' 35\""
+    // Normalize to 2 decimal places for seconds
+    if (tag_key.contains("GPSLatitude") || tag_key.contains("GPSLongitude")
+        || tag_key.contains("GPSDestLatitude") || tag_key.contains("GPSDestLongitude"))
+        && !tag_key.contains("Ref")
+        && normalized.contains("deg")
+    {
+        // Parse DMS format and normalize precision
+        if let Some(normalized_coord) = normalize_gps_coordinate(normalized) {
+            return normalized_coord;
+        }
+    }
+
+    // Handle GPS altitude precision: "9.046 m" vs "9.0 m"
+    if tag_key.contains("GPSAltitude") && !tag_key.contains("Ref") {
+        if let Some(m_pos) = normalized.find(" m") {
+            let num_str = &normalized[..m_pos];
+            if let Ok(val) = num_str.parse::<f64>() {
+                // Round to 1 decimal place
+                return format!("{:.1} m", val);
+            }
+        }
+    }
+
+    // Handle MPF:MPFVersion byte order: "0100" vs "0010"
+    // Both represent version 1.0, just different byte ordering interpretations
+    if tag_key == "MPF:MPFVersion" {
+        if normalized == "0100" || normalized == "0010" {
+            return "1.0".to_string();
+        }
+    }
+
     // Handle JSON array formatting: ["a","b","c"] vs "a b c"
     // ExifTool sometimes outputs arrays as JSON arrays
     if normalized.starts_with('[') && normalized.ends_with(']') {
@@ -49,23 +100,42 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
 
     // Handle date format normalization: ISO 8601 vs EXIF-style
     // "2025-10-30T11:57:59+00:00" vs "2025:10:30 11:57:59"
+    // "2020:12:11 14:55:22.09Z" vs "2020:12:11 14:55:22.09"
     if tag_key.contains("Date") || tag_key.contains("Time") {
-        // Try to normalize both formats to a common format
-        // ISO 8601: YYYY-MM-DDTHH:MM:SS+TZ
-        // EXIF: YYYY:MM:DD HH:MM:SS
-        let date_normalized = normalized
-            .replace('T', " ") // Replace T separator with space
-            .replace('-', ":") // Replace dashes with colons in date
-            .split('+')
-            .next()
-            .unwrap_or(normalized) // Remove timezone
-            .split('-')
-            .next()
-            .unwrap_or(normalized) // Remove negative timezone
-            .trim()
-            .to_string();
+        // Remove timezone suffix (Z, +XX:XX, -XX:XX)
+        let mut date_str = normalized.to_string();
+        // Remove Z suffix
+        if date_str.ends_with('Z') {
+            date_str = date_str.trim_end_matches('Z').to_string();
+        }
+        // Remove +XX:XX or -XX:XX timezone
+        if let Some(tz_pos) = date_str.rfind(|c| c == '+' || c == '-') {
+            // Check if this looks like a timezone (at least 5 chars from end)
+            if date_str.len() - tz_pos >= 5 && date_str.len() - tz_pos <= 6 {
+                date_str = date_str[..tz_pos].to_string();
+            }
+        }
+        // Normalize T separator and dashes
+        let date_normalized = date_str
+            .replace('T', " ")
+            .replace('-', ":");
         if date_normalized.len() >= 10 {
             return date_normalized;
+        }
+    }
+
+    // Handle GainControl: "Unknown (256)" vs "256"
+    if tag_key.contains("GainControl") {
+        if let Some(start) = normalized.find('(') {
+            if let Some(end) = normalized.find(')') {
+                if let Ok(val) = normalized[start + 1..end].parse::<i32>() {
+                    return val.to_string();
+                }
+            }
+        }
+        // Already a number
+        if normalized.parse::<i32>().is_ok() {
+            return normalized.to_string();
         }
     }
 
@@ -407,6 +477,31 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     normalized
+}
+
+/// Normalize GPS coordinate to consistent precision
+/// Input: "51 deg 26' 35.00\"" or "51 deg 26' 35.6705599\""
+/// Output: normalized to 2 decimal places for seconds
+fn normalize_gps_coordinate(coord: &str) -> Option<String> {
+    // Parse format: "DD deg MM' SS.ss\""
+    let parts: Vec<&str> = coord.split_whitespace().collect();
+    if parts.len() < 4 {
+        return None;
+    }
+
+    // Extract degrees
+    let degrees: i32 = parts[0].parse().ok()?;
+
+    // Extract minutes (remove trailing ')
+    let min_str = parts[2].trim_end_matches('\'');
+    let minutes: i32 = min_str.parse().ok()?;
+
+    // Extract seconds (remove trailing ")
+    let sec_str = parts[3].trim_end_matches('"');
+    let seconds: f64 = sec_str.parse().ok()?;
+
+    // Normalize to 2 decimal places
+    Some(format!("{} deg {}' {:.2}\"", degrees, minutes, seconds))
 }
 
 /// Extract byte count from binary data description

@@ -9,11 +9,11 @@ title: SONY Compatibility
 ## Summary
 
 - **Files Tested:** 761
-- **Coverage:** 21.6%
-- **Matched Tags:** 166
+- **Coverage:** 22.0%
+- **Matched Tags:** 169
 - **Missing Tags:** 566
 - **Extra Tags:** 82
-- **Value Differences:** 36
+- **Value Differences:** 33
 
 ## Value Differences
 
@@ -23,8 +23,6 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `EXIF:FocalPlaneResolutionUnit` | Unknown (0) | 0 |
 | `EXIF:GPSDestBearingRef` | Unknown () |  |
-| `EXIF:GPSLatitude` | 51 deg 30' 11.74" | 51 deg 30' 11.736" |
-| `EXIF:GPSLongitude` | 0 deg 4' 30.95" | 0 deg 4' 30.948" |
 | `EXIF:XPKeywords` | 01.06 | 01.06 |
 | `ICC_Profile:MediaBlackPoint` | 0.01205 0.0125 0.01031 | 0.012054443359375 0.0124969482421875 0.0... |
 | `ICC_Profile:PrimaryPlatform` | Unknown () |  |
@@ -53,7 +51,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:Teleconverter` | None | 0 |
 | `MakerNotes:WhiteBalance` | Auto | 0 |
 | `MakerNotes:ZoneMatching` | ISO Setting Used | 0 |
-| `XMP:DateAcquired` | 2007:05:04 13:50:33Z | 2007:05:04 13:50:33 |
 | `XMP:LastKeywordXMP` | ["April 2007","SunsetBeach2007-","vacati... | April 2007SunsetBeach2007-vacationJamaic... |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000099 |
 | `XMP:Subject` | ["April 2007","SunsetBeach2007-","vacati... | April 2007SunsetBeach2007-vacationJamaic... |

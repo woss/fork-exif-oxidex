@@ -9,11 +9,11 @@ title: FUJIFILM Compatibility
 ## Summary
 
 - **Files Tested:** 411
-- **Coverage:** 63.3%
-- **Matched Tags:** 317
+- **Coverage:** 64.1%
+- **Matched Tags:** 321
 - **Missing Tags:** 138
 - **Extra Tags:** 50
-- **Value Differences:** 46
+- **Value Differences:** 42
 
 ## Value Differences
 
@@ -22,8 +22,6 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `APP14:APP14Flags0` | [14], Encoded with Blend=1 downsampling | 49152 |
-| `EXIF:GPSLatitude` | 15 deg 9' 25.41" | 15 deg 9' 25.409" |
-| `EXIF:GPSLongitude` | 145 deg 42' 5.89" | 145 deg 42' 5.891" |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | (Binary data 2014 bytes, use -b option t... |
 | `EXIF:XPKeywords` | 10.02.14 | 10.02.14 |
 | `EXIF:XPTitle` |  |                 |
@@ -55,8 +53,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:Sharpness` | 0 (normal) | 3 (Hard) |
 | `MakerNotes:WhiteBalanceFineTune` | Red +0, Blue +0 | +674 |
 | `XMP:Contrast` | 0.0 | 0 |
-| `XMP:MetadataDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
-| `XMP:ModifyDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
 | `XMP:PerspectiveUpright` | Off | 0 |
 | `XMP:PipelineVersion` | 01.00 | 1 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000427 |
