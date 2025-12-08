@@ -200,7 +200,7 @@ impl ExifToolExtractor {
                 if e.path()
                     .file_name()
                     .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with('.'))
+                    .is_some_and(|n| n.starts_with("."))
                 {
                     return false;
                 }

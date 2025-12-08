@@ -90,10 +90,8 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
 
     // Handle MPF:MPFVersion byte order: "0100" vs "0010"
     // Both represent version 1.0, just different byte ordering interpretations
-    if tag_key == "MPF:MPFVersion" {
-        if normalized == "0100" || normalized == "0010" {
-            return "1.0".to_string();
-        }
+    if tag_key == "MPF:MPFVersion" && (normalized == "0100" || normalized == "0010") {
+        return "1.0".to_string();
     }
 
     // Handle JSON array formatting: ["a","b","c"] vs "a b c"
@@ -120,7 +118,7 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
             date_str = date_str.trim_end_matches('Z').to_string();
         }
         // Remove +XX:XX or -XX:XX timezone
-        if let Some(tz_pos) = date_str.rfind(|c| c == '+' || c == '-') {
+        if let Some(tz_pos) = date_str.rfind(['+', '-']) {
             // Check if this looks like a timezone (at least 5 chars from end)
             if date_str.len() - tz_pos >= 5 && date_str.len() - tz_pos <= 6 {
                 date_str = date_str[..tz_pos].to_string();
@@ -155,9 +153,9 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         // Try to parse ExifTool verbose format
         if normalized.contains("Tagged:") && normalized.contains("ColorClass:") {
             // Parse verbose format and convert to compact
-            let tagged = extract_number_after_colon(&normalized, "Tagged:").unwrap_or(0);
-            let color_class = extract_number_after_colon(&normalized, "ColorClass:").unwrap_or(0);
-            let rating = extract_number_after_colon(&normalized, "Rating:").unwrap_or(0);
+            let tagged = extract_number_after_colon(normalized, "Tagged:").unwrap_or(0);
+            let color_class = extract_number_after_colon(normalized, "ColorClass:").unwrap_or(0);
+            let rating = extract_number_after_colon(normalized, "Rating:").unwrap_or(0);
             // Extract frame number (may be negative)
             let frame_num = if let Some(idx) = normalized.find("FrameNum:") {
                 let rest = &normalized[idx + 9..];
@@ -313,10 +311,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle "Off" vs "0" for boolean-like MakerNotes tags
-    if tag_key.starts_with("MakerNotes:") {
-        if normalized == "0" || normalized.eq_ignore_ascii_case("off") {
-            return "off".to_string();
-        }
+    if tag_key.starts_with("MakerNotes:")
+        && (normalized == "0" || normalized.eq_ignore_ascii_case("off"))
+    {
+        return "off".to_string();
     }
 
     // Handle temperature formatting: "10000" vs "10000 K"
@@ -356,18 +354,18 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         "CameraOrientation",
     ];
     for tag_suffix in contrast_like_tags {
-        if tag_key.contains(tag_suffix) {
-            if normalized == "0" || normalized.eq_ignore_ascii_case("normal") {
-                return "normal".to_string();
-            }
+        if tag_key.contains(tag_suffix)
+            && (normalized == "0" || normalized.eq_ignore_ascii_case("normal"))
+        {
+            return "normal".to_string();
         }
     }
 
     // Handle rotation formatting: "0°" vs "Horizontal (normal)"
-    if tag_key.contains("Rotation") || tag_key.contains("Orientation") {
-        if normalized == "0°" || normalized == "0" || normalized.contains("horizontal (normal)") {
-            return "0".to_string();
-        }
+    if (tag_key.contains("Rotation") || tag_key.contains("Orientation"))
+        && (normalized == "0°" || normalized == "0" || normalized.contains("horizontal (normal)"))
+    {
+        return "0".to_string();
     }
 
     // Handle EV formatting: "0" vs "0.0 EV"

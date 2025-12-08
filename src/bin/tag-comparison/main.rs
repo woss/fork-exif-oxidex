@@ -171,7 +171,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn detect_formats(samples_path: &PathBuf) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+fn detect_formats(
+    samples_path: &std::path::Path,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     use std::collections::HashSet;
     let mut formats = HashSet::new();
 
@@ -187,7 +189,7 @@ fn detect_formats(samples_path: &PathBuf) -> Result<Vec<String>, Box<dyn std::er
                     if !path
                         .file_name()
                         .and_then(|n| n.to_str())
-                        .is_some_and(|n| n.starts_with('.'))
+                        .is_some_and(|n| n.starts_with("."))
                     {
                         scan_directory(&path, formats)?;
                     }
