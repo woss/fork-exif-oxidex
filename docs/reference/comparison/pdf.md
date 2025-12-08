@@ -14,23 +14,6 @@ title: PDF Compatibility
 - **Missing Tags:** 103
 - **Extra Tags:** 19
 - **Value Differences:** 1
-- **⚠️ Regressions:** 9
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `PDF:Author` |
-| `PDF:CreateDate` |
-| `PDF:Creator` |
-| `PDF:Keywords` |
-| `PDF:ModifyDate` |
-| `PDF:PageCount` |
-| `PDF:Producer` |
-| `PDF:Subject` |
-| `PDF:Title` |
 
 ## Value Differences
 

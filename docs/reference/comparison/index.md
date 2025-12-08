@@ -6,7 +6,7 @@ title: ExifTool Compatibility Report
 
 **Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 11.6% | **⚠️ Regressions:** 119
+**Overall Coverage:** 11.6%
 
 ## Coverage by Format
 
@@ -23,27 +23,34 @@ title: ExifTool Compatibility Report
 | [GOOGLE](./google.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
 | [GOPRO](./gopro.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
 | [HEIC](./heic.md) | 1 | 12.5% | 18 | 1 | 3 | 0 |
-| [JPEG](./jpeg.md) | 4085 | 9.7% | 3116 | 215 | 203 | ⚠️ 31 |
+| [JPEG](./jpeg.md) | 4085 | 9.7% | 3116 | 215 | 203 | 0 |
 | [LEICA](./leica.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
 | [MKV](./mkv.md) | 1 | 28.6% | 18 | 13 | 2 | 0 |
 | [MP3](./mp3.md) | 1 | 0.0% | 26 | 16 | 0 | 0 |
-| [MP4](./mp4.md) | 1 | 0.0% | 80 | 0 | 0 | ⚠️ 29 |
+| [MP4](./mp4.md) | 1 | 0.0% | 80 | 0 | 0 | 0 |
 | [NEF](./nef.md) | 1 | 12.7% | 165 | 33 | 13 | 0 |
 | [NIKON](./nikon.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
 | [OLYMPUS](./olympus.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
 | [PANASONIC](./panasonic.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [PDF](./pdf.md) | 2 | 5.5% | 103 | 19 | 1 | ⚠️ 9 |
+| [PDF](./pdf.md) | 2 | 5.5% | 103 | 19 | 1 | 0 |
 | [PENTAX](./pentax.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [PNG](./png.md) | 1 | 90.9% | 1 | 1 | 0 | ⚠️ 40 |
+| [PNG](./png.md) | 1 | 90.9% | 1 | 1 | 0 | 0 |
 | [PSD](./psd.md) | 1 | 13.2% | 76 | 1 | 3 | 0 |
 | [RAF](./raf.md) | 1 | 37.6% | 54 | 8 | 9 | 0 |
 | [RW2](./rw2.md) | 1 | 9.8% | 134 | 33 | 4 | 0 |
 | [SAMSUNG](./samsung.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
 | [SONY](./sony.md) | 0 | 0.0% | 0 | 0 | 0 | 0 |
-| [TIFF](./tiff.md) | 2 | 52.8% | 29 | 8 | 13 | ⚠️ 10 |
+| [TIFF](./tiff.md) | 2 | 52.8% | 29 | 8 | 13 | 0 |
 | [WAV](./wav.md) | 1 | 33.3% | 8 | 1 | 0 | 0 |
 | [WEBP](./webp.md) | 1 | 31.2% | 11 | 6 | 0 | 0 |
 | [XMP](./xmp.md) | 10 | 0.0% | 148 | 0 | 0 | 0 |
+
+## Other Format Reports
+
+Additional format-specific reports:
+
+- [Raw](./raw.md)
+
 
 ---
 

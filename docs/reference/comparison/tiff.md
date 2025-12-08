@@ -14,24 +14,6 @@ title: TIFF Compatibility
 - **Missing Tags:** 29
 - **Extra Tags:** 8
 - **Value Differences:** 13
-- **⚠️ Regressions:** 10
-
-## ⚠️ Regressions
-
-Tags that OxiDex previously extracted but no longer does:
-
-| Tag |
-|-----|
-| `EXIF:Artist` |
-| `EXIF:ExposureTime` |
-| `EXIF:ExtraSamples` |
-| `EXIF:FNumber` |
-| `EXIF:FillOrder` |
-| `EXIF:Orientation` |
-| `EXIF:PageNumber` |
-| `EXIF:PrimaryChromaticities` |
-| `EXIF:SubfileType` |
-| `EXIF:WhitePoint` |
 
 ## Value Differences
 
