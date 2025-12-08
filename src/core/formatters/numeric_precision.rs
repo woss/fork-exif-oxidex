@@ -42,18 +42,61 @@ pub const HIGH_PRECISION_9_TAGS: &[&str] = &[
     "DigitalZoomRatio",
 ];
 
-/// Tags that require exactly 2 decimal places with trailing zeros.
+/// Tags that require GPS-style numeric formatting.
 ///
-/// GPS directional and speed tags are displayed with consistent 2-decimal
-/// formatting for readability and consistency with ExifTool output.
-pub const GPS_2_DECIMAL_TAGS: &[&str] =
-    &["GPSDestBearing", "GPSImgDirection", "GPSSpeed", "GPSTrack"];
+/// GPS directional and speed tags are displayed with ExifTool-compatible formatting:
+/// - Whole numbers (no fractional part) are displayed without decimals: "20"
+/// - Numbers with fractional parts use minimal required precision
+///
+/// This matches ExifTool's behavior where integer GPS values don't show ".00" suffix.
+pub const GPS_NUMERIC_TAGS: &[&str] = &[
+    "GPSDestBearing",
+    "GPSImgDirection",
+    "GPSSpeed",
+    "GPSTrack",
+    "GPSDestDistance",
+];
 
 /// Tags that may require up to 10 decimal places if precision is needed.
 ///
 /// Resolution values typically display as integers when they are whole numbers,
 /// but can have up to 10 decimal places for fractional DPI values.
 pub const RESOLUTION_TAGS: &[&str] = &["XResolution", "YResolution"];
+
+/// Tags for ICC profile matrix values requiring 5 decimal places maximum.
+///
+/// ICC profile color transformation matrix values (ChromaticAdaptation, ColorMatrix, etc.)
+/// are displayed with up to 5 decimal places to match ExifTool output.
+///
+/// This list includes:
+/// - Color matrix columns (RedMatrixColumn, GreenMatrixColumn, BlueMatrixColumn)
+/// - White point and illuminant values (MediaWhitePoint, ConnectionSpaceIlluminant)
+/// - Viewing condition values (Luminance, ViewingCondIlluminant, ViewingCondSurround)
+/// - TRC (Tone Reproduction Curve) tags
+/// - DNG camera calibration matrices
+pub const ICC_MATRIX_TAGS: &[&str] = &[
+    "ChromaticAdaptation",
+    "ColorMatrix1",
+    "ColorMatrix2",
+    "CameraCalibration1",
+    "CameraCalibration2",
+    "ProfileCalibrationSignature",
+    "RedMatrixColumn",
+    "GreenMatrixColumn",
+    "BlueMatrixColumn",
+    "RedTRC",
+    "GreenTRC",
+    "BlueTRC",
+    // ICC profile white point and illuminant values
+    "MediaWhitePoint",
+    "ConnectionSpaceIlluminant",
+    // ICC profile viewing condition values
+    "Luminance",
+    "ViewingCondIlluminant",
+    "ViewingCondSurround",
+    // MeasurementFlare is formatted as a percentage (handled separately with "%" suffix)
+    "MeasurementFlare",
+];
 
 // ============================================================================
 // MAIN FORMATTING FUNCTION
@@ -124,11 +167,15 @@ pub fn format_exif_rational(tag_name: &str, value: f64) -> String {
     // Apply tag-specific formatting rules based on the base tag name
     if HIGH_PRECISION_9_TAGS.contains(&base_name) {
         format_with_precision(value, 9)
-    } else if GPS_2_DECIMAL_TAGS.contains(&base_name) {
-        // GPS tags always show exactly 2 decimal places with trailing zeros
-        format!("{:.2}", value)
+    } else if GPS_NUMERIC_TAGS.contains(&base_name) {
+        // GPS numeric tags: whole numbers without decimals, fractional with minimal precision
+        // ExifTool shows "20" not "20.00" for integer GPS values
+        format_gps_numeric(value)
     } else if RESOLUTION_TAGS.contains(&base_name) {
         format_with_precision(value, 10)
+    } else if ICC_MATRIX_TAGS.contains(&base_name) {
+        // ICC profile matrix values: limit to 5 decimal places
+        format_with_precision(value, 5)
     } else {
         // Default: 6 decimal places with trailing zeros trimmed
         format_with_precision(value, 6)
@@ -174,6 +221,44 @@ fn format_with_precision(value: f64, precision: usize) -> String {
         .to_string()
 }
 
+/// Format GPS numeric values with ExifTool-compatible precision.
+///
+/// GPS numeric values (direction, speed, distance) are formatted to match ExifTool:
+/// - Whole numbers are displayed without decimals: "20" not "20.00"
+/// - Fractional values use minimal required precision (trimmed trailing zeros)
+///
+/// This function uses a small epsilon (1e-9) to detect near-integer values,
+/// accounting for floating-point representation of values like 20.0.
+///
+/// # Arguments
+///
+/// * `value` - The floating-point value to format
+///
+/// # Returns
+///
+/// A string formatted to match ExifTool's GPS numeric output.
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_eq!(format_gps_numeric(20.0), "20");
+/// assert_eq!(format_gps_numeric(45.5), "45.5");
+/// assert_eq!(format_gps_numeric(123.456), "123.456");
+/// ```
+fn format_gps_numeric(value: f64) -> String {
+    // Use a small epsilon to detect near-integer values
+    // This handles floating-point representation issues
+    const EPSILON: f64 = 1e-9;
+
+    if (value.fract().abs()) < EPSILON {
+        // Whole number - format without decimals
+        format!("{:.0}", value)
+    } else {
+        // Fractional value - use up to 6 decimal places and trim trailing zeros
+        format_with_precision(value, 6)
+    }
+}
+
 /// Check if a tag requires high precision (9 decimal places).
 ///
 /// # Arguments
@@ -198,7 +283,10 @@ pub fn is_high_precision_tag(tag_name: &str) -> bool {
     HIGH_PRECISION_9_TAGS.contains(&base_name)
 }
 
-/// Check if a tag requires GPS-style formatting (2 decimal places with trailing zeros).
+/// Check if a tag requires GPS-style numeric formatting.
+///
+/// GPS numeric tags display whole numbers without decimals and fractional
+/// values with minimal precision (trailing zeros trimmed).
 ///
 /// # Arguments
 ///
@@ -206,20 +294,73 @@ pub fn is_high_precision_tag(tag_name: &str) -> bool {
 ///
 /// # Returns
 ///
-/// `true` if the tag is a GPS directional/speed tag.
+/// `true` if the tag is a GPS numeric tag (direction, speed, distance).
 ///
 /// # Examples
 ///
 /// ```
-/// use oxidex::core::formatters::numeric_precision::is_gps_2_decimal_tag;
+/// use oxidex::core::formatters::numeric_precision::is_gps_numeric_tag;
 ///
-/// assert!(is_gps_2_decimal_tag("GPSImgDirection"));
-/// assert!(is_gps_2_decimal_tag("GPS:GPSSpeed"));
-/// assert!(!is_gps_2_decimal_tag("GPSLatitude"));
+/// assert!(is_gps_numeric_tag("GPSImgDirection"));
+/// assert!(is_gps_numeric_tag("GPS:GPSSpeed"));
+/// assert!(!is_gps_numeric_tag("GPSLatitude"));
 /// ```
-pub fn is_gps_2_decimal_tag(tag_name: &str) -> bool {
+pub fn is_gps_numeric_tag(tag_name: &str) -> bool {
     let base_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
-    GPS_2_DECIMAL_TAGS.contains(&base_name)
+    GPS_NUMERIC_TAGS.contains(&base_name)
+}
+
+/// Check if a tag is an ICC profile matrix tag (5 decimal places).
+///
+/// ICC profile matrix values are formatted with up to 5 decimal places
+/// to match ExifTool output.
+///
+/// # Arguments
+///
+/// * `tag_name` - The tag name, optionally with group prefix
+///
+/// # Returns
+///
+/// `true` if the tag is an ICC profile matrix tag.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::core::formatters::numeric_precision::is_icc_matrix_tag;
+///
+/// assert!(is_icc_matrix_tag("ChromaticAdaptation"));
+/// assert!(is_icc_matrix_tag("ICC_Profile:RedMatrixColumn"));
+/// assert!(!is_icc_matrix_tag("GPSSpeed"));
+/// ```
+pub fn is_icc_matrix_tag(tag_name: &str) -> bool {
+    let base_name = tag_name.rsplit(':').next().unwrap_or(tag_name);
+    ICC_MATRIX_TAGS.contains(&base_name)
+}
+
+/// Format an ICC profile value with 5 decimal places maximum, trimming trailing zeros.
+///
+/// ICC profile matrix values (color matrices, white points, illuminants) are displayed
+/// with up to 5 decimal places to match ExifTool output.
+///
+/// # Arguments
+///
+/// * `value` - The floating-point value to format
+///
+/// # Returns
+///
+/// A string formatted with up to 5 decimal places, trailing zeros trimmed.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::core::formatters::numeric_precision::format_icc_value;
+///
+/// assert_eq!(format_icc_value(0.14919), "0.14919");
+/// assert_eq!(format_icc_value(0.5), "0.5");
+/// assert_eq!(format_icc_value(1.0), "1");
+/// ```
+pub fn format_icc_value(value: f64) -> String {
+    format_with_precision(value, 5)
 }
 
 /// Check if a tag is a resolution tag (XResolution, YResolution).
@@ -294,38 +435,51 @@ mod tests {
     }
 
     // ------------------------------------------------------------------------
-    // GPS Tags (2 decimal places with trailing zeros)
+    // GPS Numeric Tags (whole numbers without decimals, fractional with minimal precision)
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_gps_dest_bearing_2_decimals() {
-        // GPSDestBearing should always show exactly 2 decimal places
+    fn test_gps_dest_bearing_formatting() {
+        // GPSDestBearing: fractional values show minimal precision
         assert_eq!(format_exif_rational("GPSDestBearing", 123.45), "123.45");
-        // Trailing zeros should be preserved
-        assert_eq!(format_exif_rational("GPSDestBearing", 90.0), "90.00");
-        assert_eq!(format_exif_rational("GPSDestBearing", 45.5), "45.50");
+        // Whole numbers display without decimals (ExifTool compatible)
+        assert_eq!(format_exif_rational("GPSDestBearing", 90.0), "90");
+        // Trailing zeros trimmed from fractional values
+        assert_eq!(format_exif_rational("GPSDestBearing", 45.5), "45.5");
     }
 
     #[test]
-    fn test_gps_img_direction_2_decimals() {
-        // GPSImgDirection should always show exactly 2 decimal places
-        assert_eq!(format_exif_rational("GPSImgDirection", 180.0), "180.00");
+    fn test_gps_img_direction_formatting() {
+        // GPSImgDirection: whole numbers without decimals
+        assert_eq!(format_exif_rational("GPSImgDirection", 180.0), "180");
+        assert_eq!(format_exif_rational("GPSImgDirection", 20.0), "20");
+        // Fractional values with minimal precision
         assert_eq!(format_exif_rational("GPSImgDirection", 270.75), "270.75");
     }
 
     #[test]
-    fn test_gps_speed_2_decimals() {
-        // GPSSpeed should always show exactly 2 decimal places
-        assert_eq!(format_exif_rational("GPSSpeed", 50.0), "50.00");
-        assert_eq!(format_exif_rational("GPSSpeed", 65.5), "65.50");
+    fn test_gps_speed_formatting() {
+        // GPSSpeed: whole numbers without decimals
+        assert_eq!(format_exif_rational("GPSSpeed", 50.0), "50");
+        // Fractional values with minimal precision
+        assert_eq!(format_exif_rational("GPSSpeed", 65.5), "65.5");
         assert_eq!(format_exif_rational("GPSSpeed", 100.25), "100.25");
     }
 
     #[test]
-    fn test_gps_track_2_decimals() {
-        // GPSTrack should always show exactly 2 decimal places
-        assert_eq!(format_exif_rational("GPSTrack", 0.0), "0.00");
+    fn test_gps_track_formatting() {
+        // GPSTrack: whole numbers without decimals
+        assert_eq!(format_exif_rational("GPSTrack", 0.0), "0");
+        // Fractional values preserved
         assert_eq!(format_exif_rational("GPSTrack", 359.99), "359.99");
+    }
+
+    #[test]
+    fn test_gps_dest_distance_formatting() {
+        // GPSDestDistance: whole numbers without decimals
+        assert_eq!(format_exif_rational("GPSDestDistance", 100.0), "100");
+        // Fractional values with minimal precision
+        assert_eq!(format_exif_rational("GPSDestDistance", 12.345), "12.345");
     }
 
     // ------------------------------------------------------------------------
@@ -387,7 +541,8 @@ mod tests {
             format_exif_rational("EXIF:BrightnessValue", 3.617254236),
             "3.617254236"
         );
-        assert_eq!(format_exif_rational("GPS:GPSImgDirection", 45.0), "45.00");
+        // GPS tags now show whole numbers without decimals
+        assert_eq!(format_exif_rational("GPS:GPSImgDirection", 45.0), "45");
         assert_eq!(format_exif_rational("EXIF:XResolution", 72.0), "72");
         // Multiple colons (edge case)
         assert_eq!(
@@ -404,7 +559,8 @@ mod tests {
     fn test_zero_values() {
         // Zero should format correctly for each tag type
         assert_eq!(format_exif_rational("BrightnessValue", 0.0), "0");
-        assert_eq!(format_exif_rational("GPSSpeed", 0.0), "0.00");
+        // GPS numeric tags: zero is displayed without decimals
+        assert_eq!(format_exif_rational("GPSSpeed", 0.0), "0");
         assert_eq!(format_exif_rational("XResolution", 0.0), "0");
         assert_eq!(format_exif_rational("UnknownTag", 0.0), "0");
     }
@@ -454,14 +610,24 @@ mod tests {
     }
 
     #[test]
-    fn test_is_gps_2_decimal_tag() {
-        assert!(is_gps_2_decimal_tag("GPSDestBearing"));
-        assert!(is_gps_2_decimal_tag("GPSImgDirection"));
-        assert!(is_gps_2_decimal_tag("GPSSpeed"));
-        assert!(is_gps_2_decimal_tag("GPSTrack"));
-        assert!(is_gps_2_decimal_tag("GPS:GPSSpeed"));
-        assert!(!is_gps_2_decimal_tag("GPSLatitude"));
-        assert!(!is_gps_2_decimal_tag("BrightnessValue"));
+    fn test_is_gps_numeric_tag() {
+        assert!(is_gps_numeric_tag("GPSDestBearing"));
+        assert!(is_gps_numeric_tag("GPSImgDirection"));
+        assert!(is_gps_numeric_tag("GPSSpeed"));
+        assert!(is_gps_numeric_tag("GPSTrack"));
+        assert!(is_gps_numeric_tag("GPSDestDistance"));
+        assert!(is_gps_numeric_tag("GPS:GPSSpeed"));
+        assert!(!is_gps_numeric_tag("GPSLatitude"));
+        assert!(!is_gps_numeric_tag("BrightnessValue"));
+    }
+
+    #[test]
+    fn test_is_icc_matrix_tag() {
+        assert!(is_icc_matrix_tag("ChromaticAdaptation"));
+        assert!(is_icc_matrix_tag("RedMatrixColumn"));
+        assert!(is_icc_matrix_tag("ICC_Profile:BlueMatrixColumn"));
+        assert!(!is_icc_matrix_tag("GPSSpeed"));
+        assert!(!is_icc_matrix_tag("XResolution"));
     }
 
     #[test]
@@ -486,12 +652,22 @@ mod tests {
     }
 
     #[test]
-    fn test_gps_2_decimal_tags_list() {
-        assert_eq!(GPS_2_DECIMAL_TAGS.len(), 4);
-        assert!(GPS_2_DECIMAL_TAGS.contains(&"GPSDestBearing"));
-        assert!(GPS_2_DECIMAL_TAGS.contains(&"GPSImgDirection"));
-        assert!(GPS_2_DECIMAL_TAGS.contains(&"GPSSpeed"));
-        assert!(GPS_2_DECIMAL_TAGS.contains(&"GPSTrack"));
+    fn test_gps_numeric_tags_list() {
+        assert_eq!(GPS_NUMERIC_TAGS.len(), 5);
+        assert!(GPS_NUMERIC_TAGS.contains(&"GPSDestBearing"));
+        assert!(GPS_NUMERIC_TAGS.contains(&"GPSImgDirection"));
+        assert!(GPS_NUMERIC_TAGS.contains(&"GPSSpeed"));
+        assert!(GPS_NUMERIC_TAGS.contains(&"GPSTrack"));
+        assert!(GPS_NUMERIC_TAGS.contains(&"GPSDestDistance"));
+    }
+
+    #[test]
+    fn test_icc_matrix_tags_list() {
+        // Verify key ICC matrix tags are in the list
+        assert!(ICC_MATRIX_TAGS.contains(&"ChromaticAdaptation"));
+        assert!(ICC_MATRIX_TAGS.contains(&"RedMatrixColumn"));
+        assert!(ICC_MATRIX_TAGS.contains(&"GreenMatrixColumn"));
+        assert!(ICC_MATRIX_TAGS.contains(&"BlueMatrixColumn"));
     }
 
     #[test]
@@ -514,5 +690,43 @@ mod tests {
         assert_eq!(format_with_precision(1.0, 6), "1");
         assert_eq!(format_with_precision(0.0, 6), "0");
         assert_eq!(format_with_precision(-1.5, 6), "-1.5");
+    }
+
+    #[test]
+    fn test_format_gps_numeric() {
+        // Whole numbers display without decimals
+        assert_eq!(format_gps_numeric(20.0), "20");
+        assert_eq!(format_gps_numeric(180.0), "180");
+        assert_eq!(format_gps_numeric(0.0), "0");
+
+        // Fractional values use minimal precision
+        assert_eq!(format_gps_numeric(45.5), "45.5");
+        assert_eq!(format_gps_numeric(123.456), "123.456");
+        assert_eq!(format_gps_numeric(90.25), "90.25");
+
+        // Very small fractions preserved
+        assert_eq!(format_gps_numeric(0.01), "0.01");
+    }
+
+    // ------------------------------------------------------------------------
+    // ICC Profile Matrix Tag Tests
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_icc_matrix_formatting() {
+        // ICC profile values are limited to 5 decimal places
+        assert_eq!(
+            format_exif_rational("ChromaticAdaptation", 1.04788),
+            "1.04788"
+        );
+        // Trailing zeros trimmed
+        assert_eq!(format_exif_rational("RedMatrixColumn", 0.436), "0.436");
+        // Whole numbers display without decimals
+        assert_eq!(format_exif_rational("BlueMatrixColumn", 1.0), "1");
+        // Values beyond 5 decimals are rounded
+        assert_eq!(
+            format_exif_rational("GreenMatrixColumn", 0.3851234567),
+            "0.38512"
+        );
     }
 }

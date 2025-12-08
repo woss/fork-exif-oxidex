@@ -8,8 +8,8 @@ use super::{FileFormat, FileReader, MetadataMap, TagValue};
 use crate::core::format_dispatch::dispatch_format_parser;
 use crate::core::jpeg_helpers::{
     process_app10_segments, process_app11_segments, process_app12_segments,
-    process_exif_segments, process_icc_segments, process_iptc_segments, process_jfif_segments,
-    process_mpf_segments, process_sof_segments, process_xmp_segments,
+    process_app14_segments, process_exif_segments, process_icc_segments, process_iptc_segments,
+    process_jfif_segments, process_mpf_segments, process_sof_segments, process_xmp_segments,
 };
 use crate::core::operations_helpers::{read_u16, read_u32};
 #[cfg(test)]
@@ -479,6 +479,7 @@ pub(crate) fn parse_jpeg_metadata(reader: &dyn FileReader) -> Result<MetadataMap
     process_app10_segments(&segments, &mut metadata);
     process_app11_segments(&segments, &mut metadata);
     process_app12_segments(&segments, &mut metadata);
+    process_app14_segments(&segments, &mut metadata);
 
     // Normalize tag families to match ExifTool conventions (ExifIFD: -> EXIF:)
     use crate::core::tag_normalization::normalize_metadata_map;

@@ -4,16 +4,16 @@ title: NEF Compatibility
 
 # NEF Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 12.7%
-- **Matched Tags:** 26
+- **Coverage:** 13.7%
+- **Matched Tags:** 28
 - **Missing Tags:** 165
 - **Extra Tags:** 33
-- **Value Differences:** 13
+- **Value Differences:** 11
 
 ## Value Differences
 
@@ -22,7 +22,6 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `EXIF:BitsPerSample` | 12 | 8 |
-| `EXIF:CFAPattern` | [Blue,Green][Green,Red] | [Binary data] |
 | `EXIF:Compression` | Nikon NEF Compressed | Uncompressed |
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
 | `EXIF:ExposureTime` | 1/20 | 0.05 |
@@ -31,7 +30,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:PhotometricInterpretation` | Color Filter Array | RGB |
 | `EXIF:RowsPerStrip` | 2014 | 106 |
 | `EXIF:SamplesPerPixel` | 1 | 3 |
-| `EXIF:SceneType` | Directly photographed | [Binary data] |
 | `EXIF:StripOffsets` | 1376 | 6170 |
 | `EXIF:SubfileType` | Full-resolution image | Reduced-resolution Image |
 
@@ -168,7 +166,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `SubIFD0:0x0202` | 29 |
 | `SubIFD0:0x828D` | 2 |
 | `SubIFD0:BitsPerSample` | 12 |
-| `SubIFD0:CFAPattern2` | [Binary data] |
+| `SubIFD0:CFAPattern2` | [Invalid CFA data] |
 | `SubIFD0:Compression` | Nikon NEF Compressed |
 | `SubIFD0:ImageHeight` | 2014 |
 | `SubIFD0:ImageWidth` | 3040 |

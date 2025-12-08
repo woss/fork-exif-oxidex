@@ -26,6 +26,6 @@ pub use gps_processing_method::decode_gps_processing_method;
 pub use gps_speed_ref::format_gps_speed_ref;
 pub use gps_status::format_gps_status;
 pub use interop_version::decode_version_bytes;
-pub use numeric_precision::format_exif_rational;
+pub use numeric_precision::{format_exif_rational, format_icc_value, is_icc_matrix_tag};
 pub use scene_type::decode_scene_type;
 pub use unit_suffixes::format_with_unit;

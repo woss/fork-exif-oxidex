@@ -1,20 +1,31 @@
 //! APP12 Agfa Picture Info parser
 //!
 //! This module parses JPEG APP12 segments from Agfa cameras. The Agfa Picture Info
-//! format uses a similar structure to Olympus with an "AGFA" identifier followed
-//! by key=value pairs containing camera and image metadata.
+//! format uses key=value pairs containing camera and image metadata. There are two
+//! variants of this format:
+//!
+//! 1. **Standard format**: Begins with "AGFA" identifier (4 bytes), followed by a
+//!    null terminator, then newline-separated key=value pairs.
+//!
+//! 2. **Legacy format**: Older Agfa cameras (like the SR84) wrote APP12 segments
+//!    that start directly with key=value pairs without an "AGFA" prefix.
 //!
 //! # Format Structure
 //!
-//! The APP12 Agfa segment begins with the "AGFA" identifier (4 bytes), followed
-//! by a null terminator, and then a series of newline-separated key=value pairs.
-//! Each pair contains metadata about the image such as camera type, exposure
-//! settings, date/time, and more.
+//! ## Standard Format
+//! ```text
+//! AGFA\0CameraType=DC-1033\nVersion=1.0\n...
+//! ```
+//!
+//! ## Legacy Format (no identifier)
+//! ```text
+//! Type=SR84\nVersion=v84-71\nID=AGFA DIGITAL CAMERA\n...
+//! ```
 //!
 //! # Supported Tags
 //!
 //! - `ID` - Unique identifier for the image
-//! - `CameraType` - Model name of the Agfa camera
+//! - `Type` / `CameraType` - Model name of the Agfa camera
 //! - `Version` - Firmware or software version
 //! - `DateTimeOriginal` - Original capture date and time
 //! - `ExposureTime` - Shutter speed / exposure duration
@@ -27,27 +38,35 @@
 //! ```ignore
 //! use oxidex::parsers::jpeg::app_segments::app12_agfa::parse_app12_agfa;
 //!
+//! // Standard format with AGFA identifier
 //! let data = b"AGFA\0ID=12345\nCameraType=AgfaPhoto DC-1033\nVersion=1.0\n";
 //! let result = parse_app12_agfa(data)?;
 //! assert_eq!(result.get_string("Agfa:CameraType"), Some("AgfaPhoto DC-1033"));
+//!
+//! // Legacy format without identifier
+//! let data = b"Type=SR84\nVersion=v84-71\nID=AGFA DIGITAL CAMERA\n";
+//! let result = parse_app12_agfa(data)?;
+//! assert_eq!(result.get_string("Agfa:Type"), Some("SR84"));
 //! ```
 
 use crate::core::MetadataMap;
 use crate::core::TagValue;
 use crate::error::Result;
 
-/// Identifier bytes that mark an Agfa Picture Info APP12 segment.
-/// The segment must start with "AGFA" followed by a null terminator.
+/// Identifier bytes that mark a standard Agfa Picture Info APP12 segment.
+/// Some older cameras omit this identifier and start directly with key=value pairs.
 const AGFA_IDENTIFIER: &[u8; 4] = b"AGFA";
 
 /// Minimum length required for a valid Agfa APP12 segment.
-/// This accounts for the 4-byte identifier plus null terminator.
-const MIN_AGFA_LENGTH: usize = 5;
+/// This is the minimum for key=value format (e.g., "A=B" is 3 bytes).
+const MIN_AGFA_LENGTH: usize = 3;
 
 /// Parses an APP12 Agfa Picture Info segment from raw JPEG data.
 ///
 /// This function extracts metadata from Agfa camera APP12 segments,
-/// which store information as key=value pairs following the "AGFA" identifier.
+/// which store information as key=value pairs. The function supports both:
+/// - Standard format with "AGFA" identifier prefix
+/// - Legacy format that starts directly with key=value pairs
 ///
 /// # Arguments
 ///
@@ -56,30 +75,40 @@ const MIN_AGFA_LENGTH: usize = 5;
 /// # Returns
 ///
 /// * `Ok(MetadataMap)` - Successfully parsed metadata with tags prefixed by "Agfa:"
-/// * `Err(ExifToolError)` - If the segment is too short or has an invalid identifier
+/// * `Err(ExifToolError)` - If the segment is too short or cannot be parsed
 ///
 /// # Format Details
 ///
-/// The Agfa APP12 format consists of:
-/// 1. 4-byte identifier: "AGFA"
-/// 2. Null terminator (0x00)
+/// The standard Agfa APP12 format consists of:
+/// 1. 4-byte identifier: "AGFA" (optional in legacy format)
+/// 2. Null terminator (0x00) if identifier present
 /// 3. Key=value pairs separated by newlines or carriage returns
 ///
+/// Legacy format from older cameras:
+/// 1. Key=value pairs starting immediately (no identifier)
+/// 2. Pairs separated by newlines or carriage returns
+///
 /// Each key=value pair is parsed and stored in the MetadataMap with
-/// the "Agfa:" prefix (e.g., "Agfa:CameraType").
+/// the "Agfa:" prefix (e.g., "Agfa:CameraType", "Agfa:Type").
 ///
 /// # Example
 ///
 /// ```ignore
+/// // Standard format
 /// let segment_data = b"AGFA\0CameraType=DC-1033\nExposureTime=1/125\n";
 /// let metadata = parse_app12_agfa(segment_data)?;
 /// assert!(metadata.contains_key("Agfa:CameraType"));
+///
+/// // Legacy format (no identifier)
+/// let segment_data = b"Type=SR84\nVersion=v84-71\n";
+/// let metadata = parse_app12_agfa(segment_data)?;
+/// assert!(metadata.contains_key("Agfa:Type"));
 /// ```
 pub fn parse_app12_agfa(data: &[u8]) -> Result<MetadataMap> {
     let mut metadata = MetadataMap::new();
 
     // Validate minimum segment length
-    // The segment must contain at least the identifier (4 bytes) plus null terminator
+    // Need at least a few bytes for any valid key=value content
     if data.len() < MIN_AGFA_LENGTH {
         return Err(crate::error::ExifToolError::parse_error(format!(
             "APP12 Agfa segment too short: {} bytes (minimum {} required)",
@@ -88,20 +117,21 @@ pub fn parse_app12_agfa(data: &[u8]) -> Result<MetadataMap> {
         )));
     }
 
-    // Verify the "AGFA" identifier at the start of the segment
-    if &data[0..4] != AGFA_IDENTIFIER {
-        return Err(crate::error::ExifToolError::parse_error(format!(
-            "Invalid Agfa identifier: expected 'AGFA', found {:?}",
-            &data[0..4]
-        )));
-    }
+    // Determine the content start offset based on whether the AGFA identifier is present.
+    // Standard format: "AGFA\0" followed by key=value pairs
+    // Legacy format: key=value pairs start immediately
+    let content_offset = if data.len() >= 4 && &data[0..4] == AGFA_IDENTIFIER {
+        // Standard format with AGFA identifier
+        // Skip the identifier and find where content starts
+        let content_start = find_content_start(&data[4..]);
+        4 + content_start
+    } else {
+        // Legacy format without identifier - content starts at beginning
+        // Skip any leading whitespace or null bytes
+        find_content_start(data)
+    };
 
-    // Find the end of the identifier (null terminator or start of data)
-    // The identifier is typically followed by a null byte before the key=value data
-    let content_start = find_content_start(&data[4..]);
-    let content_offset = 4 + content_start;
-
-    // If no content after the identifier, return empty metadata
+    // If no content after the identifier/whitespace, return empty metadata
     // This is not an error - some cameras may write empty Agfa segments
     if content_offset >= data.len() {
         return Ok(metadata);
@@ -377,7 +407,7 @@ mod tests {
     /// Test that segment too short returns an error.
     #[test]
     fn test_segment_too_short() {
-        let data = b"AGF"; // Only 3 bytes, less than minimum
+        let data = b"AB"; // Only 2 bytes, less than minimum of 3
         let result = parse_app12_agfa(data);
         assert!(result.is_err());
         assert!(result
@@ -386,16 +416,31 @@ mod tests {
             .contains("APP12 Agfa segment too short"));
     }
 
-    /// Test that invalid identifier returns an error.
+    /// Test parsing legacy format without AGFA identifier.
+    /// Older Agfa cameras like SR84 wrote APP12 segments that start directly
+    /// with key=value pairs without the "AGFA" prefix.
     #[test]
-    fn test_invalid_identifier() {
-        let data = b"XYZW\0SomeData=Value\n";
+    fn test_legacy_format_no_identifier() {
+        let data = b"Type=SR84\nVersion=v84-71\nID=AGFA DIGITAL CAMERA\n";
         let result = parse_app12_agfa(data);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Invalid Agfa identifier"));
+        assert!(result.is_ok());
+
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("Agfa:Type"), Some("SR84"));
+        assert_eq!(metadata.get_string("Agfa:Version"), Some("v84-71"));
+        assert_eq!(metadata.get_string("Agfa:ID"), Some("AGFA DIGITAL CAMERA"));
+    }
+
+    /// Test that data without key=value format returns empty metadata.
+    /// If there's no equals sign, no tags will be extracted but it's not an error.
+    #[test]
+    fn test_data_without_keyvalue_format() {
+        let data = b"XYZW\0SomeDataWithoutEquals\n";
+        let result = parse_app12_agfa(data);
+        // This should succeed but return empty metadata since there are no key=value pairs
+        assert!(result.is_ok());
+        let metadata = result.unwrap();
+        assert!(metadata.is_empty());
     }
 
     /// Test parsing segment with only the identifier (no content).
@@ -638,5 +683,84 @@ mod tests {
         let metadata = result.unwrap();
         assert_eq!(metadata.get_string("Agfa:Key1"), Some("Value1"));
         assert_eq!(metadata.get_string("Agfa:Key2"), Some("Value2"));
+    }
+
+    /// Test legacy format with CameraType at start (another common variant).
+    #[test]
+    fn test_legacy_format_cameratype_start() {
+        let data = b"CameraType=SR84\nVersion=v84-71\n";
+        let result = parse_app12_agfa(data);
+        assert!(result.is_ok());
+
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("Agfa:CameraType"), Some("SR84"));
+        assert_eq!(metadata.get_string("Agfa:Version"), Some("v84-71"));
+    }
+
+    /// Test legacy format with ID at start containing camera identifier string.
+    #[test]
+    fn test_legacy_format_id_start() {
+        let data = b"ID=AGFA DIGITAL CAMERA\nType=ePhoto780\nVersion=v1.0\n";
+        let result = parse_app12_agfa(data);
+        assert!(result.is_ok());
+
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("Agfa:ID"), Some("AGFA DIGITAL CAMERA"));
+        assert_eq!(metadata.get_string("Agfa:Type"), Some("ePhoto780"));
+        // Version has 'v' prefix so it's stored as string
+        assert_eq!(metadata.get_string("Agfa:Version"), Some("v1.0"));
+    }
+
+    /// Test legacy format with Version at start.
+    #[test]
+    fn test_legacy_format_version_start() {
+        let data = b"Version=v84-71\nType=SR84\nID=AGFA DIGITAL CAMERA\n";
+        let result = parse_app12_agfa(data);
+        assert!(result.is_ok());
+
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("Agfa:Version"), Some("v84-71"));
+        assert_eq!(metadata.get_string("Agfa:Type"), Some("SR84"));
+        assert_eq!(metadata.get_string("Agfa:ID"), Some("AGFA DIGITAL CAMERA"));
+    }
+
+    /// Test legacy format with leading whitespace.
+    #[test]
+    fn test_legacy_format_leading_whitespace() {
+        let data = b"  \n\rType=SR84\nVersion=v1.0\n";
+        let result = parse_app12_agfa(data);
+        assert!(result.is_ok());
+
+        let metadata = result.unwrap();
+        assert_eq!(metadata.get_string("Agfa:Type"), Some("SR84"));
+        // Version has 'v' prefix so it's stored as string
+        assert_eq!(metadata.get_string("Agfa:Version"), Some("v1.0"));
+    }
+
+    /// Test that both standard and legacy formats parse the same tags correctly.
+    /// This ensures backward compatibility with the standard format.
+    #[test]
+    fn test_format_compatibility() {
+        // Standard format with AGFA identifier
+        let standard_data = b"AGFA\0Type=SR84\nVersion=v84-71\n";
+        let standard_result = parse_app12_agfa(standard_data);
+        assert!(standard_result.is_ok());
+        let standard_metadata = standard_result.unwrap();
+
+        // Legacy format without identifier
+        let legacy_data = b"Type=SR84\nVersion=v84-71\n";
+        let legacy_result = parse_app12_agfa(legacy_data);
+        assert!(legacy_result.is_ok());
+        let legacy_metadata = legacy_result.unwrap();
+
+        // Both should produce the same tags
+        assert_eq!(
+            standard_metadata.get_string("Agfa:Type"),
+            legacy_metadata.get_string("Agfa:Type")
+        );
+        assert_eq!(
+            standard_metadata.get_string("Agfa:Version"),
+            legacy_metadata.get_string("Agfa:Version")
+        );
     }
 }

@@ -4,7 +4,7 @@ title: DNG Compatibility
 
 # DNG Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
@@ -179,7 +179,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `SubIFD0:BlackLevel` | 0 |
 | `SubIFD0:BlackLevelRepeatDim` | 1 |
 | `SubIFD0:CFALayout` | 1 |
-| `SubIFD0:CFAPattern2` | [Binary data] |
+| `SubIFD0:CFAPattern2` | [Invalid CFA data] |
 | `SubIFD0:CFAPlaneColor` | [Binary data] |
 | `SubIFD0:Compression` | JPEG |
 | `SubIFD0:DefaultCropOrigin` | 10 |

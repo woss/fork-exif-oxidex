@@ -231,33 +231,37 @@ fn handle_rational_type(
     }
 
     // Special handling for GPS movement tags
+    // ExifTool displays whole numbers without decimals ("20" not "20.00")
     if denominator != 0 {
         let value = numerator as f64 / denominator as f64;
 
         match tag_id {
             // GPSSpeed - format with precision, no unit (unit is in GPSSpeedRef)
             GPS_SPEED => {
-                return TagValue::new_string(format!("{:.2}", value));
+                return TagValue::new_string(format_gps_numeric_value(value));
             }
             // GPSTrack - direction in degrees (0-359.99)
             GPS_TRACK => {
-                return TagValue::new_string(format!("{:.2}", value));
+                return TagValue::new_string(format_gps_numeric_value(value));
             }
             // GPSImgDirection - camera pointing direction in degrees (0-359.99)
             GPS_IMG_DIRECTION => {
-                return TagValue::new_string(format!("{:.2}", value));
+                return TagValue::new_string(format_gps_numeric_value(value));
             }
             // GPSDestBearing - bearing to destination in degrees (0-359.99)
             GPS_DEST_BEARING => {
-                return TagValue::new_string(format!("{:.2}", value));
+                return TagValue::new_string(format_gps_numeric_value(value));
             }
             // GPSDestDistance - distance to destination (unit in GPSDestDistanceRef)
             GPS_DEST_DISTANCE => {
-                return TagValue::new_string(format!("{:.3}", value));
+                return TagValue::new_string(format_gps_numeric_value(value));
             }
             // GPSHPositioningError - horizontal positioning error in meters
             GPS_H_POSITIONING_ERROR => {
-                return TagValue::new_string(format!("{:.2} m", value));
+                return TagValue::new_string(format!(
+                    "{} m",
+                    format_gps_numeric_value(value)
+                ));
             }
             _ => {}
         }
@@ -343,6 +347,12 @@ fn format_gps_timestamp(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
 ///
 /// Formatted as: "focal_min-focal_max mm f/aperture_min-aperture_max"
 /// Example: "24-70 mm f/2.8-2.8" or "50 mm f/1.8"
+///
+/// # Formatting Rules (ExifTool compatibility)
+///
+/// - Focal lengths are rounded to nearest integer when close to whole numbers
+/// - Values like 3.99 are rounded to 4
+/// - Space between number and "mm" (e.g., "4 mm" not "4mm")
 fn format_lens_info(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
     let mut values = Vec::new();
     for i in 0..4 {
@@ -361,16 +371,29 @@ fn format_lens_info(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
     let min_f_at_min = values[2];
     let min_f_at_max = values[3];
 
+    // Helper to format focal length - round to integer when appropriate
+    // Values like 3.99 should display as 4, matching ExifTool behavior
+    let format_focal = |f: f64| -> String {
+        let rounded = f.round();
+        // If within 0.1 of a whole number, use the rounded value
+        if (f - rounded).abs() < 0.1 {
+            format!("{:.0}", rounded)
+        } else {
+            // Keep one decimal place for truly fractional values
+            format!("{:.1}", f)
+        }
+    };
+
     // Format focal length range
     let focal_str = if (min_focal - max_focal).abs() < 0.1 {
         // Prime lens (single focal length)
-        format!("{:.0} mm", min_focal)
+        format!("{} mm", format_focal(min_focal))
     } else {
         // Zoom lens (focal range)
-        format!("{:.0}-{:.0} mm", min_focal, max_focal)
+        format!("{}-{} mm", format_focal(min_focal), format_focal(max_focal))
     };
 
-    // Format aperture range
+    // Format aperture range - keep one decimal for f-numbers
     let aperture_str = if (min_f_at_min - min_f_at_max).abs() < 0.1 {
         // Constant aperture (e.g., f/2.8)
         format!("f/{:.1}", min_f_at_min)
@@ -535,6 +558,46 @@ fn heuristic_bytes_to_tag_value(bytes: &[u8], byte_order: ByteOrder) -> TagValue
 // parse_exif_datetime, gcd) are imported from operations_helpers module
 // to avoid duplication.
 
+/// Formats a GPS numeric value for ExifTool compatibility.
+///
+/// GPS values like GPSImgDirection, GPSSpeed, GPSTrack, GPSDestBearing, and
+/// GPSDestDistance are formatted to match ExifTool's output:
+/// - Whole numbers display without decimals: "20" not "20.00"
+/// - Fractional values display with minimal precision (trailing zeros trimmed)
+///
+/// # Arguments
+///
+/// * `value` - The floating-point GPS value to format
+///
+/// # Returns
+///
+/// A string formatted to match ExifTool's GPS numeric output.
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_eq!(format_gps_numeric_value(20.0), "20");
+/// assert_eq!(format_gps_numeric_value(45.5), "45.5");
+/// assert_eq!(format_gps_numeric_value(123.456), "123.456");
+/// ```
+fn format_gps_numeric_value(value: f64) -> String {
+    // Use a small epsilon to detect near-integer values
+    // This handles floating-point representation issues
+    const EPSILON: f64 = 1e-9;
+
+    if (value.fract().abs()) < EPSILON {
+        // Whole number - format without decimals
+        format!("{:.0}", value)
+    } else {
+        // Fractional value - format with up to 6 decimal places and trim trailing zeros
+        let formatted = format!("{:.6}", value);
+        formatted
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -558,12 +621,12 @@ mod tests {
 
     #[test]
     fn test_gps_speed_formatting() {
-        // Test GPSSpeed (tag 0x000D) - should format as decimal with 2 places
-        let bytes = make_rational_bytes(25, 1, ByteOrder::BigEndian); // 25.00
+        // Test GPSSpeed (tag 0x000D) - whole numbers without decimals (ExifTool compatible)
+        let bytes = make_rational_bytes(25, 1, ByteOrder::BigEndian); // 25
         let result = raw_bytes_to_tag_value(&bytes, 5, 1, 0x000D, ByteOrder::BigEndian);
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "25.00");
+            assert_eq!(s, "25"); // Not "25.00"
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -604,12 +667,12 @@ mod tests {
             panic!("Expected String variant, got {:?}", result);
         }
 
-        // Test with integer degrees
-        let bytes = make_rational_bytes(90, 1, ByteOrder::BigEndian); // 90.00 degrees
+        // Test with integer degrees - whole numbers without decimals
+        let bytes = make_rational_bytes(90, 1, ByteOrder::BigEndian); // 90 degrees
         let result = raw_bytes_to_tag_value(&bytes, 5, 1, 0x000F, ByteOrder::BigEndian);
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "90.00");
+            assert_eq!(s, "90"); // Not "90.00"
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -635,7 +698,17 @@ mod tests {
         let result = raw_bytes_to_tag_value(&bytes, 5, 1, 0x0011, ByteOrder::LittleEndian);
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "180.50");
+            assert_eq!(s, "180.5"); // Trailing zero trimmed
+        } else {
+            panic!("Expected String variant, got {:?}", result);
+        }
+
+        // Test whole number - no decimals
+        let bytes = make_rational_bytes(20, 1, ByteOrder::LittleEndian); // 20 degrees
+        let result = raw_bytes_to_tag_value(&bytes, 5, 1, 0x0011, ByteOrder::LittleEndian);
+
+        if let TagValue::String(s) = result {
+            assert_eq!(s, "20"); // Not "20.00"
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -692,12 +765,12 @@ mod tests {
             panic!("Expected String variant, got {:?}", result);
         }
 
-        // Test with integer value
-        let bytes = make_rational_bytes(10, 1, ByteOrder::BigEndian); // 10.00 m
+        // Test with integer value - whole numbers without decimals
+        let bytes = make_rational_bytes(10, 1, ByteOrder::BigEndian); // 10 m
         let result = raw_bytes_to_tag_value(&bytes, 5, 1, 0x001F, ByteOrder::BigEndian);
 
         if let TagValue::String(s) = result {
-            assert_eq!(s, "10.00 m");
+            assert_eq!(s, "10 m"); // Not "10.00 m"
         } else {
             panic!("Expected String variant, got {:?}", result);
         }
@@ -734,7 +807,7 @@ mod tests {
         let speed_bytes = make_rational_bytes(555, 10, ByteOrder::BigEndian);
         let speed = raw_bytes_to_tag_value(&speed_bytes, 5, 1, 0x000D, ByteOrder::BigEndian);
         if let TagValue::String(s) = speed {
-            assert_eq!(s, "55.50");
+            assert_eq!(s, "55.5"); // Trailing zero trimmed
         } else {
             panic!("Expected String for GPSSpeed");
         }
@@ -751,7 +824,7 @@ mod tests {
         let track_bytes = make_rational_bytes(2755, 10, ByteOrder::BigEndian);
         let track = raw_bytes_to_tag_value(&track_bytes, 5, 1, 0x000F, ByteOrder::BigEndian);
         if let TagValue::String(s) = track {
-            assert_eq!(s, "275.50");
+            assert_eq!(s, "275.5"); // Trailing zero trimmed
         } else {
             panic!("Expected String for GPSTrack");
         }
@@ -777,7 +850,7 @@ mod tests {
         let error_bytes = make_rational_bytes(85, 10, ByteOrder::BigEndian);
         let error = raw_bytes_to_tag_value(&error_bytes, 5, 1, 0x001F, ByteOrder::BigEndian);
         if let TagValue::String(s) = error {
-            assert_eq!(s, "8.50 m");
+            assert_eq!(s, "8.5 m"); // Trailing zero trimmed
         } else {
             panic!("Expected String for GPSHPositioningError");
         }
@@ -997,6 +1070,52 @@ mod tests {
             assert_eq!(s, "70-200 mm f/4.0");
         } else {
             panic!("Expected String variant, got {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_lens_info_fractional_focal_rounding() {
+        // Test focal length rounding: 3.99mm should round to 4mm
+        // This matches ExifTool's behavior for smartphone lenses
+        let bytes = make_rational_array_bytes(
+            &[(399, 100), (399, 100), (18, 10), (18, 10)], // 3.99mm f/1.8
+            ByteOrder::LittleEndian,
+        );
+
+        let result = raw_bytes_to_tag_value(
+            &bytes,
+            5, // ExifType::Rational
+            4,
+            0xA432, // LensInfo
+            ByteOrder::LittleEndian,
+        );
+
+        if let TagValue::String(s) = result {
+            // 3.99 rounds to 4
+            assert_eq!(s, "4 mm f/1.8");
+        } else {
+            panic!("Expected String variant, got {:?}", result);
+        }
+
+        // Test a truly fractional value that shouldn't round
+        let bytes2 = make_rational_array_bytes(
+            &[(45, 10), (45, 10), (28, 10), (28, 10)], // 4.5mm f/2.8
+            ByteOrder::LittleEndian,
+        );
+
+        let result2 = raw_bytes_to_tag_value(
+            &bytes2,
+            5, // ExifType::Rational
+            4,
+            0xA432, // LensInfo
+            ByteOrder::LittleEndian,
+        );
+
+        if let TagValue::String(s) = result2 {
+            // 4.5 stays as 4.5 (not rounded)
+            assert_eq!(s, "4.5 mm f/2.8");
+        } else {
+            panic!("Expected String variant, got {:?}", result2);
         }
     }
 

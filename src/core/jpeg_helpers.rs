@@ -10,6 +10,7 @@ use crate::core::tiff_helpers::{parse_exif_subifd, parse_gps_subifd};
 use crate::io::EndianReader;
 use crate::parsers::jpeg::app_segments::{
     parse_app10_hdr, parse_app11_jpeg_hdr, parse_app12_agfa, parse_app12_olympus,
+    parse_app14_adobe,
 };
 use crate::parsers::jpeg::segment_parser::Segment;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
@@ -480,7 +481,10 @@ pub fn process_app11_segments(segments: &[Segment], metadata: &mut MetadataMap) 
 /// The function examines the beginning of each APP12 segment to determine
 /// which parser to use:
 /// - "OLYM" or "OLYMP" prefix -> Olympus parser
+/// - "[picture info]" prefix -> Olympus parser (older format)
 /// - "AGFA" prefix -> Agfa parser
+/// - "Type=" or "ID=" at start -> Agfa key=value parser (no identifier)
+/// - Contains "=" in first 50 bytes with key=value structure -> Agfa parser
 /// - "Ducky" prefix -> Already handled by existing parse_ducky_segment
 ///
 /// # Error Handling
@@ -505,10 +509,18 @@ pub fn process_app12_segments(segments: &[Segment], metadata: &mut MetadataMap) 
         // Olympus uses various identifiers including "OLYMPUS", "[picture info]", etc.
         let is_olympus = (segment.data.len() >= 4 && &segment.data[..4] == b"OLYM")
             || (segment.data.len() >= 5 && &segment.data[..5] == b"OLYMP")
-            || (segment.data.len() >= 7 && &segment.data[..7] == b"OLYMPUS");
+            || (segment.data.len() >= 7 && &segment.data[..7] == b"OLYMPUS")
+            || (segment.data.len() >= 14 && &segment.data[..14] == b"[picture info]");
 
-        // Check for Agfa identifier
-        let is_agfa = segment.data.len() >= 4 && &segment.data[..4] == b"AGFA";
+        // Check for Agfa identifier (explicit "AGFA" prefix)
+        let is_agfa_explicit = segment.data.len() >= 4 && &segment.data[..4] == b"AGFA";
+
+        // Check for Agfa-style key=value format without identifier.
+        // Older Agfa cameras wrote APP12 segments that start directly with key=value pairs
+        // like "Type=SR84" or "ID=AGFA DIGITAL CAMERA" without an "AGFA" prefix.
+        let is_agfa_keyvalue = !is_olympus
+            && !is_agfa_explicit
+            && is_agfa_style_keyvalue_format(segment.data);
 
         // Check for Ducky identifier (handled by existing parser in app_parsers.rs)
         let is_ducky = segment.data.len() >= 5 && &segment.data[..5] == b"Ducky";
@@ -528,8 +540,8 @@ pub fn process_app12_segments(segments: &[Segment], metadata: &mut MetadataMap) 
                     eprintln!("Warning: Failed to parse APP12 Olympus segment: {}", e);
                 }
             }
-        } else if is_agfa {
-            // Parse Agfa Picture Info segment
+        } else if is_agfa_explicit || is_agfa_keyvalue {
+            // Parse Agfa Picture Info segment (with or without explicit identifier)
             match parse_app12_agfa(segment.data) {
                 Ok(agfa_metadata) => {
                     // Merge Agfa metadata into the main metadata map
@@ -549,5 +561,143 @@ pub fn process_app12_segments(segments: &[Segment], metadata: &mut MetadataMap) 
         }
         // Unknown APP12 formats are silently ignored - they may be proprietary
         // formats from other manufacturers that we don't support yet.
+    }
+}
+
+/// Checks if the segment data looks like Agfa-style key=value format without an identifier.
+///
+/// This detects APP12 segments from older Agfa cameras that wrote metadata directly
+/// as key=value pairs without the "AGFA" identifier prefix. These segments typically
+/// start with tags like "Type=", "ID=", "CameraType=", or "Version=".
+///
+/// # Arguments
+///
+/// * `data` - Raw APP12 segment data
+///
+/// # Returns
+///
+/// `true` if the data appears to be Agfa-style key=value format, `false` otherwise
+///
+/// # Detection Criteria
+///
+/// 1. First, check for common Agfa tag prefixes at the start ("Type=", "ID=", "CameraType=", "Version=")
+/// 2. If not found, check if an equals sign appears within the first 50 bytes
+/// 3. Verify the content before the equals sign looks like a valid key name (alphanumeric)
+/// 4. Ensure the segment is not binary data (check for excessive control characters)
+fn is_agfa_style_keyvalue_format(data: &[u8]) -> bool {
+    // Check for common Agfa tag prefixes at the very start of the segment
+    // These are the most common tags that Agfa cameras write first
+    const AGFA_START_PREFIXES: &[&[u8]] = &[
+        b"Type=",
+        b"ID=",
+        b"CameraType=",
+        b"Version=",
+    ];
+
+    for prefix in AGFA_START_PREFIXES {
+        if data.len() >= prefix.len() && &data[..prefix.len()] == *prefix {
+            return true;
+        }
+    }
+
+    // If no known prefix, look for key=value pattern in first 50 bytes
+    // This handles variations in Agfa format where the first key might differ
+    let search_len = data.len().min(50);
+    let search_data = &data[..search_len];
+
+    // Find the first equals sign
+    let eq_pos = match search_data.iter().position(|&b| b == b'=') {
+        Some(pos) => pos,
+        None => return false, // No equals sign found, not key=value format
+    };
+
+    // The key must be non-empty and before the equals sign
+    if eq_pos == 0 {
+        return false;
+    }
+
+    // Verify the key looks like a valid identifier (alphanumeric, no binary garbage)
+    // Keys in Agfa format are typically ASCII letters/digits only
+    let potential_key = &data[..eq_pos];
+    let key_is_valid = potential_key.iter().all(|&b| {
+        b.is_ascii_alphanumeric() || b == b'_' || b == b'-'
+    });
+
+    if !key_is_valid {
+        return false;
+    }
+
+    // Additional check: ensure the segment is mostly text (not binary data)
+    // Count control characters (excluding CR, LF, null which are valid delimiters)
+    let control_char_count = search_data.iter().filter(|&&b| {
+        b < 0x20 && b != b'\r' && b != b'\n' && b != 0x00
+    }).count();
+
+    // If more than 10% control characters, probably not text format
+    if control_char_count * 10 > search_len {
+        return false;
+    }
+
+    true
+}
+
+/// Processes APP14 segments and extracts Adobe DCT encoding metadata.
+///
+/// APP14 segments (marker 0xFFEE) contain Adobe-specific metadata when they
+/// start with the "Adobe" identifier. This includes information about the
+/// DCT encoding version and color transformation used.
+///
+/// # Arguments
+///
+/// * `segments` - Parsed JPEG segments
+/// * `metadata` - MetadataMap to populate with APP14 Adobe tags
+///
+/// # Extracted Tags
+///
+/// - APP14:DCTEncodeVersion - Version of the DCT encoder
+/// - APP14:APP14Flags0 - First set of encoding flags
+/// - APP14:APP14Flags1 - Second set of encoding flags
+/// - APP14:ColorTransform - Color transformation type (Unknown, YCbCr, or YCCK)
+///
+/// # Color Transform Values
+///
+/// The ColorTransform field is critical for proper JPEG decoding:
+/// - 0 = Unknown (RGB or CMYK, context-dependent)
+/// - 1 = YCbCr (standard JPEG color space for RGB images)
+/// - 2 = YCCK (CMYK encoded as YCCK)
+///
+/// # Error Handling
+///
+/// Parse errors for individual segments are logged as warnings but do not
+/// prevent processing of remaining segments. Segments without the "Adobe"
+/// identifier are silently skipped.
+pub fn process_app14_segments(segments: &[Segment], metadata: &mut MetadataMap) {
+    // APP14 marker is 0xFFEE
+    const APP14_MARKER: u16 = 0xFFEE;
+
+    // Adobe identifier that marks an APP14 segment as Adobe-format
+    const ADOBE_IDENTIFIER: &[u8] = b"Adobe";
+
+    for segment in segments.iter().filter(|s| s.marker == APP14_MARKER) {
+        // Check if this is an Adobe APP14 segment (starts with "Adobe")
+        if segment.data.len() >= ADOBE_IDENTIFIER.len()
+            && &segment.data[..ADOBE_IDENTIFIER.len()] == ADOBE_IDENTIFIER
+        {
+            match parse_app14_adobe(segment.data) {
+                Ok(adobe_metadata) => {
+                    // Merge APP14 Adobe metadata into the main metadata map
+                    for (key, value) in adobe_metadata.iter() {
+                        metadata.insert(key.clone(), value.clone());
+                    }
+                }
+                Err(e) => {
+                    // Log warning but continue processing other segments
+                    // APP14 data is optional, so parse failures are not fatal
+                    eprintln!("Warning: Failed to parse APP14 Adobe segment: {}", e);
+                }
+            }
+        }
+        // Non-Adobe APP14 segments are silently ignored - they may contain
+        // other proprietary data that we don't support yet.
     }
 }

@@ -4,43 +4,30 @@ title: ExifTool Compatibility Report
 
 # ExifTool Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 20.3%
+**Overall Coverage:** 14.7%
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
-| [APPLE](./apple.md) | 66 | 44.1% | 87 | 38 | 40 | 0 |
 | [AVI](./avi.md) | 2 | 2.8% | 102 | 22 | 1 | 0 |
-| [CANON](./canon.md) | 725 | 19.2% | 639 | 83 | 65 | 0 |
 | [CR2](./cr2.md) | 2 | 12.8% | 246 | 20 | 53 | 0 |
-| [DJI](./dji.md) | 21 | 38.2% | 134 | 51 | 42 | 0 |
 | [DNG](./dng.md) | 1 | 13.2% | 207 | 44 | 23 | 0 |
-| [FUJIFILM](./fujifilm.md) | 411 | 47.9% | 195 | 45 | 66 | 0 |
 | [GIF](./gif.md) | 1 | 0.0% | 35 | 0 | 0 | 0 |
-| [GOOGLE](./google.md) | 24 | 41.4% | 121 | 31 | 35 | 0 |
-| [GOPRO](./gopro.md) | 23 | 48.1% | 71 | 28 | 26 | 0 |
 | [HEIC](./heic.md) | 1 | 12.5% | 18 | 1 | 3 | 0 |
-| [JPEG](./jpeg.md) | 4085 | 10.0% | 3050 | 214 | 198 | 0 |
-| [LEICA](./leica.md) | 67 | 26.8% | 347 | 92 | 63 | 0 |
+| [JPEG](./jpeg.md) | 41 | 15.0% | 1047 | 66 | 60 | 0 |
 | [MKV](./mkv.md) | 1 | 28.6% | 18 | 13 | 2 | 0 |
 | [MP3](./mp3.md) | 1 | 0.0% | 26 | 16 | 0 | 0 |
 | [MP4](./mp4.md) | 1 | 0.0% | 80 | 0 | 0 | 0 |
-| [NEF](./nef.md) | 1 | 12.7% | 165 | 33 | 13 | 0 |
-| [NIKON](./nikon.md) | 307 | 15.5% | 654 | 92 | 44 | 0 |
-| [OLYMPUS](./olympus.md) | 315 | 20.7% | 371 | 21 | 42 | 0 |
-| [PANASONIC](./panasonic.md) | 477 | 41.1% | 290 | 148 | 64 | 0 |
+| [NEF](./nef.md) | 1 | 13.7% | 165 | 33 | 11 | 0 |
 | [PDF](./pdf.md) | 2 | 5.5% | 103 | 19 | 1 | 0 |
-| [PENTAX](./pentax.md) | 145 | 19.9% | 405 | 64 | 30 | 0 |
 | [PNG](./png.md) | 1 | 90.9% | 1 | 1 | 0 | 0 |
 | [PSD](./psd.md) | 1 | 13.2% | 76 | 1 | 3 | 0 |
-| [RAF](./raf.md) | 1 | 37.6% | 54 | 8 | 9 | 0 |
+| [RAF](./raf.md) | 1 | 39.6% | 54 | 8 | 7 | 0 |
 | [RW2](./rw2.md) | 1 | 9.8% | 134 | 33 | 4 | 0 |
-| [SAMSUNG](./samsung.md) | 702 | 32.9% | 271 | 105 | 63 | 0 |
-| [SONY](./sony.md) | 761 | 16.2% | 600 | 35 | 43 | 0 |
-| [TIFF](./tiff.md) | 2 | 52.8% | 29 | 8 | 13 | 0 |
+| [TIFF](./tiff.md) | 2 | 61.8% | 29 | 8 | 5 | 0 |
 | [WAV](./wav.md) | 1 | 33.3% | 8 | 1 | 0 | 0 |
 | [WEBP](./webp.md) | 1 | 31.2% | 11 | 6 | 0 | 0 |
 | [XMP](./xmp.md) | 10 | 0.0% | 148 | 0 | 0 | 0 |
@@ -49,7 +36,20 @@ title: ExifTool Compatibility Report
 
 Additional format-specific reports:
 
+- [Apple](./apple.md)
+- [Canon](./canon.md)
+- [Dji](./dji.md)
+- [Fujifilm](./fujifilm.md)
+- [Google](./google.md)
+- [Gopro](./gopro.md)
+- [Leica](./leica.md)
+- [Nikon](./nikon.md)
+- [Olympus](./olympus.md)
+- [Panasonic](./panasonic.md)
+- [Pentax](./pentax.md)
 - [Raw](./raw.md)
+- [Samsung](./samsung.md)
+- [Sony](./sony.md)
 
 
 ---

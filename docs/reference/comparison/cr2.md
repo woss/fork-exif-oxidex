@@ -4,7 +4,7 @@ title: CR2 Compatibility
 
 # CR2 Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
@@ -34,7 +34,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:ExposureTime` | 1/80 | 0.066667 |
 | `EXIF:FNumber` | 3.5 | 8 |
 | `EXIF:Flash` | No Flash | Off, Did not fire |
-| `EXIF:FocalLength` | 15.0 mm | 55.0 mm |
+| `EXIF:FocalLength` | 15.0 mm | 55 mm |
 | `EXIF:FocalPlaneXResolution` | 6514.65798 | 3954.23341 |
 | `EXIF:FocalPlaneYResolution` | 6734.006734 | 3958.762887 |
 | `EXIF:ISO` | 12800 | 400 |
@@ -56,8 +56,8 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:FirmwareVersion` | 1.0.0 | DJMI***3:A›949VO |
 | `MakerNotes:FlashBits` | E-TTL | None |
 | `MakerNotes:FocalLength` | 15 mm | 55 mm |
-| `MakerNotes:FocusDistanceLower` | 0.22 m | inf |
-| `MakerNotes:FocusDistanceUpper` | 0.24 m | inf |
+| `MakerNotes:FocusDistanceLower` | 0.22 m | undef |
+| `MakerNotes:FocusDistanceUpper` | 0.24 m | undef |
 | `MakerNotes:FocusMode` | One-shot AF (Live View) | One-shot AF |
 | `MakerNotes:ISO` | 12800 | 32767 |
 | `MakerNotes:MaxAperture` | 3.6 | f/4.0 |

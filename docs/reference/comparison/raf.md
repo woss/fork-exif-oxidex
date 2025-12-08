@@ -4,16 +4,16 @@ title: RAF Compatibility
 
 # RAF Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
+**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
 ## Summary
 
 - **Files Tested:** 1
-- **Coverage:** 37.6%
-- **Matched Tags:** 38
+- **Coverage:** 39.6%
+- **Matched Tags:** 40
 - **Missing Tags:** 54
 - **Extra Tags:** 8
-- **Value Differences:** 9
+- **Value Differences:** 7
 
 ## Value Differences
 
@@ -26,8 +26,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:Copyright` |  |                                         ... |
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
 | `EXIF:ExposureTime` | 1/250 | 0.004 |
-| `EXIF:FocalLengthIn35mmFormat` | 105 mm | 105 |
-| `EXIF:SceneType` | Directly photographed | [Binary data] |
 | `EXIF:ShutterSpeedValue` | 1/256 | [Binary data] |
 | `EXIF:UserComment` |  | [Binary data] |
 

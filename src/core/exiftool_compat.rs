@@ -27,9 +27,11 @@
 //! 5. GPS altitude reference (binary 0x00/0x01 -> Above/Below Sea Level)
 //! 6. GPS processing method (binary data with encoding prefix)
 //! 7. Binary decoders (CFAPattern, SceneType, version bytes)
-//! 8. Enum tags (ExposureProgram integer -> string description)
-//! 9. Unit suffixes (FocalLength -> "X mm", GPSAltitude -> "X m")
-//! 10. Default: return original value unchanged
+//! 8. APP14 flags (APP14Flags0/APP14Flags1: 0 -> "(none)")
+//! 9. Enum tags (ExposureProgram integer -> string description)
+//! 10. ICC_Profile matrix tags (5 decimal precision, MeasurementFlare with % suffix)
+//! 11. Unit suffixes (FocalLength -> "X mm", GPSAltitude -> "X m")
+//! 12. Default: return original value unchanged
 //!
 //! # Example
 //!
@@ -50,7 +52,8 @@
 use crate::core::formatters::{
     decode_cfa_pattern, decode_gps_processing_method, decode_scene_type, decode_version_bytes,
     format_exposure_program, format_gps_altitude_ref, format_gps_direction_ref,
-    format_gps_lat_ref, format_gps_lon_ref, format_gps_speed_ref, format_with_unit,
+    format_gps_lat_ref, format_gps_lon_ref, format_gps_speed_ref, format_icc_value,
+    format_with_unit, is_icc_matrix_tag,
 };
 use crate::core::formatters::gps_speed_ref::format_gps_dest_distance_ref;
 use crate::core::formatters::gps_status::{format_gps_differential, format_gps_measure_mode, format_gps_status};
@@ -129,9 +132,11 @@ pub fn format_for_exiftool(metadata: &MetadataMap) -> MetadataMap {
 /// 5. GPS altitude ref (GPSAltitudeRef for binary 0x00/0x01)
 /// 6. GPS processing method (GPSProcessingMethod for binary data)
 /// 7. Binary decoders (CFAPattern, SceneType, version tags)
-/// 8. Enum tags (ExposureProgram)
-/// 9. Unit suffixes (FocalLength, GPSAltitude)
-/// 10. Default: return original value unchanged
+/// 8. APP14 flags (APP14Flags0, APP14Flags1: 0 -> "(none)")
+/// 9. Enum tags (ExposureProgram)
+/// 10. ICC_Profile matrix tags (5 decimal precision for color matrices, white points, etc.)
+/// 11. Unit suffixes (FocalLength, GPSAltitude)
+/// 12. Default: return original value unchanged
 ///
 /// # Arguments
 ///
@@ -193,6 +198,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // Rule 4: GPS Status Tags (GPSStatus, GPSMeasureMode, GPSDifferential)
     // ---------------------------------------------------------------------
     if is_gps_status_tag(base_name) {
+        // Handle string values (e.g., "A", "V", "2", "3", "0", "1")
         if let Some(s) = value.as_string() {
             let formatted = match base_name {
                 "GPSStatus" => format_gps_status(s),
@@ -202,6 +208,19 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
             };
             if let Some(f) = formatted {
                 return TagValue::String(f);
+            }
+        }
+        // Handle integer values for GPSDifferential (0 -> "No Correction", 1 -> "Differential Corrected")
+        if base_name == "GPSDifferential" {
+            if let Some(i) = value.as_integer() {
+                let formatted = match i {
+                    0 => Some("No Correction".to_string()),
+                    1 => Some("Differential Corrected".to_string()),
+                    _ => None,
+                };
+                if let Some(f) = formatted {
+                    return TagValue::String(f);
+                }
             }
         }
     }
@@ -291,7 +310,20 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 8: Enum Tags (ExposureProgram)
+    // Rule 8: APP14 Flags (APP14Flags0, APP14Flags1)
+    // ExifTool shows "(none)" for value 0, otherwise shows the value
+    // ---------------------------------------------------------------------
+    if is_app14_flags_tag(base_name) {
+        if let Some(i) = value.as_integer() {
+            if i == 0 {
+                return TagValue::String("(none)".to_string());
+            }
+            // Non-zero values are returned as-is (pass through to default)
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 9: Enum Tags (ExposureProgram)
     // Convert integer enum values to human-readable strings
     // ---------------------------------------------------------------------
     if is_exposure_program(base_name) {
@@ -304,7 +336,52 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 9: Unit Suffixes (FocalLength -> mm, GPSAltitude -> m)
+    // Rule 10: ICC_Profile Matrix Tags (5 decimal precision)
+    // Format float values in ICC profile tags with up to 5 decimal places.
+    // MeasurementFlare requires a "%" suffix after formatting.
+    // ---------------------------------------------------------------------
+    if is_icc_matrix_tag(base_name) {
+        // Handle string values that contain space-separated floats
+        // (e.g., "0.1491851806640625 0.0632171630859375 0.74456787109375")
+        if let Some(s) = value.as_string() {
+            let formatted = format_icc_string_values(s, base_name);
+            return TagValue::String(formatted);
+        }
+        // Handle single float values
+        if let Some(f) = value.as_float() {
+            let formatted = format_icc_value(f);
+            // Add "%" suffix for MeasurementFlare
+            if base_name == "MeasurementFlare" {
+                return TagValue::String(format!("{}%", formatted));
+            }
+            return TagValue::String(formatted);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 11: Percentage Tags (Quality, MeasurementFlare)
+    // Append "%" suffix to numeric values representing percentages
+    // Note: MeasurementFlare is also handled in the ICC matrix rule above,
+    // but Quality (from Ducky segment) is handled here for integer values.
+    // ---------------------------------------------------------------------
+    if is_percentage_tag(base_name) {
+        if let Some(i) = value.as_integer() {
+            return TagValue::String(format!("{}%", i));
+        }
+        if let Some(f) = value.as_float() {
+            // Format floats: remove trailing zeros for clean output
+            // e.g., 84.0 -> "84%", 84.5 -> "84.5%"
+            let formatted = if f.fract() == 0.0 {
+                format!("{}%", f as i64)
+            } else {
+                format!("{}%", f)
+            };
+            return TagValue::String(formatted);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 12: Unit Suffixes (FocalLength -> mm, GPSAltitude -> m)
     // ---------------------------------------------------------------------
     if is_unit_suffix_tag(base_name) {
         // For string values, apply unit suffix directly
@@ -342,9 +419,89 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 10: Default - Return original value unchanged
+    // Rule 13: Special Values (infinity -> "undef", -0 -> "0")
+    // Handle special float/rational values that result from invalid/undefined data.
+    // GPS tags like GPSDestBearing/GPSDestDistance produce infinity when
+    // the denominator is 0. ExifTool displays "undef" for these cases.
+    // Also handles string representations ("inf", "-0") for values already
+    // converted to string.
+    // ---------------------------------------------------------------------
+    if let Some(f) = value.as_float() {
+        if let Some(formatted) = format_special_float_values(f) {
+            return TagValue::String(formatted);
+        }
+    }
+    // Handle Rational values with denominator 0 (would produce infinity)
+    if let TagValue::Rational { denominator, .. } = value {
+        if *denominator == 0 {
+            return TagValue::String("undef".to_string());
+        }
+    }
+    // Also handle string representations of special values
+    if let Some(s) = value.as_string() {
+        if s == "inf" || s == "-inf" || s == "Infinity" || s == "-Infinity" {
+            return TagValue::String("undef".to_string());
+        }
+        if s == "-0" || s == "-0.0" {
+            return TagValue::String("0".to_string());
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 14: Default - Return original value unchanged
     // ---------------------------------------------------------------------
     value.clone()
+}
+
+// =============================================================================
+// HELPER FUNCTIONS - Special Value Formatting
+// =============================================================================
+
+/// Formats special float values (infinity, negative zero) to match ExifTool output.
+///
+/// When GPS data has invalid rational values (e.g., denominator = 0), OxiDex
+/// computes infinity. ExifTool instead shows "undef" for these cases. This
+/// function handles these special cases to maintain ExifTool compatibility.
+///
+/// # Arguments
+///
+/// * `value` - The float value to check
+///
+/// # Returns
+///
+/// * `Some("undef")` - If the value is positive or negative infinity
+/// * `Some("0")` - If the value is negative zero (-0.0)
+/// * `None` - If the value is a normal number that should be formatted normally
+///
+/// # Why This Matters
+///
+/// GPS tags like GPSDestBearing and GPSDestDistance store values as rational
+/// numbers (numerator/denominator). When the denominator is 0, division produces
+/// infinity. ExifTool recognizes this as invalid data and displays "undef".
+/// Similarly, negative zero can occur in edge cases and should normalize to "0".
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// assert_eq!(format_special_float_values(f64::INFINITY), Some("undef".to_string()));
+/// assert_eq!(format_special_float_values(f64::NEG_INFINITY), Some("undef".to_string()));
+/// assert_eq!(format_special_float_values(-0.0), Some("0".to_string()));
+/// assert_eq!(format_special_float_values(42.5), None);
+/// ```
+fn format_special_float_values(value: f64) -> Option<String> {
+    // Check for infinity (positive or negative) - indicates invalid rational (div by zero)
+    if value.is_infinite() {
+        return Some("undef".to_string());
+    }
+
+    // Check for negative zero - normalize to "0"
+    // Note: -0.0 == 0.0 in Rust, so we use is_sign_negative() to detect it
+    if value == 0.0 && value.is_sign_negative() {
+        return Some("0".to_string());
+    }
+
+    // Normal value - no special formatting needed
+    None
 }
 
 // =============================================================================
@@ -545,6 +702,22 @@ pub fn is_version_tag(base_name: &str) -> bool {
     )
 }
 
+/// Checks if the tag is an APP14 flags tag (APP14Flags0, APP14Flags1).
+///
+/// These tags are used in JPEG APP14 (Adobe) segments to store processing flags.
+/// ExifTool displays "(none)" when the value is 0, indicating no flags are set.
+///
+/// # Arguments
+///
+/// * `base_name` - The tag name without family prefix
+///
+/// # Returns
+///
+/// `true` if this tag should be formatted as an APP14 flags value
+pub fn is_app14_flags_tag(base_name: &str) -> bool {
+    matches!(base_name, "APP14Flags0" | "APP14Flags1")
+}
+
 /// Checks if the tag is ExposureProgram.
 ///
 /// # Arguments
@@ -584,6 +757,91 @@ pub fn is_unit_suffix_tag(base_name: &str) -> bool {
             | "SubjectDistance"
             | "HyperfocalDistance"
     )
+}
+
+/// Checks if the tag represents a percentage value that needs "%" suffix.
+///
+/// Percentage tags include:
+/// - Quality (from Ducky segment in JPEG files) - image quality setting
+/// - MeasurementFlare (from ICC_Profile) - flare measurement percentage
+///
+/// These tags store numeric values representing percentages, and ExifTool
+/// displays them with a "%" suffix for clarity (e.g., "84" becomes "84%").
+///
+/// Note: MeasurementFlare is also handled by the ICC matrix formatting rule,
+/// but is included here for consistency and to handle integer values.
+///
+/// # Arguments
+///
+/// * `base_name` - The tag name without family prefix
+///
+/// # Returns
+///
+/// `true` if this tag should have a "%" suffix appended to numeric values
+pub fn is_percentage_tag(base_name: &str) -> bool {
+    // Quality from Ducky segment and MeasurementFlare from ICC_Profile need % suffix.
+    // Note: MeasurementFlare strings are handled by ICC matrix rule first,
+    // but integers fall through to this rule for the % suffix.
+    matches!(base_name, "Quality" | "MeasurementFlare")
+}
+
+// =============================================================================
+// HELPER FUNCTIONS - Value Formatting
+// =============================================================================
+
+/// Formats space-separated float values in an ICC profile string with 5 decimal precision.
+///
+/// ICC profile matrix tags often contain multiple space-separated float values
+/// (e.g., "0.1491851806640625 0.0632171630859375 0.74456787109375"). This function
+/// parses each value, formats it with up to 5 decimal places, and reassembles
+/// the string with spaces.
+///
+/// For MeasurementFlare, a "%" suffix is appended to the formatted result.
+///
+/// # Arguments
+///
+/// * `value` - The string containing space-separated float values
+/// * `base_name` - The base tag name (used to detect MeasurementFlare for % suffix)
+///
+/// # Returns
+///
+/// A formatted string with each float value limited to 5 decimal places.
+/// If parsing fails for any value, the original token is preserved.
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// // Matrix column with 3 values
+/// let result = format_icc_string_values("0.1491851806640625 0.0632171630859375 0.74456787109375", "BlueMatrixColumn");
+/// assert_eq!(result, "0.14919 0.06322 0.74457");
+///
+/// // MeasurementFlare with % suffix
+/// let result = format_icc_string_values("0.01", "MeasurementFlare");
+/// assert_eq!(result, "0.01%");
+/// ```
+fn format_icc_string_values(value: &str, base_name: &str) -> String {
+    // Split the string by whitespace and format each numeric value
+    let formatted_parts: Vec<String> = value
+        .split_whitespace()
+        .map(|part| {
+            // Try to parse as f64 and format with 5 decimal precision
+            if let Ok(f) = part.parse::<f64>() {
+                format_icc_value(f)
+            } else {
+                // If parsing fails, keep the original value
+                part.to_string()
+            }
+        })
+        .collect();
+
+    let result = formatted_parts.join(" ");
+
+    // Add "%" suffix for MeasurementFlare
+    if base_name == "MeasurementFlare" {
+        format!("{}%", result)
+    } else {
+        result
+    }
 }
 
 // =============================================================================
@@ -739,6 +997,24 @@ mod tests {
         assert_eq!(formatted.as_string(), Some("Differential Corrected"));
     }
 
+    #[test]
+    fn test_gps_differential_from_integer() {
+        // Test integer 0 -> "No Correction"
+        let value = TagValue::Integer(0);
+        let formatted = format_tag_value("GPS:GPSDifferential", &value);
+        assert_eq!(formatted.as_string(), Some("No Correction"));
+
+        // Test integer 1 -> "Differential Corrected"
+        let value = TagValue::Integer(1);
+        let formatted = format_tag_value("GPSDifferential", &value);
+        assert_eq!(formatted.as_string(), Some("Differential Corrected"));
+
+        // Test unknown integer value - should pass through unchanged
+        let value = TagValue::Integer(2);
+        let formatted = format_tag_value("GPSDifferential", &value);
+        assert_eq!(formatted.as_integer(), Some(2));
+    }
+
     // -------------------------------------------------------------------------
     // GPS Altitude Reference tests
     // -------------------------------------------------------------------------
@@ -842,6 +1118,45 @@ mod tests {
         let value = TagValue::Binary(data);
         let formatted = format_tag_value("GPSVersionID", &value);
         assert_eq!(formatted.as_string(), Some("0230"));
+    }
+
+    // -------------------------------------------------------------------------
+    // APP14 Flags tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_app14_flags_zero_returns_none() {
+        // APP14Flags0 with value 0 should return "(none)"
+        let value = TagValue::Integer(0);
+        let formatted = format_tag_value("JPEG:APP14Flags0", &value);
+        assert_eq!(formatted.as_string(), Some("(none)"));
+
+        // APP14Flags1 with value 0 should return "(none)"
+        let value = TagValue::Integer(0);
+        let formatted = format_tag_value("APP14Flags1", &value);
+        assert_eq!(formatted.as_string(), Some("(none)"));
+    }
+
+    #[test]
+    fn test_app14_flags_nonzero_passes_through() {
+        // Non-zero APP14Flags0 should pass through unchanged
+        let value = TagValue::Integer(1);
+        let formatted = format_tag_value("JPEG:APP14Flags0", &value);
+        assert_eq!(formatted.as_integer(), Some(1));
+
+        // Non-zero APP14Flags1 should pass through unchanged
+        let value = TagValue::Integer(42);
+        let formatted = format_tag_value("APP14Flags1", &value);
+        assert_eq!(formatted.as_integer(), Some(42));
+    }
+
+    #[test]
+    fn test_is_app14_flags_tag() {
+        assert!(is_app14_flags_tag("APP14Flags0"));
+        assert!(is_app14_flags_tag("APP14Flags1"));
+        assert!(!is_app14_flags_tag("APP14Flags2"));
+        assert!(!is_app14_flags_tag("APP14"));
+        assert!(!is_app14_flags_tag("Flags0"));
     }
 
     // -------------------------------------------------------------------------
@@ -987,6 +1302,59 @@ mod tests {
     }
 
     // -------------------------------------------------------------------------
+    // Percentage Tag tests (Quality, MeasurementFlare)
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_quality_percentage_from_integer() {
+        // Ducky:Quality with integer value should have "%" suffix
+        let value = TagValue::Integer(84);
+        let formatted = format_tag_value("Ducky:Quality", &value);
+        assert_eq!(formatted.as_string(), Some("84%"));
+
+        // Without family prefix
+        let value = TagValue::Integer(100);
+        let formatted = format_tag_value("Quality", &value);
+        assert_eq!(formatted.as_string(), Some("100%"));
+
+        // Zero value
+        let value = TagValue::Integer(0);
+        let formatted = format_tag_value("Quality", &value);
+        assert_eq!(formatted.as_string(), Some("0%"));
+    }
+
+    #[test]
+    fn test_quality_percentage_from_float() {
+        // Quality with float value should have "%" suffix
+        let value = TagValue::Float(84.0);
+        let formatted = format_tag_value("Ducky:Quality", &value);
+        assert_eq!(formatted.as_string(), Some("84%"));
+
+        // Fractional float value
+        let value = TagValue::Float(75.5);
+        let formatted = format_tag_value("Quality", &value);
+        assert_eq!(formatted.as_string(), Some("75.5%"));
+    }
+
+    #[test]
+    fn test_measurement_flare_percentage_from_integer() {
+        // MeasurementFlare with integer value should have "%" suffix
+        let value = TagValue::Integer(1);
+        let formatted = format_tag_value("ICC_Profile:MeasurementFlare", &value);
+        assert_eq!(formatted.as_string(), Some("1%"));
+    }
+
+    #[test]
+    fn test_is_percentage_tag() {
+        assert!(is_percentage_tag("Quality"));
+        // MeasurementFlare is included for integer values (floats handled by ICC matrix rule)
+        assert!(is_percentage_tag("MeasurementFlare"));
+        assert!(!is_percentage_tag("FocalLength"));
+        assert!(!is_percentage_tag("ISO"));
+        assert!(!is_percentage_tag("Make"));
+    }
+
+    // -------------------------------------------------------------------------
     // Helper function classification tests
     // -------------------------------------------------------------------------
 
@@ -1032,5 +1400,147 @@ mod tests {
         assert!(is_unit_suffix_tag("SubjectDistance"));
         assert!(!is_unit_suffix_tag("ISO"));
         assert!(!is_unit_suffix_tag("Make"));
+    }
+
+    // -------------------------------------------------------------------------
+    // Special Float Value tests (infinity, negative zero)
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_format_special_float_values_infinity() {
+        // Positive infinity should return "undef"
+        assert_eq!(
+            format_special_float_values(f64::INFINITY),
+            Some("undef".to_string())
+        );
+
+        // Negative infinity should also return "undef"
+        assert_eq!(
+            format_special_float_values(f64::NEG_INFINITY),
+            Some("undef".to_string())
+        );
+    }
+
+    #[test]
+    fn test_format_special_float_values_negative_zero() {
+        // Negative zero should return "0"
+        assert_eq!(format_special_float_values(-0.0), Some("0".to_string()));
+    }
+
+    #[test]
+    fn test_format_special_float_values_normal() {
+        // Normal values should return None
+        assert_eq!(format_special_float_values(0.0), None);
+        assert_eq!(format_special_float_values(42.5), None);
+        assert_eq!(format_special_float_values(-123.456), None);
+        assert_eq!(format_special_float_values(f64::MIN), None);
+        assert_eq!(format_special_float_values(f64::MAX), None);
+    }
+
+    #[test]
+    fn test_infinity_float_formats_to_undef() {
+        // Test that TagValue::Float with infinity formats to "undef"
+        let value = TagValue::Float(f64::INFINITY);
+        let formatted = format_tag_value("EXIF:GPSDestBearing", &value);
+        assert_eq!(formatted.as_string(), Some("undef"));
+
+        let value = TagValue::Float(f64::NEG_INFINITY);
+        let formatted = format_tag_value("EXIF:GPSDestDistance", &value);
+        assert_eq!(formatted.as_string(), Some("undef"));
+    }
+
+    #[test]
+    fn test_negative_zero_float_formats_to_zero() {
+        // Test that TagValue::Float with -0.0 formats to "0"
+        let value = TagValue::Float(-0.0);
+        let formatted = format_tag_value("EXIF:ExposureIndex", &value);
+        assert_eq!(formatted.as_string(), Some("0"));
+    }
+
+    // -------------------------------------------------------------------------
+    // ICC_Profile Matrix Tag tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_icc_profile_blue_matrix_column_precision() {
+        // Test the exact case from the issue: too many decimal places
+        // OxiDex was showing: 0.1491851806640625 0.0632171630859375 0.74456787109375
+        // ExifTool shows:     0.14919 0.06322 0.74457
+        let value = TagValue::String(
+            "0.1491851806640625 0.0632171630859375 0.74456787109375".to_string(),
+        );
+        let formatted = format_tag_value("ICC_Profile:BlueMatrixColumn", &value);
+        assert_eq!(formatted.as_string(), Some("0.14919 0.06322 0.74457"));
+    }
+
+    #[test]
+    fn test_icc_profile_red_matrix_column() {
+        let value = TagValue::String("0.43604 0.22249 0.01392".to_string());
+        let formatted = format_tag_value("ICC_Profile:RedMatrixColumn", &value);
+        assert_eq!(formatted.as_string(), Some("0.43604 0.22249 0.01392"));
+    }
+
+    #[test]
+    fn test_icc_profile_green_matrix_column() {
+        // Values with trailing zeros should be trimmed
+        let value = TagValue::String("0.38512 0.71690 0.09706".to_string());
+        let formatted = format_tag_value("GreenMatrixColumn", &value);
+        assert_eq!(formatted.as_string(), Some("0.38512 0.7169 0.09706"));
+    }
+
+    #[test]
+    fn test_icc_profile_media_white_point() {
+        let value = TagValue::String("0.95047 1 1.08883".to_string());
+        let formatted = format_tag_value("ICC_Profile:MediaWhitePoint", &value);
+        assert_eq!(formatted.as_string(), Some("0.95047 1 1.08883"));
+    }
+
+    #[test]
+    fn test_icc_profile_luminance() {
+        let value = TagValue::String("76.03647".to_string());
+        let formatted = format_tag_value("ICC_Profile:Luminance", &value);
+        assert_eq!(formatted.as_string(), Some("76.03647"));
+    }
+
+    #[test]
+    fn test_icc_profile_connection_space_illuminant() {
+        // Whole number 1.0 should be trimmed to "1"
+        let value = TagValue::String("0.9642 1.0 0.82491".to_string());
+        let formatted = format_tag_value("ConnectionSpaceIlluminant", &value);
+        assert_eq!(formatted.as_string(), Some("0.9642 1 0.82491"));
+    }
+
+    #[test]
+    fn test_icc_profile_viewing_cond_illuminant() {
+        let value = TagValue::String("19.6445 20.3718 16.8089".to_string());
+        let formatted = format_tag_value("ViewingCondIlluminant", &value);
+        assert_eq!(formatted.as_string(), Some("19.6445 20.3718 16.8089"));
+    }
+
+    #[test]
+    fn test_format_icc_string_values_helper() {
+        // Test the helper function directly
+        let result = format_icc_string_values(
+            "0.1491851806640625 0.0632171630859375 0.74456787109375",
+            "BlueMatrixColumn",
+        );
+        assert_eq!(result, "0.14919 0.06322 0.74457");
+
+        // Test with non-numeric content (should preserve)
+        let result = format_icc_string_values("abc 1.5 def", "SomeTag");
+        assert_eq!(result, "abc 1.5 def");
+    }
+
+    #[test]
+    fn test_icc_matrix_tag_recognition() {
+        // Test that is_icc_matrix_tag correctly identifies ICC profile tags
+        assert!(is_icc_matrix_tag("BlueMatrixColumn"));
+        assert!(is_icc_matrix_tag("RedMatrixColumn"));
+        assert!(is_icc_matrix_tag("GreenMatrixColumn"));
+        assert!(is_icc_matrix_tag("MediaWhitePoint"));
+        assert!(is_icc_matrix_tag("MeasurementFlare"));
+        assert!(is_icc_matrix_tag("ICC_Profile:Luminance"));
+        assert!(!is_icc_matrix_tag("FocalLength"));
+        assert!(!is_icc_matrix_tag("GPSAltitude"));
     }
 }
