@@ -13,7 +13,7 @@ This document is automatically updated on each push to `main`. Last updated: **2
 | Total Tags | 32,684 |
 | Tag Tables | 979 |
 | Domains | 6 |
-| Format Parsers | 37 |
+| Format Parsers | 38 |
 | ExifTool Parity | 113%* |
 
 *ExifTool officially documents ~28,853 unique tags. OxiDex defines 32,684 tags (including variant definitions).
@@ -115,6 +115,7 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | DNG | 40% | High |
 | CR2 | 40% | High |
 | NEF | 40% | High |
+| FLASHPIX | 10% | Medium |
 
 ---
 
@@ -176,6 +177,7 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 
 ### Formats Needing Enhancement
 
+- **FLASHPIX** (10% coverage)
 - **DNG** (40% coverage)
 - **CR2** (40% coverage)
 - **NEF** (40% coverage)
