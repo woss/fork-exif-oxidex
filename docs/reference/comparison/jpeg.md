@@ -4,16 +4,16 @@ title: JPEG Compatibility
 
 # JPEG Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
 
 ## Summary
 
 - **Files Tested:** 4085
-- **Coverage:** 9.7%
-- **Matched Tags:** 355
-- **Missing Tags:** 3116
-- **Extra Tags:** 215
-- **Value Differences:** 203
+- **Coverage:** 10.0%
+- **Matched Tags:** 361
+- **Missing Tags:** 3050
+- **Extra Tags:** 214
+- **Value Differences:** 198
 
 ## Value Differences
 
@@ -23,17 +23,17 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `EXIF:Acceleration` | 0 | -0 |
 | `EXIF:AmbientTemperature` | -0 C | -0 |
-| `EXIF:BrightnessValue` | 10.05972226 | 10.059722 |
-| `EXIF:CFAPattern` | [Blue,Green][Green,Red] | [Binary data] |
+| `EXIF:BrightnessValue` | 3.617254236 | 3.617254 |
+| `EXIF:CFAPattern` | [Red,Green][Green,Blue] | [Binary data] |
 | `EXIF:CompositeImageExposureTimes` | 0 3.4 0 0.4 0 0.4 0 0 | [Binary data] |
 | `EXIF:Compression` | JPEG (old-style) | Uncompressed |
+| `EXIF:CustomRendered` | Portrait HDR | 7 |
 | `EXIF:DeviceSettingDescription` | (Binary data 4 bytes, use -b option to e... | [Binary data] |
 | `EXIF:DigitalZoomRatio` | 1.001988072 | 1.001988 |
-| `EXIF:ExposureIndex` | 3.614421976e-10 | -0 |
-| `EXIF:FocalLengthIn35mmFormat` | 77 mm | 77 |
+| `EXIF:FocalLengthIn35mmFormat` | 31 mm | 31 |
 | `EXIF:GPSAltitude` | 27.99831776 m | 28.0 m |
 | `EXIF:GPSAltitudeRef` | Above Sea Level | [Binary data] |
-| `EXIF:GPSAreaInformation` |  | [Binary data] |
+| `EXIF:GPSAreaInformation` | 府中市郷土の森博物館 | [Binary data] |
 | `EXIF:GPSDestBearing` | 358.8270572 | 358.83 |
 | `EXIF:GPSDestBearingRef` | True North | T |
 | `EXIF:GPSDestDistance` | undef | inf |
@@ -44,9 +44,9 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSHPositioningError` | 4.372127182 m | 4.37 m |
 | `EXIF:GPSImgDirection` | 358.8270572 | 358.83 |
 | `EXIF:GPSImgDirectionRef` | True North | T |
-| `EXIF:GPSLatitude` | 51 deg 29' 42.41" | 51 deg 29' 0.00" |
+| `EXIF:GPSLatitude` | 46 deg 8' 36.00" | 46 deg 8' 0.00" |
 | `EXIF:GPSLatitudeRef` | North | N |
-| `EXIF:GPSLongitude` | 3 deg 13' 5.95" | 3 deg 13' 0.00" |
+| `EXIF:GPSLongitude` | 122 deg 56' 47.40" | 122 deg 56' 0.00" |
 | `EXIF:GPSLongitudeRef` | West | W |
 | `EXIF:GPSMeasureMode` | 3-Dimensional Measurement | 3 |
 | `EXIF:GPSSpeed` | 0.2700000107 | 0.27 |
@@ -57,22 +57,22 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:ImageHeight` | 60 | 960 |
 | `EXIF:ImageWidth` | 80 | 720 |
 | `EXIF:InteropVersion` | 0100 | [Binary data] |
-| `EXIF:LensInfo` | 1.570000052-9mm f/1.5-2.8 | 2-9 mm f/1.5-2.8 |
-| `EXIF:OffsetSchema` | 3834 | 4195221504 |
+| `EXIF:LensInfo` | 3.3mm f/2.4 | 3 mm f/2.4 |
+| `EXIF:LensSerialNumber` | 20147348 | 20147348  |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:PanasonicTitle2` | 9999:99:99 00:00:00 | [Binary data] |
 | `EXIF:Pressure` | 0 | -0 |
+| `EXIF:RatingPercent` | 20 | 335544320 |
 | `EXIF:ReferenceBlackWhite` | 0 255 128 255 128 255 | 0.0000000000 255.0000000000 128.00000000... |
 | `EXIF:SceneType` | Directly photographed | [Binary data] |
 | `EXIF:UserComment` |  | [Binary data] |
 | `EXIF:WaterDepth` | -0.0 | -0 |
 | `EXIF:XPAuthor` |  | 0 |
 | `EXIF:XPComment` |  | 0 |
-| `EXIF:XPKeywords` | Cali | Cali |
+| `EXIF:XPKeywords` | 2012 YAR Kickoff Ham Co | 2012 YAR Kickoff Ham Co |
 | `EXIF:XPSubject` |  | 0 |
-| `EXIF:XPTitle` |  |                 |
 
-*...and 153 more differences*
+*...and 148 more differences*
 
 ## Missing Tags
 
@@ -82,8 +82,8 @@ Tags ExifTool extracts that OxiDex doesn't:
 |-----|-------------|
 | `APP0:InterleavedField` | Not Interleaved |
 | `APP0:OcadRevision` | 14797 |
-| `APP10:HDRGainCurve` | (Binary data 1467 bytes, use -b option to extract) |
-| `APP10:HDRGainCurveSize` | 188 |
+| `APP10:HDRGainCurve` | (Binary data 1160 bytes, use -b option to extract) |
+| `APP10:HDRGainCurveSize` | 152 |
 | `APP11:Alpha` | 1.0 |
 | `APP11:Beta` | 1.0 |
 | `APP11:CorrectionMethod` | 0 |
@@ -92,33 +92,33 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP11:Ln1` | 2.634655 |
 | `APP11:RatioImage` | (Binary data 19 bytes, use -b option to extract) |
 | `APP11:S2n` | 2269.635 |
-| `APP12:CAM1` | 33 |
-| `APP12:CAM2` | 33 |
-| `APP12:CAM3` | 0 |
-| `APP12:CAM4` | 0 |
-| `APP12:CAM5` | 0 |
-| `APP12:CAM6` | 0 |
-| `APP12:CAM7` | 0 |
-| `APP12:CAM8` | 0 |
+| `APP12:CAM1` | 59 |
+| `APP12:CAM2` | 56 |
+| `APP12:CAM3` | 160 |
+| `APP12:CAM4` | 32 |
+| `APP12:CAM5` | 224 |
+| `APP12:CAM6` | 80 |
+| `APP12:CAM7` | 86 |
+| `APP12:CAM8` | 143 |
 | `APP12:CAM9` | 0 |
-| `APP12:COLOR1` | 21083278 |
-| `APP12:COLOR2` | 18132941 |
-| `APP12:COLOR3` | 17387092 |
-| `APP12:COLOR4` | 0 |
+| `APP12:COLOR1` | 42926626 |
+| `APP12:COLOR2` | 32321478 |
+| `APP12:COLOR3` | 22701368 |
+| `APP12:COLOR4` | 5 |
 | `APP12:CameraType` | SR84 |
 | `APP12:ColorMode` | 1 |
 | `APP12:ContTake` | 0 |
 | `APP12:DateTimeOriginal` | 1998:12:31 15:17:20 |
-| `APP12:EXP1` | 6052 |
-| `APP12:EXP2` | 33 |
-| `APP12:EXP3` | 237 |
+| `APP12:EXP1` | 7727 |
+| `APP12:EXP2` | 59 |
+| `APP12:EXP3` | 227 |
 | `APP12:ExposureCompensation` | +2.0 |
 | `APP12:ExposureTime` | 1/155 |
-| `APP12:FCS1` | 2853 |
-| `APP12:FCS2` | 2699 |
-| `APP12:FCS3` | 2849 |
-| `APP12:FCS4` | 218 |
-| `APP12:FCS5` | 214 |
+| `APP12:FCS1` | 0 |
+| `APP12:FCS2` | 1 |
+| `APP12:FCS3` | 2200 |
+| `APP12:FCS4` | 221 |
+| `APP12:FCS5` | 215 |
 | `APP12:FCS6` | 3 |
 | `APP12:FCS7` | 3 |
 | `APP12:FNumber` | 11.0 |
@@ -135,7 +135,7 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP12:IMrg` | 33975 |
 | `APP12:IMrr` | 35704 |
 | `APP12:ImageSize` | 1280x960 |
-| `APP12:JPEG1` | 130432 |
+| `APP12:JPEG1` | 696880 |
 | `APP12:LightS` | 0 |
 | `APP12:MODE1` | 0 |
 | `APP12:MODE2` | 0 |
@@ -143,19 +143,19 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP12:MODE4` | 0 |
 | `APP12:MODE5` | 1 |
 | `APP12:MODE6` | 1 |
-| `APP12:MTR1` | 257 |
-| `APP12:MTR2` | 214 |
-| `APP12:MTRX1` | 1 |
+| `APP12:MTR1` | 504 |
+| `APP12:MTR2` | 220 |
+| `APP12:MTRX1` | 4 |
 | `APP12:Macro` | Off |
 | `APP12:PicLen` | 561039 |
 | `APP12:Protect` | 0 |
 | `APP12:REV` | DCPT |
 | `APP12:Resolution` | 5 |
 | `APP12:S0` | 1e8,0,11b0,6f72,15cf,4225,4225,1050000,a1e0004,0,2... |
-| `APP12:STB1` | 139 |
+| `APP12:STB1` | 0 |
 | `APP12:STB2` | 0 |
-| `APP12:STB3` | 262 |
-| `APP12:STB4` | 14 |
+| `APP12:STB3` | 0 |
+| `APP12:STB4` | 0 |
 | `APP12:STB5` | 0 |
 | `APP12:STB6` | 0 |
 | `APP12:SerialNumber` | #00000001 |
@@ -166,10 +166,10 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP12:TagS` | v |
 | `APP12:ThmLen` | 3802 |
 | `APP12:Version` | v84-71 |
-| `APP12:WB1` | 2 |
-| `APP12:WB2` | 5528 |
-| `APP12:WB3` | 285,7 |
-| `APP12:WB4` | 216,6 |
+| `APP12:WB1` | 4 |
+| `APP12:WB2` | 30 |
+| `APP12:WB3` | 188,4 |
+| `APP12:WB4` | 380,5 |
 | `APP12:WB5` | 0 |
 | `APP12:WB6` | 0 |
 | `APP12:Zoom` | 2.1 |
@@ -181,7 +181,7 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP15:Quality` | 70 |
 | `APP1:AboveColor` | 170 128 128 |
 
-*...and 3016 more missing tags*
+*...and 2950 more missing tags*
 
 ## Extra Tags
 
@@ -189,17 +189,17 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `Composite:Aperture` | 7.1 |
-| `Composite:ISO` | 64 |
+| `Composite:Aperture` | 2.4 |
+| `Composite:ISO` | 125 |
 | `Composite:ImageSize` | 720x960 |
 | `Composite:Megapixels` | 0.691 |
-| `Composite:ShutterSpeed` | 1/250 |
-| `EXIF:0x0000` | 1.0.0.0 |
+| `Composite:ShutterSpeed` | 1/60 |
+| `EXIF:0x0000` | 0.0.1.24 |
 | `EXIF:0x004B` | 1 |
 | `EXIF:0x0103` | 6 |
-| `EXIF:0x012D` | 0 0 2 4 7 11 17 24 32 42 53 65 79 94 111 129 148 1... |
-| `EXIF:0x0201` | 568 |
-| `EXIF:0x0202` | 36713 |
+| `EXIF:0x012D` | 13976 116 0 0 16808 0 57868 164 0 0 4248 112 16792... |
+| `EXIF:0x0201` | 188 |
+| `EXIF:0x0202` | 0 |
 | `EXIF:0x0220` | 0 |
 | `EXIF:0x0221` | 0 |
 | `EXIF:0x0222` | 0 |
@@ -211,8 +211,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:0x8822` | 2 |
 | `EXIF:0x882A` | 2 |
 | `EXIF:0x9103` | 1 |
-| `EXIF:0x920C` | 474561179 |
-| `EXIF:0x920D` | 10 |
+| `EXIF:0x920C` | 311 |
+| `EXIF:0x920D` | 6 |
 | `EXIF:0x920E` | 3744 |
 | `EXIF:0x920F` | 3744 |
 | `EXIF:0x9210` | 2 |
@@ -230,7 +230,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:0xDD03` |  |
 | `EXIF:ApplicationNotes` | [Binary data] |
 | `EXIF:ICC_Profile` | [Binary data] |
-| `EXIF:InteropOffset` | 614 |
+| `EXIF:InteropOffset` | 616 |
 | `EXIF:PanasonicTitle` | [Binary data] |
 | `FLIR:CameraModel` | d |
 | `FLIR:RecordType` | 17990 |
@@ -240,7 +240,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `IPTC:Unknown-2-117` | ‹hellostamp› ‹gid›0-0-7fffffff-0‹/gid› ‹md5›0-0-0-... |
 | `IPTC:Unknown-2-221` | 0:0:5:003344 |
 
-*...and 165 more extra tags*
+*...and 164 more extra tags*
 
 ---
 

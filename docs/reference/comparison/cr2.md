@@ -4,16 +4,16 @@ title: CR2 Compatibility
 
 # CR2 Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
 
 ## Summary
 
 - **Files Tested:** 2
-- **Coverage:** 21.9%
-- **Matched Tags:** 75
+- **Coverage:** 12.8%
+- **Matched Tags:** 44
 - **Missing Tags:** 246
 - **Extra Tags:** 20
-- **Value Differences:** 22
+- **Value Differences:** 53
 
 ## Value Differences
 
@@ -21,28 +21,58 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
+| `EXIF:ApertureValue` | 3.5 | 8.0 |
 | `EXIF:BitsPerSample` | 8 8 8 | 8 |
 | `EXIF:CR2CFAPattern` | [Red,Green][Green,Blue] | 1 |
-| `EXIF:ComponentsConfiguration` | -, -, -, - | [Binary data] |
+| `EXIF:ComponentsConfiguration` | Y, Cb, Cr, - | [Binary data] |
+| `EXIF:CreateDate` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
+| `EXIF:DateTimeOriginal` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
+| `EXIF:ExifImageHeight` | 4000 | 2304 |
+| `EXIF:ExifImageWidth` | 6000 | 3456 |
+| `EXIF:ExifVersion` | 0231 | 0221 |
 | `EXIF:ExposureCompensation` | 0 | [Binary data] |
-| `EXIF:ExposureTime` | 1/15 | 0.066667 |
-| `EXIF:ImageHeight` | 1024 | 256 |
-| `EXIF:ImageWidth` | 1536 | 384 |
+| `EXIF:ExposureTime` | 1/80 | 0.066667 |
+| `EXIF:FNumber` | 3.5 | 8 |
+| `EXIF:Flash` | No Flash | Off, Did not fire |
+| `EXIF:FocalLength` | 15.0 mm | 55.0 mm |
+| `EXIF:FocalPlaneXResolution` | 6514.65798 | 3954.23341 |
+| `EXIF:FocalPlaneYResolution` | 6734.006734 | 3958.762887 |
+| `EXIF:ISO` | 12800 | 400 |
+| `EXIF:ImageHeight` | 4000 | 256 |
+| `EXIF:ImageWidth` | 6000 | 384 |
+| `EXIF:MeteringMode` | Multi-segment | Average |
+| `EXIF:Model` | Canon EOS M50 | Canon EOS 350D DIGITAL |
+| `EXIF:ModifyDate` | 2018:02:21 12:08:56 | 2005:08:03 18:59:18 |
 | `EXIF:RawImageSegmentation` | 1 1758 1758 | 1 |
-| `EXIF:ShutterSpeedValue` | 1/15 | [Binary data] |
-| `MakerNotes:AFPointsInFocus` | 3 | 0 |
+| `EXIF:ShutterSpeedValue` | 1/83 | [Binary data] |
+| `MakerNotes:AFImageHeight` | 4000 | 2304 |
+| `MakerNotes:AFImageWidth` | 6000 | 3456 |
 | `MakerNotes:AFPointsSelected` | 0 | -1237 |
 | `MakerNotes:AutoISO` | 100 | 0 |
-| `MakerNotes:BaseISO` | 400 | 224 |
+| `MakerNotes:BaseISO` | 12800 | 224 |
 | `MakerNotes:CanonExposureMode` | Aperture-priority AE | Aperture Priority |
+| `MakerNotes:CanonImageSize` | Large | n/a |
+| `MakerNotes:CanonModelID` | EOS M50 / Kiss M | EOS Digital Rebel XT / 350D / Kiss Digit... |
 | `MakerNotes:FirmwareVersion` | 1.0.0 | DJMI***3:A›949VO |
+| `MakerNotes:FlashBits` | E-TTL | None |
+| `MakerNotes:FocalLength` | 15 mm | 55 mm |
 | `MakerNotes:FocusDistanceLower` | 0.22 m | inf |
 | `MakerNotes:FocusDistanceUpper` | 0.24 m | inf |
+| `MakerNotes:FocusMode` | One-shot AF (Live View) | One-shot AF |
 | `MakerNotes:ISO` | 12800 | 32767 |
-| `MakerNotes:MeasuredEV` | 8.0 | +3.0 |
+| `MakerNotes:MaxAperture` | 3.6 | f/4.0 |
+| `MakerNotes:MaxFocalLength` | 45 mm | 55 mm |
+| `MakerNotes:MeasuredEV` | 2.75 | +3.0 |
+| `MakerNotes:MeteringMode` | Evaluative | Center-weighted Average |
+| `MakerNotes:MinAperture` | 23 | f/27 |
+| `MakerNotes:MinFocalLength` | 15 mm | 18 mm |
+| `MakerNotes:NumAFPoints` | 143 | 7 |
 | `MakerNotes:OpticalZoomCode` | n/a | 8 |
-| `MakerNotes:OwnerName` | unknown | =EHK/)' |
+| `MakerNotes:OwnerName` |  | =EHK/)' |
+| `MakerNotes:RecordMode` | CR3+JPEG | CR2 |
 | `MakerNotes:SerialNumber` | 0123456789 |  |
+
+*...and 3 more differences*
 
 ## Missing Tags
 
@@ -80,8 +110,8 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:AFAreaMode` | Face + Tracking |
 | `MakerNotes:AFAreaWidth` | 189 |
 | `MakerNotes:AFAreaWidths` | 337 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
-| `MakerNotes:AFAreaXPositions` | 0 -1237 -742 0 742 1237 0 |
-| `MakerNotes:AFAreaYPositions` | -617 0 0 0 0 0 617 |
+| `MakerNotes:AFAreaXPositions` | 392 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ... |
+| `MakerNotes:AFAreaYPositions` | -327 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0... |
 | `MakerNotes:AFAssistBeam` | Emits |
 | `MakerNotes:AFMicroAdjMode` | Disable |
 | `MakerNotes:AFMicroAdjValue` | 0 |
@@ -101,26 +131,26 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:BulbDuration` | 0 |
 | `MakerNotes:CameraISO` | Auto |
 | `MakerNotes:CameraTemperature` | 38 C |
-| `MakerNotes:CameraType` | EOS Mid-range |
-| `MakerNotes:CanonFirmwareVersion` | Firmware 1.0.2 |
-| `MakerNotes:CanonImageHeight` | 2304 |
-| `MakerNotes:CanonImageType` | Canon EOS 350D DIGITAL |
-| `MakerNotes:CanonImageWidth` | 3456 |
+| `MakerNotes:CameraType` | EOS High-end |
+| `MakerNotes:CanonFirmwareVersion` | Firmware Version 1.0.0 |
+| `MakerNotes:CanonImageHeight` | 4000 |
+| `MakerNotes:CanonImageType` | Canon EOS M50 |
+| `MakerNotes:CanonImageWidth` | 6000 |
 | `MakerNotes:ChromaticAberrationSetting` | On |
 | `MakerNotes:ColorDataVersion` | 16 (M50) |
 | `MakerNotes:ColorSpace` | sRGB |
-| `MakerNotes:ColorTempAsShot` | 3064 |
-| `MakerNotes:ColorTempAuto` | 3064 |
+| `MakerNotes:ColorTempAsShot` | 3284 |
+| `MakerNotes:ColorTempAuto` | 3284 |
 | `MakerNotes:ColorTempCloudy` | 6000 |
 | `MakerNotes:ColorTempCustom1` | 5200 |
 | `MakerNotes:ColorTempCustom2` | 5200 |
 | `MakerNotes:ColorTempDaylight` | 5200 |
-| `MakerNotes:ColorTempFlash` | 6440 |
-| `MakerNotes:ColorTempFluorescent` | 3905 |
+| `MakerNotes:ColorTempFlash` | 6166 |
+| `MakerNotes:ColorTempFluorescent` | 3687 |
 | `MakerNotes:ColorTempKelvin` | 5200 |
 | `MakerNotes:ColorTempMeasured` | 3284 |
 | `MakerNotes:ColorTempShade` | 7000 |
-| `MakerNotes:ColorTempTungsten` | 3201 |
+| `MakerNotes:ColorTempTungsten` | 3200 |
 | `MakerNotes:ColorTemperature` | 5200 |
 | `MakerNotes:ColorTone` | Normal |
 | `MakerNotes:CompressorVersion` | CanonCR3_001/00.09.00/00.00.00 |
@@ -143,8 +173,8 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:DustRemovalData` | (Binary data 1024 bytes, use -b option to extract) |
 | `MakerNotes:ETTLII` | Evaluative |
 | `MakerNotes:ExposureLevelIncrements` | 1/3 Stop |
-| `MakerNotes:ExposureTime` | 1/16 |
-| `MakerNotes:FNumber` | 8 |
+| `MakerNotes:ExposureTime` | 1/70 |
+| `MakerNotes:FNumber` | 3.6 |
 | `MakerNotes:FileNumber` | 100-0024 |
 | `MakerNotes:FilterEffect` | None |
 | `MakerNotes:FisheyeFilter` | Off |

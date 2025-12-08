@@ -4,7 +4,7 @@ title: TIFF Compatibility
 
 # TIFF Compatibility Report
 
-**Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
+**Generated:** 2025-12-08 | **ExifTool:** vunknown | **OxiDex:** vunknown
 
 ## Summary
 
@@ -77,8 +77,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 
 | Tag | Value |
 |-----|-------|
-| `Composite:ImageSize` | 25x24 |
-| `Composite:Megapixels` | 0.001 |
+| `Composite:ImageSize` | 160x120 |
+| `Composite:Megapixels` | 0.019 |
 | `EXIF:0x83BB` | 469893120 33554972 41418771 1416127776 1885954932 ... |
 | `EXIF:0x85D8` | [Binary data] |
 | `EXIF:0x87AF` | 1 1 0 10 1024 0 1 1 1025 0 1 1 2048 0 1 32767 2049... |

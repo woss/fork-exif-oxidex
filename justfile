@@ -527,12 +527,14 @@ compare-exiftool-format format:
 
 # Run comparison against ExifTool sample database (camera manufacturer samples)
 # Downloads from exiftool.org/sample_images.html - 7,106 camera models from 109 manufacturers
+# Falls back to GCS cache at gs://oxidex-samples/exiftool/ if exiftool.org is unavailable
 compare-exiftool-samples:
     #!/usr/bin/env bash
     set -euo pipefail
 
     EXIFTOOL_DIR="/tmp/exiftool-test-$$"
     SAMPLES_DIR="/tmp/exiftool-samples-$$"
+    GCS_BUCKET="https://storage.googleapis.com/oxidex-samples/exiftool"
 
     cleanup() {
         echo "🧹 Cleaning up..."
@@ -563,14 +565,21 @@ compare-exiftool-samples:
     mkdir -p "$SAMPLES_DIR"
 
     # Download key manufacturer samples (most common cameras)
-    # Total ~55 MB for these major manufacturers
-    # Note: Sample images are at exiftool.org root, not in subdirectory
+    # Try exiftool.org first, fall back to GCS cache
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
     for mfr in $MANUFACTURERS; do
         echo "   Downloading $mfr samples..."
-        if curl -sLA "OxiDex/1.0" "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+        # Try exiftool.org first
+        if curl -sLA "OxiDex/1.0" --fail "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
             tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$SAMPLES_DIR" 2>/dev/null || true
             rm -f "/tmp/sample-$mfr.tar.gz"
+        # Fall back to GCS cache
+        elif curl -sL --fail "$GCS_BUCKET/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+            echo "      (using GCS cache)"
+            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$SAMPLES_DIR" 2>/dev/null || true
+            rm -f "/tmp/sample-$mfr.tar.gz"
+        else
+            echo "      ⚠️  $mfr samples unavailable"
         fi
     done
 
@@ -597,12 +606,14 @@ compare-exiftool-samples:
     echo "✅ Sample database comparison complete!"
 
 # Run comparison against both test suite AND sample database (comprehensive)
+# Falls back to GCS cache at gs://oxidex-samples/exiftool/ if exiftool.org is unavailable
 compare-exiftool-full:
     #!/usr/bin/env bash
     set -euo pipefail
 
     EXIFTOOL_DIR="/tmp/exiftool-test-$$"
     COMBINED_DIR="/tmp/exiftool-combined-$$"
+    GCS_BUCKET="https://storage.googleapis.com/oxidex-samples/exiftool"
 
     cleanup() {
         echo "🧹 Cleaning up..."
@@ -636,15 +647,22 @@ compare-exiftool-full:
     echo "📋 Copying ExifTool test images..."
     cp -r "$EXIFTOOL_DIR/t/images"/* "$COMBINED_DIR/" 2>/dev/null || true
 
-    # Download sample database
-    # Note: Sample images are at exiftool.org root, not in subdirectory
+    # Download sample database - try exiftool.org first, fall back to GCS cache
     echo "📥 Downloading ExifTool sample database..."
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
     for mfr in $MANUFACTURERS; do
         echo "   Downloading $mfr samples..."
-        if curl -sLA "OxiDex/1.0" "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+        # Try exiftool.org first
+        if curl -sLA "OxiDex/1.0" --fail "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
             tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
             rm -f "/tmp/sample-$mfr.tar.gz"
+        # Fall back to GCS cache
+        elif curl -sL --fail "$GCS_BUCKET/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+            echo "      (using GCS cache)"
+            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
+            rm -f "/tmp/sample-$mfr.tar.gz"
+        else
+            echo "      ⚠️  $mfr samples unavailable"
         fi
     done
 
@@ -671,12 +689,14 @@ compare-exiftool-full:
     echo "✅ Comprehensive comparison complete!"
 
 # Run full comparison and update docs (for CI)
+# Falls back to GCS cache at gs://oxidex-samples/exiftool/ if exiftool.org is unavailable
 compare-exiftool-full-update:
     #!/usr/bin/env bash
     set -euo pipefail
 
     EXIFTOOL_DIR="/tmp/exiftool-test-$$"
     COMBINED_DIR="/tmp/exiftool-combined-$$"
+    GCS_BUCKET="https://storage.googleapis.com/oxidex-samples/exiftool"
 
     cleanup() {
         echo "🧹 Cleaning up..."
@@ -710,15 +730,22 @@ compare-exiftool-full-update:
     echo "📋 Copying ExifTool test images..."
     cp -r "$EXIFTOOL_DIR/t/images"/* "$COMBINED_DIR/" 2>/dev/null || true
 
-    # Download sample database
-    # Note: Sample images are at exiftool.org root, not in subdirectory
+    # Download sample database - try exiftool.org first, fall back to GCS cache
     echo "📥 Downloading ExifTool sample database..."
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
     for mfr in $MANUFACTURERS; do
         echo "   Downloading $mfr samples..."
-        if curl -sLA "OxiDex/1.0" "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+        # Try exiftool.org first
+        if curl -sLA "OxiDex/1.0" --fail "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
             tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
             rm -f "/tmp/sample-$mfr.tar.gz"
+        # Fall back to GCS cache
+        elif curl -sL --fail "$GCS_BUCKET/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+            echo "      (using GCS cache)"
+            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
+            rm -f "/tmp/sample-$mfr.tar.gz"
+        else
+            echo "      ⚠️  $mfr samples unavailable"
         fi
     done
 
