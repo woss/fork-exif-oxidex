@@ -347,24 +347,31 @@ fn test_fujifilm_parser_big_endian() {
     use oxidex::parsers::tiff::makernotes::fujifilm::parse_fujifilm_makernotes;
     use std::collections::HashMap;
 
+    // IMPORTANT: Fujifilm MakerNotes ALWAYS use little-endian byte order internally,
+    // regardless of the main EXIF byte order. This test verifies that even when
+    // the EXIF container is big-endian, the parser correctly handles Fujifilm's
+    // little-endian format.
+
     let mut data = Vec::new();
 
-    // Fujifilm header (big-endian offset)
+    // Fujifilm header with little-endian offset (Fujifilm always uses LE)
     data.extend_from_slice(b"FUJIFILM");
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x0C]); // Offset to IFD (BE)
+    data.extend_from_slice(&[0x0C, 0x00, 0x00, 0x00]); // Offset to IFD (LE) = 12
 
-    // IFD: 1 entry (big-endian)
-    data.extend_from_slice(&[0x00, 0x01]); // Entry count (BE)
+    // IFD: 1 entry (little-endian, as Fujifilm always uses)
+    data.extend_from_slice(&[0x01, 0x00]); // Entry count (LE) = 1
 
     // Entry: Quality (tag 0x1000) = Fine+RAW (value 5)
-    data.extend_from_slice(&[0x10, 0x00]); // Tag ID (BE)
-    data.extend_from_slice(&[0x00, 0x03]); // Type: SHORT (BE)
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x01]); // Count: 1 (BE)
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x05]); // Value: 5 (BE)
+    data.extend_from_slice(&[0x00, 0x10]); // Tag ID (LE) = 0x1000
+    data.extend_from_slice(&[0x03, 0x00]); // Type: SHORT (LE) = 3
+    data.extend_from_slice(&[0x01, 0x00, 0x00, 0x00]); // Count: 1 (LE)
+    data.extend_from_slice(&[0x05, 0x00, 0x00, 0x00]); // Value: 5 (LE)
 
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Next IFD (BE)
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Next IFD (LE)
 
     let mut tags = HashMap::new();
+    // Pass BigEndian to simulate a big-endian EXIF container,
+    // but the parser should still handle Fujifilm's little-endian format correctly
     parse_fujifilm_makernotes(&data, ByteOrder::BigEndian, &mut tags);
 
     assert_eq!(tags.get("Fujifilm:Quality"), Some(&"Fine+RAW".to_string()));
