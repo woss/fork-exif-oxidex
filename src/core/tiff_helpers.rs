@@ -446,15 +446,12 @@ fn parse_makernote_if_canon(
     metadata: &mut MetadataMap,
 ) {
     // Extract camera make from metadata to determine which parser to use
-    let make = metadata
-        .get_string("IFD0:Make")
-        .unwrap_or("");
+    let make = metadata.get_string("IFD0:Make").unwrap_or("");
 
     if !make.is_empty() {
         // Parse MakerNote using the dispatcher
         let mut makernote_tags = HashMap::new();
-        if let Err(_e) = dispatch_makernote(make, makernote_data, byte_order, &mut makernote_tags)
-        {
+        if let Err(_e) = dispatch_makernote(make, makernote_data, byte_order, &mut makernote_tags) {
             // Silently skip failed MakerNote parsing
             return;
         }

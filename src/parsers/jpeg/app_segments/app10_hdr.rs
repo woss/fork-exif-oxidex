@@ -90,25 +90,18 @@ pub fn parse_app10_hdr(data: &[u8]) -> Result<MetadataMap> {
     if data.len() >= HDR_IDENTIFIER.len() && &data[..HDR_IDENTIFIER.len()] == HDR_IDENTIFIER {
         // Standard HDR format with "HDR\0" prefix
         parse_standard_hdr(&data[HDR_IDENTIFIER.len()..], &mut metadata)?;
-        metadata.insert(
-            "HDR:Format",
-            TagValue::String("HDR".to_string()),
-        );
-    } else if data.len() >= AROT_IDENTIFIER.len() && &data[..AROT_IDENTIFIER.len()] == AROT_IDENTIFIER {
+        metadata.insert("HDR:Format", TagValue::String("HDR".to_string()));
+    } else if data.len() >= AROT_IDENTIFIER.len()
+        && &data[..AROT_IDENTIFIER.len()] == AROT_IDENTIFIER
+    {
         // Android AROT HDR gain map format
         parse_arot_hdr(&data[AROT_IDENTIFIER.len()..], &mut metadata)?;
-        metadata.insert(
-            "HDR:Format",
-            TagValue::String("AROT".to_string()),
-        );
+        metadata.insert("HDR:Format", TagValue::String("AROT".to_string()));
     } else {
         // Unknown format - attempt generic parsing
         // Store the entire data as the gain curve for formats we don't recognize
         parse_generic_hdr(data, &mut metadata)?;
-        metadata.insert(
-            "HDR:Format",
-            TagValue::String("Unknown".to_string()),
-        );
+        metadata.insert("HDR:Format", TagValue::String("Unknown".to_string()));
     }
 
     Ok(metadata)
@@ -132,17 +125,11 @@ fn parse_standard_hdr(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     let curve_size = data.len();
 
     // Store the gain curve size
-    metadata.insert(
-        "HDR:GainCurveSize",
-        TagValue::Integer(curve_size as i64),
-    );
+    metadata.insert("HDR:GainCurveSize", TagValue::Integer(curve_size as i64));
 
     // Store the gain curve binary data if present
     if !data.is_empty() {
-        metadata.insert(
-            "HDR:GainCurve",
-            TagValue::Binary(data.to_vec()),
-        );
+        metadata.insert("HDR:GainCurve", TagValue::Binary(data.to_vec()));
     }
 
     Ok(())
@@ -167,16 +154,10 @@ fn parse_arot_hdr(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     // For now, treat the entire payload as the gain curve
     let curve_size = data.len();
 
-    metadata.insert(
-        "HDR:GainCurveSize",
-        TagValue::Integer(curve_size as i64),
-    );
+    metadata.insert("HDR:GainCurveSize", TagValue::Integer(curve_size as i64));
 
     if !data.is_empty() {
-        metadata.insert(
-            "HDR:GainCurve",
-            TagValue::Binary(data.to_vec()),
-        );
+        metadata.insert("HDR:GainCurve", TagValue::Binary(data.to_vec()));
     }
 
     Ok(())
@@ -200,16 +181,10 @@ fn parse_arot_hdr(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 fn parse_generic_hdr(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     let curve_size = data.len();
 
-    metadata.insert(
-        "HDR:GainCurveSize",
-        TagValue::Integer(curve_size as i64),
-    );
+    metadata.insert("HDR:GainCurveSize", TagValue::Integer(curve_size as i64));
 
     if !data.is_empty() {
-        metadata.insert(
-            "HDR:GainCurve",
-            TagValue::Binary(data.to_vec()),
-        );
+        metadata.insert("HDR:GainCurve", TagValue::Binary(data.to_vec()));
     }
 
     Ok(())
@@ -399,10 +374,7 @@ mod tests {
         let data = vec![0x00, 0x00, 0x00, 0x00];
 
         let result = parse_app10_hdr(&data);
-        assert!(
-            result.is_ok(),
-            "Should succeed with exactly minimum length"
-        );
+        assert!(result.is_ok(), "Should succeed with exactly minimum length");
     }
 
     /// Tests that HDR identifier matching is case-sensitive.

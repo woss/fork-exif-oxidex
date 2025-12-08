@@ -122,11 +122,17 @@ fn parse_resolution_info(data: &[u8]) -> Result<MetadataMap> {
 
     metadata.insert(
         "Photoshop:XResolution",
-        TagValue::Rational { numerator: h_res_raw, denominator: 65536 },
+        TagValue::Rational {
+            numerator: h_res_raw,
+            denominator: 65536,
+        },
     );
     metadata.insert(
         "Photoshop:YResolution",
-        TagValue::Rational { numerator: v_res_raw, denominator: 65536 },
+        TagValue::Rational {
+            numerator: v_res_raw,
+            denominator: 65536,
+        },
     );
 
     // Resolution unit: 1=pixels/inch, 2=pixels/cm
@@ -240,10 +246,7 @@ fn parse_print_flags(data: &[u8]) -> Result<MetadataMap> {
 
     if data.len() >= 2 {
         let flags = u16::from_be_bytes([data[0], data[1]]);
-        metadata.insert(
-            "Photoshop:PrintFlags",
-            TagValue::Integer(flags as i64),
-        );
+        metadata.insert("Photoshop:PrintFlags", TagValue::Integer(flags as i64));
 
         // Parse individual flag bits
         if flags & 0x0001 != 0 {
@@ -304,9 +307,7 @@ pub fn parse_photoshop_irb(data: &[u8]) -> Result<MetadataMap> {
 
     // Check for Photoshop signature
     if !data.starts_with(PHOTOSHOP_SIGNATURE) {
-        return Err(ExifToolError::parse_error(
-            "Not a Photoshop IRB segment",
-        ));
+        return Err(ExifToolError::parse_error("Not a Photoshop IRB segment"));
     }
 
     // Skip past the Photoshop signature
@@ -353,7 +354,8 @@ pub fn parse_photoshop_irb(data: &[u8]) -> Result<MetadataMap> {
                     }
                     RES_GLOBAL_ANGLE => {
                         if let Ok(angle) = parse_global_angle(block.data) {
-                            metadata.insert("Photoshop:GlobalAngle", TagValue::Integer(angle as i64));
+                            metadata
+                                .insert("Photoshop:GlobalAngle", TagValue::Integer(angle as i64));
                         }
                     }
                     RES_GLOBAL_ALTITUDE => {
@@ -451,7 +453,7 @@ mod tests {
         data.extend_from_slice(&[0x00, 0x48, 0x00, 0x00]);
         data.extend_from_slice(&[0x00, 0x01]); // H unit: inches
         data.extend_from_slice(&[0x00, 0x01]); // Width unit: inches
-        // V resolution: 72.0
+                                               // V resolution: 72.0
         data.extend_from_slice(&[0x00, 0x48, 0x00, 0x00]);
         data.extend_from_slice(&[0x00, 0x01]); // V unit: inches
         data.extend_from_slice(&[0x00, 0x01]); // Height unit: inches

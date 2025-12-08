@@ -1741,7 +1741,10 @@ fn parse_canon_makernote_impl(
 
                         // CameraISO - use AutoISO if > 0, otherwise BaseISO
                         if array.len() > SHOT_INFO_AUTO_ISO && array[SHOT_INFO_AUTO_ISO] > 0 {
-                            tags.insert("Canon:CameraISO".to_string(), array[SHOT_INFO_AUTO_ISO].to_string());
+                            tags.insert(
+                                "Canon:CameraISO".to_string(),
+                                array[SHOT_INFO_AUTO_ISO].to_string(),
+                            );
                         } else {
                             tags.insert("Canon:CameraISO".to_string(), base_iso);
                         }
@@ -1752,10 +1755,7 @@ fn parse_canon_makernote_impl(
                     if array.len() > SHOT_INFO_MEASURED_EV {
                         let raw_value = array[SHOT_INFO_MEASURED_EV] as u16;
                         let ev = raw_value as f64 / 32.0;
-                        tags.insert(
-                            "Canon:MeasuredEV".to_string(),
-                            format!("{:.2}", ev),
-                        );
+                        tags.insert("Canon:MeasuredEV".to_string(), format!("{:.2}", ev));
                     }
 
                     // TargetAperture (index 4) - convert APEX to f-number

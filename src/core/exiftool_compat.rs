@@ -55,16 +55,18 @@
 //! assert_eq!(formatted.get_string("EXIF:FocalLength"), Some("50 mm"));
 //! ```
 
-use crate::core::formatters::{
-    decode_cfa_pattern, decode_gps_processing_method, decode_scene_type, decode_version_bytes,
-    format_exposure_program, format_gps_altitude_ref, format_gps_direction_ref,
-    format_gps_lat_ref, format_gps_lon_ref, format_gps_speed_ref, format_icc_value,
-    format_integer_precision_values, format_three_decimal_values, format_with_unit,
-    is_icc_matrix_tag, is_integer_precision_tag, is_three_decimal_tag,
-};
 use crate::core::binary_decoders::decode_user_comment;
 use crate::core::formatters::gps_speed_ref::format_gps_dest_distance_ref;
-use crate::core::formatters::gps_status::{format_gps_differential, format_gps_measure_mode, format_gps_status};
+use crate::core::formatters::gps_status::{
+    format_gps_differential, format_gps_measure_mode, format_gps_status,
+};
+use crate::core::formatters::{
+    decode_cfa_pattern, decode_gps_processing_method, decode_scene_type, decode_version_bytes,
+    format_exposure_program, format_gps_altitude_ref, format_gps_direction_ref, format_gps_lat_ref,
+    format_gps_lon_ref, format_gps_speed_ref, format_icc_value, format_integer_precision_values,
+    format_three_decimal_values, format_with_unit, is_icc_matrix_tag, is_integer_precision_tag,
+    is_three_decimal_tag,
+};
 use crate::core::{MetadataMap, TagValue};
 
 // =============================================================================
@@ -468,7 +470,11 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
             return TagValue::String(formatted);
         }
         // Handle Rational values
-        if let TagValue::Rational { numerator, denominator } = value {
+        if let TagValue::Rational {
+            numerator,
+            denominator,
+        } = value
+        {
             if *denominator != 0 {
                 let float_val = *numerator as f64 / *denominator as f64;
                 let float_str = if float_val.fract() == 0.0 {
@@ -808,7 +814,10 @@ pub fn is_gps_dest_distance_ref(base_name: &str) -> bool {
 ///
 /// `true` if this tag should be formatted as a GPS status value
 pub fn is_gps_status_tag(base_name: &str) -> bool {
-    matches!(base_name, "GPSStatus" | "GPSMeasureMode" | "GPSDifferential")
+    matches!(
+        base_name,
+        "GPSStatus" | "GPSMeasureMode" | "GPSDifferential"
+    )
 }
 
 /// Checks if the tag is a GPS altitude reference (GPSAltitudeRef).
@@ -1543,7 +1552,10 @@ mod tests {
         // Make should pass through unchanged
         assert_eq!(formatted.get_string("EXIF:Make"), Some("Canon"));
         // ExposureProgram should be formatted
-        assert_eq!(formatted.get_string("EXIF:ExposureProgram"), Some("Program AE"));
+        assert_eq!(
+            formatted.get_string("EXIF:ExposureProgram"),
+            Some("Program AE")
+        );
         // GPSLatitudeRef should be formatted
         assert_eq!(formatted.get_string("GPS:GPSLatitudeRef"), Some("North"));
         // FocalLength should have unit suffix
@@ -1734,9 +1746,8 @@ mod tests {
         // Test the exact case from the issue: too many decimal places
         // OxiDex was showing: 0.1491851806640625 0.0632171630859375 0.74456787109375
         // ExifTool shows:     0.14919 0.06322 0.74457
-        let value = TagValue::String(
-            "0.1491851806640625 0.0632171630859375 0.74456787109375".to_string(),
-        );
+        let value =
+            TagValue::String("0.1491851806640625 0.0632171630859375 0.74456787109375".to_string());
         let formatted = format_tag_value("ICC_Profile:BlueMatrixColumn", &value);
         assert_eq!(formatted.as_string(), Some("0.14919 0.06322 0.74457"));
     }
@@ -1851,9 +1862,7 @@ mod tests {
         // YCbCrCoefficients should display with 3 decimal places
         // ExifTool: "0.299 0.587 0.114"
         // OxiDex before fix: "0.2990000000 0.5870000000 0.1140000000"
-        let value = TagValue::String(
-            "0.2990000000 0.5870000000 0.1140000000".to_string(),
-        );
+        let value = TagValue::String("0.2990000000 0.5870000000 0.1140000000".to_string());
         let formatted = format_tag_value("EXIF:YCbCrCoefficients", &value);
         assert_eq!(formatted.as_string(), Some("0.299 0.587 0.114"));
 

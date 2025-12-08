@@ -242,9 +242,13 @@ fn parse_mp_index_ifd(
             }
             IMAGE_UID_LIST => {
                 // ImageUIDList - 33 bytes per image (UNDEFINED type)
+                // Match ExifTool format exactly (no comma)
                 metadata.insert(
                     "MPF:ImageUIDList".to_string(),
-                    TagValue::String(format!("(Binary data, {} bytes)", value_count)),
+                    TagValue::String(format!(
+                        "(Binary data {} bytes, use -b option to extract)",
+                        value_count
+                    )),
                 );
             }
             TOTAL_FRAMES => {

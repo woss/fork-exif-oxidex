@@ -185,7 +185,10 @@ mod tests {
         // This matches how EXIF parsers handle the single-byte SceneType tag.
         assert_eq!(decode_scene_type(&[1, 0]), "Directly photographed");
         assert_eq!(decode_scene_type(&[1, 0, 0, 0]), "Directly photographed");
-        assert_eq!(decode_scene_type(&[1, 255, 255, 255]), "Directly photographed");
+        assert_eq!(
+            decode_scene_type(&[1, 255, 255, 255]),
+            "Directly photographed"
+        );
 
         // Even if extra bytes have different values, first byte determines result
         assert_eq!(decode_scene_type(&[2, 1]), "Unknown (2)");

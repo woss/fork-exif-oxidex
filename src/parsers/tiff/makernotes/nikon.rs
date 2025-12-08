@@ -319,7 +319,7 @@ impl MakerNoteParser for NikonParser {
                 return Err("Invalid TIFF byte order in Nikon MakerNote".to_string());
             }
         } else {
-            byte_order  // Fallback to provided byte order
+            byte_order // Fallback to provided byte order
         };
 
         // Read IFD offset from TIFF header (bytes 4-7 of TIFF structure)

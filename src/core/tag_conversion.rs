@@ -262,10 +262,7 @@ fn handle_rational_type(
             }
             // GPSHPositioningError - horizontal positioning error in meters
             GPS_H_POSITIONING_ERROR => {
-                return TagValue::new_string(format!(
-                    "{} m",
-                    format_gps_numeric_value(value)
-                ));
+                return TagValue::new_string(format!("{} m", format_gps_numeric_value(value)));
             }
             _ => {}
         }
@@ -416,7 +413,10 @@ fn format_lens_info(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
             format!("{:.0}", f)
         } else {
             // Format with 1 decimal, trim trailing zeros
-            format!("{:.1}", f).trim_end_matches('0').trim_end_matches('.').to_string()
+            format!("{:.1}", f)
+                .trim_end_matches('0')
+                .trim_end_matches('.')
+                .to_string()
         }
     };
 
@@ -425,7 +425,11 @@ fn format_lens_info(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
         format!("f/{}", format_aperture(min_f_at_min))
     } else {
         // Variable aperture (e.g., f/3.5-5.6)
-        format!("f/{}-{}", format_aperture(min_f_at_min), format_aperture(min_f_at_max))
+        format!(
+            "f/{}-{}",
+            format_aperture(min_f_at_min),
+            format_aperture(min_f_at_max)
+        )
     };
 
     let formatted = format!("{} {}", focal_str, aperture_str);

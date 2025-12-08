@@ -173,7 +173,10 @@ mod tests {
         let data = make_adobe_segment(100, 0x8000, 0x0000, 1);
 
         let result = parse_app14_adobe(&data);
-        assert!(result.is_ok(), "Parsing should succeed for valid YCbCr segment");
+        assert!(
+            result.is_ok(),
+            "Parsing should succeed for valid YCbCr segment"
+        );
 
         let metadata = result.unwrap();
 
@@ -251,7 +254,7 @@ mod tests {
     #[test]
     fn test_invalid_identifier() {
         let mut data = Vec::new();
-        data.extend_from_slice(b"NotAd");  // Wrong identifier
+        data.extend_from_slice(b"NotAd"); // Wrong identifier
         data.extend_from_slice(&[0x00; 7]); // Padding to meet minimum length
 
         let result = parse_app14_adobe(&data);
@@ -412,7 +415,7 @@ mod tests {
     fn test_identifier_case_sensitivity() {
         // Lowercase "adobe" should not match
         let mut data = Vec::new();
-        data.extend_from_slice(b"adobe");  // Lowercase
+        data.extend_from_slice(b"adobe"); // Lowercase
         data.extend_from_slice(&[0x00; 7]);
 
         let result = parse_app14_adobe(&data);

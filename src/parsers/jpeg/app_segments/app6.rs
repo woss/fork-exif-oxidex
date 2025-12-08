@@ -108,10 +108,7 @@ pub fn parse_app6(data: &[u8]) -> Result<MetadataMap> {
 
     // Unknown or unsupported APP6 format
     // Store as raw binary data for debugging
-    metadata.insert(
-        "APP6:Unknown".to_string(),
-        TagValue::Binary(data.to_vec()),
-    );
+    metadata.insert("APP6:Unknown".to_string(), TagValue::Binary(data.to_vec()));
 
     Ok(metadata)
 }
@@ -207,9 +204,7 @@ fn parse_gpmf(data: &[u8]) -> Result<MetadataMap> {
         let value_data = &data[offset..offset + data_size];
 
         // Convert FourCC to string
-        let tag_name = std::str::from_utf8(fourcc)
-            .unwrap_or("????")
-            .to_string();
+        let tag_name = std::str::from_utf8(fourcc).unwrap_or("????").to_string();
 
         // Parse value based on type and tag
         parse_gpmf_value(&mut metadata, &tag_name, type_char, size, count, value_data)?;
@@ -251,7 +246,10 @@ fn parse_gpmf_value(
         'c' | 'C' => {
             // String/character data
             if let Ok(s) = std::str::from_utf8(data) {
-                metadata.insert(tag_key, TagValue::String(s.trim_end_matches('\0').to_string()));
+                metadata.insert(
+                    tag_key,
+                    TagValue::String(s.trim_end_matches('\0').to_string()),
+                );
             }
         }
         's' | 'S' => {
@@ -432,10 +430,7 @@ mod tests {
         assert!(result.is_ok());
 
         let metadata = result.unwrap();
-        assert_eq!(
-            metadata.get_string("APP6:DVNM"),
-            Some("HERO8 Black")
-        );
+        assert_eq!(metadata.get_string("APP6:DVNM"), Some("HERO8 Black"));
     }
 
     #[test]

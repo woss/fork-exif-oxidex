@@ -9,8 +9,7 @@ use crate::core::tag_conversion::{parse_string_to_tag_value, raw_bytes_to_tag_va
 use crate::core::tiff_helpers::{parse_exif_subifd, parse_gps_subifd};
 use crate::io::EndianReader;
 use crate::parsers::jpeg::app_segments::{
-    parse_app10_hdr, parse_app11_jpeg_hdr, parse_app12_agfa, parse_app12_olympus,
-    parse_app14_adobe,
+    parse_app10_hdr, parse_app11_jpeg_hdr, parse_app12_agfa, parse_app12_olympus, parse_app14_adobe,
 };
 use crate::parsers::jpeg::segment_parser::Segment;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
@@ -536,9 +535,8 @@ pub fn process_app12_segments(segments: &[Segment], metadata: &mut MetadataMap) 
         // Check for Agfa-style key=value format without identifier.
         // Older Agfa cameras wrote APP12 segments that start directly with key=value pairs
         // like "Type=SR84" or "ID=AGFA DIGITAL CAMERA" without an "AGFA" prefix.
-        let is_agfa_keyvalue = !is_olympus
-            && !is_agfa_explicit
-            && is_agfa_style_keyvalue_format(segment.data);
+        let is_agfa_keyvalue =
+            !is_olympus && !is_agfa_explicit && is_agfa_style_keyvalue_format(segment.data);
 
         // Check for Ducky identifier (handled by existing parser in app_parsers.rs)
         let is_ducky = segment.data.len() >= 5 && &segment.data[..5] == b"Ducky";
@@ -605,12 +603,7 @@ pub fn process_app12_segments(segments: &[Segment], metadata: &mut MetadataMap) 
 fn is_agfa_style_keyvalue_format(data: &[u8]) -> bool {
     // Check for common Agfa tag prefixes at the very start of the segment
     // These are the most common tags that Agfa cameras write first
-    const AGFA_START_PREFIXES: &[&[u8]] = &[
-        b"Type=",
-        b"ID=",
-        b"CameraType=",
-        b"Version=",
-    ];
+    const AGFA_START_PREFIXES: &[&[u8]] = &[b"Type=", b"ID=", b"CameraType=", b"Version="];
 
     for prefix in AGFA_START_PREFIXES {
         if data.len() >= prefix.len() && &data[..prefix.len()] == *prefix {
@@ -637,9 +630,9 @@ fn is_agfa_style_keyvalue_format(data: &[u8]) -> bool {
     // Verify the key looks like a valid identifier (alphanumeric, no binary garbage)
     // Keys in Agfa format are typically ASCII letters/digits only
     let potential_key = &data[..eq_pos];
-    let key_is_valid = potential_key.iter().all(|&b| {
-        b.is_ascii_alphanumeric() || b == b'_' || b == b'-'
-    });
+    let key_is_valid = potential_key
+        .iter()
+        .all(|&b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
 
     if !key_is_valid {
         return false;
@@ -647,9 +640,10 @@ fn is_agfa_style_keyvalue_format(data: &[u8]) -> bool {
 
     // Additional check: ensure the segment is mostly text (not binary data)
     // Count control characters (excluding CR, LF, null which are valid delimiters)
-    let control_char_count = search_data.iter().filter(|&&b| {
-        b < 0x20 && b != b'\r' && b != b'\n' && b != 0x00
-    }).count();
+    let control_char_count = search_data
+        .iter()
+        .filter(|&&b| b < 0x20 && b != b'\r' && b != b'\n' && b != 0x00)
+        .count();
 
     // If more than 10% control characters, probably not text format
     if control_char_count * 10 > search_len {

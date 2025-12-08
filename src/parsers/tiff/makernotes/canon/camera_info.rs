@@ -498,11 +498,7 @@ fn detect_camera_family(data: &[u8], _data_len: usize) -> &'static str {
 /// Parses CameraInfo for 1D/1Ds style cameras.
 ///
 /// Layout based on ExifTool CameraInfo1D table.
-fn parse_camera_info_1d(
-    data: &[u8],
-    reader: &EndianReader,
-    metadata: &mut MetadataMap,
-) {
+fn parse_camera_info_1d(data: &[u8], reader: &EndianReader, metadata: &mut MetadataMap) {
     // Index 4: ExposureTime (int8u)
     if data.len() > OFFSET_EXPOSURE_TIME {
         let exposure = data[OFFSET_EXPOSURE_TIME];
@@ -517,10 +513,7 @@ fn parse_camera_info_1d(
     // Index 10: FocalLength (int16u, units may vary)
     if let Some(focal) = reader.u16_at(OFFSET_FOCAL_LENGTH_1D * 2) {
         if focal > 0 && focal < 2000 {
-            metadata.insert(
-                "Canon:FocalLengthRaw",
-                TagValue::new_integer(focal as i64),
-            );
+            metadata.insert("Canon:FocalLengthRaw", TagValue::new_integer(focal as i64));
         }
     }
 
@@ -528,10 +521,7 @@ fn parse_camera_info_1d(
     if data.len() > OFFSET_LENS_TYPE {
         let lens_type = data[OFFSET_LENS_TYPE];
         if lens_type > 0 {
-            metadata.insert(
-                "Canon:LensTypeRaw",
-                TagValue::new_integer(lens_type as i64),
-            );
+            metadata.insert("Canon:LensTypeRaw", TagValue::new_integer(lens_type as i64));
         }
     }
 
@@ -568,10 +558,7 @@ fn parse_camera_info_1d(
     // Index 67: Sharpness
     if data.len() > 67 {
         let sharpness = data[67] as i8;
-        metadata.insert(
-            "Canon:Sharpness",
-            TagValue::new_integer(sharpness as i64),
-        );
+        metadata.insert("Canon:Sharpness", TagValue::new_integer(sharpness as i64));
     }
 
     // Index 68: WhiteBalance
@@ -606,11 +593,7 @@ fn parse_camera_info_1d(
 /// Parses CameraInfo for 1DmkII/1DSmkII style cameras.
 ///
 /// Layout based on ExifTool CameraInfo1DmkII table.
-fn parse_camera_info_1d_mkii(
-    data: &[u8],
-    reader: &EndianReader,
-    metadata: &mut MetadataMap,
-) {
+fn parse_camera_info_1d_mkii(data: &[u8], reader: &EndianReader, metadata: &mut MetadataMap) {
     // Index 4: ExposureTime (int8u)
     if data.len() > OFFSET_EXPOSURE_TIME {
         let exposure = data[OFFSET_EXPOSURE_TIME];
@@ -625,10 +608,7 @@ fn parse_camera_info_1d_mkii(
     // Index 9: FocalLength (int16u)
     if let Some(focal) = reader.u16_at(OFFSET_FOCAL_LENGTH_1D_MKII) {
         if focal > 0 && focal < 2000 {
-            metadata.insert(
-                "Canon:FocalLengthRaw",
-                TagValue::new_integer(focal as i64),
-            );
+            metadata.insert("Canon:FocalLengthRaw", TagValue::new_integer(focal as i64));
         }
     }
 
@@ -636,10 +616,7 @@ fn parse_camera_info_1d_mkii(
     if data.len() > OFFSET_LENS_TYPE {
         let lens_type = data[OFFSET_LENS_TYPE];
         if lens_type > 0 {
-            metadata.insert(
-                "Canon:LensTypeRaw",
-                TagValue::new_integer(lens_type as i64),
-            );
+            metadata.insert("Canon:LensTypeRaw", TagValue::new_integer(lens_type as i64));
         }
     }
 
@@ -695,11 +672,7 @@ fn parse_camera_info_1d_mkii(
 /// Parses CameraInfo for 5D-style cameras (5D, 5DmkII, 5DmkIII, etc.).
 ///
 /// Layout based on ExifTool CameraInfo5D tables.
-fn parse_camera_info_5d(
-    data: &[u8],
-    reader: &EndianReader,
-    metadata: &mut MetadataMap,
-) {
+fn parse_camera_info_5d(data: &[u8], reader: &EndianReader, metadata: &mut MetadataMap) {
     // Camera temperature is typically around index 25 for 5D series
     if data.len() > OFFSET_CAMERA_TEMP_5D {
         let raw_temp = data[OFFSET_CAMERA_TEMP_5D];
@@ -727,10 +700,7 @@ fn parse_camera_info_5d(
     if data.len() > 15 {
         let lens_type = data[15];
         if lens_type > 0 {
-            metadata.insert(
-                "Canon:LensTypeRaw",
-                TagValue::new_integer(lens_type as i64),
-            );
+            metadata.insert("Canon:LensTypeRaw", TagValue::new_integer(lens_type as i64));
         }
     }
 
@@ -758,11 +728,7 @@ fn parse_camera_info_5d(
 }
 
 /// Parses CameraInfo for modern xxD cameras (60D, 70D, 80D, etc.).
-fn parse_camera_info_modern(
-    data: &[u8],
-    reader: &EndianReader,
-    metadata: &mut MetadataMap,
-) {
+fn parse_camera_info_modern(data: &[u8], reader: &EndianReader, metadata: &mut MetadataMap) {
     // Camera temperature for modern bodies
     if data.len() > OFFSET_CAMERA_TEMP_MODERN {
         let raw_temp = data[OFFSET_CAMERA_TEMP_MODERN];
@@ -780,10 +746,7 @@ fn parse_camera_info_modern(
     if data.len() > 6 {
         let sharpness = data[6] as i8;
         if (-4..=7).contains(&sharpness) {
-            metadata.insert(
-                "Canon:Sharpness",
-                TagValue::new_integer(sharpness as i64),
-            );
+            metadata.insert("Canon:Sharpness", TagValue::new_integer(sharpness as i64));
         }
     }
 
@@ -1053,7 +1016,10 @@ mod tests {
         assert_eq!(CanonBatteryType::parse("lp-e6n"), CanonBatteryType::LpE6N);
         assert_eq!(CanonBatteryType::parse("LP-E6NH"), CanonBatteryType::LpE6Nh);
         assert_eq!(CanonBatteryType::parse("LPE6P"), CanonBatteryType::LpE6P);
-        assert_eq!(CanonBatteryType::parse("unknown"), CanonBatteryType::Unknown);
+        assert_eq!(
+            CanonBatteryType::parse("unknown"),
+            CanonBatteryType::Unknown
+        );
     }
 
     #[test]

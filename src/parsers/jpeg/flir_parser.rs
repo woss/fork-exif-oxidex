@@ -252,15 +252,20 @@ pub fn parse_flir_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
     // Byte 7: Reserved/checksum
     let _segment_marker = data[5];
     let segment_index = data[6];
-    
+
     // The FFF data starts after the 8-byte header
     // Header: "FLIR\0" (5) + marker (1) + index (1) + reserved (1)
-    let payload = if data.len() > 8 { &data[8..] } else { return Ok(()) };
+    let payload = if data.len() > 8 {
+        &data[8..]
+    } else {
+        return Ok(());
+    };
 
     // Check if this looks like multi-segment data (DJI style)
     // First segment (index 0) contains "FFF\0" header
-    let is_multi_segment = segment_index > 0 || (payload.len() >= 4 && &payload[0..4] == b"FFF\0" && segment_index == 0);
-    
+    let is_multi_segment = segment_index > 0
+        || (payload.len() >= 4 && &payload[0..4] == b"FFF\0" && segment_index == 0);
+
     if is_multi_segment && segment_index < 20 {
         // Multi-segment data: reassemble all segments before parsing
         use std::cell::RefCell;
@@ -274,7 +279,7 @@ pub fn parse_flir_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
             // First segment (index 0) initializes the collection
             if segment_index == 0 {
                 segs.clear();
-                segs.resize(20, Vec::new());  // Max 20 segments
+                segs.resize(20, Vec::new()); // Max 20 segments
             }
 
             // Store this segment's payload
@@ -285,9 +290,9 @@ pub fn parse_flir_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
 
             // Check if we have all segments (contiguous non-empty segments)
             let filled_count = segs.iter().take_while(|s| !s.is_empty()).count();
-            let is_complete = filled_count > 0 && 
-                             (filled_count >= segs.len() || segs[filled_count].is_empty());
-            
+            let is_complete =
+                filled_count > 0 && (filled_count >= segs.len() || segs[filled_count].is_empty());
+
             if is_complete {
                 // Reassemble the complete FFF data
                 let mut complete_data = Vec::new();
@@ -295,7 +300,7 @@ pub fn parse_flir_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
                     if !seg.is_empty() {
                         complete_data.extend_from_slice(seg);
                     } else {
-                        break;  // Stop at first empty segment
+                        break; // Stop at first empty segment
                     }
                 }
 
@@ -484,10 +489,7 @@ fn parse_flir_legacy_format(data: &[u8], metadata: &mut MetadataMap) -> Result<(
     for offset in [0x00, 0x08, 0x10, 0x20, 0xD4, 0x00D4].iter() {
         if let Some(model) = try_read_string(data, *offset, 32) {
             if is_valid_camera_model(&model) {
-                metadata.insert(
-                    "FLIR:CameraModel".to_string(),
-                    TagValue::String(model),
-                );
+                metadata.insert("FLIR:CameraModel".to_string(), TagValue::String(model));
                 break;
             }
         }
@@ -540,7 +542,11 @@ fn parse_raw_data_record(data: &[u8], metadata: &mut MetadataMap) {
 
     // Parse byte order
     if let Some(byte_order) = reader.u16_at(raw_data_offsets::BYTE_ORDER) {
-        let order_str = if byte_order == 0 { "Little-endian" } else { "Big-endian" };
+        let order_str = if byte_order == 0 {
+            "Little-endian"
+        } else {
+            "Big-endian"
+        };
         metadata.insert(
             "FLIR:RawDataByteOrder".to_string(),
             TagValue::String(order_str.to_string()),
@@ -589,7 +595,10 @@ fn parse_raw_data_record(data: &[u8], metadata: &mut MetadataMap) {
     if data.len() > 32 {
         metadata.insert(
             "FLIR:RawThermalImage".to_string(),
-            TagValue::String(format!("(Binary data, {} bytes)", data.len() - 32)),
+            TagValue::String(format!(
+                "(Binary data {} bytes, use -b option to extract)",
+                data.len() - 32
+            )),
         );
     }
 }
@@ -676,17 +685,11 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
     }
 
     if let Some(planck_b) = reader.f32_at(camera_info_offsets::PLANCK_B) {
-        metadata.insert(
-            "FLIR:PlanckB".to_string(),
-            TagValue::Float(planck_b as f64),
-        );
+        metadata.insert("FLIR:PlanckB".to_string(), TagValue::Float(planck_b as f64));
     }
 
     if let Some(planck_f) = reader.f32_at(camera_info_offsets::PLANCK_F) {
-        metadata.insert(
-            "FLIR:PlanckF".to_string(),
-            TagValue::Float(planck_f as f64),
-        );
+        metadata.insert("FLIR:PlanckF".to_string(), TagValue::Float(planck_f as f64));
     }
 
     if let Some(planck_o) = reader.i32_at(camera_info_offsets::PLANCK_O) {
@@ -795,10 +798,7 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
 
     if let Some(model) = try_read_string(data, camera_info_offsets::CAMERA_MODEL, 32) {
         if !model.is_empty() {
-            metadata.insert(
-                "FLIR:CameraModel".to_string(),
-                TagValue::String(model),
-            );
+            metadata.insert("FLIR:CameraModel".to_string(), TagValue::String(model));
         }
     }
 
@@ -833,10 +833,7 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
 
     if let Some(lens_model) = try_read_string(data, camera_info_offsets::LENS_MODEL, 32) {
         if !lens_model.is_empty() {
-            metadata.insert(
-                "FLIR:LensModel".to_string(),
-                TagValue::String(lens_model),
-            );
+            metadata.insert("FLIR:LensModel".to_string(), TagValue::String(lens_model));
         }
     }
 
@@ -860,10 +857,7 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
 
     if let Some(fov) = reader.f32_at(camera_info_offsets::FIELD_OF_VIEW) {
         if fov > 0.0 && fov < 180.0 {
-            metadata.insert(
-                "FLIR:FieldOfView".to_string(),
-                TagValue::Float(fov as f64),
-            );
+            metadata.insert("FLIR:FieldOfView".to_string(), TagValue::Float(fov as f64));
         }
     }
 
@@ -897,7 +891,9 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
         }
     }
 
-    if let Some(filter_serial) = try_read_string(data, camera_info_offsets::FILTER_SERIAL_NUMBER, 32) {
+    if let Some(filter_serial) =
+        try_read_string(data, camera_info_offsets::FILTER_SERIAL_NUMBER, 32)
+    {
         if !filter_serial.is_empty() {
             metadata.insert(
                 "FLIR:FilterSerialNumber".to_string(),
@@ -941,10 +937,7 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
     // Try to parse DateTimeOriginal
     if data.len() > camera_info_offsets::DATE_TIME_ORIGINAL + 8 {
         if let Some(dt) = parse_flir_datetime(data, camera_info_offsets::DATE_TIME_ORIGINAL) {
-            metadata.insert(
-                "FLIR:DateTimeOriginal".to_string(),
-                TagValue::String(dt),
-            );
+            metadata.insert("FLIR:DateTimeOriginal".to_string(), TagValue::String(dt));
         }
     }
 
@@ -992,12 +985,42 @@ fn parse_palette_info_record(data: &[u8], metadata: &mut MetadataMap) {
     }
 
     // Special colors (RGB triplets)
-    insert_rgb_color(data, palette_info_offsets::ABOVE_COLOR, "FLIR:AboveColor", metadata);
-    insert_rgb_color(data, palette_info_offsets::BELOW_COLOR, "FLIR:BelowColor", metadata);
-    insert_rgb_color(data, palette_info_offsets::OVERFLOW_COLOR, "FLIR:OverflowColor", metadata);
-    insert_rgb_color(data, palette_info_offsets::UNDERFLOW_COLOR, "FLIR:UnderflowColor", metadata);
-    insert_rgb_color(data, palette_info_offsets::ISOTHERM1_COLOR, "FLIR:Isotherm1Color", metadata);
-    insert_rgb_color(data, palette_info_offsets::ISOTHERM2_COLOR, "FLIR:Isotherm2Color", metadata);
+    insert_rgb_color(
+        data,
+        palette_info_offsets::ABOVE_COLOR,
+        "FLIR:AboveColor",
+        metadata,
+    );
+    insert_rgb_color(
+        data,
+        palette_info_offsets::BELOW_COLOR,
+        "FLIR:BelowColor",
+        metadata,
+    );
+    insert_rgb_color(
+        data,
+        palette_info_offsets::OVERFLOW_COLOR,
+        "FLIR:OverflowColor",
+        metadata,
+    );
+    insert_rgb_color(
+        data,
+        palette_info_offsets::UNDERFLOW_COLOR,
+        "FLIR:UnderflowColor",
+        metadata,
+    );
+    insert_rgb_color(
+        data,
+        palette_info_offsets::ISOTHERM1_COLOR,
+        "FLIR:Isotherm1Color",
+        metadata,
+    );
+    insert_rgb_color(
+        data,
+        palette_info_offsets::ISOTHERM2_COLOR,
+        "FLIR:Isotherm2Color",
+        metadata,
+    );
 
     // Palette method
     if let Some(method) = reader.u8_at(palette_info_offsets::PALETTE_METHOD) {
@@ -1039,10 +1062,7 @@ fn parse_palette_info_record(data: &[u8], metadata: &mut MetadataMap) {
 
     if let Some(name) = try_read_string(data, palette_info_offsets::PALETTE_NAME, 32) {
         if !name.is_empty() {
-            metadata.insert(
-                "FLIR:PaletteName".to_string(),
-                TagValue::String(name),
-            );
+            metadata.insert("FLIR:PaletteName".to_string(), TagValue::String(name));
         }
     }
 
@@ -1070,10 +1090,7 @@ fn insert_temperature(
     if let Some(temp) = reader.f32_at(offset) {
         // Valid temperature range: 0K to 10000K (covers any practical thermal measurement)
         if (0.0..=10000.0).contains(&temp) && temp.is_finite() {
-            metadata.insert(
-                tag_name.to_string(),
-                TagValue::Float(temp as f64),
-            );
+            metadata.insert(tag_name.to_string(), TagValue::Float(temp as f64));
         }
     }
 }
@@ -1139,7 +1156,10 @@ fn is_valid_camera_model(model: &str) -> bool {
         return false;
     }
 
-    let printable_count = model.chars().filter(|c| c.is_alphanumeric() || *c == ' ' || *c == '-' || *c == '_').count();
+    let printable_count = model
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == ' ' || *c == '-' || *c == '_')
+        .count();
     let total = model.chars().count();
 
     printable_count > total / 2 && model.chars().any(|c| c.is_alphanumeric())
@@ -1213,7 +1233,7 @@ mod tests {
         let mut data = Vec::new();
         data.extend_from_slice(b"FLIR\x00");
         data.extend_from_slice(&[0x01, 0x01, 0x00]); // segment 1 of 1
-        // Add enough padding to meet minimum length requirements
+                                                     // Add enough padding to meet minimum length requirements
         data.extend_from_slice(&[0x00; 32]);
 
         let mut metadata = MetadataMap::new();
@@ -1295,10 +1315,7 @@ mod tests {
         let mut metadata = MetadataMap::new();
         insert_rgb_color(&data, 0, "TestColor", &mut metadata);
 
-        assert_eq!(
-            metadata.get_string("TestColor"),
-            Some("#FF0080")
-        );
+        assert_eq!(metadata.get_string("TestColor"), Some("#FF0080"));
     }
 
     /// Test temperature insertion with valid value

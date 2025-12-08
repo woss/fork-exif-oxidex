@@ -346,10 +346,7 @@ fn parse_jumbf_description(data: &[u8], metadata: &mut MetadataMap) -> Result<()
         uuid[12], uuid[13], uuid[14], uuid[15]
     );
 
-    metadata.insert(
-        "JUMBF:ContentType".to_string(),
-        TagValue::String(uuid_str),
-    );
+    metadata.insert("JUMBF:ContentType".to_string(), TagValue::String(uuid_str));
 
     // Read toggles byte
     if data.len() > 16 {
@@ -572,8 +569,8 @@ mod tests {
         let mut desc_data = Vec::new();
         // UUID (16 bytes)
         desc_data.extend_from_slice(&[
-            0x6A, 0x75, 0x6D, 0x62, 0x66, 0x00, 0x11, 0x00,
-            0x10, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B,
+            0x6A, 0x75, 0x6D, 0x62, 0x66, 0x00, 0x11, 0x00, 0x10, 0x80, 0x00, 0x00, 0xAA, 0x00,
+            0x38, 0x9B,
         ]);
         // Toggles byte
         desc_data.push(0x01);
@@ -618,7 +615,8 @@ mod tests {
 
     #[test]
     fn test_parse_c2pa_claim_with_json() {
-        let json_claim = br#"{"dc:title": "Test", "actions": [], "assertions": [], "ingredients": []}"#;
+        let json_claim =
+            br#"{"dc:title": "Test", "actions": [], "assertions": [], "ingredients": []}"#;
         let mut metadata = MetadataMap::new();
 
         let result = parse_c2pa_claim(json_claim, &mut metadata);

@@ -609,7 +609,10 @@ mod tests {
 
         // Verify Beta (float)
         let beta = metadata.get_float("APP11:Beta").unwrap();
-        assert!((beta - 1.0).abs() < 0.001, "Beta should be approximately 1.0");
+        assert!(
+            (beta - 1.0).abs() < 0.001,
+            "Beta should be approximately 1.0"
+        );
 
         // Verify Ln0 (float)
         let ln0 = metadata.get_float("APP11:Ln0").unwrap();
@@ -766,13 +769,13 @@ mod tests {
     fn test_extract_hdr_parameters_structured() {
         // Test the structured parameter extraction
         let segment = create_hdr_ri_segment(
-            11,      // Version
-            3,       // Logarithmic
-            1.2,     // Alpha
-            0.95,    // Beta
-            -4.0,    // Ln0
-            9.0,     // Ln1
-            75.0,    // S2n
+            11,   // Version
+            3,    // Logarithmic
+            1.2,  // Alpha
+            0.95, // Beta
+            -4.0, // Ln0
+            9.0,  // Ln1
+            75.0, // S2n
         );
 
         let result = extract_hdr_parameters(&segment);

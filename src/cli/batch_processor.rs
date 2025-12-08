@@ -456,7 +456,10 @@ fn output_json_results(results: &[(PathBuf, Result<crate::core::MetadataMap>)]) 
                                 json!(format!("{}/{}", numerator, denominator))
                             }
                             TagValue::Binary(b) => {
-                                json!(format!("(Binary data, {} bytes)", b.len()))
+                                json!(format!(
+                                    "(Binary data {} bytes, use -b option to extract)",
+                                    b.len()
+                                ))
                             }
                             TagValue::DateTime(dt) => json!(dt.to_rfc3339()),
                             TagValue::Struct(_) => json!("(Structured data)"),

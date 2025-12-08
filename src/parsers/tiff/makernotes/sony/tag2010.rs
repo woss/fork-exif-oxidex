@@ -340,10 +340,7 @@ pub fn parse_sony_tag2010(data: &[u8], byte_order: bool) -> MetadataMap {
     // Parse InternalSerialNumber (16-byte ASCII at offset 4)
     // This is the camera's internal serial number, distinct from the body serial
     if let Some(serial) = read_ascii_string(data, OFFSET_INTERNAL_SERIAL, INTERNAL_SERIAL_LENGTH) {
-        map.insert(
-            "Sony:InternalSerialNumber",
-            TagValue::new_string(serial),
-        );
+        map.insert("Sony:InternalSerialNumber", TagValue::new_string(serial));
     }
 
     // Parse RecommendedExposureIndex (u32 at offset 20)
@@ -673,10 +670,7 @@ mod tests {
             Some("Aperture Priority")
         );
         assert_eq!(
-            result
-                .get("Sony:InternalSerialNumber")
-                .unwrap()
-                .as_string(),
+            result.get("Sony:InternalSerialNumber").unwrap().as_string(),
             Some("TEST12345678")
         );
         assert_eq!(

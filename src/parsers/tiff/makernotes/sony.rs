@@ -845,7 +845,8 @@ fn parse_sony_makernote_impl(
                     }
                     // RATIONAL (8 bytes)
                     5 => {
-                        let reader = EndianReader::new(ifd_data, actual_byte_order.to_io_byte_order());
+                        let reader =
+                            EndianReader::new(ifd_data, actual_byte_order.to_io_byte_order());
                         if entry.value_count == 1 {
                             let offset = entry.value_offset as usize;
                             if let (Some(num), Some(den)) =
@@ -876,7 +877,8 @@ fn parse_sony_makernote_impl(
                     }
                     // SRATIONAL (signed 8 bytes)
                     10 => {
-                        let reader = EndianReader::new(ifd_data, actual_byte_order.to_io_byte_order());
+                        let reader =
+                            EndianReader::new(ifd_data, actual_byte_order.to_io_byte_order());
                         if entry.value_count == 1 {
                             let offset = entry.value_offset as usize;
                             if let (Some(num), Some(den)) =

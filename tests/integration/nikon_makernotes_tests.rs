@@ -161,8 +161,8 @@ fn test_nikon_parse_basic_tags() {
     data.extend_from_slice(b"Nikon\0\x02\x10\x00\x00");
 
     // Embedded TIFF header (8 bytes at offset 10)
-    data.extend_from_slice(b"II");           // Little-endian byte order marker
-    data.extend_from_slice(&[0x2A, 0x00]);   // TIFF magic number (42)
+    data.extend_from_slice(b"II"); // Little-endian byte order marker
+    data.extend_from_slice(&[0x2A, 0x00]); // TIFF magic number (42)
     data.extend_from_slice(&[0x08, 0x00, 0x00, 0x00]); // IFD offset (8 bytes from TIFF start)
 
     // IFD at offset 18 (10 + 8): entry count (little-endian)
@@ -206,8 +206,8 @@ fn test_nikon_parse_enumerated_values() {
     data.extend_from_slice(b"Nikon\0\x02\x10\x00\x00");
 
     // Embedded TIFF header (8 bytes at offset 10)
-    data.extend_from_slice(b"II");           // Little-endian byte order marker
-    data.extend_from_slice(&[0x2A, 0x00]);   // TIFF magic number (42)
+    data.extend_from_slice(b"II"); // Little-endian byte order marker
+    data.extend_from_slice(&[0x2A, 0x00]); // TIFF magic number (42)
     data.extend_from_slice(&[0x08, 0x00, 0x00, 0x00]); // IFD offset (8 bytes from TIFF start)
 
     // IFD: 3 entries
@@ -272,8 +272,8 @@ fn test_nikon_parser_big_endian() {
     data.extend_from_slice(b"Nikon\0\x02\x10\x00\x00");
 
     // Embedded TIFF header (8 bytes at offset 10) - Big-endian
-    data.extend_from_slice(b"MM");           // Big-endian byte order marker
-    data.extend_from_slice(&[0x00, 0x2A]);   // TIFF magic number (42) - BE
+    data.extend_from_slice(b"MM"); // Big-endian byte order marker
+    data.extend_from_slice(&[0x00, 0x2A]); // TIFF magic number (42) - BE
     data.extend_from_slice(&[0x00, 0x00, 0x00, 0x08]); // IFD offset (8 bytes from TIFF start) - BE
 
     // IFD: 1 entry (big-endian)
