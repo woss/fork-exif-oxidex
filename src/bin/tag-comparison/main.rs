@@ -175,53 +175,94 @@ fn detect_formats(samples_path: &PathBuf) -> Result<Vec<String>, Box<dyn std::er
     use std::collections::HashSet;
     let mut formats = HashSet::new();
 
-    if samples_path.is_dir() {
-        for entry in std::fs::read_dir(samples_path)? {
-            let entry = entry?;
-            let path = entry.path();
+    // Recursively scan all files to detect formats by extension
+    fn scan_directory(dir: &std::path::Path, formats: &mut HashSet<String>) -> std::io::Result<()> {
+        if dir.is_dir() {
+            for entry in std::fs::read_dir(dir)? {
+                let entry = entry?;
+                let path = entry.path();
 
-            // Check subdirectories (organized by format)
-            if path.is_dir() {
-                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                    if !name.starts_with('.') {
-                        formats.insert(name.to_uppercase());
+                if path.is_dir() {
+                    // Skip hidden directories
+                    if !path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .is_some_and(|n| n.starts_with('.'))
+                    {
+                        scan_directory(&path, formats)?;
+                    }
+                } else if path.is_file() {
+                    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                        if let Some(format) = extension_to_format(ext) {
+                            formats.insert(format.to_string());
+                        }
                     }
                 }
             }
-            // Check files by extension (ExifTool test images)
-            else if path.is_file() {
-                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                    let format = match ext.to_lowercase().as_str() {
-                        "jpg" | "jpeg" => "JPEG",
-                        "png" => "PNG",
-                        "tif" | "tiff" => "TIFF",
-                        "gif" => "GIF",
-                        "webp" => "WEBP",
-                        "heic" | "heif" => "HEIC",
-                        "mp4" | "m4v" | "mov" => "MP4",
-                        "avi" => "AVI",
-                        "mkv" => "MKV",
-                        "mp3" => "MP3",
-                        "wav" => "WAV",
-                        "pdf" => "PDF",
-                        "psd" => "PSD",
-                        "cr2" | "cr3" => "CR2",
-                        "nef" => "NEF",
-                        "arw" => "ARW",
-                        "dng" => "DNG",
-                        "raf" => "RAF",
-                        "orf" => "ORF",
-                        "rw2" => "RW2",
-                        "xmp" => "XMP",
-                        _ => continue,
-                    };
-                    formats.insert(format.to_string());
-                }
-            }
         }
+        Ok(())
     }
+
+    scan_directory(samples_path, &mut formats)?;
 
     let mut sorted: Vec<_> = formats.into_iter().collect();
     sorted.sort();
     Ok(sorted)
+}
+
+/// Map file extension to format name
+fn extension_to_format(ext: &str) -> Option<&'static str> {
+    match ext.to_lowercase().as_str() {
+        "jpg" | "jpeg" => Some("JPEG"),
+        "png" => Some("PNG"),
+        "tif" | "tiff" => Some("TIFF"),
+        "gif" => Some("GIF"),
+        "webp" => Some("WEBP"),
+        "heic" | "heif" => Some("HEIC"),
+        "mp4" | "m4v" | "mov" => Some("MP4"),
+        "avi" => Some("AVI"),
+        "mkv" => Some("MKV"),
+        "mp3" => Some("MP3"),
+        "wav" => Some("WAV"),
+        "pdf" => Some("PDF"),
+        "psd" => Some("PSD"),
+        "cr2" | "cr3" => Some("CR2"),
+        "nef" => Some("NEF"),
+        "arw" => Some("ARW"),
+        "dng" => Some("DNG"),
+        "raf" => Some("RAF"),
+        "orf" => Some("ORF"),
+        "rw2" => Some("RW2"),
+        "xmp" => Some("XMP"),
+        "flac" => Some("FLAC"),
+        "ogg" | "oga" | "ogv" => Some("OGG"),
+        "bmp" => Some("BMP"),
+        "ico" => Some("ICO"),
+        "svg" => Some("SVG"),
+        "eps" | "ps" => Some("EPS"),
+        "exr" => Some("EXR"),
+        "jxl" => Some("JXL"),
+        "avif" => Some("AVIF"),
+        "3gp" | "3g2" => Some("3GP"),
+        "flv" => Some("FLV"),
+        "wmv" | "asf" => Some("WMV"),
+        "mxf" => Some("MXF"),
+        "webm" => Some("WEBM"),
+        "icc" | "icm" => Some("ICC"),
+        "pef" => Some("PEF"),
+        "srw" => Some("SRW"),
+        "x3f" => Some("X3F"),
+        "dcr" => Some("DCR"),
+        "rwl" => Some("RWL"),
+        "3fr" => Some("3FR"),
+        "fff" => Some("FFF"),
+        "mef" => Some("MEF"),
+        "mos" => Some("MOS"),
+        "mrw" => Some("MRW"),
+        "nrw" => Some("NRW"),
+        "sr2" | "srf" => Some("SR2"),
+        "kdc" => Some("KDC"),
+        "erf" => Some("ERF"),
+        _ => None,
+    }
 }

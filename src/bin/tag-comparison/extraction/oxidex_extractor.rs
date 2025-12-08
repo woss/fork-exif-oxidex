@@ -49,18 +49,8 @@ impl OxiDexExtractor {
             return Ok(cached.clone());
         }
 
-        // Try format subdirectory first (e.g., samples/jpeg/)
-        let format_path = self.fixture_path.join(format.to_lowercase());
-        let files: Vec<PathBuf> = if format_path.exists() {
-            WalkDir::new(&format_path)
-                .into_iter()
-                .filter_map(Result::ok)
-                .filter(|e| e.path().is_file())
-                .map(|e| e.path().to_path_buf())
-                .collect()
-        } else {
-            self.find_files_by_extension(format)?
-        };
+        // Find files by extension recursively throughout the samples directory
+        let files: Vec<PathBuf> = self.find_files_by_extension(format)?;
 
         let files_processed = files.len();
 
@@ -517,7 +507,7 @@ impl OxiDexExtractor {
         tags
     }
 
-    /// Find files by extension
+    /// Find files by extension recursively throughout the samples directory
     fn find_files_by_extension(
         &self,
         format: &str,
@@ -528,11 +518,18 @@ impl OxiDexExtractor {
         }
 
         let files: Vec<PathBuf> = WalkDir::new(&self.fixture_path)
-            .max_depth(2)
             .into_iter()
             .filter_map(Result::ok)
             .filter(|e| {
                 if !e.path().is_file() {
+                    return false;
+                }
+                // Skip hidden files and directories
+                if e.path()
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| n.starts_with('.'))
+                {
                     return false;
                 }
                 if let Some(ext) = e.path().extension().and_then(|e| e.to_str()) {
@@ -570,12 +567,41 @@ impl OxiDexExtractor {
             "RAF" => vec!["raf"],
             "ORF" => vec!["orf"],
             "RW2" => vec!["rw2"],
+            "XMP" => vec!["xmp"],
+            "FLAC" => vec!["flac"],
+            "OGG" => vec!["ogg", "oga", "ogv"],
+            "BMP" => vec!["bmp"],
+            "ICO" => vec!["ico"],
+            "SVG" => vec!["svg"],
+            "EPS" => vec!["eps", "ps"],
+            "EXR" => vec!["exr"],
+            "JXL" => vec!["jxl"],
+            "AVIF" => vec!["avif"],
+            "3GP" => vec!["3gp", "3g2"],
+            "FLV" => vec!["flv"],
+            "WMV" => vec!["wmv", "asf"],
+            "MXF" => vec!["mxf"],
+            "WEBM" => vec!["webm"],
+            "ICC" => vec!["icc", "icm"],
+            "PEF" => vec!["pef"],
+            "SRW" => vec!["srw"],
+            "X3F" => vec!["x3f"],
+            "DCR" => vec!["dcr"],
+            "RWL" => vec!["rwl"],
+            "3FR" => vec!["3fr"],
+            "FFF" => vec!["fff"],
+            "MEF" => vec!["mef"],
+            "MOS" => vec!["mos"],
+            "MRW" => vec!["mrw"],
+            "NRW" => vec!["nrw"],
+            "SR2" => vec!["sr2", "srf"],
+            "KDC" => vec!["kdc"],
+            "ERF" => vec!["erf"],
             "RAW" => vec![
                 "raw", "3fr", "ari", "bay", "crw", "dcr", "dcs", "dng", "erf", "fff", "k25", "kdc",
                 "mef", "mos", "mrw", "nrw", "pef", "ptx", "r3d", "raf", "rw2", "rwl", "sr2", "srf",
                 "srw", "x3f",
             ],
-            "XMP" => vec!["xmp"],
             _ => vec![],
         }
     }
