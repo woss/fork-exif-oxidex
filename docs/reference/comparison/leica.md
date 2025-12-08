@@ -9,11 +9,11 @@ title: LEICA Compatibility
 ## Summary
 
 - **Files Tested:** 67
-- **Coverage:** 35.0%
-- **Matched Tags:** 196
+- **Coverage:** 35.2%
+- **Matched Tags:** 197
 - **Missing Tags:** 337
 - **Extra Tags:** 131
-- **Value Differences:** 27
+- **Value Differences:** 26
 
 ## Value Differences
 
@@ -36,7 +36,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `IPTC:Keywords` | ["Kansas","TGPNP"] | TGPNP |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 5700096 | 5649496 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:LensInfo` | 28mm f/1.53125-2.97265625 | 28mm f/1.5-3.0 |
 | `XMP:MetadataDate` | 2020:11:05 16:56:55-08:00 | 2020:11:05 16:56:55 |
 | `XMP:NormalizedCropCorners` | [0.0293125305,0.0010763833,0.9863464236,... | 0.02931253050.00107638330.98634642360.03... |

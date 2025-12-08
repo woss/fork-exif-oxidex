@@ -9,11 +9,11 @@ title: DJI Compatibility
 ## Summary
 
 - **Files Tested:** 21
-- **Coverage:** 50.9%
-- **Matched Tags:** 145
+- **Coverage:** 51.2%
+- **Matched Tags:** 146
 - **Missing Tags:** 126
 - **Extra Tags:** 46
-- **Value Differences:** 14
+- **Value Differences:** 13
 
 ## Value Differences
 
@@ -29,7 +29,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:XPComment` | 0.91.142 | 0.91.142 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 4857269 | 4798452 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:MetadataDate` | 2020:11:04 14:48:31-08:00 | 2020:11:04 14:48:31 |
 | `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:1, FrameN... | 0:0:1:000158 |
 | `XMP:SelfData` |  | Self data |

@@ -6,51 +6,25 @@ title: ExifTool Compatibility Report
 
 **Generated:** 2025-12-08 | **ExifTool:** v13.43 | **OxiDex:** v1.2.1
 
-**Overall Coverage:** 36.6%
+**Overall Coverage:** 36.8%
 
 ## Coverage by Format
 
 | Format | Files | Coverage | Missing | Extra | Value Diffs | Regressions |
 |--------|-------|----------|---------|-------|-------------|-------------|
 | [APPLE](./apple.md) | 66 | 59.0% | 79 | 40 | 14 | 0 |
-| [CANON](./canon.md) | 725 | 23.7% | 632 | 82 | 36 | 0 |
-| [DJI](./dji.md) | 21 | 50.9% | 126 | 46 | 14 | 0 |
+| [CANON](./canon.md) | 725 | 23.9% | 632 | 82 | 35 | 0 |
+| [DJI](./dji.md) | 21 | 51.2% | 126 | 46 | 13 | 0 |
 | [FUJIFILM](./fujifilm.md) | 411 | 63.3% | 138 | 50 | 46 | 0 |
-| [GOOGLE](./google.md) | 24 | 42.3% | 172 | 31 | 15 | 0 |
+| [GOOGLE](./google.md) | 24 | 42.6% | 172 | 31 | 14 | 0 |
 | [GOPRO](./gopro.md) | 23 | 62.2% | 64 | 30 | 7 | 0 |
-| [LEICA](./leica.md) | 67 | 35.0% | 337 | 131 | 27 | 0 |
-| [NIKON](./nikon.md) | 307 | 22.3% | 589 | 95 | 53 | 0 |
-| [OLYMPUS](./olympus.md) | 315 | 26.1% | 367 | 97 | 18 | 0 |
-| [PANASONIC](./panasonic.md) | 477 | 57.7% | 200 | 114 | 54 | 0 |
+| [LEICA](./leica.md) | 67 | 35.2% | 337 | 131 | 26 | 0 |
+| [NIKON](./nikon.md) | 307 | 22.4% | 589 | 95 | 52 | 0 |
+| [OLYMPUS](./olympus.md) | 315 | 26.3% | 367 | 97 | 17 | 0 |
+| [PANASONIC](./panasonic.md) | 477 | 57.9% | 200 | 114 | 53 | 0 |
 | [PENTAX](./pentax.md) | 145 | 29.5% | 339 | 69 | 44 | 0 |
-| [SAMSUNG](./samsung.md) | 702 | 43.0% | 261 | 91 | 23 | 0 |
-| [SONY](./sony.md) | 761 | 21.5% | 566 | 82 | 37 | 0 |
-
-## Other Format Reports
-
-Additional format-specific reports:
-
-- [Avi](./avi.md)
-- [Cr2](./cr2.md)
-- [Dng](./dng.md)
-- [Gif](./gif.md)
-- [Heic](./heic.md)
-- [Jpeg](./jpeg.md)
-- [Mkv](./mkv.md)
-- [Mp3](./mp3.md)
-- [Mp4](./mp4.md)
-- [Nef](./nef.md)
-- [Pdf](./pdf.md)
-- [Png](./png.md)
-- [Psd](./psd.md)
-- [Raf](./raf.md)
-- [Raw](./raw.md)
-- [Rw2](./rw2.md)
-- [Tiff](./tiff.md)
-- [Wav](./wav.md)
-- [Webp](./webp.md)
-- [Xmp](./xmp.md)
-
+| [SAMSUNG](./samsung.md) | 702 | 43.2% | 261 | 91 | 22 | 0 |
+| [SONY](./sony.md) | 761 | 21.6% | 566 | 82 | 36 | 0 |
 
 ---
 

@@ -210,6 +210,13 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         }
     }
 
+    // Handle XMP ColorClass: "0 (None)" vs "0" - MUST come before parenthetical normalization
+    if tag_key.contains("ColorClass") {
+        if let Some(paren_idx) = normalized.find(" (") {
+            return normalized[..paren_idx].to_string();
+        }
+    }
+
     // Handle parenthetical case normalization: "0 (Normal)" vs "0 (normal)"
     if normalized.contains('(') && normalized.contains(')') {
         return normalized.to_lowercase();
@@ -355,13 +362,6 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
                     return format!("{:.6}", val).trim_end_matches('0').trim_end_matches('.').to_string();
                 }
             }
-        }
-    }
-
-    // Handle XMP ColorClass: "0 (None)" vs "0"
-    if tag_key.contains("ColorClass") {
-        if let Some(paren_idx) = normalized.find(" (") {
-            return normalized[..paren_idx].to_string();
         }
     }
 
@@ -584,6 +584,34 @@ mod tests {
         assert_eq!(result.missing_in_oxidex.len(), 2);
         assert_eq!(result.extra_in_oxidex.len(), 0);
         assert_eq!(result.coverage_percentage, 0.0);
+    }
+
+    #[test]
+    fn test_normalize_colorclass() {
+        // Test that ColorClass normalization works correctly
+        let exiftool_value = normalize_value_for_comparison("XMP:ColorClass", "0 (None)");
+        let oxidex_value = normalize_value_for_comparison("XMP:ColorClass", "0");
+
+        assert_eq!(exiftool_value, "0", "ExifTool value should normalize to '0'");
+        assert_eq!(oxidex_value, "0", "OxiDex value should normalize to '0'");
+        assert_eq!(exiftool_value, oxidex_value, "Both should match after normalization");
+    }
+
+    #[test]
+    fn test_colorclass_comparison_matches() {
+        // Test that ColorClass values match in comparison
+        let oxidex_tags = vec![
+            TagInfo::new("ColorClass".to_string(), "XMP".to_string(), "0".to_string()),
+        ];
+        let exiftool_tags = vec![
+            TagInfo::new("ColorClass".to_string(), "XMP".to_string(), "0 (None)".to_string()),
+        ];
+
+        let result = ComparisonEngine::compare(oxidex_tags, exiftool_tags, "JPEG", 1, None);
+
+        // Should match after normalization
+        assert_eq!(result.matched_tags.len(), 1, "ColorClass should be in matched tags");
+        assert_eq!(result.value_differences.len(), 0, "No value differences expected");
     }
 
     #[test]

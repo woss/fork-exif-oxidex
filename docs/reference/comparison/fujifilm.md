@@ -24,6 +24,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `APP14:APP14Flags0` | [14], Encoded with Blend=1 downsampling | 49152 |
 | `EXIF:GPSLatitude` | 15 deg 9' 25.41" | 15 deg 9' 25.409" |
 | `EXIF:GPSLongitude` | 145 deg 42' 5.89" | 145 deg 42' 5.891" |
+| `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | (Binary data 2014 bytes, use -b option t... |
 | `EXIF:XPKeywords` | 10.02.14 | 10.02.14 |
 | `EXIF:XPTitle` |  |                 |
 | `MakerNotes:AdvancedFilter` | Miniature | Unknown (262144) |
@@ -53,7 +54,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:ShadowTone` | 0 (normal) | +0 |
 | `MakerNotes:Sharpness` | 0 (normal) | 3 (Hard) |
 | `MakerNotes:WhiteBalanceFineTune` | Red +0, Blue +0 | +674 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:Contrast` | 0.0 | 0 |
 | `XMP:MetadataDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
 | `XMP:ModifyDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |

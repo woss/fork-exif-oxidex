@@ -9,11 +9,11 @@ title: CANON Compatibility
 ## Summary
 
 - **Files Tested:** 725
-- **Coverage:** 23.7%
-- **Matched Tags:** 208
+- **Coverage:** 23.9%
+- **Matched Tags:** 209
 - **Missing Tags:** 632
 - **Extra Tags:** 82
-- **Value Differences:** 36
+- **Value Differences:** 35
 
 ## Value Differences
 
@@ -55,7 +55,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:SerialNumber` | 0220100039 | � |
 | `MakerNotes:ShutterCount` | 1304 | 1 |
 | `MakerNotes:TargetAperture` | 3.6 | f/3.5 |
-| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:006138 |
 
 ## Missing Tags
