@@ -113,6 +113,9 @@ triddefs.trd
 docs/.vitepress/dist/
 docs/.vitepress/cache/
 
+# ExifTool comparison reports (generated at deploy time)
+docs/reference/comparison/
+
 # Generated HTML files in docs (VitePress generates from .md at build time)
 docs/**/*.html
 

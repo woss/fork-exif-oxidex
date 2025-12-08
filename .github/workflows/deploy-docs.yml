@@ -6,6 +6,8 @@ on:
     paths:
       - 'docs/**'
       - 'benches/**'
+      - 'src/parsers/**'
+      - 'src/bin/tag-comparison/**'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
@@ -26,6 +28,29 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Perl (for ExifTool)
+        run: sudo apt-get update -qq && sudo apt-get install -y perl
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Generate ExifTool comparison report
+        run: just compare-exiftool-full-update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Check if benchmarks changed
         id: changes
         run: |
@@ -38,10 +63,6 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "benchmarks_changed=true" >> $GITHUB_OUTPUT
           fi
-
-      - name: Setup Rust toolchain
-        if: steps.changes.outputs.benchmarks_changed == 'true'
-        uses: dtolnay/rust-toolchain@stable
 
       - name: Run benchmarks
         if: steps.changes.outputs.benchmarks_changed == 'true'
