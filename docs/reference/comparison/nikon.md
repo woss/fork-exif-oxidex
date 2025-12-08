@@ -9,11 +9,11 @@ title: NIKON Compatibility
 ## Summary
 
 - **Files Tested:** 307
-- **Coverage:** 22.4%
-- **Matched Tags:** 185
+- **Coverage:** 22.3%
+- **Matched Tags:** 184
 - **Missing Tags:** 589
 - **Extra Tags:** 95
-- **Value Differences:** 52
+- **Value Differences:** 53
 
 ## Value Differences
 
@@ -70,9 +70,9 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:WB_RBLevels` | 1.859375 1.2578125 1 1 | 3813 17999 |
 | `MakerNotes:WhiteBalance` | Auto1 | Unknown |
 | `MakerNotes:WhiteBalanceFineTune` | 0 0 | 0 |
-| `XMP:CreateDate` | 2020:12:11 14:55:22.09Z | 2020:12:11 14:55:22.09 |
+| `XMP:ColorClass` | 0 (None) | 0 |
 
-*...and 2 more differences*
+*...and 3 more differences*
 
 ## Missing Tags
 

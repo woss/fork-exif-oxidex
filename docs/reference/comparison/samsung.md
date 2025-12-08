@@ -9,11 +9,11 @@ title: SAMSUNG Compatibility
 ## Summary
 
 - **Files Tested:** 702
-- **Coverage:** 42.6%
-- **Matched Tags:** 212
+- **Coverage:** 43.0%
+- **Matched Tags:** 214
 - **Missing Tags:** 261
 - **Extra Tags:** 91
-- **Value Differences:** 25
+- **Value Differences:** 23
 
 ## Value Differences
 
@@ -40,10 +40,8 @@ Tags where ExifTool and OxiDex extract different values:
 | `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 8085319 | 8035733 |
+| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:Data` | (Binary data 648421 bytes, use -b option... | iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAAAAAC/... |
-| `XMP:PoseHeadingDegrees` | 0.0 | 0 |
-| `XMP:PosePitchDegrees` | 0.0 | 0 |
-| `XMP:PoseRollDegrees` | 0.0 | 0 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:-00001 |
 | `XMP:Version` | 1.0 | 1 |
 

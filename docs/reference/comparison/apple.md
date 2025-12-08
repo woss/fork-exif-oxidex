@@ -9,11 +9,11 @@ title: APPLE Compatibility
 ## Summary
 
 - **Files Tested:** 66
-- **Coverage:** 58.6%
-- **Matched Tags:** 133
+- **Coverage:** 59.0%
+- **Matched Tags:** 134
 - **Missing Tags:** 79
 - **Extra Tags:** 40
-- **Value Differences:** 15
+- **Value Differences:** 14
 
 ## Value Differences
 
@@ -34,7 +34,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `ICC_Profile:ProfileCopyright` | Copyright Apple Inc., 2022 | Copyright Apple Inc., 2017 |
 | `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageStart` | 3406314 | 3387627 |
-| `XMP:CreatorTool` | 15.0 | 15 |
 | `XMP:LensInfo` | 1.57000005246397-9mm f/1.5-2.8 | 1.6-9mm f/1.5-2.8 |
 
 ## Missing Tags

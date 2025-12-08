@@ -9,11 +9,11 @@ title: DJI Compatibility
 ## Summary
 
 - **Files Tested:** 21
-- **Coverage:** 47.0%
-- **Matched Tags:** 134
+- **Coverage:** 50.9%
+- **Matched Tags:** 145
 - **Missing Tags:** 126
 - **Extra Tags:** 46
-- **Value Differences:** 25
+- **Value Differences:** 14
 
 ## Value Differences
 
@@ -29,20 +29,9 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:XPComment` | 0.91.142 | 0.91.142 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 4857269 | 4798452 |
-| `XMP:AbsoluteAltitude` | +42.90 | 42.9 |
-| `XMP:FlightXSpeed` | +0.00 | 0 |
-| `XMP:FlightYSpeed` | +0.00 | 0 |
-| `XMP:FlightYawDegree` | +32.00 | 32 |
-| `XMP:GimbalRollDegree` | +0.00 | 0 |
-| `XMP:GimbalYawDegree` | +31.90 | 31.9 |
-| `XMP:LRFTargetAbsAlt` | 0.0 | 0 |
-| `XMP:LRFTargetAlt` | 0.0 | 0 |
-| `XMP:LRFTargetDistance` | 0.0 | 0 |
-| `XMP:LRFTargetLat` | 0.0 | 0 |
-| `XMP:LRFTargetLon` | 0.0 | 0 |
+| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:MetadataDate` | 2020:11:04 14:48:31-08:00 | 2020:11:04 14:48:31 |
 | `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:1, FrameN... | 0:0:1:000158 |
-| `XMP:RelativeAltitude` | +25.60 | 25.6 |
 | `XMP:SelfData` |  | Self data |
 | `XMP:UTCAtExposure` | 2022:10:27 05:08:32.100476 | 2022-10-27T05:08:32.100476 |
 | `XMP:Version` | 7.0 | 7 |

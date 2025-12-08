@@ -9,11 +9,11 @@ title: SONY Compatibility
 ## Summary
 
 - **Files Tested:** 761
-- **Coverage:** 21.6%
-- **Matched Tags:** 166
+- **Coverage:** 21.5%
+- **Matched Tags:** 165
 - **Missing Tags:** 566
 - **Extra Tags:** 82
-- **Value Differences:** 36
+- **Value Differences:** 37
 
 ## Value Differences
 
@@ -53,6 +53,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:Teleconverter` | None | 0 |
 | `MakerNotes:WhiteBalance` | Auto | 0 |
 | `MakerNotes:ZoneMatching` | ISO Setting Used | 0 |
+| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:DateAcquired` | 2007:05:04 13:50:33Z | 2007:05:04 13:50:33 |
 | `XMP:LastKeywordXMP` | ["April 2007","SunsetBeach2007-","vacati... | April 2007SunsetBeach2007-vacationJamaic... |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000099 |

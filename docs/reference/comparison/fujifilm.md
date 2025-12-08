@@ -9,11 +9,11 @@ title: FUJIFILM Compatibility
 ## Summary
 
 - **Files Tested:** 411
-- **Coverage:** 60.9%
-- **Matched Tags:** 305
+- **Coverage:** 63.5%
+- **Matched Tags:** 318
 - **Missing Tags:** 138
 - **Extra Tags:** 50
-- **Value Differences:** 58
+- **Value Differences:** 45
 
 ## Value Differences
 
@@ -28,7 +28,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:XPTitle` |  |                 |
 | `MakerNotes:AdvancedFilter` | Miniature | Unknown (262144) |
 | `MakerNotes:AutoDynamicRange` | 100% | Unknown (100) |
-| `MakerNotes:ColorTemperature` | 10000 | 10000 K |
 | `MakerNotes:Contrast` | Normal | 0 (Normal) |
 | `MakerNotes:CropMode` | n/a | None |
 | `MakerNotes:DigitalZoom` | 4 | 0.32x |
@@ -49,30 +48,24 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:MaxFocalLength` | 55 | 95.2 mm |
 | `MakerNotes:MinFocalLength` | 18 | 94.4 mm |
 | `MakerNotes:NoiseReduction` | 0 (normal) | Strong |
-| `MakerNotes:PanoramaAngle` | 360 | 360 deg |
 | `MakerNotes:Quality` | NORMAL  | Unknown (412) |
-| `MakerNotes:Saturation` | 0 (normal) | 0 (Normal) |
 | `MakerNotes:SceneRecognition` | Landscape Image | Landscape |
 | `MakerNotes:ShadowTone` | 0 (normal) | +0 |
 | `MakerNotes:Sharpness` | 0 (normal) | 3 (Hard) |
 | `MakerNotes:WhiteBalanceFineTune` | Red +0, Blue +0 | +674 |
-| `XMP:Brightness` | 0.0 | 0 |
-| `XMP:Contrast` | 0.0 | 0 |
-| `XMP:Exposure2012` | +0.70 | 0.7 |
+| `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:MetadataDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
 | `XMP:ModifyDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
-| `XMP:PerspectiveRotate` | 0.0 | 0 |
 | `XMP:PerspectiveUpright` | Off | 0 |
-| `XMP:PerspectiveX` | 0.0 | 0 |
-| `XMP:PerspectiveY` | 0.0 | 0 |
 | `XMP:PipelineVersion` | 01.00 | 1 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000427 |
 | `XMP:ProcessVersion` | 11.0 | 11 |
-| `XMP:Shadows2012` | +35 | 35 |
-| `XMP:SharpenRadius` | +1.0 | 1 |
-| `XMP:Tint` | +24 | 24 |
-
-*...and 8 more differences*
+| `XMP:ToneCurvePV2012` | ["0, 0","255, 255"] | 0, 0255, 255 |
+| `XMP:ToneCurvePV2012Blue` | ["0, 0","255, 255"] | 0, 0255, 255 |
+| `XMP:ToneCurvePV2012Green` | ["0, 0","255, 255"] | 0, 0255, 255 |
+| `XMP:ToneCurvePV2012Red` | ["0, 0","255, 255"] | 0, 0255, 255 |
+| `XMP:WhiteBalance0` | 2.497562 | 2.49756 |
+| `XMP:WhiteBalance2` | 1.051616 | 1.05162 |
 
 ## Missing Tags
 

@@ -194,6 +194,27 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         }
     }
 
+    // Handle temperature formatting: "10000" vs "10000 K"
+    if tag_key.contains("Temperature") {
+        let num_str = normalized.trim_end_matches(" K").trim_end_matches("K");
+        if let Ok(val) = num_str.parse::<i64>() {
+            return val.to_string();
+        }
+    }
+
+    // Handle angle formatting: "360" vs "360 deg"
+    if tag_key.contains("Angle") {
+        let num_str = normalized.trim_end_matches(" deg").trim_end_matches("deg");
+        if let Ok(val) = num_str.parse::<i64>() {
+            return val.to_string();
+        }
+    }
+
+    // Handle parenthetical case normalization: "0 (Normal)" vs "0 (normal)"
+    if normalized.contains('(') && normalized.contains(')') {
+        return normalized.to_lowercase();
+    }
+
     // Handle numeric comparison with slight differences
     if tag_key.contains("FocalType")
         || tag_key.contains("Contrast")
@@ -321,6 +342,13 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         }
         if normalized.eq_ignore_ascii_case("no") || normalized.eq_ignore_ascii_case("false") {
             return "false".to_string();
+        }
+        // Handle XMP numeric formatting: "0.0" vs "0", "+0.70" vs "0.7"
+        let num_str = normalized.trim_start_matches('+');
+        if let Ok(val) = num_str.parse::<f64>() {
+            // Normalize to simple number without trailing zeros or plus sign
+            let formatted = format!("{}", val);
+            return formatted;
         }
     }
 
