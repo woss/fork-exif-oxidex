@@ -9,11 +9,11 @@ title: SAMSUNG Compatibility
 ## Summary
 
 - **Files Tested:** 702
-- **Coverage:** 40.8%
-- **Matched Tags:** 203
-- **Missing Tags:** 262
-- **Extra Tags:** 92
-- **Value Differences:** 33
+- **Coverage:** 41.8%
+- **Matched Tags:** 208
+- **Missing Tags:** 261
+- **Extra Tags:** 91
+- **Value Differences:** 29
 
 ## Value Differences
 
@@ -28,10 +28,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSDestLatitudeRef` | North | N |
 | `EXIF:GPSDestLongitudeRef` | East | E |
 | `EXIF:GPSSatellites` | ??B?? | ��B��C� |
-| `EXIF:OffsetSchema` | 1912 | 2013724672 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
-| `EXIF:Rating` | 1 | 16777216 |
-| `EXIF:RatingPercent` | 20 | 335544320 |
 | `EXIF:Saturation` | Unknown (57584) | 57584 |
 | `EXIF:UserComment` | KJKJS | KJKJS���Xd4n����L�/A�v=��3���a����*M����... |
 | `EXIF:XPAuthor` | BoB Am5terdam | BoB Am5terdam |
@@ -51,8 +48,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:PosePitchDegrees` | 0.0 | 0 |
 | `XMP:PoseRollDegrees` | 0.0 | 0 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:-00001 |
-| `XMP:Tagged` | Yes | True |
-| `XMP:UsePanoramaViewer` | true | True |
+| `XMP:Tagged` | Yes | true |
 | `XMP:Version` | 1.0 | 1 |
 
 ## Missing Tags
@@ -65,7 +61,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP4:PreviewImageWidth` | 816 |
 | `APP4:PreviewQuality` | 85 |
 | `EXIF:BitsPerSample` | 8 8 8 |
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:MakerNoteSamsung1a` | (Binary data 3072 bytes, use -b option to extract) |
 | `EXIF:MakerNoteUnknownText` | Unknown Format  |
 | `EXIF:OtherImage` | (Binary data 5146 bytes, use -b option to extract) |
@@ -161,8 +156,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:FocusRangeIndex` | 2 |
 | `MakerNotes:GripBatteryADLoad` | 1 |
 | `MakerNotes:GripBatteryADNoLoad` | 1 |
+| `MakerNotes:GripBatteryState` | Empty or Missing |
 
-*...and 162 more missing tags*
+*...and 161 more missing tags*
 
 ## Extra Tags
 
@@ -187,7 +183,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:0x0223` | 0 |
 | `EXIF:0x0224` | 0 |
 | `EXIF:0x0225` |  |
-| `EXIF:0x8822` | 2 |
 | `EXIF:0x882A` | 2 |
 | `EXIF:0x927C` | [Binary data] |
 | `EXIF:0x9284` | 160 |
@@ -220,8 +215,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `MPF:MPImage1Type` | Baseline MP Primary Image |
 | `MPF:MPImage2DependentImage1` | 1920 |
 | `MPF:MPImage2DependentImage2` | 960 |
+| `MPF:MPImage2Flags` | Dependent parent |
 
-*...and 42 more extra tags*
+*...and 41 more extra tags*
 
 ---
 

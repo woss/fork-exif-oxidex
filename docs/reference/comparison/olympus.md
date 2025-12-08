@@ -9,11 +9,11 @@ title: OLYMPUS Compatibility
 ## Summary
 
 - **Files Tested:** 315
-- **Coverage:** 25.0%
-- **Matched Tags:** 130
-- **Missing Tags:** 368
-- **Extra Tags:** 98
-- **Value Differences:** 23
+- **Coverage:** 25.3%
+- **Matched Tags:** 132
+- **Missing Tags:** 367
+- **Extra Tags:** 97
+- **Value Differences:** 22
 
 ## Value Differences
 
@@ -39,11 +39,10 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:CreateDate` | 2025:01:29 16:06:35-08:00 | 2025:01:29 16:06:35 |
 | `XMP:FlashCompensation` | 0 | 0/256 |
-| `XMP:LensInfo` | 40-150mm f/2.8 | 40/1 150/1 28/10 28/10 |
 | `XMP:MetadataDate` | 2015:02:04 20:41:55-08:00 | 2015:02:04 20:41:55 |
 | `XMP:ModifyDate` | 2015:02:04 19:47:15-08:00 | 2015:02:04 19:47:15 |
 | `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:5, FrameN... | 0:0:5:003344 |
-| `XMP:Tagged` | No | False |
+| `XMP:Tagged` | No | false |
 
 ## Missing Tags
 
@@ -133,7 +132,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP12:WB6` | 0 |
 | `APP12:Zoom` | 0 |
 | `EXIF:BitsPerSample` | 8 8 8 |
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:ImageHeight` | 120 |
 | `EXIF:ImageWidth` | 160 |
 | `EXIF:RowsPerStrip` | 120 |
@@ -151,8 +149,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `ICC_Profile:ProfileDescriptionML-fi-FI` | Kameran RGB-profiili |
 | `ICC_Profile:ProfileDescriptionML-fr-FU` | Profil RVB de l’appareil-photo |
 | `ICC_Profile:ProfileDescriptionML-it-IT` | Profilo RGB Fotocamera |
+| `ICC_Profile:ProfileDescriptionML-ja-JP` | カメラ RGB プロファイル |
 
-*...and 268 more missing tags*
+*...and 267 more missing tags*
 
 ## Extra Tags
 
@@ -163,7 +162,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 3.6 |
 | `Composite:ISO` | 160 |
 | `Composite:ShutterSpeed` | 1/176 |
-| `EXIF:0x8822` | 2 |
 | `EXIF:0x927C` | [Binary data] |
 | `EXIF:0xC4A5` | [Binary data] |
 | `IPTC:Unknown-1-90` | %G |
@@ -210,8 +208,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `MakerNotes:IMbb` | 35761 |
 | `MakerNotes:IMbg` | 33709 |
 | `MakerNotes:IMbr` | 32929 |
+| `MakerNotes:IMgb` | 33346 |
 
-*...and 48 more extra tags*
+*...and 47 more extra tags*
 
 ---
 

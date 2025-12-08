@@ -94,23 +94,14 @@ pub fn dispatch_makernote(
 
     // If we have a parser, validate and parse
     if let Some(parser) = parser {
-        eprintln!("DEBUG: Found parser for '{}'", make_normalized);
         // Validate header if parser provides validation
         if parser.validate_header(data) {
-            eprintln!("DEBUG: Header validation passed, parsing...");
             // Parse MakerNote data
             parser.parse(data, byte_order, tags)?;
-            eprintln!("DEBUG: Parse returned {} tags", tags.len());
-        } else {
-            // Header validation failed, but don't error - just skip
-            eprintln!("DEBUG: Header validation failed for '{}'", make_normalized);
-            return Ok(());
         }
-    } else {
-        eprintln!("DEBUG: No parser found for '{}'", make_normalized);
     }
 
-    // If no parser found, silently succeed (not all makes have MakerNotes)
+    // Silently succeed - not all makes have MakerNotes or valid headers
     Ok(())
 }
 

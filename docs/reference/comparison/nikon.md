@@ -9,11 +9,11 @@ title: NIKON Compatibility
 ## Summary
 
 - **Files Tested:** 307
-- **Coverage:** 18.8%
-- **Matched Tags:** 155
-- **Missing Tags:** 651
-- **Extra Tags:** 88
-- **Value Differences:** 20
+- **Coverage:** 20.7%
+- **Matched Tags:** 171
+- **Missing Tags:** 589
+- **Extra Tags:** 95
+- **Value Differences:** 66
 
 ## Value Differences
 
@@ -25,7 +25,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:FocalPlaneResolutionUnit` | Unknown (0) | 0 |
 | `EXIF:GPSProcessingMethod` |  | [Binary data] |
 | `EXIF:LensSerialNumber` | 20147348 | 20147348  |
-| `EXIF:OffsetSchema` | 4046 | 3457089536 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:XPAuthor` |  | 0 |
 | `EXIF:XPTitle` |  | 0 |
@@ -34,13 +33,46 @@ Tags where ExifTool and OxiDex extract different values:
 | `MPF:ImageUIDList` | (Binary data 99 bytes, use -b option to ... | (Binary data, 99 bytes) |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 21317456 | 21266422 |
-| `XMP:AlreadyApplied` | true | True |
-| `XMP:ColorClass` | 0 (None) | 0 |
-| `XMP:CreateDate` | 2020:12:11 14:55:22.09Z | 2020:12:11 14:55:22.09 |
-| `XMP:LensInfo` | 24-70mm f/4 | 240/10 700/10 400/100 400/100 |
-| `XMP:ModifyDate` | 2020:12:11 14:55:22.09Z | 2020:12:11 14:55:22.09 |
-| `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:0, FrameN... | 0:0:0:000620 |
-| `XMP:Tagged` | No | False |
+| `MakerNotes:AutoISO` | On | ISO 256 |
+| `MakerNotes:ColorHue` | Mode3 | MODE3 |
+| `MakerNotes:ColorMode` | Color | COLOR |
+| `MakerNotes:ColorSpace` | sRGB | Unknown |
+| `MakerNotes:CropHiSpeed` | FX Uncropped (8288x5520 cropped to 8288x... | Off |
+| `MakerNotes:DistortionControl` | Off | Unknown |
+| `MakerNotes:ExposureBracketValue` | 0 | +162.3 EV |
+| `MakerNotes:ExposureTuning` | 0 | +65578.7 EV |
+| `MakerNotes:ExternalFlashExposureComp` | 0 | +65578.7 EV |
+| `MakerNotes:FlashExposureBracketValue` | 0.0 | +65578.7 EV |
+| `MakerNotes:FlashExposureComp` | 0 | +65578.7 EV |
+| `MakerNotes:FlashInfoVersion` | 0300 | 0 |
+| `MakerNotes:FlashSetting` | Normal | Unknown |
+| `MakerNotes:FocalLength` | 70 mm | 12592 mm |
+| `MakerNotes:FocusDistance` | 10.0 m | 14384 mm |
+| `MakerNotes:FocusMode` | AF-S | Unknown |
+| `MakerNotes:HueAdjustment` | None | 0 |
+| `MakerNotes:ISOExpansion` | Off | 0 |
+| `MakerNotes:ISOSelection` | Auto | Manual |
+| `MakerNotes:ISOSetting` |  | ISO 6553600 |
+| `MakerNotes:ImageBoundary` | 0 0 8256 5504 | 0 512 0 512 |
+| `MakerNotes:ImageOptimization` | Normal | NORMAL |
+| `MakerNotes:LensFStops` | 5.0 | 65562.3 |
+| `MakerNotes:LensID` | Nikkor Z 24-70mm f/4 S | Unknown (48261) |
+| `MakerNotes:LensType` | AF | 0x00 |
+| `MakerNotes:LightSource` | Colored | COLORED |
+| `MakerNotes:MakerNoteVersion` | 2.11 | 0211 |
+| `MakerNotes:MaxApertureAtMaxFocal` | 5.7 | f/2130.2 |
+| `MakerNotes:MaxApertureAtMinFocal` | 3.6 | f/4524.9 |
+| `MakerNotes:MultiExposureMode` | Off | Unknown |
+| `MakerNotes:NoiseReduction` | Off | OFF |
+| `MakerNotes:PictureControlVersion` | 0300 | 12336 |
+| `MakerNotes:ProgramShift` | 0 | 454 |
+| `MakerNotes:Quality` | Fine | Unknown |
+| `MakerNotes:RetouchHistory` | None |  |
+| `MakerNotes:Saturation` | n/a | NORMAL |
+| `MakerNotes:SceneAssist` | Non-Frame/Portrait | NON-FRAME/PORTRAIT |
+| `MakerNotes:SceneMode` | Portrait | PORTRAIT |
+
+*...and 16 more differences*
 
 ## Missing Tags
 
@@ -49,7 +81,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | Tag | Sample Value |
 |-----|-------------|
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Aperture-priority AE |
 | `EXIF:MakerNoteUnknownBinary` | (Binary data 66 bytes, use -b option to extract) |
 | `EXIF:ThumbnailImage` | (Binary data 13188 bytes, use -b option to extract... |
 | `EXIF:ThumbnailLength` | 13188 |
@@ -138,7 +169,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:AutoFP` | Off |
 | `MakerNotes:AutoFlashISOSensitivity` | Subject and Background |
 | `MakerNotes:AutoFocusModeRestrictions` | No Limit |
-| `MakerNotes:AutoISO` | On |
 | `MakerNotes:AutoISOMax` | 1600 |
 | `MakerNotes:AutoISOMinShutterSpeed` | 1/30 s |
 | `MakerNotes:AuxiliaryLens` | Off |
@@ -148,8 +178,10 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:BeepPitch` | Off |
 | `MakerNotes:BeepVolume` | Off |
 | `MakerNotes:BitDepth` | 8 |
+| `MakerNotes:BlackLevel` | 600 600 600 600 |
+| `MakerNotes:BlockShotAFResponse` | 3 (Normal) |
 
-*...and 551 more missing tags*
+*...and 489 more missing tags*
 
 ## Extra Tags
 
@@ -162,7 +194,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ImageSize` | 4257x2703 |
 | `Composite:Megapixels` | 11.507 |
 | `Composite:ShutterSpeed` | 1/200 |
-| `EXIF:0x8822` | 3 |
 | `EXIF:0x927C` | [Binary data] |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |
@@ -192,7 +223,15 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `MPF:MPImage3Offset` | 21266422 |
 | `MPF:MPImage3Size` | 1103630 |
 | `MPF:MPImage3Type` | Large Thumbnail (Class 2) |
-| `MakerNotes:ISOSpeed` | ISO 196608 |
+| `MakerNotes:AFInfo` | 26958 |
+| `MakerNotes:AFPointUsed` | 8224 |
+| `MakerNotes:ActiveDLighting` | Unknown |
+| `MakerNotes:ColorBalance` | 8224 8224 8224 8224 |
+| `MakerNotes:ISOSpeed` | ISO 0 |
+| `MakerNotes:PictureControl` | ������6Y�6^�6c�6h��6�/��@�O�����!�0��0����!�,����!... |
+| `MakerNotes:SaturationLevel` | 0 |
+| `MakerNotes:ShotInfoShutterCount` | 8224 |
+| `MakerNotes:WorldTime` | UTC+559240:32 |
 | `XMP-exif:ApertureValue` | 512143/100000 |
 | `XMP-exif:ColorSpace` | sRGB |
 | `XMP-exif:Contrast` | Normal |
@@ -200,15 +239,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `XMP-exif:DateTimeDigitized` | 2012:11:26 11:11:11 |
 | `XMP-exif:DateTimeOriginal` | 2012:11:26 11:11:11 |
 | `XMP-exif:DigitalZoomRatio` | 0/100 |
-| `XMP-exif:ExifVersion` | 230 |
-| `XMP-exif:ExposureBiasValue` | -3/10 |
-| `XMP-exif:ExposureMode` | Auto |
-| `XMP-exif:ExposureProgram` | Aperture-priority AE |
-| `XMP-exif:ExposureTime` | 1/125 |
-| `XMP-exif:FNumber` | 59/10 |
-| `XMP-exif:FileSource` | 3 |
 
-*...and 38 more extra tags*
+*...and 45 more extra tags*
 
 ---
 

@@ -9,11 +9,11 @@ title: CANON Compatibility
 ## Summary
 
 - **Files Tested:** 725
-- **Coverage:** 21.8%
-- **Matched Tags:** 191
-- **Missing Tags:** 633
-- **Extra Tags:** 83
-- **Value Differences:** 52
+- **Coverage:** 22.1%
+- **Matched Tags:** 194
+- **Missing Tags:** 632
+- **Extra Tags:** 82
+- **Value Differences:** 50
 
 ## Value Differences
 
@@ -25,7 +25,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:FocalPlaneXResolution` | 19041.32231 | 19041.322314 |
 | `EXIF:FocalPlaneYResolution` | 18989.01099 | 18989.010989 |
 | `EXIF:GPSDestBearingRef` | Unknown () |  |
-| `EXIF:OffsetSchema` | 4086 | 4128178176 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:XPAuthor` |  | 0 |
 | `EXIF:XPComment` |  | 0 |
@@ -64,15 +63,14 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:SerialNumber` | 0220100039 | � |
 | `MakerNotes:ShutterCount` | 1304 | 1 |
 | `MakerNotes:TargetAperture` | 3.6 | f/3.5 |
-| `XMP:AlreadyApplied` | true | True |
 | `XMP:ApproximateFocusDistance` | 1.04 | 104/100 |
 | `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:FlashCompensation` | 0 | 0/1 |
 | `XMP:LensInfo` | 50mm f/? | 50/1 50/1 0/0 0/0 |
 | `XMP:LensSerialNumber` | 0000000000 | 0 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:006138 |
-
-*...and 2 more differences*
+| `XMP:SerialNumber` | 000500065821 | 500065821 |
+| `XMP:Tagged` | Yes | true |
 
 ## Missing Tags
 
@@ -81,7 +79,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | Tag | Sample Value |
 |-----|-------------|
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:Model2` | K520C-01044 |
 | `EXIF:OtherImage` | (Binary data 2400 bytes, use -b option to extract) |
 | `EXIF:OtherImageLength` | 2400 |
@@ -180,8 +177,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:AIServoFirstImagePriority` | Equal priority |
 | `MakerNotes:AIServoImagePriority` | 1: AF, 2: Tracking |
 | `MakerNotes:AIServoSecondImage` | Equal Priority |
+| `MakerNotes:AIServoSecondImagePriority` | Equal priority |
 
-*...and 533 more missing tags*
+*...and 532 more missing tags*
 
 ## Extra Tags
 
@@ -195,7 +193,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `EXIF:0x0000` | 0 |
 | `EXIF:0x827D` | K520C-01044 |
 | `EXIF:0x83BB` | [Binary data] |
-| `EXIF:0x8822` | 2 |
 | `EXIF:0x927C` | [Binary data] |
 | `IPTC:Unknown-1-0` |  |
 | `IPTC:Unknown-1-90` | %G |
@@ -239,8 +236,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `XMP-exif:Flash` | False02FalseFalse |
 | `XMP-exif:FocalLength` | 50/1 mm |
 | `XMP-exif:FocalPlaneResolutionUnit` | inches |
+| `XMP-exif:FocalPlaneXResolution` | 4272000/905 |
 
-*...and 33 more extra tags*
+*...and 32 more extra tags*
 
 ---
 

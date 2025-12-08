@@ -305,7 +305,6 @@ impl MakerNoteParser for NikonParser {
         let tiff_start = 10;
 
         if data.len() < tiff_start + 8 {
-            eprintln!("DEBUG: Not enough data for TIFF header");
             return Ok(());
         }
 
@@ -317,7 +316,6 @@ impl MakerNoteParser for NikonParser {
             } else if &tiff_data[0..2] == b"II" {
                 ByteOrder::LittleEndian
             } else {
-                eprintln!("DEBUG: Invalid TIFF byte order marker");
                 return Err(format!("Invalid TIFF byte order in Nikon MakerNote"));
             }
         } else {
@@ -331,13 +329,10 @@ impl MakerNoteParser for NikonParser {
             u32::from_le_bytes([tiff_data[4], tiff_data[5], tiff_data[6], tiff_data[7]]) as usize
         };
 
-        eprintln!("DEBUG: Nikon TIFF byte_order={:?}, IFD offset={}", tiff_byte_order, ifd_offset_in_tiff);
-
         // IFD offset is relative to the start of the TIFF structure (byte 10 in full data)
         let ifd_absolute = tiff_start + ifd_offset_in_tiff;
 
         if data.len() <= ifd_absolute + 2 {
-            eprintln!("DEBUG: Not enough data for IFD at offset {}", ifd_absolute);
             return Ok(());
         }
 

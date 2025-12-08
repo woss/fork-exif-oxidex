@@ -113,7 +113,12 @@ const SONY_CAMERA_SETTINGS2: u16 = 0x9403;
 const SONY_CAMERA_SETTINGS3: u16 = 0x9404;
 const SONY_SHOT_INFO: u16 = 0x3000;
 
-// Sony signature for some models (not always present)
+// Sony MakerNote header formats vary by camera model
+// DSC-W/DSC-S series: "SONY DSC " + null padding + IFD
+// Some Alpha cameras: Just IFD with no header
+// Other models: "SONY CAM " or "SONY" prefix
+const SONY_DSC_SIGNATURE: &[u8] = b"SONY DSC ";
+const SONY_CAM_SIGNATURE: &[u8] = b"SONY CAM ";
 const SONY_SIGNATURE: &[u8] = b"SONY";
 
 // ============================================================================
@@ -651,8 +656,11 @@ pub fn is_sony_makernote(data: &[u8]) -> bool {
         return false;
     }
 
-    // Check for optional Sony signature
-    if data.starts_with(SONY_SIGNATURE) {
+    // Check for optional Sony signatures (various formats)
+    if data.starts_with(SONY_DSC_SIGNATURE)
+        || data.starts_with(SONY_CAM_SIGNATURE)
+        || data.starts_with(SONY_SIGNATURE)
+    {
         return true;
     }
 
@@ -666,6 +674,23 @@ pub fn is_sony_makernote(data: &[u8]) -> bool {
     let is_reasonable = |count: u16| (1..=200).contains(&count);
 
     is_reasonable(entry_count_le) || is_reasonable(entry_count_be)
+}
+
+/// Find the start of the IFD by skipping null padding
+/// Some Sony cameras add null bytes between the signature and the IFD
+fn find_ifd_start(data: &[u8]) -> usize {
+    // Skip null bytes at the beginning
+    let mut offset = 0;
+    while offset < data.len() && data[offset] == 0 {
+        offset += 1;
+    }
+
+    // Sanity check: don't skip more than 16 bytes
+    if offset > 16 {
+        0
+    } else {
+        offset
+    }
 }
 
 /// Internal implementation of Sony MakerNote parsing.
@@ -694,9 +719,25 @@ fn parse_sony_makernote_impl(
         return Ok(HashMap::new());
     }
 
-    // Skip Sony signature if present
-    let ifd_data = if data.starts_with(SONY_SIGNATURE) {
-        &data[SONY_SIGNATURE.len()..]
+    // Determine header length and skip it
+    // Sony MakerNotes have different header formats depending on camera model
+    let header_skip = if data.starts_with(SONY_DSC_SIGNATURE) {
+        // "SONY DSC " (9 bytes) - find where IFD actually starts
+        // Some models have additional padding after the signature
+        find_ifd_start(&data[SONY_DSC_SIGNATURE.len()..]) + SONY_DSC_SIGNATURE.len()
+    } else if data.starts_with(SONY_CAM_SIGNATURE) {
+        // "SONY CAM " (9 bytes)
+        find_ifd_start(&data[SONY_CAM_SIGNATURE.len()..]) + SONY_CAM_SIGNATURE.len()
+    } else if data.starts_with(SONY_SIGNATURE) {
+        // "SONY" (4 bytes)
+        find_ifd_start(&data[SONY_SIGNATURE.len()..]) + SONY_SIGNATURE.len()
+    } else {
+        // No header - IFD starts at beginning
+        0
+    };
+
+    let ifd_data = if header_skip < data.len() {
+        &data[header_skip..]
     } else {
         data
     };
@@ -706,12 +747,25 @@ fn parse_sony_makernote_impl(
         return Ok(HashMap::new());
     }
 
-    let reader = EndianReader::new(ifd_data, byte_order.to_io_byte_order());
-    let entry_count = reader.u16_at(0).unwrap_or(0);
+    // Try both byte orders and pick the one with a reasonable entry count
+    let entry_count_le = u16::from_le_bytes([ifd_data[0], ifd_data[1]]);
+    let entry_count_be = u16::from_be_bytes([ifd_data[0], ifd_data[1]]);
 
-    // Parse IFD entries
+    // Sony MakerNotes typically have 1-200 entries
+    let is_reasonable = |count: u16| count >= 1 && count <= 200;
+
+    let (entry_count, actual_byte_order) = if is_reasonable(entry_count_le) {
+        (entry_count_le, ByteOrder::LittleEndian)
+    } else if is_reasonable(entry_count_be) {
+        (entry_count_be, ByteOrder::BigEndian)
+    } else {
+        // Neither byte order gives reasonable count - likely different format
+        return Ok(HashMap::new());
+    };
+
+    // Parse IFD entries using detected byte order
     let entries_start = &ifd_data[2..];
-    let entries = match parse_ifd_entries(entries_start, entry_count, byte_order) {
+    let entries = match parse_ifd_entries(entries_start, entry_count, actual_byte_order) {
         Ok((_, entries)) => entries,
         Err(_) => return Ok(HashMap::new()),
     };
@@ -723,18 +777,18 @@ fn parse_sony_makernote_impl(
     let registry = sony_registry();
 
     // Extract values from entries
-    for entry in entries {
+    for entry in &entries {
         match entry.tag_id {
             // Simple string tags
             SONY_LENS_MODEL => {
-                if let Some(value) = extract_string_value(&entry, ifd_data) {
+                if let Some(value) = extract_string_value(entry, ifd_data) {
                     tags.insert("Sony:LensModel".to_string(), value);
                 }
             }
 
             // Simple integer tags - no decoding needed
             SONY_IMAGE_QUALITY | SONY_TELECONVERTER | SONY_SEQUENCE_NUMBER | SONY_SHUTTER_COUNT => {
-                if let Some(value) = extract_integer_value(&entry) {
+                if let Some(value) = extract_integer_value(entry) {
                     let tag_name = sony_tag_to_name(entry.tag_id);
                     tags.insert(tag_name, value);
                 }
@@ -742,7 +796,7 @@ fn parse_sony_makernote_impl(
 
             // Lens ID - lookup lens name from database
             SONY_LENS_ID => {
-                if let Some(value_str) = extract_integer_value(&entry) {
+                if let Some(value_str) = extract_integer_value(entry) {
                     if let Ok(lens_id) = value_str.parse::<u16>() {
                         if lens_id > 0 {
                             if let Some(lens_name) = lookup_lens_name(lens_id) {
@@ -759,13 +813,85 @@ fn parse_sony_makernote_impl(
             // The registry automatically applies ArraySchema definitions to extract
             // and decode array values, replacing the previous process_* functions
             SONY_CAMERA_SETTINGS | SONY_AF_INFO | SONY_AF_INFO2 | SONY_SHOT_INFO => {
-                if let Some(array) = extract_i16_array(&entry, ifd_data, byte_order) {
+                if let Some(array) = extract_i16_array(entry, ifd_data, actual_byte_order) {
                     registry.decode_array_i16(entry.tag_id, &array, "Sony", &mut tags);
                 }
             }
 
-            // Unknown tag - skip for forward compatibility
-            _ => continue,
+            // Handle all other tags with generic extraction
+            _ => {
+                // Try to extract based on field type
+                match entry.field_type {
+                    // ASCII string
+                    2 => {
+                        if let Some(value) = extract_string_value(entry, ifd_data) {
+                            let tag_name = sony_tag_to_name(entry.tag_id);
+                            tags.insert(tag_name, value);
+                        }
+                    }
+                    // SHORT (2 bytes)
+                    3 => {
+                        if let Some(value) = extract_integer_value(entry) {
+                            let tag_name = sony_tag_to_name(entry.tag_id);
+                            tags.insert(tag_name, value);
+                        }
+                    }
+                    // LONG (4 bytes)
+                    4 => {
+                        if let Some(value) = extract_integer_value(entry) {
+                            let tag_name = sony_tag_to_name(entry.tag_id);
+                            tags.insert(tag_name, value);
+                        }
+                    }
+                    // RATIONAL (8 bytes)
+                    5 => {
+                        let reader = EndianReader::new(ifd_data, actual_byte_order.to_io_byte_order());
+                        if entry.value_count == 1 {
+                            let offset = entry.value_offset as usize;
+                            if let (Some(num), Some(den)) =
+                                (reader.u32_at(offset), reader.u32_at(offset + 4))
+                            {
+                                if den != 0 {
+                                    let tag_name = sony_tag_to_name(entry.tag_id);
+                                    tags.insert(tag_name, format!("{}/{}", num, den));
+                                }
+                            }
+                        }
+                    }
+                    // UNDEFINED (arbitrary bytes) - skip binary data
+                    7 => continue,
+                    // SSHORT (signed 2 bytes)
+                    8 => {
+                        if let Some(value) = extract_integer_value(entry) {
+                            let tag_name = sony_tag_to_name(entry.tag_id);
+                            tags.insert(tag_name, value);
+                        }
+                    }
+                    // SLONG (signed 4 bytes)
+                    9 => {
+                        if let Some(value) = extract_integer_value(entry) {
+                            let tag_name = sony_tag_to_name(entry.tag_id);
+                            tags.insert(tag_name, value);
+                        }
+                    }
+                    // SRATIONAL (signed 8 bytes)
+                    10 => {
+                        let reader = EndianReader::new(ifd_data, actual_byte_order.to_io_byte_order());
+                        if entry.value_count == 1 {
+                            let offset = entry.value_offset as usize;
+                            if let (Some(num), Some(den)) =
+                                (reader.i32_at(offset), reader.i32_at(offset + 4))
+                            {
+                                if den != 0 {
+                                    let tag_name = sony_tag_to_name(entry.tag_id);
+                                    tags.insert(tag_name, format!("{}/{}", num, den));
+                                }
+                            }
+                        }
+                    }
+                    _ => continue, // Skip unknown field types
+                }
+            }
         }
     }
 

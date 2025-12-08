@@ -9,11 +9,11 @@ title: DJI Compatibility
 ## Summary
 
 - **Files Tested:** 21
-- **Coverage:** 43.9%
-- **Matched Tags:** 125
-- **Missing Tags:** 127
-- **Extra Tags:** 47
-- **Value Differences:** 33
+- **Coverage:** 45.6%
+- **Matched Tags:** 130
+- **Missing Tags:** 126
+- **Extra Tags:** 46
+- **Value Differences:** 29
 
 ## Value Differences
 
@@ -23,7 +23,6 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `EXIF:CompressedBitsPerPixel` | 3.198877333 | 3.198877 |
 | `EXIF:DeviceSettingDescription` | (Binary data 4 bytes, use -b option to e... | [Binary data] |
-| `EXIF:ExposureTime` | 1/629 | 1589/1000000 |
 | `EXIF:FocalPlaneResolutionUnit` | mm | 4 |
 | `EXIF:GPSAltitude` | 42.904 m | 42.9 m |
 | `EXIF:SerialNumber` | 0b265914ffff2cff7c4e6fff56ff4910 | 0b265914ffff2cff7c4e6fff56ff4910b |
@@ -32,7 +31,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 4857269 | 4798452 |
 | `XMP:AbsoluteAltitude` | +42.90 | 42.9 |
-| `XMP:AlreadyApplied` | false | False |
 | `XMP:ApproximateFocusDistance` | 0 | 0/100 |
 | `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:FlightXSpeed` | +0.00 | 0 |
@@ -40,8 +38,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:FlightYawDegree` | +32.00 | 32 |
 | `XMP:GimbalRollDegree` | +0.00 | 0 |
 | `XMP:GimbalYawDegree` | +31.90 | 31.9 |
-| `XMP:HasCrop` | false | False |
-| `XMP:HasSettings` | false | False |
 | `XMP:LRFTargetAbsAlt` | 0.0 | 0 |
 | `XMP:LRFTargetAlt` | 0.0 | 0 |
 | `XMP:LRFTargetDistance` | 0.0 | 0 |
@@ -51,7 +47,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:Prefs` | Tagged:0, ColorClass:0, Rating:1, FrameN... | 0:0:1:000158 |
 | `XMP:RelativeAltitude` | +25.60 | 25.6 |
 | `XMP:SelfData` |  | Self data |
-| `XMP:Tagged` | No | False |
+| `XMP:Tagged` | No | false |
 | `XMP:UTCAtExposure` | 2022:10:27 05:08:32.100476 | 2022-10-27T05:08:32.100476 |
 | `XMP:Version` | 7.0 | 7 |
 
@@ -133,7 +129,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP5:ThermalCalibration` | (Binary data 23818 bytes, use -b option to extract... |
 | `APP7:SensorID` | 5L4SK7A02AA00Q |
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:MakerNoteUnknownText` | DJI MakerNotes |
 | `EXIF:ThumbnailImage` | (Binary data 8633 bytes, use -b option to extract) |
 | `EXIF:ThumbnailLength` | 8633 |
@@ -161,8 +156,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:Make` | DJI |
 | `MakerNotes:Pitch` | -4.1 |
 | `MakerNotes:Roll` | -2.1 |
+| `MakerNotes:SensorID` | 1TCTJ8803BJ07G |
 
-*...and 27 more missing tags*
+*...and 26 more missing tags*
 
 ## Extra Tags
 
@@ -174,9 +170,8 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ISO` | 100 |
 | `Composite:ImageSize` | 640x512 |
 | `Composite:Megapixels` | 0.328 |
-| `Composite:ShutterSpeed` | 1589/1000000 |
+| `Composite:ShutterSpeed` | 1/629 |
 | `DJI:Make` | DJI |
-| `EXIF:0x8822` | 2 |
 | `EXIF:0x927C` | [Binary data] |
 | `EXIF:ApplicationNotes` | [Binary data] |
 | `FLIR:CameraModel` | FFF |

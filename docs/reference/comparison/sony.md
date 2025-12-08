@@ -9,11 +9,11 @@ title: SONY Compatibility
 ## Summary
 
 - **Files Tested:** 761
-- **Coverage:** 20.2%
-- **Matched Tags:** 155
-- **Missing Tags:** 593
-- **Extra Tags:** 37
-- **Value Differences:** 20
+- **Coverage:** 20.7%
+- **Matched Tags:** 159
+- **Missing Tags:** 566
+- **Extra Tags:** 82
+- **Value Differences:** 43
 
 ## Value Differences
 
@@ -24,7 +24,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:BrightnessValue` | 4.4078125 | 4.407813 |
 | `EXIF:FocalPlaneResolutionUnit` | Unknown (0) | 0 |
 | `EXIF:GPSDestBearingRef` | Unknown () |  |
-| `EXIF:OffsetSchema` | 4140 | 739246080 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:XPKeywords` | 01.06 | 01.06 |
 | `ICC_Profile:MediaBlackPoint` | 0.01205 0.0125 0.01031 | 0.012054443359375 0.0124969482421875 0.0... |
@@ -33,14 +32,38 @@ Tags where ExifTool and OxiDex extract different values:
 | `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 4738048 | 4702678 |
+| `MakerNotes:AFIlluminator` | Auto | 1 |
+| `MakerNotes:AFMode` | AF-A | 1 |
+| `MakerNotes:ColorMode` | Standard | 43580 |
+| `MakerNotes:ColorTemperature` | Auto | 0 |
+| `MakerNotes:DynamicRangeOptimizer` | Standard | 1 |
+| `MakerNotes:ExposureMode` | Program AE | 0 |
+| `MakerNotes:FlashExposureComp` | 0 | 65536/65536 |
+| `MakerNotes:FlashLevel` | Normal | 0 |
+| `MakerNotes:FlashMode` | Flash Off | 0 |
+| `MakerNotes:FocusMode` | AF-C | 2 |
+| `MakerNotes:HDR` | Off; Uncorrected image | 0 |
+| `MakerNotes:HighISONoiseReduction` | Normal | 0 |
+| `MakerNotes:ImageStabilization` | On | 1 |
+| `MakerNotes:LensType` | Sony DT 18-55mm F3.5-5.6 SAM (SAL1855) o... | 2248 |
+| `MakerNotes:LongExposureNoiseReduction` | On (unused) | 1 |
+| `MakerNotes:Macro` | Off | 0 |
+| `MakerNotes:MultiFrameNoiseReduction` | Off | 0 |
+| `MakerNotes:PictureEffect` | Off | 0 |
+| `MakerNotes:Quality` | Fine | 0 |
+| `MakerNotes:ReleaseMode` | Normal | 0 |
+| `MakerNotes:SceneMode` | Standard | 0 |
 | `MakerNotes:SequenceNumber` | Single | 2 |
+| `MakerNotes:SoftSkinEffect` | Off | 0 |
+| `MakerNotes:Teleconverter` | None | 0 |
+| `MakerNotes:WhiteBalance` | Auto | 0 |
+| `MakerNotes:ZoneMatching` | ISO Setting Used | 0 |
 | `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:DateAcquired` | 2007:05:04 13:50:33Z | 2007:05:04 13:50:33 |
 | `XMP:LastKeywordXMP` | ["April 2007","SunsetBeach2007-","vacati... | April 2007SunsetBeach2007-vacationJamaic... |
-| `XMP:LensInfo` | 4.3-215mm f/2.8-6.3 | 430/100 21500/100 28/10 63/10 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000099 |
 | `XMP:Subject` | ["April 2007","SunsetBeach2007-","vacati... | April 2007SunsetBeach2007-vacationJamaic... |
-| `XMP:Tagged` | Yes | True |
+| `XMP:Tagged` | Yes | true |
 
 ## Missing Tags
 
@@ -51,7 +74,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP0:OcadRevision` | 14797 |
 | `EXIF:BitsPerSample` | 8 8 8 |
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Landscape |
 | `EXIF:ImageHeight` | 60 |
 | `EXIF:ImageWidth` | 80 |
 | `EXIF:PhotometricInterpretation` | RGB |
@@ -94,12 +116,10 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:AFAreaModeSetting` | Wide |
 | `MakerNotes:AFAssist` | On |
 | `MakerNotes:AFButtonPressed` | No |
-| `MakerNotes:AFIlluminator` | Auto |
 | `MakerNotes:AFMicroAdj` | 0 |
 | `MakerNotes:AFMicroAdjMode` | Off |
 | `MakerNotes:AFMicroAdjRegisteredLenses` | 0 |
 | `MakerNotes:AFMicroAdjValue` | 0 |
-| `MakerNotes:AFMode` | AF-A |
 | `MakerNotes:AFPoint` | Center Vertical |
 | `MakerNotes:AFPointAtShutterRelease` | Center (horizontal) |
 | `MakerNotes:AFPointInFocus` | Center (horizontal) |
@@ -148,8 +168,11 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:AFStatusMiddleHorizontal` | Back Focus (+25) |
 | `MakerNotes:AFStatusNearLeft` | Back Focus (+6) |
 | `MakerNotes:AFStatusNearRight` | Back Focus (+13) |
+| `MakerNotes:AFStatusRight` | Back Focus (+25) |
+| `MakerNotes:AFStatusRightHorizontal` | Back Focus (+121) |
+| `MakerNotes:AFStatusRightVertical` | Out of Focus |
 
-*...and 493 more missing tags*
+*...and 466 more missing tags*
 
 ## Extra Tags
 
@@ -160,7 +183,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 5.6 |
 | `Composite:ISO` | 100 |
 | `Composite:ShutterSpeed` | 1/160 |
-| `EXIF:0x8822` | 8 |
 | `EXIF:0x927C` | [Binary data] |
 | `EXIF:0xC4A5` | [Binary data] |
 | `IPTC:Unknown-1-90` | %G |
@@ -184,16 +206,32 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `MPF:MPImage2Offset` | 4702678 |
 | `MPF:MPImage2Size` | 558177 |
 | `MPF:MPImage2Type` | Large Thumbnail (Class 2) |
-| `MakerNotes:ImageQuality` | 6 |
-| `MakerNotes:LensID` | 65535 |
-| `XMP-iptcCore:CountryCode` | ir |
-| `XMP-iptcCore:CreatorContactInfo` | AmsterdamNetherlandsGovert Flinkstraat 302hs1073 C... |
-| `XMP-photoshop:Country` | Iran |
-| `XMP-photoshop:DateCreated` | 2019:01:15 11:28:27 |
-| `XMP-xmpMM:DocumentID` | urn:uuid:a3113cd2-baff-4f9a-a3f8-502c2799deb9 |
-| `XMP-xmpMM:HistoryCount` | 8 |
-| `XMP-xmpMM:InstanceID` | urn:uuid:b117b0e7-c6eb-4337-9db8-2697ae79ef57 |
-| `XMP-xmpMM:OriginalDocumentID` | 23494EF1AE282D35B615BC7722B3F68D |
+| `MakerNotes:AntiBlur` | 0 |
+| `MakerNotes:ImageQuality` | 2 |
+| `MakerNotes:LensID` | 55 |
+| `MakerNotes:Tag1000` | 0 |
+| `MakerNotes:Tag1001` | 0 |
+| `MakerNotes:Tag1002` | 0 |
+| `MakerNotes:Tag1003` | 1502 |
+| `MakerNotes:Tag2002` | 0 |
+| `MakerNotes:Tag2003` | ��������������������������������������������������... |
+| `MakerNotes:Tag2008` | 1 |
+| `MakerNotes:Tag2009` | 2 |
+| `MakerNotes:Tag200A` | 0 |
+| `MakerNotes:Tag200B` | 0 |
+| `MakerNotes:Tag200C` | 1822 |
+| `MakerNotes:Tag200D` | 754974959/1929380026 |
+| `MakerNotes:Tag200E` | 0 |
+| `MakerNotes:Tag200F` | 0 |
+| `MakerNotes:Tag2011` | 0 |
+| `MakerNotes:Tag2012` | 0 |
+| `MakerNotes:Tag2013` | 2 |
+| `MakerNotes:Tag2015` | 65535 |
+| `MakerNotes:Tag2016` | 0 |
+| `MakerNotes:Tag2017` | 0 |
+| `MakerNotes:Tag2018` | 0 |
+
+*...and 32 more extra tags*
 
 ---
 

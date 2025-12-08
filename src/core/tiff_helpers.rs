@@ -450,18 +450,14 @@ fn parse_makernote_if_canon(
         .get_string("IFD0:Make")
         .unwrap_or("");
 
-    eprintln!("DEBUG: parse_makernote_if_canon called with make='{}', data_len={}", make, makernote_data.len());
-
     if !make.is_empty() {
         // Parse MakerNote using the dispatcher
         let mut makernote_tags = HashMap::new();
-        if let Err(e) = dispatch_makernote(&make, makernote_data, byte_order, &mut makernote_tags)
+        if let Err(_e) = dispatch_makernote(&make, makernote_data, byte_order, &mut makernote_tags)
         {
-            eprintln!("Warning: Failed to parse MakerNote for {}: {}", make, e);
+            // Silently skip failed MakerNote parsing
             return;
         }
-
-        eprintln!("DEBUG: Extracted {} makernote tags", makernote_tags.len());
 
         // Add manufacturer tags to metadata
         // Note: tag names already include manufacturer prefix (e.g., "Canon:", "Nikon:")

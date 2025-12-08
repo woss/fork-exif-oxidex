@@ -512,7 +512,36 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     // ---------------------------------------------------------------------
-    // Rule 18: Default - Return original value unchanged
+    // Rule 18: XMP Boolean Formatting
+    // ExifTool uses lowercase 'true'/'false' for XMP boolean values
+    // Some parsers output title-case 'True'/'False' which we normalize here
+    // ---------------------------------------------------------------------
+    if tag_name.starts_with("XMP") {
+        if let Some(s) = value.as_string() {
+            if s == "True" {
+                return TagValue::String("true".to_string());
+            }
+            if s == "False" {
+                return TagValue::String("false".to_string());
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 19: XMP LensInfo Formatting
+    // ExifTool formats LensInfo as "45-100mm f/4" instead of raw rationals
+    // Format: "{min}-{max}mm f/{f_min}[-{f_max}]" or "{focal}mm f/{f}" for primes
+    // ---------------------------------------------------------------------
+    if base_name == "LensInfo" && tag_name.starts_with("XMP") {
+        if let Some(s) = value.as_string() {
+            if let Some(formatted) = format_xmp_lens_info(s) {
+                return TagValue::String(formatted);
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Rule 20: Default - Return original value unchanged
     // ---------------------------------------------------------------------
     value.clone()
 }
@@ -566,6 +595,87 @@ fn format_special_float_values(value: f64) -> Option<String> {
 
     // Normal value - no special formatting needed
     None
+}
+
+/// Formats XMP LensInfo from rational string to human-readable format.
+///
+/// XMP stores LensInfo as space-separated rationals like "4500/100 10000/100 400/100 400/100"
+/// which ExifTool formats as "45-100mm f/4" for user-friendly display.
+///
+/// # Format Rules
+/// - Prime lens (same min/max focal): "{focal}mm f/{f}"
+/// - Zoom with constant aperture: "{min}-{max}mm f/{f}"
+/// - Zoom with variable aperture: "{min}-{max}mm f/{f_min}-{f_max}"
+///
+/// # Arguments
+///
+/// * `value` - The raw XMP LensInfo string with space-separated rationals
+///
+/// # Returns
+///
+/// * `Some(formatted)` - If parsing succeeds
+/// * `None` - If parsing fails (returns original value unchanged)
+fn format_xmp_lens_info(value: &str) -> Option<String> {
+    // Parse space-separated rationals: "4500/100 10000/100 400/100 400/100"
+    let parts: Vec<&str> = value.split_whitespace().collect();
+    if parts.len() != 4 {
+        return None;
+    }
+
+    // Parse each rational (numerator/denominator)
+    let parse_rational = |s: &str| -> Option<f64> {
+        let r: Vec<&str> = s.split('/').collect();
+        if r.len() == 2 {
+            let num: f64 = r[0].parse().ok()?;
+            let den: f64 = r[1].parse().ok()?;
+            if den > 0.0 {
+                return Some(num / den);
+            }
+        }
+        None
+    };
+
+    let min_focal = parse_rational(parts[0])?;
+    let max_focal = parse_rational(parts[1])?;
+    let f_at_min = parse_rational(parts[2])?;
+    let f_at_max = parse_rational(parts[3])?;
+
+    // Format focal length (integer if whole number, else one decimal)
+    let format_focal = |f: f64| -> String {
+        if (f.fract()).abs() < 0.01 {
+            format!("{:.0}", f)
+        } else {
+            format!("{:.1}", f)
+        }
+    };
+
+    // Format f-number
+    let format_f = |f: f64| -> String {
+        if (f.fract()).abs() < 0.01 {
+            format!("{:.0}", f)
+        } else {
+            format!("{:.1}", f)
+        }
+    };
+
+    // Build result
+    let focal_str = if (min_focal - max_focal).abs() < 0.1 {
+        // Prime lens
+        format_focal(min_focal)
+    } else {
+        // Zoom lens
+        format!("{}-{}", format_focal(min_focal), format_focal(max_focal))
+    };
+
+    let f_str = if (f_at_min - f_at_max).abs() < 0.01 {
+        // Constant aperture
+        format_f(f_at_min)
+    } else {
+        // Variable aperture
+        format!("{}-{}", format_f(f_at_min), format_f(f_at_max))
+    };
+
+    Some(format!("{}mm f/{}", focal_str, f_str))
 }
 
 // =============================================================================
@@ -1282,6 +1392,51 @@ mod tests {
         let value = TagValue::Integer(99);
         let formatted = format_tag_value("ExposureProgram", &value);
         assert_eq!(formatted.as_string(), Some("Unknown (99)"));
+    }
+
+    #[test]
+    fn test_xmp_boolean_formatting() {
+        // XMP boolean values should be lowercase to match ExifTool
+        let value = TagValue::String("True".to_string());
+        let formatted = format_tag_value("XMP:AlreadyApplied", &value);
+        assert_eq!(formatted.as_string(), Some("true"));
+
+        let value = TagValue::String("False".to_string());
+        let formatted = format_tag_value("XMP-crs:HasCrop", &value);
+        assert_eq!(formatted.as_string(), Some("false"));
+
+        // Already lowercase should stay unchanged
+        let value = TagValue::String("true".to_string());
+        let formatted = format_tag_value("XMP:Tagged", &value);
+        assert_eq!(formatted.as_string(), Some("true"));
+
+        // Non-boolean XMP values should be unchanged
+        let value = TagValue::String("Normal".to_string());
+        let formatted = format_tag_value("XMP:ProcessVersion", &value);
+        assert_eq!(formatted.as_string(), Some("Normal"));
+    }
+
+    #[test]
+    fn test_xmp_lens_info_formatting() {
+        // Zoom lens with constant aperture: 45-100mm f/4
+        let value = TagValue::String("4500/100 10000/100 400/100 400/100".to_string());
+        let formatted = format_tag_value("XMP:LensInfo", &value);
+        assert_eq!(formatted.as_string(), Some("45-100mm f/4"));
+
+        // Prime lens: 50mm f/1.8
+        let value = TagValue::String("500/10 500/10 18/10 18/10".to_string());
+        let formatted = format_tag_value("XMP:LensInfo", &value);
+        assert_eq!(formatted.as_string(), Some("50mm f/1.8"));
+
+        // Variable aperture zoom: 18-55mm f/3.5-5.6
+        let value = TagValue::String("1800/100 5500/100 350/100 560/100".to_string());
+        let formatted = format_tag_value("XMP:LensInfo", &value);
+        assert_eq!(formatted.as_string(), Some("18-55mm f/3.5-5.6"));
+
+        // Non-XMP LensInfo should not be formatted
+        let value = TagValue::String("24/1 70/1 28/10 28/10".to_string());
+        let formatted = format_tag_value("EXIF:LensInfo", &value);
+        assert_eq!(formatted.as_string(), Some("24/1 70/1 28/10 28/10"));
     }
 
     // -------------------------------------------------------------------------

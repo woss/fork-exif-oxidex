@@ -14,7 +14,6 @@ use crate::core::operations_helpers::{
     gcd, is_datetime_string, is_printable_ascii, parse_exif_datetime, read_i32, read_u16, read_u32,
 };
 use crate::core::TagValue;
-use crate::io::EndianReader;
 use crate::parsers::common::exif_types::ExifType;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 
@@ -71,6 +70,11 @@ pub fn raw_bytes_to_tag_value(
             // LONG (type 4): unsigned 32-bit integers
             ExifType::Long if bytes.len() >= 4 => {
                 return handle_long_type(bytes, value_count, byte_order);
+            }
+
+            // SLONG (type 9): signed 32-bit integers
+            ExifType::SLong if bytes.len() >= 4 => {
+                return handle_slong_type(bytes, value_count, byte_order);
             }
 
             // ASCII (type 2): null-terminated string
@@ -268,12 +272,25 @@ fn handle_rational_type(
     }
 
     // Special handling for ExposureTime - format as fraction string
+    // Match ExifTool's behavior: 1/N format for exposures < 1 second, decimal for >= 1 second
     if tag_id == EXPOSURE_TIME && denominator != 0 {
-        let gcd_value = gcd(numerator, denominator);
-        let simplified_num = numerator / gcd_value;
-        let simplified_den = denominator / gcd_value;
-        if simplified_den > 1 {
-            return TagValue::new_string(format!("{}/{}", simplified_num, simplified_den));
+        let val = numerator as f64 / denominator as f64;
+        if val >= 1.0 {
+            // Show as decimal for exposure >= 1 second (e.g., "2.0")
+            return TagValue::new_string(format!("{:.1}", val));
+        } else {
+            // For exposures < 1 second, try to simplify first
+            let gcd_value = gcd(numerator, denominator);
+            let simplified_num = numerator / gcd_value;
+            let simplified_den = denominator / gcd_value;
+            if simplified_num == 1 {
+                // Already in 1/N form after simplification
+                return TagValue::new_string(format!("1/{}", simplified_den));
+            } else {
+                // Approximate to 1/N form like ExifTool does
+                let approx_denom = (1.0 / val).round() as u64;
+                return TagValue::new_string(format!("1/{}", approx_denom));
+            }
         }
     }
 
@@ -497,6 +514,22 @@ fn handle_long_type(bytes: &[u8], value_count: u32, byte_order: ByteOrder) -> Ta
     TagValue::new_integer(value)
 }
 
+/// Handles SLONG type fields (type 9) - signed 32-bit integers.
+fn handle_slong_type(bytes: &[u8], value_count: u32, byte_order: ByteOrder) -> TagValue {
+    if value_count > 1 && bytes.len() >= (value_count as usize * 4) {
+        let mut values = Vec::new();
+        for i in 0..value_count as usize {
+            let offset = i * 4;
+            let value = read_i32(&bytes[offset..offset + 4], byte_order);
+            values.push(value.to_string());
+        }
+        return TagValue::new_string(values.join(" "));
+    }
+
+    let value = read_i32(&bytes[0..4], byte_order) as i64;
+    TagValue::new_integer(value)
+}
+
 /// Handles ASCII type fields (type 2).
 fn handle_ascii_type(bytes: &[u8]) -> TagValue {
     let s = String::from_utf8_lossy(bytes);
@@ -521,11 +554,10 @@ fn heuristic_bytes_to_tag_value(bytes: &[u8], byte_order: ByteOrder) -> TagValue
         let null_count = bytes.iter().filter(|&&b| b == 0).count();
         let has_printable = bytes.iter().any(|&b| (32..=126).contains(&b));
 
-        // If multiple nulls or no printable chars, treat as little-endian integer
-        // (common default for binary data of unknown type)
+        // If multiple nulls or no printable chars, treat as integer using the
+        // actual byte order from the TIFF file (not hardcoded little-endian)
         if null_count > 1 || !has_printable {
-            let reader = EndianReader::little_endian(bytes);
-            let value = reader.u32_at(0).unwrap_or(0) as i64;
+            let value = read_u32(bytes, byte_order) as i64;
             return TagValue::new_integer(value);
         }
 

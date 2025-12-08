@@ -9,11 +9,11 @@ title: PANASONIC Compatibility
 ## Summary
 
 - **Files Tested:** 477
-- **Coverage:** 54.9%
-- **Matched Tags:** 330
-- **Missing Tags:** 201
-- **Extra Tags:** 115
-- **Value Differences:** 70
+- **Coverage:** 56.2%
+- **Matched Tags:** 338
+- **Missing Tags:** 200
+- **Extra Tags:** 114
+- **Value Differences:** 63
 
 ## Value Differences
 
@@ -70,9 +70,9 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:TravelDay` | n/a | 65535 |
 | `MakerNotes:WBShiftGM` | -3 | 65533 |
 | `MakerNotes:WhiteBalanceBias` | +26/3 | 26 |
-| `XMP:AlreadyApplied` | true | True |
+| `XMP:ColorClass` | 0 (None) | 0 |
 
-*...and 20 more differences*
+*...and 13 more differences*
 
 ## Missing Tags
 
@@ -80,7 +80,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 
 | Tag | Sample Value |
 |-----|-------------|
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:ThumbnailImage` | (Binary data 12234 bytes, use -b option to extract... |
 | `EXIF:ThumbnailLength` | 12234 |
 | `EXIF:ThumbnailOffset` | 1466 |
@@ -180,8 +179,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `Photoshop:ReaderName` | Adobe Photoshop CC 2015.5 |
 | `Photoshop:SlicesGroupName` | panasonic_lumix_dmc_fz2000_02 |
 | `Photoshop:URL_List` | [] |
+| `Photoshop:WriterName` | Adobe Photoshop |
 
-*...and 101 more missing tags*
+*...and 100 more missing tags*
 
 ## Extra Tags
 
@@ -194,7 +194,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ImageSize` | 1280x960 |
 | `Composite:Megapixels` | 1.229 |
 | `Composite:ShutterSpeed` | 1/500 |
-| `EXIF:0x8822` | 2 |
 | `EXIF:0x927C` | [Binary data] |
 | `EXIF:0xC4A5` | [Binary data] |
 | `EXIF:ICC_Profile` | [Binary data] |
@@ -239,8 +238,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `XMP-exif:Contrast` | Normal |
 | `XMP-exif:CustomRendered` | Custom |
 | `XMP-exif:DateTimeDigitized` | 2013:06:20 10:56:33 |
+| `XMP-exif:DateTimeOriginal` | 2013:06:20 10:56:33 |
 
-*...and 65 more extra tags*
+*...and 64 more extra tags*
 
 ---
 

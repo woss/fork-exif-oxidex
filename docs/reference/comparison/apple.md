@@ -9,10 +9,10 @@ title: APPLE Compatibility
 ## Summary
 
 - **Files Tested:** 66
-- **Coverage:** 56.4%
-- **Matched Tags:** 128
-- **Missing Tags:** 80
-- **Extra Tags:** 41
+- **Coverage:** 56.8%
+- **Matched Tags:** 129
+- **Missing Tags:** 79
+- **Extra Tags:** 40
 - **Value Differences:** 19
 
 ## Value Differences
@@ -39,7 +39,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageStart` | 3406314 | 3387627 |
 | `XMP:CreatorTool` | 15.0 | 15 |
-| `XMP:LensInfo` | 1.57000005246397-9mm f/1.5-2.8 | 299253/190607 9/1 3/2 14/5 |
+| `XMP:LensInfo` | 1.57000005246397-9mm f/1.5-2.8 | 1.6-9mm f/1.5-2.8 |
 
 ## Missing Tags
 
@@ -50,7 +50,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP10:HDRGainCurve` | (Binary data 1160 bytes, use -b option to extract) |
 | `APP10:HDRGainCurveSize` | 152 |
 | `EXIF:BitsPerSample` | 8 8 8 |
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:ImageHeight` | 60 |
 | `EXIF:ImageWidth` | 80 |
 | `EXIF:RowsPerStrip` | 60 |
@@ -137,7 +136,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 2.4 |
 | `Composite:ISO` | 125 |
 | `Composite:ShutterSpeed` | 1/60 |
-| `EXIF:0x8822` | 2 |
 | `EXIF:0x927C` | [Binary data] |
 | `HDR:Format` | AROT |
 | `HDR:GainCurve` | [Binary data] |

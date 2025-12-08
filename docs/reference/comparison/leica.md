@@ -9,11 +9,11 @@ title: LEICA Compatibility
 ## Summary
 
 - **Files Tested:** 67
-- **Coverage:** 32.3%
-- **Matched Tags:** 181
-- **Missing Tags:** 338
-- **Extra Tags:** 132
-- **Value Differences:** 41
+- **Coverage:** 34.5%
+- **Matched Tags:** 193
+- **Missing Tags:** 337
+- **Extra Tags:** 131
+- **Value Differences:** 30
 
 ## Value Differences
 
@@ -29,7 +29,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `EXIF:GPSSpeedRef` | Unknown () |  |
 | `EXIF:ImageUniqueID` | 00000000000000000000000001517332 | 00000000005412EF21C7544A30DA5FA7 |
 | `EXIF:LensInfo` | 28mm f/1.53125 | 28mm f/1.5 |
-| `EXIF:OffsetSchema` | 4162 | 1108344832 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:ShutterSpeedValue` | 1/1064 | 1/7 |
 | `EXIF:YCbCrSubSampling` | YCbCr4:2:2 (2 1) | 2 1 |
@@ -37,18 +36,9 @@ Tags where ExifTool and OxiDex extract different values:
 | `IPTC:Keywords` | ["Kansas","TGPNP"] | TGPNP |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 5700096 | 5649496 |
-| `XMP:AlreadyApplied` | true | True |
-| `XMP:ApplyAutomatically` | false | False |
-| `XMP:AutoBrightness` | true | True |
-| `XMP:AutoContrast` | true | True |
-| `XMP:AutoExposure` | true | True |
-| `XMP:AutoShadows` | true | True |
 | `XMP:ColorClass` | 0 (None) | 0 |
-| `XMP:CorrectionAlreadyApplied` | false | False |
 | `XMP:Exposure` | +0.15 | 0.15 |
-| `XMP:HasCrop` | false | False |
-| `XMP:HasSettings` | true | True |
-| `XMP:LensInfo` | 28mm f/1.53125-2.97265625 | 2800/100 2800/100 392/256 761/256 |
+| `XMP:LensInfo` | 28mm f/1.53125-2.97265625 | 28mm f/1.5-3.0 |
 | `XMP:MetadataDate` | 2020:11:05 16:56:55-08:00 | 2020:11:05 16:56:55 |
 | `XMP:NormalizedCropCorners` | [0.0293125305,0.0010763833,0.9863464236,... | 0.02931253050.00107638330.98634642360.03... |
 | `XMP:PitchAngle` | 1.6000000238 | 1.6 |
@@ -57,11 +47,10 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:RollAngle` | -1.3999999762 | -1.4 |
 | `XMP:ScalingFactorHeight` | 0.964228034 | 0.96423 |
 | `XMP:Subject` | ["Kansas","TGPNP"] | KansasTGPNP |
-| `XMP:Tagged` | No | False |
+| `XMP:Tagged` | No | false |
 | `XMP:TargetAspectRatio` | 1.5025252104 | 1.50253 |
 | `XMP:Tint` | +40 | 40 |
 | `XMP:ToneCurve` | ["0, 0","32, 22","64, 56","128, 128","19... | 0, 032, 2264, 56128, 128192, 196255, 255 |
-| `XMP:ValidCropCorners` | true | True |
 
 ## Missing Tags
 
@@ -71,7 +60,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 |-----|-------------|
 | `EXIF:BitsPerSample` | 8 |
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Aperture-priority AE |
 | `EXIF:ImageHeight` | 120 |
 | `EXIF:ImageWidth` | 160 |
 | `EXIF:JpgFromRaw` | (Binary data 1215652 bytes, use -b option to extra... |
@@ -169,8 +157,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MPF:MPImage3` | (Binary data 461824 bytes, use -b option to extrac... |
 | `MPF:PreviewImage` | (Binary data 694710 bytes, use -b option to extrac... |
 | `MakerNotes:AFAreaMode` | Tracking |
+| `MakerNotes:AFAssistLamp` | Enabled but Not Used |
 
-*...and 238 more missing tags*
+*...and 237 more missing tags*
 
 ## Extra Tags
 
@@ -181,7 +170,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 8 |
 | `Composite:ISO` | 640 |
 | `Composite:ShutterSpeed` | 1/60 |
-| `EXIF:0x8822` | 3 |
 | `EXIF:0x920E` | 3744 |
 | `EXIF:0x920F` | 3744 |
 | `EXIF:0x9210` | 2 |
@@ -228,8 +216,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Leica:MacroMode` | Off |
 | `Leica:MeasuredLV` | 3.5 EV |
 | `Leica:MeteringMode` | Unknown (5232) |
+| `Leica:PerspectiveControl` | Off |
 
-*...and 82 more extra tags*
+*...and 81 more extra tags*
 
 ---
 

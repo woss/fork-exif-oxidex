@@ -9,11 +9,11 @@ title: GOOGLE Compatibility
 ## Summary
 
 - **Files Tested:** 24
-- **Coverage:** 41.0%
-- **Matched Tags:** 133
-- **Missing Tags:** 173
-- **Extra Tags:** 32
-- **Value Differences:** 18
+- **Coverage:** 41.7%
+- **Matched Tags:** 135
+- **Missing Tags:** 172
+- **Extra Tags:** 31
+- **Value Differences:** 17
 
 ## Value Differences
 
@@ -21,7 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:ExposureTime` | 1/244 | 821/200000 |
 | `EXIF:GainControl` | Unknown (256) | 256 |
 | `EXIF:UserComment` | ??? | ��� |
 | `ICC_Profile:DeviceModel` |  |  |
@@ -37,7 +36,7 @@ Tags where ExifTool and OxiDex extract different values:
 | `XMP:MetadataDate` | 2025:08:25 10:52:21-04:00 | 2025:08:25 10:52:21 |
 | `XMP:ModifyDate` | 2025:08:23 19:41:40.318-04:00 | 2025:08:23 19:41:40.318 |
 | `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:-00001 |
-| `XMP:Tagged` | Yes | True |
+| `XMP:Tagged` | Yes | true |
 | `XMP:Version` | 1.0 | 1 |
 
 ## Missing Tags
@@ -47,7 +46,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | Tag | Sample Value |
 |-----|-------------|
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:ThumbnailImage` | (Binary data 16923 bytes, use -b option to extract... |
 | `EXIF:ThumbnailLength` | 16923 |
 | `EXIF:ThumbnailOffset` | 1345 |
@@ -146,8 +144,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `Photoshop:CopyrightFlag` | false |
 | `Photoshop:IPTCDigest` | 60d75a46a2c5eba8db57f6dae66d7b2a |
 | `XMP:CameraDepthMapConfidenceURI` | android/confidencemap |
+| `XMP:CameraDepthMapDepthURI` | android/depthmap |
 
-*...and 73 more missing tags*
+*...and 72 more missing tags*
 
 ## Extra Tags
 
@@ -159,8 +158,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ISO` | 68 |
 | `Composite:ImageSize` | 3024x4032 |
 | `Composite:Megapixels` | 12.193 |
-| `Composite:ShutterSpeed` | 821/200000 |
-| `EXIF:0x8822` | 2 |
+| `Composite:ShutterSpeed` | 1/244 |
 | `EXIF:0x927C` | [Binary data] |
 | `IPTC:Unknown-1-90` | %G |
 | `IPTC:Unknown-2-0` |  |

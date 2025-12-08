@@ -9,11 +9,11 @@ title: PENTAX Compatibility
 ## Summary
 
 - **Files Tested:** 145
-- **Coverage:** 28.5%
-- **Matched Tags:** 155
-- **Missing Tags:** 340
-- **Extra Tags:** 70
-- **Value Differences:** 48
+- **Coverage:** 29.3%
+- **Matched Tags:** 159
+- **Missing Tags:** 339
+- **Extra Tags:** 69
+- **Value Differences:** 45
 
 ## Value Differences
 
@@ -21,7 +21,6 @@ Tags where ExifTool and OxiDex extract different values:
 
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
-| `EXIF:OffsetSchema` | 3834 | 4195221504 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:UserComment` | A409451B392442A465403t577390B402434t4984... | 392442A465403t577390B402434t498419t53242... |
 | `ICC_Profile:MeasurementFlare` | 0.999% | 0.99945% |
@@ -67,8 +66,6 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:Sharpness` | 0 (normal) | Normal |
 | `MakerNotes:ShutterCount` | 6 | 2357423026 |
 | `MakerNotes:Time` | 11:00:55 | 7 |
-| `XMP:AlreadyApplied` | true | True |
-| `XMP:LensInfo` | 5-15mm f/2.8-4.5 | 50/10 150/10 28/10 45/10 |
 
 ## Missing Tags
 
@@ -78,7 +75,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 |-----|-------------|
 | `EXIF:BitsPerSample` | 8 8 8 |
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Portrait |
 | `EXIF:ImageHeight` | 72 |
 | `EXIF:ImageWidth` | 96 |
 | `EXIF:PhotometricInterpretation` | RGB |
@@ -176,8 +172,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `MakerNotes:DiffractionCorrection` | Off |
 | `MakerNotes:DigitalFilter01` | ["High Contrast","HighContrast=1"] |
 | `MakerNotes:DigitalFilter02` | ["Retro","Toning=0","FrameComposite=Medium"] |
+| `MakerNotes:DigitalFilter03` | ["High Contrast","HighContrast=3"] |
 
-*...and 240 more missing tags*
+*...and 239 more missing tags*
 
 ## Extra Tags
 
@@ -188,7 +185,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:Aperture` | 3.2 |
 | `Composite:ISO` | 80 |
 | `Composite:ShutterSpeed` | 1/160 |
-| `EXIF:0x8822` | 7 |
 | `EXIF:0x9103` | 1 |
 | `EXIF:0x927C` | [Binary data] |
 | `EXIF:0xC4A5` | [Binary data] |
@@ -235,8 +231,9 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `XMP-exif:SceneCaptureType` | Standard |
 | `XMP-exif:Sharpness` | Normal |
 | `XMP-exif:ShutterSpeedValue` | 5906891/1000000 |
+| `XMP-exif:SubjectDistanceRange` | Close |
 
-*...and 20 more extra tags*
+*...and 19 more extra tags*
 
 ---
 

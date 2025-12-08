@@ -1099,6 +1099,10 @@ tables:
         name: "GeoTiffAsciiParams"
         writable: false
         description: "GeoTiffAsciiParams tag"
+      - id: "0x8822"
+        name: "ExposureProgram"
+        writable: false
+        description: "ExposureProgram tag"
       - id: "0x0001"
         name: "Manual"
         writable: false

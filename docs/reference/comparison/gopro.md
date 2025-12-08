@@ -9,11 +9,11 @@ title: GOPRO Compatibility
 ## Summary
 
 - **Files Tested:** 23
-- **Coverage:** 59.0%
-- **Matched Tags:** 111
-- **Missing Tags:** 65
-- **Extra Tags:** 31
-- **Value Differences:** 12
+- **Coverage:** 61.2%
+- **Matched Tags:** 115
+- **Missing Tags:** 64
+- **Extra Tags:** 30
+- **Value Differences:** 9
 
 ## Value Differences
 
@@ -23,16 +23,13 @@ Tags where ExifTool and OxiDex extract different values:
 |-----|----------|--------|
 | `EXIF:CompressedBitsPerPixel` | 2.193316072 | 2.193316 |
 | `EXIF:DeviceSettingDescription` | (Binary data 4 bytes, use -b option to e... | [Binary data] |
-| `EXIF:ExposureTime` | 1/1496 | 10/14959 |
 | `EXIF:GPSAltitude` | 9.046 m | 9.0 m |
-| `EXIF:OffsetSchema` | 3885 | 755957760 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `ICC_Profile:DeviceModel` |  |  |
 | `MPF:ImageUIDList` | (Binary data 66 bytes, use -b option to ... | (Binary data, 66 bytes) |
 | `MPF:MPFVersion` | 0100 | 0010 |
 | `MPF:MPImageFlags` | Dependent child image | Dependent parent image |
 | `MPF:MPImageStart` | 6405694 | 6343213 |
-| `XMP:UsePanoramaViewer` | true | True |
 
 ## Missing Tags
 
@@ -91,7 +88,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `APP6:WhiteBalance` | 6500K |
 | `APP6:ZoomScaleNormalization` | 0.713476538658142 |
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Program AE |
 | `EXIF:ThumbnailImage` | (Binary data 3496 bytes, use -b option to extract) |
 | `EXIF:ThumbnailLength` | 3496 |
 | `EXIF:ThumbnailOffset` | 2048 |
@@ -114,8 +110,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 |-----|-------|
 | `Composite:Aperture` | 2.8 |
 | `Composite:ISO` | 100 |
-| `Composite:ShutterSpeed` | 10/14959 |
-| `EXIF:0x8822` | 2 |
+| `Composite:ShutterSpeed` | 1/1496 |
 | `EXIF:0x927C` | [Binary data] |
 | `EXIF:0xC4A5` | [Binary data] |
 | `HDR:Format` | AROT |

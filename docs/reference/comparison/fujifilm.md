@@ -9,11 +9,11 @@ title: FUJIFILM Compatibility
 ## Summary
 
 - **Files Tested:** 411
-- **Coverage:** 57.9%
-- **Matched Tags:** 290
-- **Missing Tags:** 139
-- **Extra Tags:** 51
-- **Value Differences:** 72
+- **Coverage:** 60.3%
+- **Matched Tags:** 302
+- **Missing Tags:** 138
+- **Extra Tags:** 50
+- **Value Differences:** 61
 
 ## Value Differences
 
@@ -22,7 +22,6 @@ Tags where ExifTool and OxiDex extract different values:
 | Tag | ExifTool | OxiDex |
 |-----|----------|--------|
 | `APP14:APP14Flags0` | [14], Encoded with Blend=1 downsampling | 49152 |
-| `EXIF:OffsetSchema` | 3610 | 437125120 |
 | `EXIF:Padding` | (Binary data 2060 bytes, use -b option t... | [Binary data] |
 | `EXIF:XPKeywords` | 10.02.14 | 10.02.14 |
 | `EXIF:XPTitle` |  |                 |
@@ -57,22 +56,23 @@ Tags where ExifTool and OxiDex extract different values:
 | `MakerNotes:ShadowTone` | 0 (normal) | +0 |
 | `MakerNotes:Sharpness` | 0 (normal) | 3 (Hard) |
 | `MakerNotes:WhiteBalanceFineTune` | Red +0, Blue +0 | +674 |
-| `XMP:AlreadyApplied` | true | True |
 | `XMP:Brightness` | 0.0 | 0 |
 | `XMP:ColorClass` | 0 (None) | 0 |
 | `XMP:Contrast` | 0.0 | 0 |
-| `XMP:DistortionCorrectionAlreadyApplied` | true | True |
 | `XMP:Exposure2012` | +0.70 | 0.7 |
 | `XMP:FlashCompensation` | 0 | 0/100 |
-| `XMP:FujiRatingAlreadyApplied` | true | True |
-| `XMP:HasCrop` | false | False |
-| `XMP:HasSettings` | true | True |
-| `XMP:LateralChromaticAberrationCorrectionAlreadyApplied` | true | True |
-| `XMP:LensInfo` | 45-100mm f/4 | 4500/100 10000/100 400/100 400/100 |
-| `XMP:LensProfileIsEmbedded` | true | True |
 | `XMP:MetadataDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
+| `XMP:ModifyDate` | 2021:03:18 14:39:55-07:00 | 2021:03:18 14:39:55 |
+| `XMP:PerspectiveRotate` | 0.0 | 0 |
+| `XMP:PerspectiveUpright` | Off | 0 |
+| `XMP:PerspectiveX` | 0.0 | 0 |
+| `XMP:PerspectiveY` | 0.0 | 0 |
+| `XMP:PipelineVersion` | 01.00 | 1 |
+| `XMP:Prefs` | Tagged:1, ColorClass:0, Rating:0, FrameN... | 1:0:0:000427 |
+| `XMP:ProcessVersion` | 11.0 | 11 |
+| `XMP:Shadows2012` | +35 | 35 |
 
-*...and 22 more differences*
+*...and 11 more differences*
 
 ## Missing Tags
 
@@ -82,7 +82,6 @@ Tags ExifTool extracts that OxiDex doesn't:
 |-----|-------------|
 | `EXIF:BitsPerSample` | 8 8 8 |
 | `EXIF:Compression` | JPEG (old-style) |
-| `EXIF:ExposureProgram` | Landscape |
 | `EXIF:ImageHeight` | 60 |
 | `EXIF:ImageWidth` | 80 |
 | `EXIF:Noise` | 6 |
@@ -180,8 +179,9 @@ Tags ExifTool extracts that OxiDex doesn't:
 | `Photoshop:YResolution` | 300 |
 | `PrintIM:PrintIMVersion` | 0250 |
 | `XMP:CameraModelID` |  |
+| `XMP:ColorTemperature` | 5400 |
 
-*...and 39 more missing tags*
+*...and 38 more missing tags*
 
 ## Extra Tags
 
@@ -193,7 +193,6 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `Composite:ISO` | 100 |
 | `Composite:ShutterSpeed` | 1/220 |
 | `EXIF:0x012D` | 0 0 2 4 7 11 17 24 32 42 53 65 79 94 111 129 148 1... |
-| `EXIF:0x8822` | 8 |
 | `EXIF:0x920C` | 311 |
 | `EXIF:0x920D` | 6 |
 | `EXIF:0x927C` | [Binary data] |
@@ -229,7 +228,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `XMP-xmpMM:OriginalDocumentID` | C6B59F026D1BD0E893D34F5D8EFB3663 |
 | `XMP-xmpMM:PreservedFileName` | DSCF0722.JPG |
 | `XMP:Amount` | 1 |
-| `XMP:ConvertToGrayscale` | False |
+| `XMP:ConvertToGrayscale` | false |
 | `XMP:Copyright` | © 2018 Adobe Systems, Inc. |
 | `XMP:Look` | Profiles0, 022, 1640, 35127, 127224, 230240, 24625... |
 | `XMP:LookTable` | E1095149FDB39D7A057BAB208837E2E1 |
@@ -239,8 +238,7 @@ Tags OxiDex extracts that ExifTool doesn't:
 | `XMP:SupportsOutputReferred` | false |
 | `XMP:Temperature` | 5400 |
 | `XMP:UUID` | B952C231111CD8E0ECCF14B86BAA7077 |
-
-*...and 1 more extra tags*
+| `XMP:hierarchicalSubject` | 点像F11 |
 
 ---
 

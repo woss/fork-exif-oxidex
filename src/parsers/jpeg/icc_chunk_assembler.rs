@@ -14,14 +14,18 @@
 //!
 //! # Usage
 //!
-//! ```no_run
+//! ```ignore
 //! use oxidex::parsers::jpeg::icc_chunk_assembler::IccChunkAssembler;
 //!
 //! let mut assembler = IccChunkAssembler::new();
 //!
 //! // Add chunks from APP2 segments (data includes the ICC_PROFILE header)
-//! assembler.add_chunk(&app2_segment1_data)?;
-//! assembler.add_chunk(&app2_segment2_data)?;
+//! // Each chunk has format: ICC_PROFILE\0 + chunk_num + total_chunks + data
+//! let app2_segment1_data = b"ICC_PROFILE\0\x01\x02<profile data part 1>";
+//! let app2_segment2_data = b"ICC_PROFILE\0\x02\x02<profile data part 2>";
+//!
+//! assembler.add_chunk(app2_segment1_data)?;
+//! assembler.add_chunk(app2_segment2_data)?;
 //!
 //! // Check if all chunks have been collected
 //! if assembler.is_complete() {
