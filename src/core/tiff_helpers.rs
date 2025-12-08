@@ -453,7 +453,7 @@ fn parse_makernote_if_canon(
     if !make.is_empty() {
         // Parse MakerNote using the dispatcher
         let mut makernote_tags = HashMap::new();
-        if let Err(_e) = dispatch_makernote(&make, makernote_data, byte_order, &mut makernote_tags)
+        if let Err(_e) = dispatch_makernote(make, makernote_data, byte_order, &mut makernote_tags)
         {
             // Silently skip failed MakerNote parsing
             return;

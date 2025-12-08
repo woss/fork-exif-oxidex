@@ -623,6 +623,7 @@ fn format_xmp_lens_info(value: &str) -> Option<String> {
     }
 
     // Parse each rational (numerator/denominator)
+    // Returns Some(value) for valid rationals, None for 0/0 (unknown)
     let parse_rational = |s: &str| -> Option<f64> {
         let r: Vec<&str> = s.split('/').collect();
         if r.len() == 2 {
@@ -631,14 +632,19 @@ fn format_xmp_lens_info(value: &str) -> Option<String> {
             if den > 0.0 {
                 return Some(num / den);
             }
+            // 0/0 means unknown/unspecified
+            if num == 0.0 && den == 0.0 {
+                return None;
+            }
         }
         None
     };
 
     let min_focal = parse_rational(parts[0])?;
     let max_focal = parse_rational(parts[1])?;
-    let f_at_min = parse_rational(parts[2])?;
-    let f_at_max = parse_rational(parts[3])?;
+    // Apertures can be 0/0 (unknown)
+    let f_at_min = parse_rational(parts[2]);
+    let f_at_max = parse_rational(parts[3]);
 
     // Format focal length (integer if whole number, else one decimal)
     let format_focal = |f: f64| -> String {
@@ -667,12 +673,16 @@ fn format_xmp_lens_info(value: &str) -> Option<String> {
         format!("{}-{}", format_focal(min_focal), format_focal(max_focal))
     };
 
-    let f_str = if (f_at_min - f_at_max).abs() < 0.01 {
-        // Constant aperture
-        format_f(f_at_min)
-    } else {
-        // Variable aperture
-        format!("{}-{}", format_f(f_at_min), format_f(f_at_max))
+    // Handle unknown apertures (0/0 -> "?")
+    let f_str = match (f_at_min, f_at_max) {
+        (None, _) | (_, None) => "?".to_string(),
+        (Some(f_min), Some(f_max)) => {
+            if (f_min - f_max).abs() < 0.01 {
+                format_f(f_min)
+            } else {
+                format!("{}-{}", format_f(f_min), format_f(f_max))
+            }
+        }
     };
 
     Some(format!("{}mm f/{}", focal_str, f_str))
@@ -1432,6 +1442,11 @@ mod tests {
         let value = TagValue::String("1800/100 5500/100 350/100 560/100".to_string());
         let formatted = format_tag_value("XMP:LensInfo", &value);
         assert_eq!(formatted.as_string(), Some("18-55mm f/3.5-5.6"));
+
+        // Unknown aperture (0/0): 50mm f/?
+        let value = TagValue::String("50/1 50/1 0/0 0/0".to_string());
+        let formatted = format_tag_value("XMP:LensInfo", &value);
+        assert_eq!(formatted.as_string(), Some("50mm f/?"));
 
         // Non-XMP LensInfo should not be formatted
         let value = TagValue::String("24/1 70/1 28/10 28/10".to_string());

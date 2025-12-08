@@ -287,7 +287,7 @@ fn detect_version(data: &[u8], big_endian: bool) -> ColorBalanceVersion {
         0x0200..=0x02FF => ColorBalanceVersion::Type2,
 
         // Type 3: Modern cameras with extended data
-        0x0300..=0x03FF | 0x0400..=0x04FF => ColorBalanceVersion::Type3,
+        0x0300..=0x04FF => ColorBalanceVersion::Type3,
 
         // Fallback: Try to detect based on data size
         _ => {
@@ -541,7 +541,7 @@ fn is_valid_rb_level(value: u16) -> bool {
 fn is_valid_color_temperature(temp: u16) -> bool {
     // Practical photography range: 1000K to 25000K
     // 0 typically indicates "not set" or "auto"
-    temp >= 1000 && temp <= 25000
+    (1000..=25000).contains(&temp)
 }
 
 // ============================================================================

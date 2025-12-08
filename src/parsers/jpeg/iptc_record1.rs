@@ -153,8 +153,8 @@ const DATASET_UNIQUE_OBJECT_NAME: u8 = 100;
 /// # Arguments
 ///
 /// * `data` - Raw IPTC IIM data bytes. This should be the complete IPTC data
-///            block, which may contain records from multiple record types.
-///            Only Record 1 datasets will be extracted.
+///   block, which may contain records from multiple record types.
+///   Only Record 1 datasets will be extracted.
 ///
 /// # Returns
 ///

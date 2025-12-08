@@ -401,6 +401,7 @@ pub fn process_app6_segments(_segments: &[Segment], _metadata: &mut MetadataMap)
     // }
 }
 
+/// Process APP10 segments to extract HDR gain curve data
 pub fn process_app10_segments(segments: &[Segment], metadata: &mut MetadataMap) {
     // APP10 marker is 0xFFEA
     const APP10_MARKER: u16 = 0xFFEA;

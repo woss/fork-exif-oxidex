@@ -256,7 +256,7 @@ fn read_ascii_string(data: &[u8], offset: usize, length: usize) -> Option<String
     // This handles cases where the field contains garbage data
     let s: String = bytes[..end_pos]
         .iter()
-        .filter(|&&b| b >= 0x20 && b < 0x7F) // Printable ASCII range
+        .filter(|&&b| (0x20..0x7F).contains(&b)) // Printable ASCII range
         .map(|&b| b as char)
         .collect();
 
@@ -288,7 +288,7 @@ fn read_ascii_string(data: &[u8], offset: usize, length: usize) -> Option<String
 ///
 /// * `data` - Raw byte data from Tag 0x2010
 /// * `byte_order` - If true, data is little-endian; if false, big-endian.
-///                  Sony cameras typically use little-endian byte order.
+///   Sony cameras typically use little-endian byte order.
 ///
 /// # Returns
 ///

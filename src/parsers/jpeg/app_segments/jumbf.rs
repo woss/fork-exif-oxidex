@@ -201,7 +201,7 @@ fn parse_jumbf_boxes(data: &[u8], metadata: &mut MetadataMap, depth: usize) -> R
 }
 
 /// Parses a single JUMBF box header
-fn parse_box_header(data: &[u8]) -> Result<JumbfBox> {
+fn parse_box_header(data: &[u8]) -> Result<JumbfBox<'_>> {
     if data.len() < MIN_BOX_SIZE {
         return Err(crate::error::ExifToolError::parse_error(
             "Insufficient data for JUMBF box header",
@@ -332,7 +332,7 @@ fn parse_jumbf_description(data: &[u8], metadata: &mut MetadataMap) -> Result<()
         return Ok(());
     }
 
-    let reader = EndianReader::big_endian(data);
+    let _reader = EndianReader::big_endian(data);
 
     // Read UUID (16 bytes) or content type identifier
     let uuid = &data[0..16];

@@ -218,7 +218,10 @@ pub fn format_gps_coordinate(bytes: &[u8], byte_order: ByteOrder) -> String {
             dms.push(numerator as f64);
         }
     }
-    format!("{} deg {}' {:.2}\"", dms[0] as i32, dms[1] as i32, dms[2])
+    // Format seconds with up to 9 decimal places, trim trailing zeros for ExifTool compat
+    let sec_str = format!("{:.9}", dms[2]);
+    let sec_trimmed = sec_str.trim_end_matches('0').trim_end_matches('.');
+    format!("{} deg {}' {}\"", dms[0] as i32, dms[1] as i32, sec_trimmed)
 }
 
 /// Parses an array of rational values into a space-separated string.

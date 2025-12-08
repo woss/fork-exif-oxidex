@@ -1089,6 +1089,9 @@ pub fn decode_canon_model_id(model_id: u32) -> String {
         0x1210000 => "PowerShot S45".to_string(),
         0x1230000 => "PowerShot SD100 / Digital IXUS II / IXY Digital 30".to_string(),
 
+        // Later PowerShot compact cameras (0x03XXXXXX range)
+        0x3160000 => "PowerShot A1300".to_string(), // 51773440 decimal
+
         // ====================================================================
         // EOS Series Digital SLR and Mirrorless Cameras
         // ====================================================================
@@ -1177,7 +1180,7 @@ pub fn decode_camera_type(model_id: u32) -> String {
             // All other EOS models are mid-range or entry-level
             _ => "EOS Mid-range".to_string(),
         }
-    } else if model_id >= 0x01000000 && model_id < 0x02000000 {
+    } else if (0x01000000..0x02000000).contains(&model_id) {
         // PowerShot and compact cameras
         "Compact".to_string()
     } else {

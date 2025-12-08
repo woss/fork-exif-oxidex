@@ -316,7 +316,7 @@ impl MakerNoteParser for NikonParser {
             } else if &tiff_data[0..2] == b"II" {
                 ByteOrder::LittleEndian
             } else {
-                return Err(format!("Invalid TIFF byte order in Nikon MakerNote"));
+                return Err("Invalid TIFF byte order in Nikon MakerNote".to_string());
             }
         } else {
             byte_order  // Fallback to provided byte order

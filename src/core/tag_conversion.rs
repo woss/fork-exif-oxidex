@@ -310,7 +310,10 @@ fn format_gps_coordinate(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
             dms.push(numerator as f64);
         }
     }
-    let formatted = format!("{} deg {}' {:.2}\"", dms[0] as i32, dms[1] as i32, dms[2]);
+    // Format seconds with up to 9 decimal places, trim trailing zeros for ExifTool compat
+    let sec_str = format!("{:.9}", dms[2]);
+    let sec_trimmed = sec_str.trim_end_matches('0').trim_end_matches('.');
+    let formatted = format!("{} deg {}' {}\"", dms[0] as i32, dms[1] as i32, sec_trimmed);
     TagValue::new_string(formatted)
 }
 
@@ -345,8 +348,8 @@ fn format_gps_timestamp(bytes: &[u8], byte_order: ByteOrder) -> TagValue {
     let formatted = if seconds.fract() == 0.0 {
         format!("{:02}:{:02}:{:02}", hours, minutes, seconds as u32)
     } else {
-        // Trim trailing zeros from fractional seconds
-        let sec_str = format!("{:.6}", seconds);
+        // Trim trailing zeros from fractional seconds - use 9 decimals for ExifTool compat
+        let sec_str = format!("{:.9}", seconds);
         let sec_str = sec_str.trim_end_matches('0').trim_end_matches('.');
         format!("{:02}:{:02}:{}", hours, minutes, sec_str)
     };
@@ -627,8 +630,9 @@ fn format_gps_numeric_value(value: f64) -> String {
         // Whole number - format without decimals
         format!("{:.0}", value)
     } else {
-        // Fractional value - format with up to 6 decimal places and trim trailing zeros
-        let formatted = format!("{:.6}", value);
+        // Fractional value - format with up to 9 decimal places and trim trailing zeros
+        // ExifTool uses 9+ decimal precision for GPS values
+        let formatted = format!("{:.9}", value);
         formatted
             .trim_end_matches('0')
             .trim_end_matches('.')

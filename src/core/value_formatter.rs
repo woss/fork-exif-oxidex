@@ -386,10 +386,11 @@ pub fn format_rational_as_decimal(numerator: i64, denominator: i64) -> String {
     if value.fract() == 0.0 {
         format!("{}", value as i64)
     } else {
-        // Format with up to 6 decimal places, then trim trailing zeros
-        // This ensures we get "3.5" instead of "3.500000" while still
+        // Format with up to 9 decimal places, then trim trailing zeros
+        // ExifTool uses 9+ decimal precision for many rational values
+        // This ensures we get "3.5" instead of "3.500000000" while still
         // preserving precision for values that need it
-        let formatted = format!("{:.6}", value);
+        let formatted = format!("{:.9}", value);
         formatted
             .trim_end_matches('0')
             .trim_end_matches('.')
@@ -745,7 +746,8 @@ mod tests {
         assert_eq!(format_rational_as_decimal(-150, 100), "-1.5");
 
         // Precision edge cases - ensure trailing zeros are trimmed
-        assert_eq!(format_rational_as_decimal(1, 3), "0.333333"); // Repeating decimal
+        // Using 9 decimal places for ExifTool compatibility
+        assert_eq!(format_rational_as_decimal(1, 3), "0.333333333"); // Repeating decimal
         assert_eq!(format_rational_as_decimal(1, 4), "0.25");
         assert_eq!(format_rational_as_decimal(1, 8), "0.125");
     }

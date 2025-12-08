@@ -7,9 +7,9 @@
 use super::{FileFormat, FileReader, MetadataMap, TagValue};
 use crate::core::format_dispatch::dispatch_format_parser;
 use crate::core::jpeg_helpers::{
-    process_app6_segments, process_app10_segments, process_app11_segments, process_app12_segments,
-    process_app14_segments, process_exif_segments, process_icc_segments, process_iptc_segments,
-    process_jfif_segments, process_mpf_segments, process_sof_segments, process_xmp_segments,
+    process_app10_segments, process_app11_segments, process_app12_segments, process_app14_segments,
+    process_exif_segments, process_icc_segments, process_iptc_segments, process_jfif_segments,
+    process_mpf_segments, process_sof_segments, process_xmp_segments,
 };
 use crate::core::operations_helpers::{read_u16, read_u32};
 #[cfg(test)]

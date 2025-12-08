@@ -21,7 +21,7 @@ use crate::core::{MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use nom::{
     bytes::complete::{tag, take},
-    number::complete::{be_i16, be_i32, be_u16, be_u32, u8 as nom_u8},
+    number::complete::{be_u16, be_u32, u8 as nom_u8},
     IResult,
 };
 
@@ -109,15 +109,15 @@ fn parse_resolution_info(data: &[u8]) -> Result<MetadataMap> {
 
     // Resolution is stored as fixed-point 16.16 (4 bytes each)
     let h_res_raw = i32::from_be_bytes([data[0], data[1], data[2], data[3]]);
-    let h_res = h_res_raw as f64 / 65536.0;
+    let _h_res = h_res_raw as f64 / 65536.0;
 
     let h_res_unit = u16::from_be_bytes([data[4], data[5]]);
     let width_unit = u16::from_be_bytes([data[6], data[7]]);
 
     let v_res_raw = i32::from_be_bytes([data[8], data[9], data[10], data[11]]);
-    let v_res = v_res_raw as f64 / 65536.0;
+    let _v_res = v_res_raw as f64 / 65536.0;
 
-    let v_res_unit = u16::from_be_bytes([data[12], data[13]]);
+    let _v_res_unit = u16::from_be_bytes([data[12], data[13]]);
     let height_unit = u16::from_be_bytes([data[14], data[15]]);
 
     metadata.insert(

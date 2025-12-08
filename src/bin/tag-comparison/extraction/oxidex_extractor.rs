@@ -210,8 +210,9 @@ impl OxiDexExtractor {
                 }
 
                 // Default: compute decimal value
+                // Use 9 decimal places for ExifTool compatibility
                 let value = *numerator as f64 / *denominator as f64;
-                let formatted = format!("{:.6}", value);
+                let formatted = format!("{:.9}", value);
                 let trimmed = formatted.trim_end_matches('0').trim_end_matches('.');
 
                 // Add unit suffix if needed
@@ -281,7 +282,11 @@ impl OxiDexExtractor {
                 }
 
                 // Default fallback for unrecognized binary data
-                "[Binary data]".to_string()
+                // Format to match ExifTool: "(Binary data N bytes, use -b option to extract)"
+                format!(
+                    "(Binary data {} bytes, use -b option to extract)",
+                    bytes.len()
+                )
             }
             TagValue::DateTime(dt) => {
                 // Format in EXIF style: YYYY:MM:DD HH:MM:SS

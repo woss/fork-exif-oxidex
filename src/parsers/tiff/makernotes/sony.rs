@@ -713,7 +713,7 @@ fn find_ifd_start(data: &[u8]) -> usize {
 /// Returns error if IFD parsing fails or data is invalid
 fn parse_sony_makernote_impl(
     data: &[u8],
-    byte_order: ByteOrder,
+    _byte_order: ByteOrder,
 ) -> Result<HashMap<String, String>> {
     if data.is_empty() {
         return Ok(HashMap::new());
@@ -752,7 +752,7 @@ fn parse_sony_makernote_impl(
     let entry_count_be = u16::from_be_bytes([ifd_data[0], ifd_data[1]]);
 
     // Sony MakerNotes typically have 1-200 entries
-    let is_reasonable = |count: u16| count >= 1 && count <= 200;
+    let is_reasonable = |count: u16| (1..=200).contains(&count);
 
     let (entry_count, actual_byte_order) = if is_reasonable(entry_count_le) {
         (entry_count_le, ByteOrder::LittleEndian)

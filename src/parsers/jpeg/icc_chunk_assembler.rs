@@ -186,13 +186,8 @@ impl IccChunkAssembler {
             )));
         }
 
-        // Validate against reasonable maximum to prevent resource exhaustion
-        if total > MAX_CHUNKS {
-            return Err(ExifToolError::parse_error(format!(
-                "ICC profile chunk count {} exceeds maximum allowed ({})",
-                total, MAX_CHUNKS
-            )));
-        }
+        // Note: total is u8, so it's already bounded by 255 (MAX_CHUNKS)
+        // No explicit check needed since u8 cannot exceed MAX_CHUNKS
 
         // Check for consistency with previously recorded total
         if let Some(expected_total) = self.total_chunks {

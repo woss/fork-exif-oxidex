@@ -212,7 +212,7 @@ fn parse_key_value_pairs(content: &[u8], metadata: &mut MetadataMap) {
     let content_str = String::from_utf8_lossy(content);
 
     // Split on common line terminators (handles CR, LF, and CRLF)
-    for line in content_str.split(|c| c == '\n' || c == '\r') {
+    for line in content_str.split(['\n', '\r']) {
         // Skip empty lines
         let line = line.trim();
         if line.is_empty() {

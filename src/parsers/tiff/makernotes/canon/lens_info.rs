@@ -132,7 +132,7 @@ fn read_ascii_string(data: &[u8], offset: usize, max_length: usize) -> Option<St
     // Convert to string, filtering out non-printable characters
     let string: String = slice[..string_end]
         .iter()
-        .filter(|&&b| b >= 0x20 && b < 0x7F) // Printable ASCII range
+        .filter(|&&b| (0x20..0x7F).contains(&b)) // Printable ASCII range
         .map(|&b| b as char)
         .collect();
 
@@ -171,7 +171,7 @@ fn apex_to_fnumber(apex_value: u16) -> Option<f64> {
     let f_number = 2.0_f64.powf(apex / 2.0);
 
     // Sanity check: f-numbers should be in reasonable range (f/0.7 to f/90)
-    if f_number < 0.7 || f_number > 90.0 {
+    if !(0.7..=90.0).contains(&f_number) {
         return None;
     }
 

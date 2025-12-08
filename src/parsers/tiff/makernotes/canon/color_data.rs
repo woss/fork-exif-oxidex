@@ -148,11 +148,11 @@ const TAG_WB_SHIFT_GM: &str = "WBShiftGM";
 /// # Arguments
 ///
 /// * `data` - Raw byte slice containing the Canon ColorData structure.
-///            Must be at least 102 bytes for color temperatures, or 190 bytes
-///            to include WB shift values.
+///   Must be at least 102 bytes for color temperatures, or 190 bytes
+///   to include WB shift values.
 /// * `byte_order` - Byte order flag: `true` for little-endian (Intel),
-///                  `false` for big-endian (Motorola). Most Canon cameras
-///                  use little-endian.
+///   `false` for big-endian (Motorola). Most Canon cameras
+///   use little-endian.
 ///
 /// # Returns
 ///
@@ -292,7 +292,7 @@ fn parse_color_temp(
     if let Some(value) = reader.i16_at(offset) {
         // Validate color temperature range (1000K to 15000K)
         // Values outside this range are likely invalid or uninitialized data
-        if value >= 1000 && value <= 15000 {
+        if (1000..=15000).contains(&value) {
             let full_tag_name = format!("{}:{}", TAG_PREFIX, tag_name);
             metadata.insert(full_tag_name, TagValue::new_integer(value as i64));
         }

@@ -179,9 +179,9 @@ impl CanonBatteryType {
     /// # Returns
     ///
     /// The matching `CanonBatteryType` or `Unknown` if not recognized.
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         let upper = s.to_uppercase();
-        let normalized = upper.replace('-', "").replace(' ', "");
+        let normalized = upper.replace(['-', ' '], "");
 
         match normalized.as_str() {
             "LPE6" => Self::LpE6,
@@ -415,7 +415,7 @@ fn raw_temp_to_celsius(raw_temp: u8) -> i16 {
 ///
 /// `true` if the temperature is within reasonable operating range.
 fn is_valid_temperature(temp_celsius: i16) -> bool {
-    temp_celsius >= -40 && temp_celsius <= 100
+    (-40..=100).contains(&temp_celsius)
 }
 
 /// Attempts to extract a null-terminated ASCII string from a byte slice.
@@ -446,7 +446,7 @@ fn extract_string(data: &[u8], offset: usize, max_len: usize) -> Option<String> 
 
     // Only accept printable ASCII
     let bytes = &slice[..str_end];
-    if bytes.iter().all(|&b| b >= 0x20 && b < 0x7F) {
+    if bytes.iter().all(|&b| (0x20..0x7F).contains(&b)) {
         String::from_utf8(bytes.to_vec()).ok()
     } else {
         None
@@ -585,7 +585,7 @@ fn parse_camera_info_1d(
 
     // Index 69-70: ColorTemperature (int16u)
     if let Some(color_temp) = reader.u16_at(69) {
-        if color_temp >= 2500 && color_temp <= 10000 {
+        if (2500..=10000).contains(&color_temp) {
             metadata.insert(
                 "Canon:ColorTemperature",
                 TagValue::new_string(format!("{} K", color_temp)),
@@ -683,7 +683,7 @@ fn parse_camera_info_1d_mkii(
 
     // Index 55-56: ColorTemperature (int16u)
     if let Some(color_temp) = reader.u16_at(OFFSET_COLOR_TEMP_1D_MKII) {
-        if color_temp >= 2500 && color_temp <= 10000 {
+        if (2500..=10000).contains(&color_temp) {
             metadata.insert(
                 "Canon:ColorTemperature",
                 TagValue::new_string(format!("{} K", color_temp)),
@@ -748,7 +748,7 @@ fn parse_camera_info_5d(
     }
 
     if let Some(color_temp) = reader.u16_at(37) {
-        if color_temp >= 2500 && color_temp <= 10000 {
+        if (2500..=10000).contains(&color_temp) {
             metadata.insert(
                 "Canon:ColorTemperature",
                 TagValue::new_string(format!("{} K", color_temp)),
@@ -779,7 +779,7 @@ fn parse_camera_info_modern(
     // Index 6: Sharpness
     if data.len() > 6 {
         let sharpness = data[6] as i8;
-        if sharpness >= -4 && sharpness <= 7 {
+        if (-4..=7).contains(&sharpness) {
             metadata.insert(
                 "Canon:Sharpness",
                 TagValue::new_integer(sharpness as i64),
@@ -799,7 +799,7 @@ fn parse_camera_info_modern(
     }
 
     if let Some(color_temp) = reader.u16_at(41) {
-        if color_temp >= 2500 && color_temp <= 10000 {
+        if (2500..=10000).contains(&color_temp) {
             metadata.insert(
                 "Canon:ColorTemperature",
                 TagValue::new_string(format!("{} K", color_temp)),
@@ -834,7 +834,7 @@ fn parse_camera_info_modern(
 ///
 /// * `data` - Raw bytes of the CameraInfo block
 /// * `byte_order` - Byte order for parsing: `true` for big-endian,
-///                  `false` for little-endian
+///   `false` for little-endian
 ///
 /// # Returns
 ///
@@ -1048,12 +1048,12 @@ mod tests {
     }
 
     #[test]
-    fn test_battery_type_from_str() {
-        assert_eq!(CanonBatteryType::from_str("LP-E6"), CanonBatteryType::LpE6);
-        assert_eq!(CanonBatteryType::from_str("lp-e6n"), CanonBatteryType::LpE6N);
-        assert_eq!(CanonBatteryType::from_str("LP-E6NH"), CanonBatteryType::LpE6Nh);
-        assert_eq!(CanonBatteryType::from_str("LPE6P"), CanonBatteryType::LpE6P);
-        assert_eq!(CanonBatteryType::from_str("unknown"), CanonBatteryType::Unknown);
+    fn test_battery_type_parse() {
+        assert_eq!(CanonBatteryType::parse("LP-E6"), CanonBatteryType::LpE6);
+        assert_eq!(CanonBatteryType::parse("lp-e6n"), CanonBatteryType::LpE6N);
+        assert_eq!(CanonBatteryType::parse("LP-E6NH"), CanonBatteryType::LpE6Nh);
+        assert_eq!(CanonBatteryType::parse("LPE6P"), CanonBatteryType::LpE6P);
+        assert_eq!(CanonBatteryType::parse("unknown"), CanonBatteryType::Unknown);
     }
 
     #[test]

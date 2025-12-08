@@ -265,7 +265,7 @@ pub fn parse_flir_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
         // Multi-segment data: reassemble all segments before parsing
         use std::cell::RefCell;
         thread_local! {
-            static FLIR_SEGMENTS: RefCell<Vec<Vec<u8>>> = RefCell::new(Vec::new());
+            static FLIR_SEGMENTS: RefCell<Vec<Vec<u8>>> = const { RefCell::new(Vec::new()) };
         }
 
         FLIR_SEGMENTS.with(|segments| {
@@ -1069,7 +1069,7 @@ fn insert_temperature(
 ) {
     if let Some(temp) = reader.f32_at(offset) {
         // Valid temperature range: 0K to 10000K (covers any practical thermal measurement)
-        if temp >= 0.0 && temp <= 10000.0 && temp.is_finite() {
+        if (0.0..=10000.0).contains(&temp) && temp.is_finite() {
             metadata.insert(
                 tag_name.to_string(),
                 TagValue::Float(temp as f64),

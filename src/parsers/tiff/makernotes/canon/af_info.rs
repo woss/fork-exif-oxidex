@@ -102,7 +102,7 @@ fn decode_af_area_mode(mode: i16) -> &'static str {
 ///
 /// * `data` - Raw bytes of the AFInfo block (array of i16 values)
 /// * `byte_order` - Byte order for parsing: `true` for big-endian,
-///                  `false` for little-endian
+///   `false` for little-endian
 ///
 /// # Returns
 ///
@@ -182,7 +182,7 @@ pub fn parse_canon_af_info(data: &[u8], byte_order: bool) -> MetadataMap {
 
     // Parse ValidAFPoints - number of active/available AF points
     if let Some(valid_points) = read_i16(AF_VALID_AF_POINTS) {
-        if valid_points >= 0 && valid_points <= 1000 {
+        if (0..=1000).contains(&valid_points) {
             metadata.insert(
                 "Canon:ValidAFPoints",
                 TagValue::new_integer(valid_points as i64),
