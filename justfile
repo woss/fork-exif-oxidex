@@ -388,7 +388,13 @@ compare-exiftool:
     trap cleanup EXIT
 
     echo "📥 Fetching latest ExifTool version..."
-    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    # Try exiftool.org first with User-Agent, fall back to GitHub tags API
+    VERSION=$(curl -sA "OxiDex/1.0" https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || \
+              curl -s https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | grep -m1 '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/')
+    if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   ❌ Failed to fetch ExifTool version from exiftool.org and GitHub API"
+        exit 1
+    fi
     echo "   Version: $VERSION"
 
     echo "📦 Downloading ExifTool $VERSION..."
@@ -436,7 +442,13 @@ compare-exiftool-update:
     trap cleanup EXIT
 
     echo "📥 Fetching latest ExifTool version..."
-    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    # Try exiftool.org first with User-Agent, fall back to GitHub tags API
+    VERSION=$(curl -sA "OxiDex/1.0" https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || \
+              curl -s https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | grep -m1 '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/')
+    if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   ❌ Failed to fetch ExifTool version from exiftool.org and GitHub API"
+        exit 1
+    fi
     echo "   Version: $VERSION"
 
     echo "📦 Downloading ExifTool $VERSION..."
@@ -485,7 +497,13 @@ compare-exiftool-format format:
     }
     trap cleanup EXIT
 
-    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    # Try exiftool.org first with User-Agent, fall back to GitHub tags API
+    VERSION=$(curl -sA "OxiDex/1.0" https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || \
+              curl -s https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | grep -m1 '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/')
+    if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   ❌ Failed to fetch ExifTool version"
+        exit 1
+    fi
     echo "📦 Downloading ExifTool $VERSION..."
     curl -sL "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
         -o "/tmp/exiftool-$VERSION.tar.gz"
@@ -524,7 +542,13 @@ compare-exiftool-samples:
     trap cleanup EXIT
 
     echo "📥 Fetching latest ExifTool version..."
-    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    # Try exiftool.org first with User-Agent, fall back to GitHub tags API
+    VERSION=$(curl -sA "OxiDex/1.0" https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || \
+              curl -s https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | grep -m1 '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/')
+    if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   ❌ Failed to fetch ExifTool version from exiftool.org and GitHub API"
+        exit 1
+    fi
     echo "   Version: $VERSION"
 
     echo "📦 Downloading ExifTool $VERSION..."
@@ -544,7 +568,7 @@ compare-exiftool-samples:
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
     for mfr in $MANUFACTURERS; do
         echo "   Downloading $mfr samples..."
-        if curl -sL "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+        if curl -sLA "OxiDex/1.0" "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
             tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$SAMPLES_DIR" 2>/dev/null || true
             rm -f "/tmp/sample-$mfr.tar.gz"
         fi
@@ -588,7 +612,13 @@ compare-exiftool-full:
     trap cleanup EXIT
 
     echo "📥 Fetching latest ExifTool version..."
-    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    # Try exiftool.org first with User-Agent, fall back to GitHub tags API
+    VERSION=$(curl -sA "OxiDex/1.0" https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || \
+              curl -s https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | grep -m1 '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/')
+    if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   ❌ Failed to fetch ExifTool version from exiftool.org and GitHub API"
+        exit 1
+    fi
     echo "   Version: $VERSION"
 
     echo "📦 Downloading ExifTool $VERSION..."
@@ -612,7 +642,7 @@ compare-exiftool-full:
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
     for mfr in $MANUFACTURERS; do
         echo "   Downloading $mfr samples..."
-        if curl -sL "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+        if curl -sLA "OxiDex/1.0" "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
             tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
             rm -f "/tmp/sample-$mfr.tar.gz"
         fi
@@ -656,7 +686,13 @@ compare-exiftool-full-update:
     trap cleanup EXIT
 
     echo "📥 Fetching latest ExifTool version..."
-    VERSION=$(curl -s https://exiftool.org/ver.txt)
+    # Try exiftool.org first with User-Agent, fall back to GitHub tags API
+    VERSION=$(curl -sA "OxiDex/1.0" https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || \
+              curl -s https://api.github.com/repos/exiftool/exiftool/tags 2>/dev/null | grep -m1 '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/')
+    if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        echo "   ❌ Failed to fetch ExifTool version from exiftool.org and GitHub API"
+        exit 1
+    fi
     echo "   Version: $VERSION"
 
     echo "📦 Downloading ExifTool $VERSION..."
@@ -680,7 +716,7 @@ compare-exiftool-full-update:
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
     for mfr in $MANUFACTURERS; do
         echo "   Downloading $mfr samples..."
-        if curl -sL "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
+        if curl -sLA "OxiDex/1.0" "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
             tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
             rm -f "/tmp/sample-$mfr.tar.gz"
         fi
