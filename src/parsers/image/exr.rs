@@ -220,7 +220,8 @@ impl EXRParser {
                 let channels = Self::parse_channel_list(value);
                 if !channels.is_empty() {
                     // ExifTool format: JSON-like array with details
-                    let formatted: Vec<String> = channels.iter().map(|c| format!("\"{}\"", c)).collect();
+                    let formatted: Vec<String> =
+                        channels.iter().map(|c| format!("\"{}\"", c)).collect();
                     metadata.insert(
                         "Channels".to_string(),
                         TagValue::String(format!("[{}]", formatted.join(","))),
@@ -270,7 +271,10 @@ impl EXRParser {
             };
 
             if let Ok(name) = String::from_utf8(name_bytes) {
-                channels.push(format!("{} {} {} {}", name, type_name, x_sampling, y_sampling));
+                channels.push(format!(
+                    "{} {} {} {}",
+                    name, type_name, x_sampling, y_sampling
+                ));
             }
         }
         channels

@@ -439,8 +439,8 @@ impl Default for TrackInfo {
             track_uid: 0,
             codec_id: String::new(),
             language: "und".to_string(), // Default to "undetermined"
-            flag_default: true, // Default is true per spec
-            flag_enabled: true, // Default is true per spec
+            flag_default: true,          // Default is true per spec
+            flag_enabled: true,          // Default is true per spec
             flag_forced: false,
             default_duration_ns: 0,
             track_timecode_scale: 1.0,
@@ -587,7 +587,14 @@ fn parse_track_entry(
     );
     metadata.insert(
         "Matroska:CodecDecodeAll".to_string(),
-        TagValue::new_string(if track_info.codec_decode_all { "Yes" } else { "No" }.to_string()),
+        TagValue::new_string(
+            if track_info.codec_decode_all {
+                "Yes"
+            } else {
+                "No"
+            }
+            .to_string(),
+        ),
     );
 
     if track_info.default_duration_ns > 0 {

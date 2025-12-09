@@ -994,7 +994,8 @@ fn extract_sample_description(
                 // size(4) + format(4) + reserved(6) + data_ref_index(2) + version(2) + revision(2) = 20
                 if let Some(vendor_bytes) = entry_reader.bytes_at(20, 4) {
                     if let Ok(vendor_str) = std::str::from_utf8(vendor_bytes) {
-                        let vendor_trimmed = vendor_str.trim_matches(|c: char| c == '\0' || c.is_whitespace());
+                        let vendor_trimmed =
+                            vendor_str.trim_matches(|c: char| c == '\0' || c.is_whitespace());
                         if !vendor_trimmed.is_empty() {
                             // Map common vendor codes to readable names
                             let vendor_name = match vendor_trimmed {
@@ -1155,7 +1156,12 @@ fn extract_hevc_configuration(data: &[u8], metadata: &mut MetadataMap, _track_su
     // Box format: 4 bytes size + 4 bytes type ("hvcC")
     let mut offset = 0;
     while offset + 8 <= data.len() {
-        let box_size = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
+        let box_size = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
         if box_size < 8 || offset + box_size > data.len() {
             break;
         }
@@ -1190,7 +1196,11 @@ fn extract_hevc_configuration(data: &[u8], metadata: &mut MetadataMap, _track_su
                     TagValue::String(profile_space_str.to_string()),
                 );
 
-                let tier_str = if tier_flag == 0 { "Main Tier" } else { "High Tier" };
+                let tier_str = if tier_flag == 0 {
+                    "Main Tier"
+                } else {
+                    "High Tier"
+                };
                 metadata.insert(
                     "QuickTime:GeneralTierFlag".to_string(),
                     TagValue::String(tier_str.to_string()),
@@ -1216,11 +1226,18 @@ fn extract_hevc_configuration(data: &[u8], metadata: &mut MetadataMap, _track_su
                 );
 
                 // general_profile_compatibility_flags (4 bytes)
-                let compat_flags = u32::from_be_bytes([hvcc_data[2], hvcc_data[3], hvcc_data[4], hvcc_data[5]]);
+                let compat_flags =
+                    u32::from_be_bytes([hvcc_data[2], hvcc_data[3], hvcc_data[4], hvcc_data[5]]);
                 let mut compat_profiles = Vec::new();
-                if compat_flags & (1 << 31) != 0 { compat_profiles.push("Main"); }
-                if compat_flags & (1 << 30) != 0 { compat_profiles.push("Main 10"); }
-                if compat_flags & (1 << 29) != 0 { compat_profiles.push("Main Still Picture"); }
+                if compat_flags & (1 << 31) != 0 {
+                    compat_profiles.push("Main");
+                }
+                if compat_flags & (1 << 30) != 0 {
+                    compat_profiles.push("Main 10");
+                }
+                if compat_flags & (1 << 29) != 0 {
+                    compat_profiles.push("Main Still Picture");
+                }
                 if !compat_profiles.is_empty() {
                     metadata.insert(
                         "QuickTime:GenProfileCompatibilityFlags".to_string(),
@@ -1229,7 +1246,8 @@ fn extract_hevc_configuration(data: &[u8], metadata: &mut MetadataMap, _track_su
                 }
 
                 // general_constraint_indicator_flags (6 bytes at offset 6-11)
-                let constraint_bytes: Vec<String> = hvcc_data[6..12].iter().map(|b| format!("{}", b)).collect();
+                let constraint_bytes: Vec<String> =
+                    hvcc_data[6..12].iter().map(|b| format!("{}", b)).collect();
                 metadata.insert(
                     "QuickTime:ConstraintIndicatorFlags".to_string(),
                     TagValue::String(constraint_bytes.join(" ")),
@@ -1316,7 +1334,9 @@ fn extract_hevc_configuration(data: &[u8], metadata: &mut MetadataMap, _track_su
 
                 metadata.insert(
                     "QuickTime:TemporalIDNested".to_string(),
-                    TagValue::String(if temporal_id_nested == 1 { "Yes" } else { "No" }.to_string()),
+                    TagValue::String(
+                        if temporal_id_nested == 1 { "Yes" } else { "No" }.to_string(),
+                    ),
                 );
             }
             return;
@@ -1495,7 +1515,8 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
     let component_type = &hdlr.data[4..8];
     if let Ok(component_str) = std::str::from_utf8(component_type) {
         // Trim null bytes and whitespace
-        let component_trimmed = component_str.trim_matches(|c: char| c == '\0' || c.is_whitespace());
+        let component_trimmed =
+            component_str.trim_matches(|c: char| c == '\0' || c.is_whitespace());
         if !component_trimmed.is_empty() {
             let component_desc = match component_trimmed {
                 "mhlr" => "Media Handler",
@@ -1712,8 +1733,8 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                     b"\xa9wrt" => Some("Composer"),
                     b"\xa9lyr" => Some("Lyrics"),
                     b"\xa9grp" => Some("Grouping"),
-                    b"\xa9fmt" => Some("Format"),       // Camera format description
-                    b"\xa9inf" => Some("Information"),  // Camera information
+                    b"\xa9fmt" => Some("Format"), // Camera format description
+                    b"\xa9inf" => Some("Information"), // Camera information
                     _ => None,
                 };
 
@@ -2687,7 +2708,11 @@ fn extract_heif_hevc_config(children: &[Atom], metadata: &mut MetadataMap) {
                 TagValue::String(profile_space_str.to_string()),
             );
 
-            let tier_str = if tier_flag == 0 { "Main Tier" } else { "High Tier" };
+            let tier_str = if tier_flag == 0 {
+                "Main Tier"
+            } else {
+                "High Tier"
+            };
             metadata.insert(
                 "QuickTime:GeneralTierFlag".to_string(),
                 TagValue::String(tier_str.to_string()),
@@ -2713,11 +2738,18 @@ fn extract_heif_hevc_config(children: &[Atom], metadata: &mut MetadataMap) {
             );
 
             // general_profile_compatibility_flags (4 bytes)
-            let compat_flags = u32::from_be_bytes([hvcc_data[2], hvcc_data[3], hvcc_data[4], hvcc_data[5]]);
+            let compat_flags =
+                u32::from_be_bytes([hvcc_data[2], hvcc_data[3], hvcc_data[4], hvcc_data[5]]);
             let mut compat_profiles = Vec::new();
-            if compat_flags & (1 << 31) != 0 { compat_profiles.push("Main"); }
-            if compat_flags & (1 << 30) != 0 { compat_profiles.push("Main 10"); }
-            if compat_flags & (1 << 29) != 0 { compat_profiles.push("Main Still Picture"); }
+            if compat_flags & (1 << 31) != 0 {
+                compat_profiles.push("Main");
+            }
+            if compat_flags & (1 << 30) != 0 {
+                compat_profiles.push("Main 10");
+            }
+            if compat_flags & (1 << 29) != 0 {
+                compat_profiles.push("Main Still Picture");
+            }
             if !compat_profiles.is_empty() {
                 metadata.insert(
                     "QuickTime:GenProfileCompatibilityFlags".to_string(),
@@ -2726,7 +2758,8 @@ fn extract_heif_hevc_config(children: &[Atom], metadata: &mut MetadataMap) {
             }
 
             // general_constraint_indicator_flags (6 bytes at offset 6-11)
-            let constraint_bytes: Vec<String> = hvcc_data[6..12].iter().map(|b| format!("{}", b)).collect();
+            let constraint_bytes: Vec<String> =
+                hvcc_data[6..12].iter().map(|b| format!("{}", b)).collect();
             metadata.insert(
                 "QuickTime:ConstraintIndicatorFlags".to_string(),
                 TagValue::String(constraint_bytes.join(" ")),
@@ -3187,10 +3220,7 @@ fn extract_pentax_maker_notes(data: &[u8], metadata: &mut MetadataMap) -> Result
             if let Some(fnum) = r.u16_at(18) {
                 let fnumber = fnum as f64 / 10.0;
                 if (1.0..=64.0).contains(&fnumber) {
-                    metadata.insert(
-                        "MakerNotes:FNumber".to_string(),
-                        TagValue::Float(fnumber),
-                    );
+                    metadata.insert("MakerNotes:FNumber".to_string(), TagValue::Float(fnumber));
                 }
             }
         }
@@ -3199,10 +3229,7 @@ fn extract_pentax_maker_notes(data: &[u8], metadata: &mut MetadataMap) -> Result
         if tag_data.len() >= 28 {
             if let Some(iso) = r.u16_at(26) {
                 if iso > 0 {
-                    metadata.insert(
-                        "MakerNotes:ISO".to_string(),
-                        TagValue::Integer(iso as i64),
-                    );
+                    metadata.insert("MakerNotes:ISO".to_string(), TagValue::Integer(iso as i64));
                 }
             }
         }

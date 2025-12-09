@@ -526,16 +526,7 @@ fn format_flv_date(timestamp_ms: f64, tz_offset_minutes: i16) -> String {
 
     format!(
         "{:04}:{:02}:{:02} {:02}:{:02}:{:02}.{:06}{}{:02}:{:02}",
-        year,
-        month,
-        day,
-        hours,
-        minutes,
-        seconds,
-        subsec_micros,
-        tz_sign,
-        tz_hours,
-        tz_mins
+        year, month, day, hours, minutes, seconds, subsec_micros, tz_sign, tz_hours, tz_mins
     )
 }
 
@@ -972,8 +963,8 @@ fn skip_amf0_ecma_array(data: &[u8], mut offset: usize) -> usize {
 /// Skip AMF0 value given type byte already read
 fn skip_amf0_value_from_type(data: &[u8], offset: usize, value_type: u8) -> usize {
     match value_type {
-        0x00 => offset + 8,                                 // Number
-        0x01 => offset + 1,                                 // Boolean
+        0x00 => offset + 8, // Number
+        0x01 => offset + 1, // Boolean
         0x02 => {
             // String
             if offset + 2 > data.len() {
@@ -982,9 +973,9 @@ fn skip_amf0_value_from_type(data: &[u8], offset: usize, value_type: u8) -> usiz
             let len = ((data[offset] as usize) << 8) | (data[offset + 1] as usize);
             offset + 2 + len
         }
-        0x03 => skip_amf0_object(data, offset),             // Object
-        0x05 | 0x06 => offset,                              // Null/Undefined
-        0x08 => skip_amf0_ecma_array(data, offset),         // ECMA Array
+        0x03 => skip_amf0_object(data, offset),     // Object
+        0x05 | 0x06 => offset,                      // Null/Undefined
+        0x08 => skip_amf0_ecma_array(data, offset), // ECMA Array
         0x0A => {
             // Strict array
             if offset + 4 > data.len() {

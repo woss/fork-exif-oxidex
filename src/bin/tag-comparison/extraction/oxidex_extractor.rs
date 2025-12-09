@@ -174,11 +174,7 @@ impl OxiDexExtractor {
                         if den > 0 && num > 0 {
                             // Find GCD to simplify the fraction
                             fn gcd(a: i64, b: i64) -> i64 {
-                                if b == 0 {
-                                    a
-                                } else {
-                                    gcd(b, a % b)
-                                }
+                                if b == 0 { a } else { gcd(b, a % b) }
                             }
                             let g = gcd(num, den);
                             let simplified_num = num / g;
@@ -266,11 +262,7 @@ impl OxiDexExtractor {
                     if value < 1.0 && value > 0.0 {
                         // Find GCD to simplify first
                         fn gcd_i32(a: i32, b: i32) -> i32 {
-                            if b == 0 {
-                                a.abs()
-                            } else {
-                                gcd_i32(b, a % b)
-                            }
+                            if b == 0 { a.abs() } else { gcd_i32(b, a % b) }
                         }
                         let g = gcd_i32(*numerator, *denominator);
                         let simplified_num = numerator / g;

@@ -4,9 +4,9 @@
 //! processing tags, and handling sub-IFDs (EXIF, GPS), MakerNotes, and GeoTiff.
 
 use super::{FileReader, MetadataMap, TagValue};
-use crate::parsers::tiff::geotiff_parser;
 use crate::core::operations_helpers::read_u32;
 use crate::core::tag_conversion::raw_bytes_to_tag_value;
+use crate::parsers::tiff::geotiff_parser;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::parsers::tiff::makernote_dispatcher::dispatch_makernote;
 use crate::tag_db::lookup_tag_name;
@@ -395,7 +395,10 @@ fn process_tiff_ifd_tags<'a>(
         if let Some(formatted) =
             geotiff_parser::parse_model_transformation(transform_data, is_little_endian)
         {
-            metadata.insert("EXIF:ModelTransform".to_string(), TagValue::String(formatted));
+            metadata.insert(
+                "EXIF:ModelTransform".to_string(),
+                TagValue::String(formatted),
+            );
         }
     }
 

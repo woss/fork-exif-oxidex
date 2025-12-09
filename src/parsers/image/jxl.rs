@@ -216,7 +216,10 @@ impl JXLParser {
                             let patch_ver = minor & 0xFFFF;
                             metadata.insert(
                                 "Jpeg2000:MinorVersion".to_string(),
-                                TagValue::new_string(format!("{}.{}.{}", major_ver, minor_ver, patch_ver)),
+                                TagValue::new_string(format!(
+                                    "{}.{}.{}",
+                                    major_ver, minor_ver, patch_ver
+                                )),
                             );
                         }
 

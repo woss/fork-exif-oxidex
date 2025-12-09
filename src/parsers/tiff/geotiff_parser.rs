@@ -171,7 +171,12 @@ fn read_f64(data: &[u8], offset: usize, is_little_endian: bool) -> f64 {
 }
 
 /// Extracts a double value from GeoDoubleParamsTag
-fn extract_double_value(data: &[u8], offset: usize, count: usize, is_little_endian: bool) -> String {
+fn extract_double_value(
+    data: &[u8],
+    offset: usize,
+    count: usize,
+    is_little_endian: bool,
+) -> String {
     let mut values = Vec::with_capacity(count);
     for i in 0..count {
         let byte_offset = (offset + i) * 8;
@@ -400,8 +405,17 @@ mod tests {
 
         let result = parse_geotiff_keys(&directory, None, None, true);
 
-        assert_eq!(result.get("GeoTiff:GeoTiffVersion"), Some(&"1.1.0".to_string()));
-        assert_eq!(result.get("GeoTiff:GTModelType"), Some(&"Projected".to_string()));
-        assert_eq!(result.get("GeoTiff:GTRasterType"), Some(&"Pixel Is Area".to_string()));
+        assert_eq!(
+            result.get("GeoTiff:GeoTiffVersion"),
+            Some(&"1.1.0".to_string())
+        );
+        assert_eq!(
+            result.get("GeoTiff:GTModelType"),
+            Some(&"Projected".to_string())
+        );
+        assert_eq!(
+            result.get("GeoTiff:GTRasterType"),
+            Some(&"Pixel Is Area".to_string())
+        );
     }
 }

@@ -867,8 +867,18 @@ fn parse_sigma_x3f(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
         return Ok(metadata);
     }
 
-    let _dir_version = u32::from_le_bytes([dir_section[4], dir_section[5], dir_section[6], dir_section[7]]);
-    let num_entries = u32::from_le_bytes([dir_section[8], dir_section[9], dir_section[10], dir_section[11]]) as usize;
+    let _dir_version = u32::from_le_bytes([
+        dir_section[4],
+        dir_section[5],
+        dir_section[6],
+        dir_section[7],
+    ]);
+    let num_entries = u32::from_le_bytes([
+        dir_section[8],
+        dir_section[9],
+        dir_section[10],
+        dir_section[11],
+    ]) as usize;
 
     // Parse directory entries (each entry is 12 bytes: offset(4) + size(4) + type(4))
     let mut offset = 12;
@@ -971,14 +981,16 @@ fn parse_x3f_properties(data: &[u8], metadata: &mut MetadataMap) {
             data[entry_offset + 1],
             data[entry_offset + 2],
             data[entry_offset + 3],
-        ]) as usize * 2; // Multiply by 2 for UTF-16
+        ]) as usize
+            * 2; // Multiply by 2 for UTF-16
 
         let value_offset = u32::from_le_bytes([
             data[entry_offset + 4],
             data[entry_offset + 5],
             data[entry_offset + 6],
             data[entry_offset + 7],
-        ]) as usize * 2;
+        ]) as usize
+            * 2;
 
         // Read name (UTF-16LE null-terminated)
         let name = read_utf16le_string(data_block, name_offset);
@@ -1075,7 +1087,8 @@ fn parse_x3f_image_section(data: &[u8], metadata: &mut MetadataMap, format: RawF
         let header_size = 28;
         if data.len() > header_size + 8 {
             let potential_tiff = &data[header_size..];
-            if (potential_tiff.starts_with(b"II\x2a\x00") || potential_tiff.starts_with(b"MM\x00\x2a"))
+            if (potential_tiff.starts_with(b"II\x2a\x00")
+                || potential_tiff.starts_with(b"MM\x00\x2a"))
                 && potential_tiff.len() > 8
             {
                 if let Ok(tiff_metadata) = parse_tiff_based_raw(potential_tiff, format) {
@@ -1131,8 +1144,12 @@ fn parse_minolta_mrw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
     while offset + 8 <= data.len() {
         // Read block tag (4 bytes) and size (4 bytes big-endian)
         let block_tag = &data[offset..offset + 4];
-        let block_size =
-            u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+        let block_size = u32::from_be_bytes([
+            data[offset + 4],
+            data[offset + 5],
+            data[offset + 6],
+            data[offset + 7],
+        ]) as usize;
 
         offset += 8;
 
@@ -1178,9 +1195,7 @@ fn parse_minolta_mrw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                             TagValue::Integer(sensor_h as i64),
                         );
                     }
-                    if let (Some(img_w), Some(img_h)) =
-                        (reader.u16_at(6), reader.u16_at(8))
-                    {
+                    if let (Some(img_w), Some(img_h)) = (reader.u16_at(6), reader.u16_at(8)) {
                         metadata.insert(
                             "EXIF:ImageWidth".to_string(),
                             TagValue::Integer(img_w as i64),

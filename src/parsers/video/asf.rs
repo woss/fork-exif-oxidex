@@ -177,11 +177,22 @@ fn format_guid(guid: &[u8]) -> String {
     // First 3 components are little-endian, last 2 are big-endian
     format!(
         "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-        guid[3], guid[2], guid[1], guid[0],
-        guid[5], guid[4],
-        guid[7], guid[6],
-        guid[8], guid[9],
-        guid[10], guid[11], guid[12], guid[13], guid[14], guid[15]
+        guid[3],
+        guid[2],
+        guid[1],
+        guid[0],
+        guid[5],
+        guid[4],
+        guid[7],
+        guid[6],
+        guid[8],
+        guid[9],
+        guid[10],
+        guid[11],
+        guid[12],
+        guid[13],
+        guid[14],
+        guid[15]
     )
 }
 
@@ -214,7 +225,10 @@ fn parse_file_properties(
     let creation_time = r.u64_at(24).unwrap_or(0);
     if creation_time > 0 {
         let date_str = filetime_to_string(creation_time);
-        metadata.insert("ASF:CreationDate".to_string(), TagValue::new_string(date_str));
+        metadata.insert(
+            "ASF:CreationDate".to_string(),
+            TagValue::new_string(date_str),
+        );
     }
 
     // Data packets count (8 bytes)
@@ -239,7 +253,10 @@ fn parse_file_properties(
     if play_duration > 0 {
         let duration_secs = (play_duration as f64) / 10_000_000.0;
         let duration_str = format_duration(duration_secs);
-        metadata.insert("ASF:Duration".to_string(), TagValue::new_string(duration_str));
+        metadata.insert(
+            "ASF:Duration".to_string(),
+            TagValue::new_string(duration_str),
+        );
     }
 
     // Send duration - separate field from play_duration
@@ -660,7 +677,9 @@ fn parse_codec_list(
 
         // Codec type (2 bytes)
         let type_data = reader.read(pos, 2)?;
-        let codec_type = EndianReader::little_endian(&type_data).u16_at(0).unwrap_or(0);
+        let codec_type = EndianReader::little_endian(&type_data)
+            .u16_at(0)
+            .unwrap_or(0);
         pos += 2;
 
         // Codec name length (2 bytes)
@@ -720,10 +739,7 @@ fn parse_codec_list(
             // For video: 4-byte FourCC
             // For audio: 2-byte format tag (little-endian)
             if info_data.len() >= 4 {
-                (
-                    String::from_utf8_lossy(&info_data[0..4]).to_string(),
-                    None,
-                )
+                (String::from_utf8_lossy(&info_data[0..4]).to_string(), None)
             } else if info_data.len() >= 2 {
                 // Audio format tag - little-endian 16-bit
                 let format_tag = u16::from_le_bytes([info_data[0], info_data[1]]);
@@ -872,9 +888,7 @@ fn parse_metadata_object(
     }
 
     let header = reader.read(offset + 24, 2)?;
-    let record_count = EndianReader::little_endian(&header)
-        .u16_at(0)
-        .unwrap_or(0);
+    let record_count = EndianReader::little_endian(&header).u16_at(0).unwrap_or(0);
 
     let mut pos = offset + 26;
     let end_pos = offset + size;
@@ -937,21 +951,14 @@ fn parse_metadata_object(
                     TagValue::new_string(format_guid(&value_data))
                 } else {
                     // Binary data
-                    TagValue::new_string(format!(
-                        "(Binary data {} bytes)",
-                        value_data.len()
-                    ))
+                    TagValue::new_string(format!("(Binary data {} bytes)", value_data.len()))
                 }
             }
             2 => {
                 // BOOL - should output "true" or "false"
                 let v = if value_data.len() >= 4 {
-                    u32::from_le_bytes([
-                        value_data[0],
-                        value_data[1],
-                        value_data[2],
-                        value_data[3],
-                    ]) != 0
+                    u32::from_le_bytes([value_data[0], value_data[1], value_data[2], value_data[3]])
+                        != 0
                 } else if value_data.len() >= 2 {
                     u16::from_le_bytes([value_data[0], value_data[1]]) != 0
                 } else {
@@ -1071,7 +1078,9 @@ fn parse_wm_picture(data: &[u8], metadata: &mut MetadataMap) {
     if data.len() < 5 {
         return;
     }
-    let pic_size = EndianReader::little_endian(&data[1..5]).u32_at(0).unwrap_or(0);
+    let pic_size = EndianReader::little_endian(&data[1..5])
+        .u32_at(0)
+        .unwrap_or(0);
 
     // MIME type string (null-terminated UTF-16)
     let mut pos = 5;

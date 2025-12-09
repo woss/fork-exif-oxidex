@@ -179,8 +179,7 @@ fn parse_avi_chunks(
                     if let Ok(date_data) = reader.read(offset, chunk_size as usize) {
                         // IDIT format is typically "Day Mon DD HH:MM:SS YYYY\n"
                         // or "YYYY:MM:DD HH:MM:SS" or similar
-                        let date_str =
-                            String::from_utf8_lossy(&date_data).trim().replace('\0', "");
+                        let date_str = String::from_utf8_lossy(&date_data).trim().replace('\0', "");
                         if !date_str.is_empty() {
                             metadata.insert(
                                 "RIFF:DateTimeOriginal".to_string(),
@@ -420,8 +419,13 @@ fn parse_stream_list(
             b"strh" => {
                 // Parse stream header
                 if chunk_size >= 56 {
-                    stream_type =
-                        parse_stream_header(reader, offset, is_first_video, is_first_audio, metadata)?;
+                    stream_type = parse_stream_header(
+                        reader,
+                        offset,
+                        is_first_video,
+                        is_first_audio,
+                        metadata,
+                    )?;
                 }
             }
             b"strf" => {

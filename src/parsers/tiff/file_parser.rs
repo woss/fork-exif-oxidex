@@ -563,8 +563,12 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
             use crate::parsers::tiff::geotiff_parser::parse_geotiff_keys;
 
             let is_little_endian = byte_order == ByteOrder::LittleEndian;
-            let geotiff_tags =
-                parse_geotiff_keys(directory, geotiff_double_params, geotiff_ascii_params, is_little_endian);
+            let geotiff_tags = parse_geotiff_keys(
+                directory,
+                geotiff_double_params,
+                geotiff_ascii_params,
+                is_little_endian,
+            );
 
             // Convert GeoTiff tags to IfdEntries format
             for (key, val) in geotiff_tags {
@@ -583,7 +587,9 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
             use crate::parsers::tiff::geotiff_parser::parse_model_transformation;
 
             let is_little_endian = byte_order == ByteOrder::LittleEndian;
-            if let Some(transform_value) = parse_model_transformation(transform_data, is_little_endian) {
+            if let Some(transform_value) =
+                parse_model_transformation(transform_data, is_little_endian)
+            {
                 let synthetic_value = format!("EXIF:ModelTransform: {}", transform_value);
                 all_tags.push((
                     MODEL_TRANSFORMATION_TAG,

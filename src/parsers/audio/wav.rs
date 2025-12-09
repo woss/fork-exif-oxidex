@@ -396,7 +396,10 @@ fn parse_exif_chunk(
             let tag_value = tag_value.trim_end_matches('\0').trim();
 
             if !tag_value.is_empty() {
-                metadata.insert(tag_name.to_string(), TagValue::new_string(tag_value.to_string()));
+                metadata.insert(
+                    tag_name.to_string(),
+                    TagValue::new_string(tag_value.to_string()),
+                );
             }
         }
 

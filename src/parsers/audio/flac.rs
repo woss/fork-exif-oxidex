@@ -412,10 +412,7 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
                 field_value.to_string()
             };
 
-            metadata.insert(
-                full_tag,
-                crate::core::TagValue::new_string(formatted_value),
-            );
+            metadata.insert(full_tag, crate::core::TagValue::new_string(formatted_value));
         }
 
         offset += comment_length;

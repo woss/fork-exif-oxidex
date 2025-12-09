@@ -216,9 +216,7 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
         offset += frame_size as usize;
 
         // Parse text frames (T* frames except TXXX/TXX which are user-defined)
-        let is_text_frame = frame_id.starts_with('T')
-            && frame_id != "TXXX"
-            && frame_id != "TXX";
+        let is_text_frame = frame_id.starts_with('T') && frame_id != "TXXX" && frame_id != "TXX";
 
         // Parse comment frames (COM/COMM)
         let is_comment_frame = frame_id == "COM" || frame_id == "COMM";
@@ -232,18 +230,12 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
         // Parse relative volume adjustment frames (RVA2/RVAD/RVA)
         let is_rva_frame = frame_id == "RVA2" || frame_id == "RVAD" || frame_id == "RVA";
 
-        if is_text_frame
-            && let Ok(text) = parse_text_frame(frame_data)
-        {
+        if is_text_frame && let Ok(text) = parse_text_frame(frame_data) {
             let tag_name = format!("ID3:{}", map_frame_id_to_tag_name(&frame_id));
             metadata.insert(tag_name, TagValue::new_string(text));
-        } else if is_comment_frame
-            && let Ok(text) = parse_comment_frame(frame_data)
-        {
+        } else if is_comment_frame && let Ok(text) = parse_comment_frame(frame_data) {
             metadata.insert("ID3:Comment".to_string(), TagValue::new_string(text));
-        } else if is_lyrics_frame
-            && let Ok(text) = parse_comment_frame(frame_data)
-        {
+        } else if is_lyrics_frame && let Ok(text) = parse_comment_frame(frame_data) {
             // Lyrics frame has same structure as comment frame
             metadata.insert("ID3:Lyrics".to_string(), TagValue::new_string(text));
         } else if is_picture_frame {
@@ -509,11 +501,7 @@ fn parse_mpeg_audio_frame(
                 _ => continue,
             };
             // ExifTool reports version as integer (1 for MPEG 1, 2 for MPEG 2/2.5)
-            let version_int = if mpeg_version == 1.0 {
-                1
-            } else {
-                2
-            };
+            let version_int = if mpeg_version == 1.0 { 1 } else { 2 };
             metadata.insert(
                 "MPEG:MPEGAudioVersion".to_string(),
                 TagValue::new_integer(version_int),
@@ -632,7 +620,9 @@ fn get_mpeg_bitrate(version: f64, layer: i64, index: u8) -> u16 {
         0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, 0,
     ];
     // MPEG 2/2.5, Layer II/III
-    const V2_L23: [u16; 16] = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0];
+    const V2_L23: [u16; 16] = [
+        0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+    ];
 
     let idx = index as usize;
     if idx >= 16 {
@@ -703,8 +693,7 @@ fn parse_rva_frame(data: &[u8], frame_id: &str, metadata: &mut MetadataMap) -> R
 
         while pos + 3 <= data.len() {
             let channel_type = data[pos];
-            let volume_adj =
-                i16::from_be_bytes([data[pos + 1], data[pos + 2]]) as f64 / 512.0;
+            let volume_adj = i16::from_be_bytes([data[pos + 1], data[pos + 2]]) as f64 / 512.0;
             pos += 3;
 
             // Skip peak volume (bits_peak byte + peak data)
@@ -806,7 +795,10 @@ fn parse_picture_frame(data: &[u8], version: u8, metadata: &mut MetadataMap) -> 
     // MIME type
     let mime_type = if version >= 3 {
         // ID3v2.3/v2.4: null-terminated string
-        let end = data[pos..].iter().position(|&b| b == 0).unwrap_or(data.len() - pos);
+        let end = data[pos..]
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(data.len() - pos);
         let mime = String::from_utf8_lossy(&data[pos..pos + end]).to_string();
         pos += end + 1; // Skip null terminator
         mime
@@ -864,7 +856,10 @@ fn parse_picture_frame(data: &[u8], version: u8, metadata: &mut MetadataMap) -> 
         }
         i
     } else {
-        data[pos..].iter().position(|&b| b == 0).map_or(data.len(), |p| pos + p)
+        data[pos..]
+            .iter()
+            .position(|&b| b == 0)
+            .map_or(data.len(), |p| pos + p)
     };
 
     let description_bytes = &data[pos..description_end];

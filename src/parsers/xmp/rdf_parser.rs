@@ -185,8 +185,8 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
                     && let Ok(decoded) = e.xml_content()
                 {
                     // Unescape XML entities (e.g., &apos; -> ', &quot; -> ", &amp; -> &)
-                    let unescaped = quick_xml::escape::unescape(&decoded)
-                        .unwrap_or_else(|_| decoded.clone());
+                    let unescaped =
+                        quick_xml::escape::unescape(&decoded).unwrap_or_else(|_| decoded.clone());
                     current_value.push_str(&unescaped);
                 }
             }

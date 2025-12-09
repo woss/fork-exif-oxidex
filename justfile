@@ -10,9 +10,9 @@ default:
 # Note: Doctests are run separately without --release due to panic='abort' incompatibility
 test:
     @echo "Running all tests (matching CI)..."
-    cargo test --release --all-features --lib --bins --tests
+    cargo test --release --all-features --features tag-comparison-binary --lib --bins --tests
     @echo "Running doctests (requires panic=unwind)..."
-    cargo test --all-features --doc
+    cargo test --all-features --features tag-comparison-binary --doc
 
 # Run all tests with cargo-nextest (faster parallel execution)
 test-nextest:

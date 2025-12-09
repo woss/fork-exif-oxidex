@@ -210,10 +210,7 @@ impl EPSParser {
                 let data_start = data_offset + 4;
 
                 // Check if this is an IPTC block
-                if id == IPTC_RESOURCE_ID
-                    && data_start + data_size <= data.len()
-                    && data_size > 0
-                {
+                if id == IPTC_RESOURCE_ID && data_start + data_size <= data.len() && data_size > 0 {
                     let iptc_data = &data[data_start..data_start + data_size];
 
                     // Parse IPTC records
@@ -305,10 +302,7 @@ impl FormatParser for EPSParser {
 
         // Set basic file info
         metadata.insert("FileType".to_string(), TagValue::String("EPS".to_string()));
-        metadata.insert(
-            "FileSize".to_string(),
-            TagValue::Integer(file_size as i64),
-        );
+        metadata.insert("FileSize".to_string(), TagValue::Integer(file_size as i64));
         metadata.insert(
             "MIMEType".to_string(),
             TagValue::String("application/postscript".to_string()),
@@ -317,10 +311,8 @@ impl FormatParser for EPSParser {
         // Handle binary EPS (DOS EPS) header
         let ps_data = if data.starts_with(&[0xC5, 0xD0, 0xD3, 0xC6]) && data.len() >= 30 {
             // Binary EPS header contains offsets to the PostScript section
-            let ps_start =
-                u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
-            let ps_length =
-                u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
+            let ps_start = u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
+            let ps_length = u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
 
             if ps_start < data.len() && ps_start + ps_length <= data.len() {
                 &data[ps_start..ps_start + ps_length]

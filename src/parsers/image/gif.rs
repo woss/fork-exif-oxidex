@@ -141,10 +141,13 @@ impl GIFParser {
                                     // Check for ICC profile extension: ICCRGBG1012
                                     // Application identifier: "ICCRGBG1" (8 bytes)
                                     // Authentication code: "012" (3 bytes)
-                                    else if &app_data[0..8] == b"ICCRGBG1" && &app_data[8..11] == b"012" {
+                                    else if &app_data[0..8] == b"ICCRGBG1"
+                                        && &app_data[8..11] == b"012"
+                                    {
                                         // Collect ICC profile data from sub-blocks
                                         pos += size;
-                                        let (new_pos, profile_data) = Self::read_sub_blocks(reader, pos)?;
+                                        let (new_pos, profile_data) =
+                                            Self::read_sub_blocks(reader, pos)?;
                                         if !profile_data.is_empty() {
                                             icc_profile = Some(profile_data);
                                         }
@@ -154,7 +157,9 @@ impl GIFParser {
                                     // Check for XMP extension: "XMP DataXMP"
                                     // Application identifier: "XMP Data" (8 bytes)
                                     // Authentication code: "XMP" (3 bytes)
-                                    else if &app_data[0..8] == b"XMP Data" && &app_data[8..11] == b"XMP" {
+                                    else if &app_data[0..8] == b"XMP Data"
+                                        && &app_data[8..11] == b"XMP"
+                                    {
                                         // GIF XMP is NOT stored in sub-blocks - it's stored as raw data
                                         // followed by a 258-byte "magic trailer" (landing zone)
                                         pos += size;
@@ -525,10 +530,7 @@ impl FormatParser for GIFParser {
             );
         } else {
             let ratio = ((lsd.pixel_aspect_ratio as f64 + 15.0) / 64.0).round() as i64;
-            metadata.insert(
-                "PixelAspectRatio".to_string(),
-                TagValue::Integer(ratio),
-            );
+            metadata.insert("PixelAspectRatio".to_string(), TagValue::Integer(ratio));
         }
 
         // Scan for extensions and image blocks

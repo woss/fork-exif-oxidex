@@ -147,7 +147,10 @@ impl FormatParser for OggParser {
                     }
                 }
                 // OGG FLAC header: 0x7F "FLAC" version info + STREAMINFO
-                else if page_body.len() >= 13 && page_body[0] == OGG_FLAC_MARKER && &page_body[1..5] == b"FLAC" {
+                else if page_body.len() >= 13
+                    && page_body[0] == OGG_FLAC_MARKER
+                    && &page_body[1..5] == b"FLAC"
+                {
                     parse_ogg_flac_header(&page_body, &mut metadata)?;
                 }
                 // FLAC metadata block: first byte contains type (bits 0-6) and last-block flag (bit 7)
@@ -161,7 +164,10 @@ impl FormatParser for OggParser {
                             | (page_body[3] as u32);
                         if page_body.len() >= 4 + block_size as usize {
                             // Parse Vorbis comments from the block data (after 4-byte header)
-                            parse_vorbis_comments(&page_body[4..4 + block_size as usize], &mut metadata)?;
+                            parse_vorbis_comments(
+                                &page_body[4..4 + block_size as usize],
+                                &mut metadata,
+                            )?;
                             break; // Found comments, we're done
                         }
                     }
@@ -337,7 +343,10 @@ fn parse_ogg_flac_header(data: &[u8], metadata: &mut MetadataMap) -> Result<()> 
         "FLAC:TotalSamples".to_string(),
         TagValue::new_integer(total_samples as i64),
     );
-    metadata.insert("FLAC:MD5Signature".to_string(), TagValue::new_string(md5_str));
+    metadata.insert(
+        "FLAC:MD5Signature".to_string(),
+        TagValue::new_string(md5_str),
+    );
 
     Ok(())
 }

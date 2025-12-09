@@ -52,7 +52,6 @@ pub fn detect_bmff_variants(data: &[u8]) -> Option<FileFormat> {
 
 /// Detect format from ftyp brand identifier
 fn detect_ftyp_brand(data: &[u8]) -> Option<FileFormat> {
-
     // Check brand identifier at offset 8
     if data.len() < 12 {
         // Has ftyp but not enough bytes for brand

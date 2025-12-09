@@ -355,7 +355,9 @@ pub fn extract_iptc_from_segments(segments: &[Segment]) -> Result<Vec<(String, S
                                             }
                                             10 => {
                                                 // Urgency: add description to match ExifTool
-                                                format_iptc_urgency(&decode_iptc_string(&record.data))
+                                                format_iptc_urgency(&decode_iptc_string(
+                                                    &record.data,
+                                                ))
                                             }
                                             30 | 37 | 47 | 55 | 62 | 70 => {
                                                 // Date fields: YYYYMMDD -> YYYY:MM:DD

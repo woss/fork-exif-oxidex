@@ -29,12 +29,7 @@ pub fn detect_text_formats(data: &[u8]) -> Option<FileFormat> {
     }
 
     // Binary EPS (DOS EPS): 0xC5D0D3C6 magic
-    if data.len() >= 4
-        && data[0] == 0xC5
-        && data[1] == 0xD0
-        && data[2] == 0xD3
-        && data[3] == 0xC6
-    {
+    if data.len() >= 4 && data[0] == 0xC5 && data[1] == 0xD0 && data[2] == 0xD3 && data[3] == 0xC6 {
         return Some(FileFormat::EPS);
     }
 
