@@ -409,7 +409,7 @@ compare-exiftool:
     echo "   Found $TEST_FILES test files"
 
     echo "🔨 Building tag-comparison tool..."
-    cargo build --release --bin tag-comparison
+    cargo build --release --bin tag-comparison --features tag-comparison-binary
 
     OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
@@ -463,7 +463,7 @@ compare-exiftool-update:
     echo "   Found $TEST_FILES test files"
 
     echo "🔨 Building tag-comparison tool..."
-    cargo build --release --bin tag-comparison
+    cargo build --release --bin tag-comparison --features tag-comparison-binary
 
     OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
@@ -587,7 +587,7 @@ compare-exiftool-samples:
     echo "   Downloaded $SAMPLE_COUNT sample images"
 
     echo "🔨 Building tag-comparison tool..."
-    cargo build --release --bin tag-comparison
+    cargo build --release --bin tag-comparison --features tag-comparison-binary
 
     OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
@@ -670,7 +670,7 @@ compare-exiftool-full:
     echo "   Total files for comparison: $TOTAL_FILES"
 
     echo "🔨 Building tag-comparison tool..."
-    cargo build --release --bin tag-comparison
+    cargo build --release --bin tag-comparison --features tag-comparison-binary
 
     OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
@@ -774,7 +774,7 @@ compare-exiftool-full-update:
     echo "   Total files for comparison: $TOTAL_FILES"
 
     echo "🔨 Building tag-comparison tool..."
-    cargo build --release --bin tag-comparison
+    cargo build --release --bin tag-comparison --features tag-comparison-binary
 
     OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 

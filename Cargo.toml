@@ -39,6 +39,7 @@ path = "src/main.rs"
 [[bin]]
 name = "tag-comparison"
 path = "src/bin/tag-comparison/main.rs"
+required-features = ["tag-comparison-binary"]
 
 [[bench]]
 name = "parse_benchmarks"
@@ -194,6 +195,9 @@ debug = true  # Enable debug symbols for profiling
 
 [features]
 exiftool-comparison = []
+# Feature to enable the tag-comparison binary (used by deploy-docs workflow)
+# This binary has special linking requirements and is excluded from default builds
+tag-comparison-binary = []
 
 # Debian Package Configuration (cargo-deb)
 # Install cargo-deb: cargo install cargo-deb
