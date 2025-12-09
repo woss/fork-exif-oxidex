@@ -607,20 +607,24 @@ compare-exiftool-samples:
 
 # Run comparison against both test suite AND sample database (comprehensive)
 # Falls back to GCS cache at gs://oxidex-samples/exiftool/ if exiftool.org is unavailable
+# OPTIMIZED: Uses parallel downloads and caching
 compare-exiftool-full:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+    # Use fixed cache directory for reuse across runs
+    CACHE_DIR="${EXIFTOOL_CACHE_DIR:-/tmp/oxidex-exiftool-cache}"
+    EXIFTOOL_DIR="$CACHE_DIR/exiftool"
     COMBINED_DIR="/tmp/exiftool-combined-$$"
     GCS_BUCKET="https://storage.googleapis.com/oxidex-samples/exiftool"
 
     cleanup() {
-        echo "🧹 Cleaning up..."
-        rm -rf "$EXIFTOOL_DIR" "$COMBINED_DIR"
-        rm -f /tmp/exiftool-*.tar.gz /tmp/sample-*.tar.gz
+        echo "🧹 Cleaning up temp files..."
+        rm -rf "$COMBINED_DIR"
     }
     trap cleanup EXIT
+
+    mkdir -p "$CACHE_DIR"
 
     echo "📥 Fetching latest ExifTool version..."
     # Try exiftool.org first with User-Agent, fall back to GitHub tags API
@@ -632,13 +636,26 @@ compare-exiftool-full:
     fi
     echo "   Version: $VERSION"
 
-    echo "📦 Downloading ExifTool $VERSION..."
-    curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
-        -o "/tmp/exiftool-$VERSION.tar.gz" --progress-bar
-
-    echo "📂 Extracting ExifTool..."
-    mkdir -p "$EXIFTOOL_DIR"
-    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+    # Check if ExifTool is already cached
+    if [[ -f "$EXIFTOOL_DIR/exiftool" && -f "$CACHE_DIR/.exiftool-version" ]]; then
+        CACHED_VERSION=$(cat "$CACHE_DIR/.exiftool-version")
+        if [[ "$CACHED_VERSION" == "$VERSION" ]]; then
+            echo "   ✓ Using cached ExifTool $VERSION"
+        else
+            echo "📦 Updating ExifTool from $CACHED_VERSION to $VERSION..."
+            rm -rf "$EXIFTOOL_DIR"
+            curl -sL "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" | \
+                tar -xzf - -C "$CACHE_DIR" && \
+                mv "$CACHE_DIR/exiftool-$VERSION" "$EXIFTOOL_DIR"
+            echo "$VERSION" > "$CACHE_DIR/.exiftool-version"
+        fi
+    else
+        echo "📦 Downloading ExifTool $VERSION..."
+        curl -sL "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" | \
+            tar -xzf - -C "$CACHE_DIR" && \
+            mv "$CACHE_DIR/exiftool-$VERSION" "$EXIFTOOL_DIR"
+        echo "$VERSION" > "$CACHE_DIR/.exiftool-version"
+    fi
 
     # Create combined samples directory
     mkdir -p "$COMBINED_DIR"
@@ -647,30 +664,52 @@ compare-exiftool-full:
     echo "📋 Copying ExifTool test images..."
     cp -r "$EXIFTOOL_DIR/t/images"/* "$COMBINED_DIR/" 2>/dev/null || true
 
-    # Download sample database - try exiftool.org first, fall back to GCS cache
-    echo "📥 Downloading ExifTool sample database..."
+    # Download sample database IN PARALLEL - try exiftool.org first, fall back to GCS cache
+    echo "📥 Downloading ExifTool sample database (parallel)..."
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
-    for mfr in $MANUFACTURERS; do
-        echo "   Downloading $mfr samples..."
-        # Try exiftool.org first
-        if curl -sLA "OxiDex/1.0" --fail "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
-            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
-            rm -f "/tmp/sample-$mfr.tar.gz"
-        # Fall back to GCS cache
-        elif curl -sL --fail "$GCS_BUCKET/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
-            echo "      (using GCS cache)"
-            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
-            rm -f "/tmp/sample-$mfr.tar.gz"
-        else
-            echo "      ⚠️  $mfr samples unavailable"
+
+    download_manufacturer() {
+        local mfr="$1"
+        local cache_dir="$2"
+        local combined_dir="$3"
+        local gcs_bucket="$4"
+        local cache_file="$cache_dir/samples-$mfr.tar.gz"
+
+        # Check cache first
+        if [[ -f "$cache_file" ]]; then
+            tar -xzf "$cache_file" -C "$combined_dir" 2>/dev/null || true
+            echo "   ✓ $mfr (cached)"
+            return 0
         fi
-    done
+
+        # Try exiftool.org first
+        if curl -sLA "OxiDex/1.0" --fail --connect-timeout 10 "https://exiftool.org/$mfr.tar.gz" -o "$cache_file" 2>/dev/null; then
+            tar -xzf "$cache_file" -C "$combined_dir" 2>/dev/null || true
+            echo "   ✓ $mfr"
+            return 0
+        fi
+
+        # Fall back to GCS cache
+        if curl -sL --fail --connect-timeout 10 "$gcs_bucket/$mfr.tar.gz" -o "$cache_file" 2>/dev/null; then
+            tar -xzf "$cache_file" -C "$combined_dir" 2>/dev/null || true
+            echo "   ✓ $mfr (GCS)"
+            return 0
+        fi
+
+        echo "   ⚠️  $mfr unavailable"
+        return 0
+    }
+    export -f download_manufacturer
+
+    # Run downloads in parallel (up to 6 concurrent)
+    echo "$MANUFACTURERS" | tr ' ' '\n' | \
+        xargs -P 6 -I {} bash -c 'download_manufacturer "$@"' _ {} "$CACHE_DIR" "$COMBINED_DIR" "$GCS_BUCKET"
 
     TOTAL_FILES=$(find "$COMBINED_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
     echo "   Total files for comparison: $TOTAL_FILES"
 
     echo "🔨 Building tag-comparison tool..."
-    cargo build --release --bin tag-comparison --features tag-comparison-binary
+    cargo build --release --bin tag-comparison --features tag-comparison-binary 2>&1 | grep -v "^   Compiling" || true
 
     OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
@@ -690,20 +729,24 @@ compare-exiftool-full:
 
 # Run full comparison and update docs (for CI)
 # Falls back to GCS cache at gs://oxidex-samples/exiftool/ if exiftool.org is unavailable
+# OPTIMIZED: Uses parallel downloads and caching
 compare-exiftool-full-update:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    EXIFTOOL_DIR="/tmp/exiftool-test-$$"
+    # Use fixed cache directory for reuse across runs
+    CACHE_DIR="${EXIFTOOL_CACHE_DIR:-/tmp/oxidex-exiftool-cache}"
+    EXIFTOOL_DIR="$CACHE_DIR/exiftool"
     COMBINED_DIR="/tmp/exiftool-combined-$$"
     GCS_BUCKET="https://storage.googleapis.com/oxidex-samples/exiftool"
 
     cleanup() {
-        echo "🧹 Cleaning up..."
-        rm -rf "$EXIFTOOL_DIR" "$COMBINED_DIR"
-        rm -f /tmp/exiftool-*.tar.gz /tmp/sample-*.tar.gz
+        echo "🧹 Cleaning up temp files..."
+        rm -rf "$COMBINED_DIR"
     }
     trap cleanup EXIT
+
+    mkdir -p "$CACHE_DIR"
 
     echo "📥 Fetching latest ExifTool version..."
     # Try multiple sources for version with explicit error handling
@@ -736,13 +779,26 @@ compare-exiftool-full-update:
     fi
     echo "   Version: $VERSION"
 
-    echo "📦 Downloading ExifTool $VERSION..."
-    curl -L "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" \
-        -o "/tmp/exiftool-$VERSION.tar.gz" --progress-bar
-
-    echo "📂 Extracting ExifTool..."
-    mkdir -p "$EXIFTOOL_DIR"
-    tar -xzf "/tmp/exiftool-$VERSION.tar.gz" -C "$EXIFTOOL_DIR" --strip-components=1
+    # Check if ExifTool is already cached
+    if [[ -f "$EXIFTOOL_DIR/exiftool" && -f "$CACHE_DIR/.exiftool-version" ]]; then
+        CACHED_VERSION=$(cat "$CACHE_DIR/.exiftool-version")
+        if [[ "$CACHED_VERSION" == "$VERSION" ]]; then
+            echo "   ✓ Using cached ExifTool $VERSION"
+        else
+            echo "📦 Updating ExifTool from $CACHED_VERSION to $VERSION..."
+            rm -rf "$EXIFTOOL_DIR"
+            curl -sL "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" | \
+                tar -xzf - -C "$CACHE_DIR" && \
+                mv "$CACHE_DIR/exiftool-$VERSION" "$EXIFTOOL_DIR"
+            echo "$VERSION" > "$CACHE_DIR/.exiftool-version"
+        fi
+    else
+        echo "📦 Downloading ExifTool $VERSION..."
+        curl -sL "https://github.com/exiftool/exiftool/archive/refs/tags/$VERSION.tar.gz" | \
+            tar -xzf - -C "$CACHE_DIR" && \
+            mv "$CACHE_DIR/exiftool-$VERSION" "$EXIFTOOL_DIR"
+        echo "$VERSION" > "$CACHE_DIR/.exiftool-version"
+    fi
 
     # Create combined samples directory
     mkdir -p "$COMBINED_DIR"
@@ -751,30 +807,52 @@ compare-exiftool-full-update:
     echo "📋 Copying ExifTool test images..."
     cp -r "$EXIFTOOL_DIR/t/images"/* "$COMBINED_DIR/" 2>/dev/null || true
 
-    # Download sample database - try exiftool.org first, fall back to GCS cache
-    echo "📥 Downloading ExifTool sample database..."
+    # Download sample database IN PARALLEL - try exiftool.org first, fall back to GCS cache
+    echo "📥 Downloading ExifTool sample database (parallel)..."
     MANUFACTURERS="Canon Nikon Sony FujiFilm Panasonic Apple Google Samsung Olympus Pentax Leica DJI GoPro"
-    for mfr in $MANUFACTURERS; do
-        echo "   Downloading $mfr samples..."
-        # Try exiftool.org first
-        if curl -sLA "OxiDex/1.0" --fail "https://exiftool.org/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
-            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
-            rm -f "/tmp/sample-$mfr.tar.gz"
-        # Fall back to GCS cache
-        elif curl -sL --fail "$GCS_BUCKET/$mfr.tar.gz" -o "/tmp/sample-$mfr.tar.gz" 2>/dev/null; then
-            echo "      (using GCS cache)"
-            tar -xzf "/tmp/sample-$mfr.tar.gz" -C "$COMBINED_DIR" 2>/dev/null || true
-            rm -f "/tmp/sample-$mfr.tar.gz"
-        else
-            echo "      ⚠️  $mfr samples unavailable"
+
+    download_manufacturer() {
+        local mfr="$1"
+        local cache_dir="$2"
+        local combined_dir="$3"
+        local gcs_bucket="$4"
+        local cache_file="$cache_dir/samples-$mfr.tar.gz"
+
+        # Check cache first
+        if [[ -f "$cache_file" ]]; then
+            tar -xzf "$cache_file" -C "$combined_dir" 2>/dev/null || true
+            echo "   ✓ $mfr (cached)"
+            return 0
         fi
-    done
+
+        # Try exiftool.org first
+        if curl -sLA "OxiDex/1.0" --fail --connect-timeout 10 "https://exiftool.org/$mfr.tar.gz" -o "$cache_file" 2>/dev/null; then
+            tar -xzf "$cache_file" -C "$combined_dir" 2>/dev/null || true
+            echo "   ✓ $mfr"
+            return 0
+        fi
+
+        # Fall back to GCS cache
+        if curl -sL --fail --connect-timeout 10 "$gcs_bucket/$mfr.tar.gz" -o "$cache_file" 2>/dev/null; then
+            tar -xzf "$cache_file" -C "$combined_dir" 2>/dev/null || true
+            echo "   ✓ $mfr (GCS)"
+            return 0
+        fi
+
+        echo "   ⚠️  $mfr unavailable"
+        return 0
+    }
+    export -f download_manufacturer
+
+    # Run downloads in parallel (up to 6 concurrent)
+    echo "$MANUFACTURERS" | tr ' ' '\n' | \
+        xargs -P 6 -I {} bash -c 'download_manufacturer "$@"' _ {} "$CACHE_DIR" "$COMBINED_DIR" "$GCS_BUCKET"
 
     TOTAL_FILES=$(find "$COMBINED_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
     echo "   Total files for comparison: $TOTAL_FILES"
 
     echo "🔨 Building tag-comparison tool..."
-    cargo build --release --bin tag-comparison --features tag-comparison-binary
+    cargo build --release --bin tag-comparison --features tag-comparison-binary 2>&1 | grep -v "^   Compiling" || true
 
     OXIDEX_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 

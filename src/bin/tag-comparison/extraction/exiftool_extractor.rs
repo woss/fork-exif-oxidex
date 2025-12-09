@@ -1,11 +1,20 @@
 //! ExifTool tag extractor - Extract tags by running exiftool -json on fixtures
+//!
+//! OPTIMIZED: Uses batch mode to process multiple files at once (much faster than
+//! spawning exiftool for each file individually).
 
 use super::ExtractionResult;
 use crate::models::TagInfo;
 use std::collections::HashMap;
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use walkdir::WalkDir;
+
+/// Batch size for exiftool invocations
+/// ExifTool handles batches efficiently, but we limit batch size to avoid
+/// command line length limits on some systems
+const BATCH_SIZE: usize = 100;
 
 /// Extract tags from ExifTool by running exiftool CLI
 pub struct ExifToolExtractor {
@@ -29,6 +38,8 @@ impl ExifToolExtractor {
     ///
     /// # Returns
     /// ExtractionResult with tags and file count
+    ///
+    /// OPTIMIZED: Uses batch mode to process multiple files per exiftool invocation
     pub async fn extract_format_tags(
         &mut self,
         format: &str,
@@ -51,26 +62,36 @@ impl ExifToolExtractor {
             });
         }
 
-        // Extract tags from each file
+        // OPTIMIZATION: Process files in batches using exiftool's batch mode
+        // This is MUCH faster than spawning exiftool for each file individually
         let mut all_tags: HashMap<String, (TagInfo, usize)> = HashMap::new();
 
-        for file_path in &files {
-            match self.run_exiftool_on_file(file_path) {
-                Ok(file_tags) => {
-                    for tag_info in file_tags {
-                        all_tags
-                            .entry(format!("{}:{}", tag_info.family, tag_info.name))
-                            .and_modify(|(_info, count)| *count += 1)
-                            .or_insert((tag_info.clone(), 1));
+        // Process in batches
+        for batch in files.chunks(BATCH_SIZE) {
+            match self.run_exiftool_batch(batch) {
+                Ok(batch_results) => {
+                    for file_tags in batch_results {
+                        for tag_info in file_tags {
+                            all_tags
+                                .entry(format!("{}:{}", tag_info.family, tag_info.name))
+                                .and_modify(|(_info, count)| *count += 1)
+                                .or_insert((tag_info.clone(), 1));
+                        }
                     }
                 }
                 Err(e) => {
-                    eprintln!(
-                        "Warning: Failed to extract tags from {}: {}",
-                        file_path.display(),
-                        e
-                    );
-                    // Continue processing other files
+                    eprintln!("Warning: Batch extraction failed: {}", e);
+                    // Fall back to individual file processing for this batch
+                    for file_path in batch {
+                        if let Ok(file_tags) = self.run_exiftool_on_file(file_path) {
+                            for tag_info in file_tags {
+                                all_tags
+                                    .entry(format!("{}:{}", tag_info.family, tag_info.name))
+                                    .and_modify(|(_info, count)| *count += 1)
+                                    .or_insert((tag_info.clone(), 1));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -95,7 +116,60 @@ impl ExifToolExtractor {
         Ok(result)
     }
 
-    /// Run exiftool on a file and parse JSON output
+    /// Run exiftool on multiple files at once (batch mode)
+    /// Returns a Vec of tag results, one per file
+    fn run_exiftool_batch(
+        &self,
+        files: &[PathBuf],
+    ) -> Result<Vec<Vec<TagInfo>>, Box<dyn std::error::Error>> {
+        if files.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Use -@ to read filenames from stdin (avoids command line length limits)
+        let mut child = Command::new(&self.exiftool_path)
+            .arg("-json")
+            .arg("-G") // Include group name prefix (e.g., "EXIF:Make")
+            .arg("-@")
+            .arg("-") // Read filenames from stdin
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        // Write filenames to stdin
+        if let Some(mut stdin) = child.stdin.take() {
+            for file in files {
+                writeln!(stdin, "{}", file.display())?;
+            }
+        }
+
+        let output = child.wait_with_output()?;
+
+        if !output.status.success() {
+            // Non-zero exit is common when some files fail - check if we got any output
+            if output.stdout.is_empty() {
+                return Err(format!(
+                    "ExifTool failed: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                )
+                .into());
+            }
+            // We have output despite errors, continue parsing
+        }
+
+        let stdout = String::from_utf8(output.stdout)?;
+        if stdout.trim().is_empty() {
+            return Ok(vec![]);
+        }
+
+        let json: serde_json::Value = serde_json::from_str(&stdout)?;
+        let results = self.parse_exiftool_batch_json(&json);
+
+        Ok(results)
+    }
+
+    /// Run exiftool on a single file and parse JSON output (fallback)
     fn run_exiftool_on_file(
         &self,
         file_path: &Path,
@@ -121,6 +195,20 @@ impl ExifToolExtractor {
         Ok(tags)
     }
 
+    /// Parse batch JSON output from ExifTool (array of file results)
+    fn parse_exiftool_batch_json(&self, json: &serde_json::Value) -> Vec<Vec<TagInfo>> {
+        let mut results = Vec::new();
+
+        if let Some(array) = json.as_array() {
+            for file_data in array {
+                let tags = self.parse_single_file_json(file_data);
+                results.push(tags);
+            }
+        }
+
+        results
+    }
+
     /// Check if a tag family should be skipped in comparison
     /// These are pseudo-tags computed by ExifTool, not actual extracted metadata
     fn should_skip_family(family: &str) -> bool {
@@ -136,35 +224,42 @@ impl ExifToolExtractor {
         )
     }
 
-    /// Parse ExifTool JSON output into TagInfo
-    fn parse_exiftool_json(&self, json: &serde_json::Value) -> Vec<TagInfo> {
+    /// Parse a single file's JSON data into TagInfo vector
+    fn parse_single_file_json(&self, file_data: &serde_json::Value) -> Vec<TagInfo> {
         let mut tags = Vec::new();
 
-        // ExifTool returns an array of objects, one per file
-        if let Some(array) = json.as_array() {
-            if let Some(file_data) = array.first() {
-                if let Some(obj) = file_data.as_object() {
-                    for (key, value) in obj.iter() {
-                        let (family, name) = self.parse_tag_name(key);
-                        // Skip pseudo-tags and computed values
-                        if family != "UNKNOWN" && !Self::should_skip_family(&family) {
-                            let value_str = match value {
-                                serde_json::Value::String(s) => s.clone(),
-                                serde_json::Value::Number(n) => n.to_string(),
-                                serde_json::Value::Bool(b) => b.to_string(),
-                                serde_json::Value::Array(_) => value.to_string(),
-                                serde_json::Value::Object(_) => value.to_string(),
-                                serde_json::Value::Null => "null".to_string(),
-                            };
-                            let tag_info = TagInfo::new(name, family, value_str);
-                            tags.push(tag_info);
-                        }
-                    }
+        if let Some(obj) = file_data.as_object() {
+            for (key, value) in obj.iter() {
+                let (family, name) = self.parse_tag_name(key);
+                // Skip pseudo-tags and computed values
+                if family != "UNKNOWN" && !Self::should_skip_family(&family) {
+                    let value_str = match value {
+                        serde_json::Value::String(s) => s.clone(),
+                        serde_json::Value::Number(n) => n.to_string(),
+                        serde_json::Value::Bool(b) => b.to_string(),
+                        serde_json::Value::Array(_) => value.to_string(),
+                        serde_json::Value::Object(_) => value.to_string(),
+                        serde_json::Value::Null => "null".to_string(),
+                    };
+                    let tag_info = TagInfo::new(name, family, value_str);
+                    tags.push(tag_info);
                 }
             }
         }
 
         tags
+    }
+
+    /// Parse ExifTool JSON output into TagInfo (for single-file output)
+    fn parse_exiftool_json(&self, json: &serde_json::Value) -> Vec<TagInfo> {
+        // ExifTool returns an array of objects, one per file
+        if let Some(array) = json.as_array() {
+            if let Some(file_data) = array.first() {
+                return self.parse_single_file_json(file_data);
+            }
+        }
+
+        Vec::new()
     }
 
     /// Parse tag name to extract family and tag name
