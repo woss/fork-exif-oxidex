@@ -49,6 +49,7 @@
 use crate::error::{ExifToolError, Result};
 use crate::parsers::xmp::namespace_resolver::NamespaceResolver;
 use quick_xml::Reader;
+use quick_xml::escape::resolve_predefined_entity;
 use quick_xml::events::{BytesStart, Event};
 
 /// Parses XMP metadata from RDF/XML format.
@@ -178,10 +179,14 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
 
             Ok(Event::Text(e)) => {
                 // Collect text content if we're inside a property
+                // First decode the bytes, then unescape XML entities like &apos; &quot; &amp; etc.
                 if current_property.is_some()
-                    && let Ok(text) = e.xml_content()
+                    && let Ok(decoded) = e.xml_content()
                 {
-                    current_value.push_str(&text);
+                    // Unescape XML entities (e.g., &apos; -> ', &quot; -> ", &amp; -> &)
+                    let unescaped = quick_xml::escape::unescape(&decoded)
+                        .unwrap_or_else(|_| decoded.clone());
+                    current_value.push_str(&unescaped);
                 }
             }
 
@@ -202,6 +207,28 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
             }
 
             Ok(Event::Eof) => break,
+
+            Ok(Event::GeneralRef(e)) => {
+                // Handle XML entity references like &apos; &quot; &amp; &lt; &gt;
+                if current_property.is_some() {
+                    if let Ok(entity_name) = e.xml_content() {
+                        // First try to resolve as character reference (&#123; or &#x7B;)
+                        if let Ok(Some(ch)) = e.resolve_char_ref() {
+                            current_value.push(ch);
+                        }
+                        // Then try predefined XML entities (apos, quot, amp, lt, gt)
+                        else if let Some(resolved) = resolve_predefined_entity(&entity_name) {
+                            current_value.push_str(resolved);
+                        }
+                        // Unknown entity - keep the original reference
+                        else {
+                            current_value.push('&');
+                            current_value.push_str(&entity_name);
+                            current_value.push(';');
+                        }
+                    }
+                }
+            }
 
             Ok(_) => {} // Ignore other events (comments, PI, etc.)
 
@@ -947,6 +974,56 @@ mod tests {
         assert!(
             prop_names.iter().any(|n| n == "XMP:Creator"),
             "Missing XMP:Creator"
+        );
+    }
+
+    #[test]
+    fn test_xml_entity_unescaping() {
+        // Test that XML entities like &apos; are properly decoded
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/">
+              <rdf:Description>
+                <photoshop:Source>I&apos;m the source</photoshop:Source>
+                <photoshop:Credit>&quot;Famous&quot;Photographer</photoshop:Credit>
+                <photoshop:Instructions>Use&amp;enjoy</photoshop:Instructions>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        // Find the Source tag
+        let source = result
+            .iter()
+            .find(|(name, _)| name.ends_with("Source"))
+            .map(|(_, v)| v.as_str());
+        assert_eq!(
+            source,
+            Some("I'm the source"),
+            "Expected &apos; to be decoded to apostrophe"
+        );
+
+        // Find the Credit tag - no spaces around entities
+        let credit = result
+            .iter()
+            .find(|(name, _)| name.ends_with("Credit"))
+            .map(|(_, v)| v.as_str());
+        assert_eq!(
+            credit,
+            Some("\"Famous\"Photographer"),
+            "Expected &quot; to be decoded to double quote"
+        );
+
+        // Find the Instructions tag - no spaces around entity
+        let instructions = result
+            .iter()
+            .find(|(name, _)| name.ends_with("Instructions"))
+            .map(|(_, v)| v.as_str());
+        assert_eq!(
+            instructions,
+            Some("Use&enjoy"),
+            "Expected &amp; to be decoded to ampersand"
         );
     }
 }
