@@ -3,7 +3,7 @@
 //! This module handles parsing of IPTC data in JPEG APP13 segments.
 //! IPTC data is stored in Adobe Photoshop Image Resource Blocks (8BIM).
 
-use crate::core::value_formatter::{format_iptc_date, format_iptc_time};
+use crate::core::value_formatter::{format_iptc_date, format_iptc_time, format_iptc_urgency};
 use crate::error::Result;
 use crate::parsers::jpeg::segment_parser::Segment;
 use nom::{
@@ -327,12 +327,32 @@ pub fn extract_iptc_from_segments(segments: &[Segment]) -> Result<Vec<(String, S
                                     // Apply formatting for specific dataset types
                                     if record.record_number == 2 {
                                         match record.dataset_number {
-                                            55 => {
-                                                // DateCreated: YYYYMMDD -> YYYY:MM:DD
+                                            10 => {
+                                                // Urgency: add description to match ExifTool
+                                                value = format_iptc_urgency(&value);
+                                            }
+                                            30 | 37 | 47 | 55 | 62 | 70 => {
+                                                // Date fields: YYYYMMDD -> YYYY:MM:DD
+                                                // 30=ReleaseDate, 37=ExpirationDate, 47=ReferenceDate
+                                                // 55=DateCreated, 62=DigitalCreationDate, 70=DateSent
                                                 value = format_iptc_date(&value);
                                             }
-                                            60 => {
-                                                // TimeCreated: HHMMSS±HHMM -> HH:MM:SS±HH:MM
+                                            35 | 38 | 60 | 63 => {
+                                                // Time fields: HHMMSS±HHMM -> HH:MM:SS±HH:MM
+                                                // 35=ReleaseTime, 38=ExpirationTime, 60=TimeCreated
+                                                // 63=DigitalCreationTime
+                                                value = format_iptc_time(&value);
+                                            }
+                                            _ => {}
+                                        }
+                                    } else if record.record_number == 1 {
+                                        match record.dataset_number {
+                                            70 => {
+                                                // DateSent: YYYYMMDD -> YYYY:MM:DD
+                                                value = format_iptc_date(&value);
+                                            }
+                                            80 => {
+                                                // TimeSent: HHMMSS±HHMM -> HH:MM:SS±HH:MM
                                                 value = format_iptc_time(&value);
                                             }
                                             _ => {}

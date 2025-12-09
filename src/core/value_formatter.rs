@@ -115,6 +115,31 @@ pub fn format_iptc_time(raw: &str) -> String {
     }
 }
 
+/// Format IPTC urgency value with human-readable description.
+///
+/// IPTC urgency is a single digit 1-8, where 1 is most urgent and 8 is least.
+/// ExifTool displays this with a parenthetical description for boundary values.
+///
+/// # Examples
+///
+/// ```
+/// use oxidex::core::value_formatter::format_iptc_urgency;
+///
+/// assert_eq!(format_iptc_urgency("1"), "1 (most urgent)");
+/// assert_eq!(format_iptc_urgency("5"), "5 (normal)");
+/// assert_eq!(format_iptc_urgency("8"), "8 (least urgent)");
+/// assert_eq!(format_iptc_urgency("3"), "3");
+/// assert_eq!(format_iptc_urgency("invalid"), "invalid"); // Preserves invalid input
+/// ```
+pub fn format_iptc_urgency(raw: &str) -> String {
+    match raw.trim() {
+        "1" => "1 (most urgent)".to_string(),
+        "5" => "5 (normal)".to_string(),
+        "8" => "8 (least urgent)".to_string(),
+        _ => raw.to_string(),
+    }
+}
+
 /// Convert ISO 8601 date to EXIF-style date format.
 ///
 /// This function transforms ISO 8601 formatted dates (with 'T' separator and dashes)

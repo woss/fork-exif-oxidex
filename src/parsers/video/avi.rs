@@ -291,7 +291,7 @@ fn parse_avih_chunk(
     // Calculate frame rate from microseconds per frame
     if microsec_per_frame > 0 {
         let frame_rate = 1_000_000.0 / microsec_per_frame as f64;
-        // ExifTool outputs integer frame rate
+        // ExifTool outputs this as "VideoFrameRate"
         metadata.insert(
             "RIFF:VideoFrameRate".to_string(),
             TagValue::new_integer(frame_rate.round() as i64),
