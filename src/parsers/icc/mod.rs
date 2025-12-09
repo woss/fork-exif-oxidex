@@ -98,7 +98,9 @@ pub fn parse_icc_file(reader: &dyn FileReader) -> Result<MetadataMap> {
     }
 
     if metadata.is_empty() {
-        return Err(ExifToolError::parse_error("No valid ICC profile data found"));
+        return Err(ExifToolError::parse_error(
+            "No valid ICC profile data found",
+        ));
     }
 
     Ok(metadata)

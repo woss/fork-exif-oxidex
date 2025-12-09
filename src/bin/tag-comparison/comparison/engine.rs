@@ -12,15 +12,14 @@ fn normalize_family_for_comparison(family: &str) -> &str {
     match family {
         // Camera manufacturers -> MakerNotes
         "Canon" | "Nikon" | "Sony" | "Fujifilm" | "Panasonic" | "Olympus" | "Pentax"
-        | "Samsung" | "Leica" | "Casio" | "Minolta" | "Sigma" | "Ricoh" | "Kodak"
-        | "Sanyo" | "JVC" | "Motorola" | "HP" | "GoPro" | "DJI" | "Apple" | "Google"
-        | "Reconyx" | "Parrot" | "Infiray" | "Lytro" | "PhaseOne" | "Leaf" | "Red"
-        | "Qualcomm" | "Nintendo" | "GE" | "LG" => "MakerNotes",
+        | "Samsung" | "Leica" | "Casio" | "Minolta" | "Sigma" | "Ricoh" | "Kodak" | "Sanyo"
+        | "JVC" | "Motorola" | "HP" | "GoPro" | "DJI" | "Apple" | "Google" | "Reconyx"
+        | "Parrot" | "Infiray" | "Lytro" | "PhaseOne" | "Leaf" | "Red" | "Qualcomm"
+        | "Nintendo" | "GE" | "LG" => "MakerNotes",
         // XMP namespace variants -> XMP (ExifTool often simplifies these)
         "XMP-exif" | "XMP-tiff" | "XMP-photoshop" | "XMP-iptcCore" | "XMP-iptcExt"
-        | "XMP-xmpMM" | "XMP-xmpRights" | "XMP-dc" | "XMP-xmp" | "XMP-crs"
-        | "XMP-plus" | "XMP-GDepth" | "XMP-GCamera" | "XMP-Device" | "XMP-darktable"
-        | "XMP-xmpDM" => "XMP",
+        | "XMP-xmpMM" | "XMP-xmpRights" | "XMP-dc" | "XMP-xmp" | "XMP-crs" | "XMP-plus"
+        | "XMP-GDepth" | "XMP-GCamera" | "XMP-Device" | "XMP-darktable" | "XMP-xmpDM" => "XMP",
         // FLIR -> APP1 (ExifTool convention)
         "FLIR" => "APP1",
         // HDR -> APP11
@@ -608,7 +607,11 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle GPS precision differences (round to fewer decimal places)
-    if tag_key.contains("GPS") && !tag_key.contains("Ref") && !tag_key.contains("Latitude") && !tag_key.contains("Longitude") {
+    if tag_key.contains("GPS")
+        && !tag_key.contains("Ref")
+        && !tag_key.contains("Latitude")
+        && !tag_key.contains("Longitude")
+    {
         if let Ok(val) = normalized.parse::<f64>() {
             // Round to 7 decimal places for comparison
             return format!("{:.7}", val);
@@ -647,7 +650,8 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle temperature formatting: "-0 C" vs "-0"
-    if tag_key.contains("Temperature") && !normalized.ends_with(" C") && !normalized.ends_with(" K") {
+    if tag_key.contains("Temperature") && !normalized.ends_with(" C") && !normalized.ends_with(" K")
+    {
         // Add C suffix if missing
         if let Ok(_val) = normalized.parse::<f64>() {
             // Don't add suffix since we normalize by removing it
@@ -655,7 +659,8 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
     // Also strip temperature units for comparison
     if (tag_key.contains("Temperature") || tag_key.contains("Temp"))
-        && (normalized.ends_with(" C") || normalized.ends_with("°C")) {
+        && (normalized.ends_with(" C") || normalized.ends_with("°C"))
+    {
         let num_str = normalized
             .trim_end_matches(" C")
             .trim_end_matches("°C")

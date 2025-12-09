@@ -34,6 +34,7 @@ use crate::parsers::image::flif::parse_flif_metadata;
 use crate::parsers::image::gif::parse_gif_metadata;
 // Note: HEIF uses parse_quicktime_metadata since HEIF is ISOBMFF-based
 use crate::parsers::elf::parse_elf_metadata;
+use crate::parsers::icc::parse_icc_file;
 use crate::parsers::image::ico::parse_ico_metadata;
 use crate::parsers::image::jxl::parse_jxl_metadata;
 use crate::parsers::image::psd::parse_psd_metadata;
@@ -54,8 +55,6 @@ use crate::parsers::specialized::obj::parse_obj_metadata;
 use crate::parsers::specialized::sqlite::parse_sqlite_metadata;
 use crate::parsers::specialized::stl::parse_stl_metadata;
 use crate::parsers::specialized::x509::parse_x509_metadata;
-use crate::parsers::icc::parse_icc_file;
-use crate::parsers::xmp::parse_xmp_file;
 use crate::parsers::text::txt::parse_txt_metadata;
 use crate::parsers::text::vcf::parse_vcf_metadata;
 use crate::parsers::video::avi::parse_avi_metadata;
@@ -63,6 +62,7 @@ use crate::parsers::video::flv::parse_flv_metadata;
 use crate::parsers::video::mkv::parse_mkv_metadata;
 use crate::parsers::video::mts::parse_mts_metadata;
 use crate::parsers::video::webm::parse_webm_metadata;
+use crate::parsers::xmp::parse_xmp_file;
 
 // Import format-specific parsers from operations module
 use super::operations::{parse_casio_cam_metadata, parse_jpeg_metadata, parse_tiff_metadata};
