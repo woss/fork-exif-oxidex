@@ -81,6 +81,8 @@ pub static SIMPLE_SIGNATURES: &[Signature] = &[
         0,
         FileFormat::ASF
     ),
+    // MXF - Universal Label prefix (06.0E.2B.34)
+    signature!(b"\x06\x0E\x2B\x34", 0, FileFormat::MXF),
     // Document formats
     signature!(b"%PDF", 0, FileFormat::PDF),
     // Archive formats

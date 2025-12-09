@@ -63,6 +63,7 @@ use crate::parsers::video::avi::parse_avi_metadata;
 use crate::parsers::video::flv::parse_flv_metadata;
 use crate::parsers::video::mkv::parse_mkv_metadata;
 use crate::parsers::video::mts::parse_mts_metadata;
+use crate::parsers::video::mxf::parse_mxf_metadata;
 use crate::parsers::video::webm::parse_webm_metadata;
 use crate::parsers::xmp::parse_xmp_file;
 
@@ -107,6 +108,7 @@ pub fn dispatch_format_parser(reader: &dyn FileReader, format: FileFormat) -> Re
         FileFormat::AVI => convert_string_error(parse_avi_metadata(reader), "AVI"),
         FileFormat::MTS => convert_string_error(parse_mts_metadata(reader), "MTS"),
         FileFormat::ASF => convert_string_error(parse_asf_metadata(reader), "ASF"),
+        FileFormat::MXF => convert_string_error(parse_mxf_metadata(reader), "MXF"),
         FileFormat::MP3 => convert_string_error(parse_mp3_metadata(reader), "MP3"),
         FileFormat::FLAC => convert_string_error(parse_flac_metadata(reader), "FLAC"),
         FileFormat::AAC => convert_string_error(parse_aac_metadata(reader), "AAC"),

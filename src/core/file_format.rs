@@ -105,6 +105,9 @@ pub enum FileFormat {
     /// ASF/WMV (Advanced Systems Format) video format (.asf, .wmv, .wma)
     ASF,
 
+    /// MXF (Material eXchange Format) video format (.mxf)
+    MXF,
+
     /// MP3 audio format (.mp3)
     MP3,
 
@@ -320,6 +323,7 @@ impl FileFormat {
             FileFormat::AVI => "AVI",
             FileFormat::MTS => "MTS",
             FileFormat::ASF => "ASF",
+            FileFormat::MXF => "MXF",
             FileFormat::MP3 => "MP3",
             FileFormat::FLAC => "FLAC",
             FileFormat::AAC => "AAC",
@@ -416,6 +420,7 @@ impl FileFormat {
             FileFormat::AVI => &["avi"],
             FileFormat::MTS => &["mts", "m2ts"],
             FileFormat::ASF => &["asf", "wmv", "wma"],
+            FileFormat::MXF => &["mxf"],
             FileFormat::MP3 => &["mp3"],
             FileFormat::FLAC => &["flac"],
             FileFormat::AAC => &["aac", "m4a"],
