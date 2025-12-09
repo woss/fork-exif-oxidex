@@ -106,6 +106,7 @@ impl GIFParser {
         let mut has_transparency = false;
         let mut transparent_color: Option<u8> = None;
         let mut icc_profile: Option<Vec<u8>> = None;
+        let mut xmp_data: Option<Vec<u8>> = None;
 
         while pos < reader.size() {
             let byte = match reader.read(pos, 1) {
@@ -146,6 +147,22 @@ impl GIFParser {
                                         let (new_pos, profile_data) = Self::read_sub_blocks(reader, pos)?;
                                         if !profile_data.is_empty() {
                                             icc_profile = Some(profile_data);
+                                        }
+                                        pos = new_pos;
+                                        continue; // Skip the normal sub-block skip
+                                    }
+                                    // Check for XMP extension: "XMP DataXMP"
+                                    // Application identifier: "XMP Data" (8 bytes)
+                                    // Authentication code: "XMP" (3 bytes)
+                                    else if &app_data[0..8] == b"XMP Data" && &app_data[8..11] == b"XMP" {
+                                        // GIF XMP is NOT stored in sub-blocks - it's stored as raw data
+                                        // followed by a 258-byte "magic trailer" (landing zone)
+                                        pos += size;
+
+                                        // Read raw XMP data until we hit the end marker
+                                        let (new_pos, raw_xmp) = Self::read_xmp_data(reader, pos)?;
+                                        if !raw_xmp.is_empty() {
+                                            xmp_data = Some(raw_xmp);
                                         }
                                         pos = new_pos;
                                         continue; // Skip the normal sub-block skip
@@ -233,6 +250,7 @@ impl GIFParser {
             has_transparency,
             transparent_color,
             icc_profile,
+            xmp_data,
         })
     }
 
@@ -314,6 +332,55 @@ impl GIFParser {
         Ok((pos, data))
     }
 
+    /// Reads XMP data from GIF (special format - not standard sub-blocks)
+    /// GIF XMP is stored as raw data followed by a 258-byte "magic trailer"
+    /// The trailer consists of: 0x01, 0xFF, 0xFE, ..., 0x01, 0x00, 0x00
+    fn read_xmp_data(reader: &dyn FileReader, start_pos: u64) -> Result<(u64, Vec<u8>)> {
+        // Read until we find the XMP end marker <?xpacket end=...?>
+        // We need to scan the file for the end of XMP content
+        let max_xmp_size = 1024 * 1024; // 1MB max XMP size
+        let remaining = (reader.size() - start_pos).min(max_xmp_size as u64) as usize;
+
+        if remaining == 0 {
+            return Ok((start_pos, Vec::new()));
+        }
+
+        let raw_data = reader.read(start_pos, remaining)?;
+
+        // Find the XMP end marker: <?xpacket end='w'?> or <?xpacket end="r"?>
+        let end_marker = b"<?xpacket end=";
+        let mut xmp_end = None;
+
+        for i in 0..raw_data.len().saturating_sub(end_marker.len() + 5) {
+            if &raw_data[i..i + end_marker.len()] == end_marker {
+                // Find the closing ?>
+                for j in i + end_marker.len()..raw_data.len().saturating_sub(1) {
+                    if raw_data[j] == b'?' && raw_data[j + 1] == b'>' {
+                        xmp_end = Some(j + 2);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+
+        if let Some(end) = xmp_end {
+            let xmp_data = raw_data[..end].to_vec();
+            // Skip past the magic trailer (258 bytes) plus any remaining data
+            let new_pos = start_pos + end as u64 + 258;
+            Ok((new_pos.min(reader.size()), xmp_data))
+        } else {
+            // No end marker found - try to strip trailing non-XML bytes
+            // The magic trailer starts with 0x01 and ends with 0x00
+            if let Some(end_pos) = raw_data.iter().rposition(|&b| b == b'>') {
+                let xmp_data = raw_data[..=end_pos].to_vec();
+                Ok((start_pos + remaining as u64, xmp_data))
+            } else {
+                Ok((start_pos + remaining as u64, Vec::new()))
+            }
+        }
+    }
+
     /// Reads comment blocks and appends to comment string
     fn read_comment_blocks(
         reader: &dyn FileReader,
@@ -364,6 +431,7 @@ struct BlockScanResult {
     has_transparency: bool,
     transparent_color: Option<u8>,
     icc_profile: Option<Vec<u8>>,
+    xmp_data: Option<Vec<u8>>,
 }
 
 /// Graphic Control Extension data
@@ -525,6 +593,20 @@ impl FormatParser for GIFParser {
                     Err(e) => {
                         eprintln!("Warning: Failed to parse ICC profile in GIF: {}", e);
                     }
+                }
+            }
+        }
+
+        // Parse XMP data if present
+        if let Some(xmp_bytes) = scan_result.xmp_data {
+            match crate::parsers::xmp::rdf_parser::parse_xmp(&xmp_bytes) {
+                Ok(xmp_tags) => {
+                    for (tag_name, value) in xmp_tags {
+                        metadata.insert(tag_name, TagValue::String(value));
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Warning: Failed to parse XMP in GIF: {}", e);
                 }
             }
         }
