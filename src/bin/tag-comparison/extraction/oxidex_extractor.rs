@@ -119,8 +119,14 @@ impl OxiDexExtractor {
         // match ExifTool's output before we compare the results
         let formatted_metadata = format_for_exiftool(&raw_metadata);
 
-        // Step 3: Flatten the formatted metadata into TagInfo structures
-        let tags = self.flatten_metadata(&formatted_metadata);
+        // Step 3: Determine format from file extension
+        let format = file_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.to_uppercase());
+
+        // Step 4: Flatten the formatted metadata into TagInfo structures
+        let tags = self.flatten_metadata(&formatted_metadata, format.as_deref());
         Ok(tags)
     }
 
@@ -391,7 +397,7 @@ impl OxiDexExtractor {
         matches!(family, "File" | "System" | "UNKNOWN")
     }
 
-    fn normalize_for_comparison(tag_key: &str) -> String {
+    fn normalize_for_comparison(tag_key: &str, format: Option<&str>) -> String {
         // Handle PNG special cases first
         // PNG:tEXt:Author → PNG:Author
         // PNG:tEXt:date:create → PNG:Datecreate
@@ -426,13 +432,20 @@ impl OxiDexExtractor {
                 _ => family,
             };
             format!("{}:{}", normalized_family, name)
+        } else if let Some(fmt) = format {
+            // No family prefix - use format as family (e.g., GIF:GIFVersion)
+            format!("{}:{}", fmt.to_uppercase(), tag_key)
         } else {
             tag_key.to_string()
         }
     }
 
     /// Flatten MetadataMap into TagInfo vector
-    fn flatten_metadata(&self, metadata: &oxidex::core::MetadataMap) -> Vec<TagInfo> {
+    fn flatten_metadata(
+        &self,
+        metadata: &oxidex::core::MetadataMap,
+        format: Option<&str>,
+    ) -> Vec<TagInfo> {
         let mut tag_map: HashMap<String, String> = HashMap::new();
 
         for (key, value) in metadata.iter() {
@@ -444,7 +457,7 @@ impl OxiDexExtractor {
             }
 
             // Normalize the tag family (core library normalization + comparison-specific)
-            let normalized_key = Self::normalize_for_comparison(&normalize_tag_family(key));
+            let normalized_key = Self::normalize_for_comparison(&normalize_tag_family(key), format);
 
             let (family, name) = if let Some(colon_pos) = normalized_key.find(':') {
                 let (fam, nam) = normalized_key.split_at(colon_pos);
@@ -621,7 +634,7 @@ mod tests {
     fn test_flatten_metadata_empty() {
         let extractor = OxiDexExtractor::new(PathBuf::from("tests/fixtures"));
         let metadata = oxidex::core::MetadataMap::new();
-        let tags = extractor.flatten_metadata(&metadata);
+        let tags = extractor.flatten_metadata(&metadata, None);
         assert_eq!(tags.len(), 0);
     }
 
@@ -630,7 +643,7 @@ mod tests {
         let extractor = OxiDexExtractor::new(PathBuf::from("tests/fixtures"));
         let mut metadata = oxidex::core::MetadataMap::new();
         metadata.insert("Canon:FileNumber".to_string(), TagValue::Integer(7669483));
-        let tags = extractor.flatten_metadata(&metadata);
+        let tags = extractor.flatten_metadata(&metadata, None);
         assert_eq!(tags.len(), 1);
         assert_eq!(tags[0].value, "117-1771");
     }
