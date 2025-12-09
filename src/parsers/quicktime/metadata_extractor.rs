@@ -2551,7 +2551,42 @@ fn parse_iloc_locations(children: &[Atom]) -> HashMap<u16, (u64, u64)> {
 }
 
 /// Extract image dimensions from ispe (image spatial extents) atoms
+/// The ispe atom is located inside iprp -> ipco container
 fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
+    // First, try to find ispe atoms in iprp -> ipco container (HEIF standard structure)
+    if let Some(iprp) = children.iter().find(|a| a.atom_type.matches("iprp")) {
+        if let Ok((_, iprp_children)) = super::atom_parser::parse_atoms(iprp.data) {
+            if let Some(ipco) = iprp_children.iter().find(|a| a.atom_type.matches("ipco")) {
+                if let Ok((_, ipco_children)) = super::atom_parser::parse_atoms(ipco.data) {
+                    for atom in &ipco_children {
+                        if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
+                            let r = EndianReader::big_endian(atom.data);
+                            if let (Some(width), Some(height)) = (r.u32_at(4), r.u32_at(8))
+                                && !metadata.contains_key("HEIF:ImageWidth")
+                            {
+                                metadata.insert(
+                                    "HEIF:ImageWidth".to_string(),
+                                    TagValue::Integer(width as i64),
+                                );
+                                metadata.insert(
+                                    "HEIF:ImageHeight".to_string(),
+                                    TagValue::Integer(height as i64),
+                                );
+                                // Also add ImageSpatialExtent in ExifTool format
+                                metadata.insert(
+                                    "QuickTime:ImageSpatialExtent".to_string(),
+                                    TagValue::String(format!("{}x{}", width, height)),
+                                );
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback: check if ispe atoms are directly in children (legacy path)
     for atom in children {
         if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
             let r = EndianReader::big_endian(atom.data);
@@ -2571,6 +2606,7 @@ fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
                     "QuickTime:ImageSpatialExtent".to_string(),
                     TagValue::String(format!("{}x{}", width, height)),
                 );
+                return;
             }
         }
     }
