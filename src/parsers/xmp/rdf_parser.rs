@@ -518,12 +518,191 @@ fn capitalize_first_letter(s: &str) -> String {
 ///
 /// Applies special formatting for specific XMP tags:
 /// - Urgency: Adds human-readable description (e.g., "8" -> "8 (least urgent)")
+/// - EXIF enum tags: Decodes numeric values to human-readable strings
 fn format_xmp_value(tag: &str, value: &str) -> String {
     // Extract local tag name (after colon)
     let local_name = tag.split(':').last().unwrap_or(tag);
 
     match local_name {
         "Urgency" => format_iptc_urgency(value),
+        // EXIF enum tags that appear in XMP
+        "ColorSpace" => decode_xmp_color_space(value),
+        "CustomRendered" => decode_xmp_custom_rendered(value),
+        "ExposureMode" => decode_xmp_exposure_mode(value),
+        "FileSource" => decode_xmp_file_source(value),
+        "FocalPlaneResolutionUnit" | "ResolutionUnit" => decode_xmp_resolution_unit(value),
+        "MeteringMode" => decode_xmp_metering_mode(value),
+        "Orientation" => decode_xmp_orientation(value),
+        "SceneCaptureType" => decode_xmp_scene_capture_type(value),
+        "SensingMethod" => decode_xmp_sensing_method(value),
+        "WhiteBalance" => decode_xmp_white_balance(value),
+        "YCbCrPositioning" => decode_xmp_ycbcr_positioning(value),
+        "ColorMode" => decode_xmp_color_mode(value),
+        "PhotometricInterpretation" => decode_xmp_photometric_interpretation(value),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP ColorSpace (1 = sRGB, 65535 = Uncalibrated)
+fn decode_xmp_color_space(value: &str) -> String {
+    match value.trim() {
+        "1" => "sRGB".to_string(),
+        "2" => "Adobe RGB".to_string(),
+        "65535" => "Uncalibrated".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP CustomRendered (0 = Normal, 1 = Custom, etc.)
+fn decode_xmp_custom_rendered(value: &str) -> String {
+    match value.trim() {
+        "0" => "Normal".to_string(),
+        "1" => "Custom".to_string(),
+        "2" => "HDR (no original saved)".to_string(),
+        "3" => "HDR (original saved)".to_string(),
+        "4" => "Original (for HDR)".to_string(),
+        "6" => "Panorama".to_string(),
+        "7" => "Portrait HDR".to_string(),
+        "8" => "Portrait".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP ExposureMode (0 = Auto, 1 = Manual, 2 = Auto bracket)
+fn decode_xmp_exposure_mode(value: &str) -> String {
+    match value.trim() {
+        "0" => "Auto".to_string(),
+        "1" => "Manual".to_string(),
+        "2" => "Auto bracket".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP FileSource (3 = Digital Camera)
+fn decode_xmp_file_source(value: &str) -> String {
+    match value.trim() {
+        "1" => "Film Scanner".to_string(),
+        "2" => "Reflection Print Scanner".to_string(),
+        "3" => "Digital Camera".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP ResolutionUnit (2 = inches, 3 = centimeters)
+fn decode_xmp_resolution_unit(value: &str) -> String {
+    match value.trim() {
+        "2" => "inches".to_string(),
+        "3" => "cm".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP MeteringMode
+fn decode_xmp_metering_mode(value: &str) -> String {
+    match value.trim() {
+        "0" => "Unknown".to_string(),
+        "1" => "Average".to_string(),
+        "2" => "Center-weighted average".to_string(),
+        "3" => "Spot".to_string(),
+        "4" => "Multi-spot".to_string(),
+        "5" => "Multi-segment".to_string(),
+        "6" => "Partial".to_string(),
+        "255" => "Other".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP Orientation
+fn decode_xmp_orientation(value: &str) -> String {
+    match value.trim() {
+        "1" => "Horizontal (normal)".to_string(),
+        "2" => "Mirror horizontal".to_string(),
+        "3" => "Rotate 180".to_string(),
+        "4" => "Mirror vertical".to_string(),
+        "5" => "Mirror horizontal and rotate 270 CW".to_string(),
+        "6" => "Rotate 90 CW".to_string(),
+        "7" => "Mirror horizontal and rotate 90 CW".to_string(),
+        "8" => "Rotate 270 CW".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP SceneCaptureType
+fn decode_xmp_scene_capture_type(value: &str) -> String {
+    match value.trim() {
+        "0" => "Standard".to_string(),
+        "1" => "Landscape".to_string(),
+        "2" => "Portrait".to_string(),
+        "3" => "Night".to_string(),
+        "4" => "Other".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP SensingMethod
+fn decode_xmp_sensing_method(value: &str) -> String {
+    match value.trim() {
+        "1" => "Not defined".to_string(),
+        "2" => "One-chip color area".to_string(),
+        "3" => "Two-chip color area".to_string(),
+        "4" => "Three-chip color area".to_string(),
+        "5" => "Color sequential area".to_string(),
+        "7" => "Trilinear".to_string(),
+        "8" => "Color sequential linear".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP WhiteBalance (0 = Auto, 1 = Manual)
+fn decode_xmp_white_balance(value: &str) -> String {
+    match value.trim() {
+        "0" => "Auto".to_string(),
+        "1" => "Manual".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP YCbCrPositioning (1 = Centered, 2 = Co-sited)
+fn decode_xmp_ycbcr_positioning(value: &str) -> String {
+    match value.trim() {
+        "1" => "Centered".to_string(),
+        "2" => "Co-sited".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP ColorMode (Photoshop color mode)
+fn decode_xmp_color_mode(value: &str) -> String {
+    match value.trim() {
+        "0" => "Bitmap".to_string(),
+        "1" => "Grayscale".to_string(),
+        "2" => "Indexed".to_string(),
+        "3" => "RGB".to_string(),
+        "4" => "CMYK".to_string(),
+        "7" => "Multichannel".to_string(),
+        "8" => "Duotone".to_string(),
+        "9" => "Lab".to_string(),
+        _ => value.to_string(),
+    }
+}
+
+/// Decode XMP PhotometricInterpretation
+fn decode_xmp_photometric_interpretation(value: &str) -> String {
+    match value.trim() {
+        "0" => "WhiteIsZero".to_string(),
+        "1" => "BlackIsZero".to_string(),
+        "2" => "RGB".to_string(),
+        "3" => "RGB Palette".to_string(),
+        "4" => "Transparency Mask".to_string(),
+        "5" => "CMYK".to_string(),
+        "6" => "YCbCr".to_string(),
+        "8" => "CIE Lab".to_string(),
+        "9" => "ICC Lab".to_string(),
+        "10" => "ITU Lab".to_string(),
+        "32803" => "Color Filter Array".to_string(),
+        "32844" => "Pixar Log L".to_string(),
+        "32845" => "Pixar Log Luv".to_string(),
+        "34892" => "Linear Raw".to_string(),
         _ => value.to_string(),
     }
 }
