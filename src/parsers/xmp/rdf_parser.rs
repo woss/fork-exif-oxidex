@@ -477,10 +477,9 @@ fn format_tag_name(qname: &str, resolver: &NamespaceResolver) -> String {
             "XMP"
         };
 
-        // Dublin Core (dc) namespace uses Title-case for property names
-        // Convert first letter to uppercase for dc: elements to match ExifTool
-        if prefix == "dc" && !local_name.is_empty() {
-            // Capitalize first letter
+        // ExifTool capitalizes the first letter of all XMP property names
+        // to create consistent PascalCase tag names (e.g., album → Album)
+        if !local_name.is_empty() {
             local_name = capitalize_first_letter(&local_name);
         }
 
@@ -488,6 +487,10 @@ fn format_tag_name(qname: &str, resolver: &NamespaceResolver) -> String {
         format!("{}:{}", family_prefix, local_name)
     } else {
         // No namespace prefix - use generic "XMP:" prefix
+        // Still capitalize to match ExifTool's PascalCase convention
+        if !local_name.is_empty() {
+            local_name = capitalize_first_letter(&local_name);
+        }
         format!("XMP:{}", local_name)
     }
 }
