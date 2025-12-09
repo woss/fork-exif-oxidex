@@ -221,16 +221,15 @@ fn parse_file_properties(
         TagValue::new_integer(preroll as i64),
     );
 
-    // Calculate actual duration (play duration - preroll)
+    // Duration - ExifTool uses play_duration directly (no preroll subtraction for display)
     if play_duration > 0 {
-        let duration_100ns = play_duration.saturating_sub(preroll * 10_000);
-        let duration_secs = duration_100ns as f64 / 10_000_000.0;
+        let duration_secs = (play_duration as f64) / 10_000_000.0;
         let duration_str = format_duration(duration_secs);
         metadata.insert("ASF:Duration".to_string(), TagValue::new_string(duration_str));
 
-        // Send duration (without preroll subtraction)
-        let send_duration_secs = (play_duration as f64) / 10_000_000.0 - (preroll as f64) / 1000.0;
-        let send_duration_str = format_duration(send_duration_secs.max(0.0));
+        // Send duration - also from play_duration without preroll subtraction
+        let send_duration_secs = (play_duration as f64) / 10_000_000.0;
+        let send_duration_str = format_duration(send_duration_secs);
         metadata.insert(
             "ASF:SendDuration".to_string(),
             TagValue::new_string(send_duration_str),
@@ -321,7 +320,12 @@ fn parse_stream_properties(
         TagValue::new_string(stream_type),
     );
 
-    // Error correction type
+    // Error correction type - determine based on GUID
+    // Audio Spread GUID: BFC3CD50-618F-11CF-8BB2-00AA00B4E220
+    const AUDIO_SPREAD_GUID: [u8; 16] = [
+        0x50, 0xCD, 0xC3, 0xBF, 0x8F, 0x61, 0xCF, 0x11, 0x8B, 0xB2, 0x00, 0xAA, 0x00, 0xB4, 0xE2,
+        0x20,
+    ];
     let error_correction = if error_correction_guid
         == [
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -329,15 +333,20 @@ fn parse_stream_properties(
         ]
     {
         "No Error Correction"
-    } else {
+    } else if error_correction_guid == AUDIO_SPREAD_GUID {
         "Audio Spread"
+    } else {
+        // Unknown error correction type
+        "Unknown"
     };
     metadata.insert(
         "ASF:ErrorCorrectionType".to_string(),
         TagValue::new_string(error_correction),
     );
 
-    // Parse type-specific data
+    // Parse type-specific data at offset 54 from object start (after 24-byte header + 30-byte stream props header)
+    // Structure: header(24) + stream_type(16) + error_correction(16) + time_offset(8) + type_len(4) + error_len(4) + flags(2) + reserved(4)
+    // Type-specific data starts at offset 24 + 54 = 78
     if type_data_len > 0 && size >= 78 + type_data_len as u64 {
         let type_data = reader.read(offset + 78, type_data_len as usize)?;
 
@@ -359,11 +368,17 @@ fn parse_stream_properties(
                 "ASF:AudioSampleRate".to_string(),
                 TagValue::new_integer(sample_rate as i64),
             );
-        } else if stream_type_guid == VIDEO_MEDIA_GUID && type_data.len() >= 40 {
-            // BITMAPINFOHEADER structure
+        } else if stream_type_guid == VIDEO_MEDIA_GUID && type_data.len() >= 11 {
+            // Video type-specific data has a header before BITMAPINFOHEADER
+            // According to ExifTool, ImageWidth is at offset 30 (54-24) and ImageHeight is at offset 34 (58-24)
+            // In type-specific data, this means:
+            // - Encoded Image Width at offset 0 (4 bytes)
+            // - Encoded Image Height at offset 4 (4 bytes)
+            // - Reserved Flags at offset 8 (1 byte)
+            // - BITMAPINFOHEADER starts at offset 11
             let video_r = EndianReader::little_endian(&type_data);
-            let width = video_r.u32_at(4).unwrap_or(0);
-            let height = video_r.u32_at(8).unwrap_or(0);
+            let width = video_r.u32_at(0).unwrap_or(0);
+            let height = video_r.u32_at(4).unwrap_or(0);
 
             if width > 0 && width < 100000 {
                 metadata.insert(
