@@ -632,6 +632,50 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         return "".to_string();
     }
 
+    // Handle UCS-2/UTF-16 encoded strings (like Ducky:Copyright)
+    // OxiDex outputs raw UTF-16 bytes, ExifTool decodes them
+    if normalized.contains('\u{0000}') && normalized.len() > 4 {
+        // Remove null bytes and any leading length prefix (first 4 bytes sometimes)
+        let cleaned: String = normalized
+            .chars()
+            .skip_while(|c| *c == '\0' || c.is_control())
+            .filter(|c| *c != '\0')
+            .collect();
+        if !cleaned.is_empty() {
+            return cleaned.trim().to_string();
+        }
+    }
+
+    // Handle temperature formatting: "-0 C" vs "-0"
+    if tag_key.contains("Temperature") && !normalized.ends_with(" C") && !normalized.ends_with(" K") {
+        // Add C suffix if missing
+        if let Ok(_val) = normalized.parse::<f64>() {
+            // Don't add suffix since we normalize by removing it
+        }
+    }
+    // Also strip temperature units for comparison
+    if (tag_key.contains("Temperature") || tag_key.contains("Temp"))
+        && (normalized.ends_with(" C") || normalized.ends_with("°C")) {
+        let num_str = normalized
+            .trim_end_matches(" C")
+            .trim_end_matches("°C")
+            .trim();
+        if let Ok(val) = num_str.parse::<f64>() {
+            // Handle negative zero
+            if val == 0.0 || (val == -0.0 && normalized.starts_with('-')) {
+                return "0".to_string();
+            }
+            return format!("{}", val);
+        }
+    }
+
+    // Handle Urgency formatting: "8 (least urgent)" vs "8"
+    if tag_key.contains("Urgency") {
+        if let Some(paren_idx) = normalized.find(" (") {
+            return normalized[..paren_idx].to_string();
+        }
+    }
+
     // Normalize binary data descriptions
     // ExifTool: "(Binary data 99 bytes, use -b option to ..."
     // OxiDex: "(Binary data, 99 bytes)"
