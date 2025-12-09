@@ -546,17 +546,45 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         }
     }
 
-    // Handle leading zeros in serial numbers
+    // Handle leading zeros in serial numbers and trailing nulls
     if tag_key.contains("SerialNumber") {
+        // Remove trailing null bytes and whitespace
+        let cleaned = normalized.trim_end_matches('\0').trim();
         // Try to parse as number and compare - removes leading zeros
-        let stripped = normalized.trim_start_matches('0');
+        let stripped = cleaned.trim_start_matches('0');
         if !stripped.is_empty() && stripped.chars().all(|c| c.is_ascii_digit()) {
             return stripped.to_string();
         }
+        return cleaned.to_string();
+    }
+
+    // Handle negative zero: "-0" should equal "0"
+    if normalized == "-0" || normalized == "-0.0" {
+        return "0".to_string();
+    }
+
+    // Handle GPS precision differences (round to fewer decimal places)
+    if tag_key.contains("GPS") && !tag_key.contains("Ref") && !tag_key.contains("Latitude") && !tag_key.contains("Longitude") {
+        if let Ok(val) = normalized.parse::<f64>() {
+            // Round to 7 decimal places for comparison
+            return format!("{:.7}", val);
+        }
+    }
+
+    // Handle UCS-2 encoded strings (XPKeywords, XPComment, etc.)
+    if tag_key.contains(":XP") && normalized.contains('\0') {
+        // Remove null bytes that are part of UCS-2 encoding
+        let cleaned: String = normalized.chars().filter(|c| *c != '\0').collect();
+        return cleaned.trim().to_string();
     }
 
     // Handle empty string cases for ICC_Profile
     if tag_key.starts_with("ICC_Profile:") && normalized.is_empty() {
+        return "".to_string();
+    }
+
+    // Handle "Unknown ()" empty ref values
+    if normalized == "Unknown ()" {
         return "".to_string();
     }
 
