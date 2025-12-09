@@ -13,7 +13,7 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use std::io;
 
 const FLIF_SIGNATURE: &[u8] = b"FLIF";
@@ -192,12 +192,13 @@ fn parse_flif_metadata_chunks(
             }
             b"eXmp" => {
                 if let Ok(xmp_data) = reader.read(offset, chunk_size as usize)
-                    && let Ok(xmp_str) = std::str::from_utf8(xmp_data) {
-                        metadata.insert(
-                            "XMP:RawXMP".to_string(),
-                            TagValue::String(xmp_str.to_string()),
-                        );
-                    }
+                    && let Ok(xmp_str) = std::str::from_utf8(xmp_data)
+                {
+                    metadata.insert(
+                        "XMP:RawXMP".to_string(),
+                        TagValue::String(xmp_str.to_string()),
+                    );
+                }
             }
             _ => {}
         }

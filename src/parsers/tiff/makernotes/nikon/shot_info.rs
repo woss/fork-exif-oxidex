@@ -300,19 +300,23 @@ pub fn parse_nikon_shot_info(data: &[u8], byte_order: bool) -> MetadataMap {
     // Extract exposure time
     // The value is typically stored as 1/10000s or microseconds
     if let Some(exposure_raw) = read_u32(data, OFFSET_EXPOSURE_TIME, byte_order)
-        && exposure_raw > 0 && exposure_raw < 1_000_000_000 {
-            // Convert to seconds (assuming 1/10000s units)
-            let exposure_seconds = exposure_raw as f64 / 10000.0;
-            map.insert("Nikon:ExposureTime", TagValue::new_float(exposure_seconds));
-        }
+        && exposure_raw > 0
+        && exposure_raw < 1_000_000_000
+    {
+        // Convert to seconds (assuming 1/10000s units)
+        let exposure_seconds = exposure_raw as f64 / 10000.0;
+        map.insert("Nikon:ExposureTime", TagValue::new_float(exposure_seconds));
+    }
 
     // Extract f-number (aperture)
     // Typically stored as f-number * 10 (e.g., f/2.8 = 28)
     if let Some(fnumber_raw) = read_u16(data, OFFSET_FNUMBER, byte_order)
-        && fnumber_raw > 0 && fnumber_raw < 1000 {
-            let fnumber = fnumber_raw as f64 / 10.0;
-            map.insert("Nikon:FNumber", TagValue::new_float(fnumber));
-        }
+        && fnumber_raw > 0
+        && fnumber_raw < 1000
+    {
+        let fnumber = fnumber_raw as f64 / 10.0;
+        map.insert("Nikon:FNumber", TagValue::new_float(fnumber));
+    }
 
     // Extract ISO
     if let Some(iso) = read_u16(data, OFFSET_ISO, byte_order) {
@@ -325,11 +329,13 @@ pub fn parse_nikon_shot_info(data: &[u8], byte_order: bool) -> MetadataMap {
 
     // Extract focus distance (typically in cm)
     if let Some(focus_raw) = read_u16(data, OFFSET_FOCUS_DISTANCE, byte_order)
-        && focus_raw > 0 && focus_raw < 65535 {
-            // Convert to meters (assuming cm units)
-            let focus_meters = focus_raw as f64 / 100.0;
-            map.insert("Nikon:FocusDistance", TagValue::new_float(focus_meters));
-        }
+        && focus_raw > 0
+        && focus_raw < 65535
+    {
+        // Convert to meters (assuming cm units)
+        let focus_meters = focus_raw as f64 / 100.0;
+        map.insert("Nikon:FocusDistance", TagValue::new_float(focus_meters));
+    }
 
     // Extract AF mode
     if OFFSET_AF_MODE < data.len() {

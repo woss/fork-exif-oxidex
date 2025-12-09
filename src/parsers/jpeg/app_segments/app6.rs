@@ -292,9 +292,10 @@ fn parse_gpmf_value(
                         metadata.insert(tag_key, TagValue::Float(v as f64));
                     }
                 } else if size == 8
-                    && let Some(v) = reader.f64_at(0) {
-                        metadata.insert(tag_key, TagValue::Float(v));
-                    }
+                    && let Some(v) = reader.f64_at(0)
+                {
+                    metadata.insert(tag_key, TagValue::Float(v));
+                }
             } else {
                 metadata.insert(tag_key, TagValue::Binary(data.to_vec()));
             }

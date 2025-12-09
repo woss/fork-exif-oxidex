@@ -6,8 +6,8 @@ use crate::core::{MetadataMap, TagValue};
 use crate::parsers::pe::clr_parser::DotNetInfo;
 use crate::parsers::pe::signature_parser::SignatureInfo;
 use crate::parsers::pe::structures::{
-    machine_types, subsystem_types, CodeViewNB10, CodeViewRSDS, CoffHeader, DosHeader, ExportInfo,
-    ImportFunction, ImportInfo, OptionalHeaderNT, OptionalHeaderStandard, VsFixedFileInfo,
+    CodeViewNB10, CodeViewRSDS, CoffHeader, DosHeader, ExportInfo, ImportFunction, ImportInfo,
+    OptionalHeaderNT, OptionalHeaderStandard, VsFixedFileInfo, machine_types, subsystem_types,
 };
 
 /// Extract metadata from DOS header
@@ -357,11 +357,22 @@ pub fn extract_rsds_metadata(rsds: &CodeViewRSDS, metadata: &mut MetadataMap) {
     // Format GUID as string
     let guid_str = format!(
         "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-        rsds.guid[3], rsds.guid[2], rsds.guid[1], rsds.guid[0],
-        rsds.guid[5], rsds.guid[4],
-        rsds.guid[7], rsds.guid[6],
-        rsds.guid[8], rsds.guid[9],
-        rsds.guid[10], rsds.guid[11], rsds.guid[12], rsds.guid[13], rsds.guid[14], rsds.guid[15]
+        rsds.guid[3],
+        rsds.guid[2],
+        rsds.guid[1],
+        rsds.guid[0],
+        rsds.guid[5],
+        rsds.guid[4],
+        rsds.guid[7],
+        rsds.guid[6],
+        rsds.guid[8],
+        rsds.guid[9],
+        rsds.guid[10],
+        rsds.guid[11],
+        rsds.guid[12],
+        rsds.guid[13],
+        rsds.guid[14],
+        rsds.guid[15]
     );
     metadata.insert("PE:PDBGUID".to_string(), TagValue::String(guid_str));
 }

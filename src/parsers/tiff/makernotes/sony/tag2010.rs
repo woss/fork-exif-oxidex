@@ -261,11 +261,7 @@ fn read_ascii_string(data: &[u8], offset: usize, length: usize) -> Option<String
         .collect();
 
     // Return None if the resulting string is empty (all filtered out)
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }
 
 // ============================================================================

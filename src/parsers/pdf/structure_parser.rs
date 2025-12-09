@@ -26,11 +26,11 @@
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use nom::{
+    IResult,
     bytes::complete::{tag, take_until},
     character::complete::multispace0,
     combinator::map_res,
     sequence::preceded,
-    IResult,
 };
 use std::collections::HashMap;
 use std::str;
@@ -107,12 +107,13 @@ pub fn parse_structure_metadata(reader: &dyn FileReader) -> Result<MetadataMap> 
     // Count annotations in the document
     // This searches for /Annots arrays in page objects
     if let Ok(annot_count) = count_annotations(reader, &context)
-        && annot_count > 0 {
-            metadata.insert(
-                "PDF:AnnotationCount".to_string(),
-                TagValue::new_integer(annot_count as i64),
-            );
-        }
+        && annot_count > 0
+    {
+        metadata.insert(
+            "PDF:AnnotationCount".to_string(),
+            TagValue::new_integer(annot_count as i64),
+        );
+    }
 
     Ok(metadata)
 }
@@ -201,21 +202,22 @@ fn check_has_xfa(root_data: &[u8], reader: &dyn FileReader, context: &PdfContext
         && acroform_data
             .windows(b"/XFA".len())
             .any(|window| window == b"/XFA")
-        {
-            return true;
-        }
+    {
+        return true;
+    }
 
     // If /AcroForm is a reference, follow it
     if let Ok(acroform_ref) = find_acroform_reference(root_data)
         && let Ok(offset) = context.get_object_offset(acroform_ref.object_num, "AcroForm")
-            && let Ok(acroform_obj_data) = reader.read(
-                offset,
-                std::cmp::min(4096, reader.size().saturating_sub(offset) as usize),
-            ) {
-                return acroform_obj_data
-                    .windows(b"/XFA".len())
-                    .any(|window| window == b"/XFA");
-            }
+        && let Ok(acroform_obj_data) = reader.read(
+            offset,
+            std::cmp::min(4096, reader.size().saturating_sub(offset) as usize),
+        )
+    {
+        return acroform_obj_data
+            .windows(b"/XFA".len())
+            .any(|window| window == b"/XFA");
+    }
 
     false
 }
@@ -522,8 +524,8 @@ fn parse_object_reference(input: &[u8]) -> IResult<&[u8], ObjectRef> {
 
 /// Parses a decimal number from bytes
 fn parse_number(input: &[u8]) -> IResult<&[u8], u64> {
-    use nom::character::complete::digit1;
     use nom::Parser;
+    use nom::character::complete::digit1;
 
     preceded(
         multispace0,

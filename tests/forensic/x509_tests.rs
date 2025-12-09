@@ -9,7 +9,7 @@ mod common;
 
 use common::TestReader;
 use oxidex::core::TagValue;
-use oxidex::parsers::specialized::x509::{parse_x509_metadata, X509Parser};
+use oxidex::parsers::specialized::x509::{X509Parser, parse_x509_metadata};
 
 /// Test 1: PEM format detection
 ///
@@ -92,7 +92,7 @@ fn test_x509_fingerprints() {
     der.push(0x10); // Length 16 bytes
     der.push(0x30); // TBS SEQUENCE
     der.push(0x0E); // Length 14 bytes
-                    // Minimal certificate content
+    // Minimal certificate content
     der.extend_from_slice(&[0x02, 0x01, 0x01]); // INTEGER 1 (version)
     der.extend_from_slice(&[0x02, 0x04, 0x12, 0x34, 0x56, 0x78]); // Serial number
     der.extend_from_slice(&[0x30, 0x03, 0x06, 0x01, 0x00]); // AlgorithmID
@@ -192,7 +192,7 @@ fn test_x509_der_complete_structure() {
     der.push(0x0D); // Length 13
     der.push(0x06); // OID tag
     der.push(0x09); // Length 9
-                    // OID: 1.2.840.113549.1.1.11 (SHA256withRSA)
+    // OID: 1.2.840.113549.1.1.11 (SHA256withRSA)
     der.extend_from_slice(&[0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B]);
     der.push(0x05); // NULL tag
     der.push(0x00); // NULL length
@@ -294,7 +294,7 @@ fn test_x509_der_invalid_length() {
     // SEQUENCE tag with invalid length encoding
     let mut der = vec![0x30, 0x84]; // Indicates 4 length bytes follow (invalid for typical certs)
     der.extend_from_slice(&[0x00, 0x00, 0x00, 0x10]); // 16 bytes length
-                                                      // Only add minimal data instead of promised 16 bytes
+    // Only add minimal data instead of promised 16 bytes
     der.extend_from_slice(&[0x00, 0x01, 0x02, 0x03]);
 
     let reader = TestReader::new(der);

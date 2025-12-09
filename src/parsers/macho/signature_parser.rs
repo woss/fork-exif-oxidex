@@ -5,12 +5,12 @@
 
 use crate::io::EndianReader;
 use nom::{
-    number::complete::{be_u32, be_u8},
     IResult,
+    number::complete::{be_u8, be_u32},
 };
 
 use super::structures::{
-    cs_magic, hash_type_name, BlobIndex, CodeDirectory, CodeSignatureInfo, SuperBlob,
+    BlobIndex, CodeDirectory, CodeSignatureInfo, SuperBlob, cs_magic, hash_type_name,
 };
 
 // =============================================================================
@@ -156,17 +156,18 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
         if idx.blob_type == 0 {
             // CSSLOT_CODEDIRECTORY
             if (idx.offset as usize) < data.len()
-                && let Ok((_, cd)) = parse_code_directory(&data[idx.offset as usize..]) {
-                    info.identifier = if cd.identifier.is_empty() {
-                        None
-                    } else {
-                        Some(cd.identifier.clone())
-                    };
-                    info.team_id = cd.team_id.clone();
-                    info.hash_type = Some(hash_type_name(cd.hash_type).to_string());
-                    info.cd_version = cd.version;
-                    info.n_code_slots = cd.n_code_slots;
-                }
+                && let Ok((_, cd)) = parse_code_directory(&data[idx.offset as usize..])
+            {
+                info.identifier = if cd.identifier.is_empty() {
+                    None
+                } else {
+                    Some(cd.identifier.clone())
+                };
+                info.team_id = cd.team_id.clone();
+                info.hash_type = Some(hash_type_name(cd.hash_type).to_string());
+                info.cd_version = cd.version;
+                info.n_code_slots = cd.n_code_slots;
+            }
         }
 
         // Check for entitlements
@@ -176,9 +177,10 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
 
             // Try to extract entitlement keys
             if (idx.offset as usize) < data.len()
-                && let Some(keys) = extract_entitlement_keys(&data[idx.offset as usize..]) {
-                    info.entitlement_keys = keys;
-                }
+                && let Some(keys) = extract_entitlement_keys(&data[idx.offset as usize..])
+            {
+                info.entitlement_keys = keys;
+            }
         }
 
         // Check for CMS signature
@@ -188,9 +190,10 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
 
             // Try to extract signer name from CMS signature
             if (idx.offset as usize) < data.len()
-                && let Some(signer) = extract_signer_from_cms(&data[idx.offset as usize..]) {
-                    info.signer_name = Some(signer);
-                }
+                && let Some(signer) = extract_signer_from_cms(&data[idx.offset as usize..])
+            {
+                info.signer_name = Some(signer);
+            }
         }
     }
 
@@ -253,11 +256,7 @@ fn extract_entitlement_keys(data: &[u8]) -> Option<Vec<String>> {
         }
     }
 
-    if keys.is_empty() {
-        None
-    } else {
-        Some(keys)
-    }
+    if keys.is_empty() { None } else { Some(keys) }
 }
 
 /// Extract signer common name from CMS signature blob

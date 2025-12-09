@@ -142,14 +142,15 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     // The first line should be ASCII: %PDF-X.Y
     if let Ok(header_str) = std::str::from_utf8(first_line)
-        && let Some(version_str) = header_str.strip_prefix("%PDF-") {
-            let version = version_str.trim();
-            // Store as string to preserve exact version format (e.g., "1.3", "1.4", "2.0")
-            metadata.insert(
-                "PDF:PDFVersion".to_string(),
-                crate::core::TagValue::new_string(version.to_string()),
-            );
-        }
+        && let Some(version_str) = header_str.strip_prefix("%PDF-")
+    {
+        let version = version_str.trim();
+        // Store as string to preserve exact version format (e.g., "1.3", "1.4", "2.0")
+        metadata.insert(
+            "PDF:PDFVersion".to_string(),
+            crate::core::TagValue::new_string(version.to_string()),
+        );
+    }
 
     // Check for linearization (optimize for web display)
     // Linearized PDFs have a linearization dictionary in the first object
@@ -409,10 +410,12 @@ startxref
 
         let result = parse_pdf_metadata(&reader);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Invalid PDF signature"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid PDF signature")
+        );
     }
 
     #[test]

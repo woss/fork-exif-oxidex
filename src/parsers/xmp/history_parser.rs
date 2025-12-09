@@ -30,8 +30,8 @@
 //! - Document/Instance IDs - Version tracking
 
 use crate::error::{ExifToolError, Result};
-use quick_xml::events::{BytesStart, Event};
 use quick_xml::Reader;
+use quick_xml::events::{BytesStart, Event};
 
 /// Represents a single XMP history event
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -328,9 +328,10 @@ fn get_attribute(element: &BytesStart, attr_name: &str) -> Option<String> {
     for attr in element.attributes().flatten() {
         if let Ok(key) = std::str::from_utf8(attr.key.as_ref())
             && key == attr_name
-                && let Ok(value) = std::str::from_utf8(&attr.value) {
-                    return Some(value.to_string());
-                }
+            && let Ok(value) = std::str::from_utf8(&attr.value)
+        {
+            return Some(value.to_string());
+        }
     }
     None
 }
@@ -527,25 +528,37 @@ mod tests {
 
         let result = parse_xmp_history(xmp).unwrap();
 
-        assert!(result
-            .iter()
-            .any(|(k, v)| k == "XMP-xmpMM:History1Action" && v == "converted"));
-        assert!(result
-            .iter()
-            .any(|(k, v)| k == "XMP-xmpMM:History1When" && v == "2023-01-15T10:30:00"));
-        assert!(result
-            .iter()
-            .any(|(k, v)| k == "XMP-xmpMM:History1SoftwareAgent" && v == "Adobe Photoshop"));
-        assert!(result
-            .iter()
-            .any(|(k, v)| k == "XMP-xmpMM:History1Changed" && v == "/metadata"));
-        assert!(result
-            .iter()
-            .any(|(k, v)| k == "XMP-xmpMM:History1InstanceID" && v == "xmp.iid:abc123"));
-        assert!(result
-            .iter()
-            .any(|(k, v)| k == "XMP-xmpMM:History1Parameters"
-                && v == "from image/tiff to image/jpeg"));
+        assert!(
+            result
+                .iter()
+                .any(|(k, v)| k == "XMP-xmpMM:History1Action" && v == "converted")
+        );
+        assert!(
+            result
+                .iter()
+                .any(|(k, v)| k == "XMP-xmpMM:History1When" && v == "2023-01-15T10:30:00")
+        );
+        assert!(
+            result
+                .iter()
+                .any(|(k, v)| k == "XMP-xmpMM:History1SoftwareAgent" && v == "Adobe Photoshop")
+        );
+        assert!(
+            result
+                .iter()
+                .any(|(k, v)| k == "XMP-xmpMM:History1Changed" && v == "/metadata")
+        );
+        assert!(
+            result
+                .iter()
+                .any(|(k, v)| k == "XMP-xmpMM:History1InstanceID" && v == "xmp.iid:abc123")
+        );
+        assert!(
+            result
+                .iter()
+                .any(|(k, v)| k == "XMP-xmpMM:History1Parameters"
+                    && v == "from image/tiff to image/jpeg")
+        );
     }
 
     #[test]

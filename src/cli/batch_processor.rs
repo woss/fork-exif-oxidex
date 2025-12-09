@@ -214,10 +214,11 @@ fn collect_files(path: &Path, recursive: bool) -> Result<Vec<PathBuf>> {
 /// `true` if the file has a supported image/media extension, `false` otherwise
 pub fn is_supported_file(path: &Path) -> bool {
     if let Some(ext) = path.extension()
-        && let Some(ext_str) = ext.to_str() {
-            let ext_lower = ext_str.to_lowercase();
-            return SUPPORTED_EXTENSIONS.contains(&ext_lower.as_str());
-        }
+        && let Some(ext_str) = ext.to_str()
+    {
+        let ext_lower = ext_str.to_lowercase();
+        return SUPPORTED_EXTENSIONS.contains(&ext_lower.as_str());
+    }
     false
 }
 
@@ -374,13 +375,14 @@ fn apply_modifications(
 
     // Restore file times if requested
     if let Some(metadata) = original_metadata
-        && let Ok(mtime) = metadata.modified() {
-            use std::fs::File;
-            if let Err(_e) = File::open(path).and_then(|f| f.set_modified(mtime)) {
-                // Silently ignore errors - the write succeeded, only mtime restoration failed
-                // Errors are expected on some filesystems or when permissions are restricted
-            }
+        && let Ok(mtime) = metadata.modified()
+    {
+        use std::fs::File;
+        if let Err(_e) = File::open(path).and_then(|f| f.set_modified(mtime)) {
+            // Silently ignore errors - the write succeeded, only mtime restoration failed
+            // Errors are expected on some filesystems or when permissions are restricted
         }
+    }
 
     Ok(())
 }
@@ -431,7 +433,7 @@ fn create_progress_bar(total: usize, action: &str) -> ProgressBar {
 /// - All metadata tags (for successful reads)
 /// - Error message (for failed reads)
 fn output_json_results(results: &[(PathBuf, Result<crate::core::MetadataMap>)]) -> Result<()> {
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     let json_array: Vec<Value> = results
         .iter()

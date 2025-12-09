@@ -26,8 +26,8 @@ use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::extract_i16_array;
 
 // Google Pixel MakerNote Tag IDs
 // Note: Google's tag structure is proprietary and reverse-engineered

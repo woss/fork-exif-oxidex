@@ -30,10 +30,10 @@ use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::registries::microsoft::{microsoft_registry, MICROSOFT_LIVING_IMAGE};
-use super::shared::array_extractors::{extract_i16_value, extract_string, extract_u32_value};
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
+use super::registries::microsoft::{MICROSOFT_LIVING_IMAGE, microsoft_registry};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::{extract_i16_value, extract_string, extract_u32_value};
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
 
 // Microsoft signature for validation
 const MICROSOFT_SIGNATURE: &[u8] = b"Microsoft";

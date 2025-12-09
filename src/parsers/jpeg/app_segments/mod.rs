@@ -13,11 +13,11 @@ pub mod jumbf;
 pub mod photoshop;
 
 // Re-export main parsing functions
+pub use app6::parse_app6;
 pub use app10_hdr::parse_app10_hdr;
 pub use app11_jpeg_hdr::parse_app11_jpeg_hdr;
 pub use app12_agfa::parse_app12_agfa;
 pub use app12_olympus::parse_app12_olympus;
 pub use app14_adobe::parse_app14_adobe;
-pub use app6::parse_app6;
 pub use jumbf::parse_jumbf;
 pub use photoshop::parse_photoshop_irb;

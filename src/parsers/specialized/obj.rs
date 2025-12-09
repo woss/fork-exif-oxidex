@@ -94,12 +94,13 @@ impl FormatParser for OBJParser {
                     material_library = Some(lib.trim().to_string());
                 }
             } else if trimmed.starts_with("usemtl ")
-                && let Some(mat) = trimmed.strip_prefix("usemtl ") {
-                    let mat = mat.trim().to_string();
-                    if !mat.is_empty() && !materials.contains(&mat) {
-                        materials.push(mat);
-                    }
+                && let Some(mat) = trimmed.strip_prefix("usemtl ")
+            {
+                let mat = mat.trim().to_string();
+                if !mat.is_empty() && !materials.contains(&mat) {
+                    materials.push(mat);
                 }
+            }
         }
 
         // Insert counts

@@ -37,9 +37,9 @@
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::shared::array_extractors::{extract_i16_array, extract_string};
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::{extract_i16_array, extract_string};
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
 
 // Import registry module
 use super::registries::flir_registry;
@@ -368,13 +368,14 @@ impl MakerNoteParser for FlirParser {
             } else {
                 // Try to extract as i16 array
                 if let Some(array) = extract_i16_array(entry, parse_data, byte_order)
-                    && let Some(&val) = array.first() {
-                        // Registry lookup: get tag name and decode value
-                        if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
-                            let formatted_value = registry.decode_i16(entry.tag_id, val);
-                            tags.insert(format!("FLIR:{}", tag_name), formatted_value);
-                        }
+                    && let Some(&val) = array.first()
+                {
+                    // Registry lookup: get tag name and decode value
+                    if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
+                        let formatted_value = registry.decode_i16(entry.tag_id, val);
+                        tags.insert(format!("FLIR:{}", tag_name), formatted_value);
                     }
+                }
             }
         })?;
 

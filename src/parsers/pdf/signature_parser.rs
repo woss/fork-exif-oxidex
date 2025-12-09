@@ -34,13 +34,13 @@
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use nom::{
+    IResult,
     bytes::complete::{tag, take_until, take_while1},
     character::complete::multispace0,
-    IResult,
 };
 use std::str;
 
-use super::info_parser::{format_pdf_date, ObjectRef, PdfContext};
+use super::info_parser::{ObjectRef, PdfContext, format_pdf_date};
 
 //
 // ═══════════════════════════════════════════════════════════════════════════
@@ -275,12 +275,13 @@ fn extract_signature_fields(sig_data: &[u8], metadata: &mut MetadataMap) {
 
     // Extract signing date and format it
     if let Ok(date_str) = extract_string_field(sig_data, "/M")
-        && let Some(formatted_date) = format_pdf_date(&date_str) {
-            metadata.insert(
-                "PDF:SigningDate".to_string(),
-                TagValue::new_string(formatted_date),
-            );
-        }
+        && let Some(formatted_date) = format_pdf_date(&date_str)
+    {
+        metadata.insert(
+            "PDF:SigningDate".to_string(),
+            TagValue::new_string(formatted_date),
+        );
+    }
 }
 
 /// Extracts a string value for a given dictionary key
@@ -341,7 +342,7 @@ fn parse_object_reference(input: &[u8]) -> IResult<&[u8], ObjectRef> {
 /// Parses a decimal number from bytes
 fn parse_number(input: &[u8]) -> IResult<&[u8], u64> {
     use nom::combinator::map_res;
-    use nom::{character::complete::digit1, sequence::preceded, Parser};
+    use nom::{Parser, character::complete::digit1, sequence::preceded};
 
     preceded(
         multispace0,

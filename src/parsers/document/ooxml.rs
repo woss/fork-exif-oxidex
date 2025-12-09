@@ -2,8 +2,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use std::io::{Cursor, Read};
 use zip::ZipArchive;
 
@@ -200,35 +200,35 @@ fn parse_core_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
             }
             Ok(Event::Text(e)) => {
                 if let Ok(text) = e.xml_content()
-                    && !text.is_empty() {
-                        let tag_name = match current_element.as_str() {
-                            "title" => "OOXML:Title",
-                            "creator" => "OOXML:Creator",
-                            "subject" => "OOXML:Subject",
-                            "description" => "OOXML:Description",
-                            "keywords" => "OOXML:Keywords",
-                            "created" => "OOXML:CreateDate",
-                            "modified" => "OOXML:ModifyDate",
-                            "lastModifiedBy" => "OOXML:LastModifiedBy",
-                            "revision" => "OOXML:RevisionNumber",
-                            "lastPrinted" => "OOXML:LastPrinted",
-                            "category" => "OOXML:Category",
-                            "contentStatus" => "OOXML:ContentStatus",
-                            _ => {
-                                buf.clear();
-                                continue;
-                            }
-                        };
-                        metadata
-                            .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
-                    }
+                    && !text.is_empty()
+                {
+                    let tag_name = match current_element.as_str() {
+                        "title" => "OOXML:Title",
+                        "creator" => "OOXML:Creator",
+                        "subject" => "OOXML:Subject",
+                        "description" => "OOXML:Description",
+                        "keywords" => "OOXML:Keywords",
+                        "created" => "OOXML:CreateDate",
+                        "modified" => "OOXML:ModifyDate",
+                        "lastModifiedBy" => "OOXML:LastModifiedBy",
+                        "revision" => "OOXML:RevisionNumber",
+                        "lastPrinted" => "OOXML:LastPrinted",
+                        "category" => "OOXML:Category",
+                        "contentStatus" => "OOXML:ContentStatus",
+                        _ => {
+                            buf.clear();
+                            continue;
+                        }
+                    };
+                    metadata.insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
+                }
             }
             Ok(Event::Eof) => break,
             Err(e) => {
                 return Err(ExifToolError::parse_error(format!(
                     "XML parse error: {}",
                     e
-                )))
+                )));
             }
             _ => {}
         }
@@ -253,47 +253,47 @@ fn parse_app_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
             }
             Ok(Event::Text(e)) => {
                 if let Ok(text) = e.xml_content()
-                    && !text.is_empty() {
-                        let tag_name = match current_element.as_str() {
-                            "Application" => "OOXML:Application",
-                            "Pages" => "OOXML:Pages",
-                            "Words" => "OOXML:Words",
-                            "Characters" => "OOXML:Characters",
-                            "CharactersWithSpaces" => "OOXML:CharactersWithSpaces",
-                            "Lines" => "OOXML:Lines",
-                            "Paragraphs" => "OOXML:Paragraphs",
-                            "Company" => "OOXML:Company",
-                            "Manager" => "OOXML:Manager",
-                            "Template" => "OOXML:Template",
-                            "HyperlinkBase" => "OOXML:HyperlinkBase",
-                            "HiddenSlides" => "OOXML:HiddenSlides",
-                            "PresentationFormat" => "OOXML:PresentationFormat",
-                            "AppVersion" => "OOXML:AppVersion",
-                            "DocSecurity" => "OOXML:DocSecurity",
-                            "ScaleCrop" => "OOXML:ScaleCrop",
-                            "LinksUpToDate" => "OOXML:LinksUpToDate",
-                            "SharedDoc" => "OOXML:SharedDoc",
-                            "HyperlinksChanged" => "OOXML:HyperlinksChanged",
-                            "TotalTime" => {
-                                // Convert minutes to human-readable format
-                                if let Ok(minutes) = text.parse::<u64>() {
-                                    let formatted = format_edit_time(minutes);
-                                    metadata.insert(
-                                        "OOXML:TotalEditTime".to_string(),
-                                        TagValue::new_string(formatted),
-                                    );
-                                }
-                                buf.clear();
-                                continue;
+                    && !text.is_empty()
+                {
+                    let tag_name = match current_element.as_str() {
+                        "Application" => "OOXML:Application",
+                        "Pages" => "OOXML:Pages",
+                        "Words" => "OOXML:Words",
+                        "Characters" => "OOXML:Characters",
+                        "CharactersWithSpaces" => "OOXML:CharactersWithSpaces",
+                        "Lines" => "OOXML:Lines",
+                        "Paragraphs" => "OOXML:Paragraphs",
+                        "Company" => "OOXML:Company",
+                        "Manager" => "OOXML:Manager",
+                        "Template" => "OOXML:Template",
+                        "HyperlinkBase" => "OOXML:HyperlinkBase",
+                        "HiddenSlides" => "OOXML:HiddenSlides",
+                        "PresentationFormat" => "OOXML:PresentationFormat",
+                        "AppVersion" => "OOXML:AppVersion",
+                        "DocSecurity" => "OOXML:DocSecurity",
+                        "ScaleCrop" => "OOXML:ScaleCrop",
+                        "LinksUpToDate" => "OOXML:LinksUpToDate",
+                        "SharedDoc" => "OOXML:SharedDoc",
+                        "HyperlinksChanged" => "OOXML:HyperlinksChanged",
+                        "TotalTime" => {
+                            // Convert minutes to human-readable format
+                            if let Ok(minutes) = text.parse::<u64>() {
+                                let formatted = format_edit_time(minutes);
+                                metadata.insert(
+                                    "OOXML:TotalEditTime".to_string(),
+                                    TagValue::new_string(formatted),
+                                );
                             }
-                            _ => {
-                                buf.clear();
-                                continue;
-                            }
-                        };
-                        metadata
-                            .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
-                    }
+                            buf.clear();
+                            continue;
+                        }
+                        _ => {
+                            buf.clear();
+                            continue;
+                        }
+                    };
+                    metadata.insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
+                }
             }
             Ok(Event::Eof) => break,
             Err(_) => break,
@@ -338,11 +338,13 @@ fn parse_custom_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> 
                 }
             }
             Ok(Event::Text(e)) => {
-                if in_value && !current_property_name.is_empty()
-                    && let Ok(text) = e.xml_content() {
-                        let tag_name = format!("OOXML:Custom:{}", current_property_name);
-                        metadata.insert(tag_name, TagValue::new_string(text.to_string()));
-                    }
+                if in_value
+                    && !current_property_name.is_empty()
+                    && let Ok(text) = e.xml_content()
+                {
+                    let tag_name = format!("OOXML:Custom:{}", current_property_name);
+                    metadata.insert(tag_name, TagValue::new_string(text.to_string()));
+                }
             }
             Ok(Event::End(e)) => {
                 let element_name = String::from_utf8_lossy(e.local_name().as_ref()).to_string();

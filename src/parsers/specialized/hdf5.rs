@@ -38,7 +38,7 @@ impl HDF5Parser {
                 return Err(ExifToolError::parse_error(format!(
                     "Unsupported superblock version: {}",
                     version
-                )))
+                )));
             }
         }
         Ok(())

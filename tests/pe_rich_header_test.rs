@@ -1,6 +1,6 @@
 //! Integration test for PE Rich Header extraction
 
-use oxidex::parsers::pe::rich_header_parser::{parse_rich_header, RichHeader, RichHeaderEntry};
+use oxidex::parsers::pe::rich_header_parser::{RichHeader, RichHeaderEntry, parse_rich_header};
 
 const RICH_SIGNATURE: u32 = 0x68636952; // "Rich" in little-endian
 const DANS_SIGNATURE: u32 = 0x536E6144; // "DanS" in little-endian

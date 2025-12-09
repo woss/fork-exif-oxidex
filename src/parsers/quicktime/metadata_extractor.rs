@@ -12,7 +12,7 @@ use super::tag_mapping::atom_to_exiftool_tag;
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::io::timestamp::mac_time_to_iso8601;
 use crate::io::{ByteOrder, EndianReader};
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder as TiffByteOrder};
+use crate::parsers::tiff::ifd_parser::{ByteOrder as TiffByteOrder, parse_ifd};
 use crate::tag_db::lookup_tag_name;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -269,9 +269,10 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
                 };
 
                 if let Ok((_, atoms)) = super::atom_parser::parse_atoms(meta_data)
-                    && let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr")) {
-                        extract_handler_metadata(hdlr, &mut metadata)?;
-                    }
+                    && let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr"))
+                {
+                    extract_handler_metadata(hdlr, &mut metadata)?;
+                }
             }
 
             // Also check for hdlr directly in udta
@@ -304,9 +305,10 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
         };
 
         if let Ok((_, atoms)) = super::atom_parser::parse_atoms(meta_data)
-            && let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr")) {
-                extract_handler_metadata(hdlr, &mut metadata)?;
-            }
+            && let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr"))
+        {
+            extract_handler_metadata(hdlr, &mut metadata)?;
+        }
 
         // Extract HEIF-specific metadata (iinf, iloc, etc.) including EXIF data
         extract_heif_metadata(meta, root_atoms, &mut metadata)?;
@@ -324,61 +326,62 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
 fn extract_file_level_metadata(root_atoms: &[Atom], metadata: &mut MetadataMap) {
     // Extract file type information from ftyp atom
     if let Some(ftyp) = root_atoms.iter().find(|a| a.atom_type.matches("ftyp"))
-        && ftyp.data.len() >= 8 {
-            // Major brand (4 bytes)
-            let brand_bytes = &ftyp.data[0..4];
-            if let Ok(brand) = std::str::from_utf8(brand_bytes) {
-                let brand_desc = match brand {
-                    "isom" => "MP4 Base Media v1 [IS0 14496-12:2003]",
-                    "iso2" => "MP4 Base Media v2",
-                    "mp41" => "MP4 v1 [ISO 14496-1:ch13]",
-                    "mp42" => "MP4 v2 [ISO 14496-14]",
-                    "M4A " | "M4B " => "Apple iTunes AAC-LC (.M4A) Audio",
-                    "M4V " => "Apple iTunes Video (.M4V) Video",
-                    "qt  " => "Apple QuickTime (.MOV/QT)",
-                    "mp4 " => "MP4 Base Media v1 [IS0 14496-12:2003]",
-                    _ => brand,
-                };
-                metadata.insert(
-                    "QuickTime:MajorBrand".to_string(),
-                    TagValue::String(brand_desc.to_string()),
-                );
-            }
+        && ftyp.data.len() >= 8
+    {
+        // Major brand (4 bytes)
+        let brand_bytes = &ftyp.data[0..4];
+        if let Ok(brand) = std::str::from_utf8(brand_bytes) {
+            let brand_desc = match brand {
+                "isom" => "MP4 Base Media v1 [IS0 14496-12:2003]",
+                "iso2" => "MP4 Base Media v2",
+                "mp41" => "MP4 v1 [ISO 14496-1:ch13]",
+                "mp42" => "MP4 v2 [ISO 14496-14]",
+                "M4A " | "M4B " => "Apple iTunes AAC-LC (.M4A) Audio",
+                "M4V " => "Apple iTunes Video (.M4V) Video",
+                "qt  " => "Apple QuickTime (.MOV/QT)",
+                "mp4 " => "MP4 Base Media v1 [IS0 14496-12:2003]",
+                _ => brand,
+            };
+            metadata.insert(
+                "QuickTime:MajorBrand".to_string(),
+                TagValue::String(brand_desc.to_string()),
+            );
+        }
 
-            // Minor version (4 bytes)
-            if ftyp.data.len() >= 8 {
-                let r = EndianReader::big_endian(ftyp.data);
-                let minor_version = r.u32_at(4).unwrap_or(0);
-                let version_str = format!(
-                    "{}.{}.{}",
-                    (minor_version >> 16) & 0xFF,
-                    (minor_version >> 8) & 0xFF,
-                    minor_version & 0xFF
-                );
-                metadata.insert(
-                    "QuickTime:MinorVersion".to_string(),
-                    TagValue::String(version_str),
-                );
-            }
+        // Minor version (4 bytes)
+        if ftyp.data.len() >= 8 {
+            let r = EndianReader::big_endian(ftyp.data);
+            let minor_version = r.u32_at(4).unwrap_or(0);
+            let version_str = format!(
+                "{}.{}.{}",
+                (minor_version >> 16) & 0xFF,
+                (minor_version >> 8) & 0xFF,
+                minor_version & 0xFF
+            );
+            metadata.insert(
+                "QuickTime:MinorVersion".to_string(),
+                TagValue::String(version_str),
+            );
+        }
 
-            // Compatible brands (remaining bytes, each 4 bytes)
-            if ftyp.data.len() > 8 {
-                let mut compatible_brands = Vec::new();
-                let mut offset = 8;
-                while offset + 4 <= ftyp.data.len() {
-                    if let Ok(brand) = std::str::from_utf8(&ftyp.data[offset..offset + 4]) {
-                        compatible_brands.push(TagValue::String(brand.to_string()));
-                    }
-                    offset += 4;
+        // Compatible brands (remaining bytes, each 4 bytes)
+        if ftyp.data.len() > 8 {
+            let mut compatible_brands = Vec::new();
+            let mut offset = 8;
+            while offset + 4 <= ftyp.data.len() {
+                if let Ok(brand) = std::str::from_utf8(&ftyp.data[offset..offset + 4]) {
+                    compatible_brands.push(TagValue::String(brand.to_string()));
                 }
-                if !compatible_brands.is_empty() {
-                    metadata.insert(
-                        "QuickTime:CompatibleBrands".to_string(),
-                        TagValue::Array(compatible_brands),
-                    );
-                }
+                offset += 4;
+            }
+            if !compatible_brands.is_empty() {
+                metadata.insert(
+                    "QuickTime:CompatibleBrands".to_string(),
+                    TagValue::Array(compatible_brands),
+                );
             }
         }
+    }
 
     // Extract media data offset and size from mdat atom
     // We need to track position in the original file
@@ -893,33 +896,37 @@ fn extract_sample_description(
 
                 // Width (2 bytes at offset 32)
                 if let Some(width) = entry_reader.u16_at(32)
-                    && width > 0 && width < 10000 {
-                        // Sanity check
-                        // Output both ImageWidth (ExifTool convention) and legacy VideoWidth
-                        metadata.insert(
-                            format!("QuickTime:ImageWidth{}", track_suffix),
-                            TagValue::Integer(width as i64),
-                        );
-                        metadata.insert(
-                            format!("QuickTime:SourceImageWidth{}", track_suffix),
-                            TagValue::Integer(width as i64),
-                        );
-                    }
+                    && width > 0
+                    && width < 10000
+                {
+                    // Sanity check
+                    // Output both ImageWidth (ExifTool convention) and legacy VideoWidth
+                    metadata.insert(
+                        format!("QuickTime:ImageWidth{}", track_suffix),
+                        TagValue::Integer(width as i64),
+                    );
+                    metadata.insert(
+                        format!("QuickTime:SourceImageWidth{}", track_suffix),
+                        TagValue::Integer(width as i64),
+                    );
+                }
 
                 // Height (2 bytes at offset 34)
                 if let Some(height) = entry_reader.u16_at(34)
-                    && height > 0 && height < 10000 {
-                        // Sanity check
-                        // Output both ImageHeight (ExifTool convention) and legacy VideoHeight
-                        metadata.insert(
-                            format!("QuickTime:ImageHeight{}", track_suffix),
-                            TagValue::Integer(height as i64),
-                        );
-                        metadata.insert(
-                            format!("QuickTime:SourceImageHeight{}", track_suffix),
-                            TagValue::Integer(height as i64),
-                        );
-                    }
+                    && height > 0
+                    && height < 10000
+                {
+                    // Sanity check
+                    // Output both ImageHeight (ExifTool convention) and legacy VideoHeight
+                    metadata.insert(
+                        format!("QuickTime:ImageHeight{}", track_suffix),
+                        TagValue::Integer(height as i64),
+                    );
+                    metadata.insert(
+                        format!("QuickTime:SourceImageHeight{}", track_suffix),
+                        TagValue::Integer(height as i64),
+                    );
+                }
 
                 // Bit depth (2 bytes at offset 82)
                 if let Some(depth) = entry_reader.u16_at(82) {
@@ -957,23 +964,27 @@ fn extract_sample_description(
 
                 // Channel count (2 bytes at offset 24)
                 if let Some(channels) = entry_reader.u16_at(24)
-                    && channels > 0 && channels <= 32 {
-                        // Sanity check
-                        metadata.insert(
-                            format!("QuickTime:AudioChannels{}", track_suffix),
-                            TagValue::Integer(channels as i64),
-                        );
-                    }
+                    && channels > 0
+                    && channels <= 32
+                {
+                    // Sanity check
+                    metadata.insert(
+                        format!("QuickTime:AudioChannels{}", track_suffix),
+                        TagValue::Integer(channels as i64),
+                    );
+                }
 
                 // Sample size (2 bytes at offset 26)
                 if let Some(sample_size) = entry_reader.u16_at(26)
-                    && sample_size > 0 && sample_size <= 64 {
-                        // Sanity check
-                        metadata.insert(
-                            format!("QuickTime:AudioBitsPerSample{}", track_suffix),
-                            TagValue::Integer(sample_size as i64),
-                        );
-                    }
+                    && sample_size > 0
+                    && sample_size <= 64
+                {
+                    // Sanity check
+                    metadata.insert(
+                        format!("QuickTime:AudioBitsPerSample{}", track_suffix),
+                        TagValue::Integer(sample_size as i64),
+                    );
+                }
 
                 // Sample rate (fixed-point 16.16 at offset 32)
                 if let Some(sample_rate_fixed) = entry_reader.u32_at(32) {
@@ -1042,18 +1053,19 @@ fn extract_video_frame_rate(
     let timescale_key = format!("QuickTime:MediaTimeScale{}", track_suffix);
     if let Some(timescale_value) = metadata.get(&timescale_key)
         && let Some(timescale) = timescale_value.as_integer()
-            && timescale > 0 {
-                let frame_rate = timescale as f64 / sample_delta as f64;
-                // Only output if this looks like a reasonable frame rate (1-240 fps)
-                if (1.0..=240.0).contains(&frame_rate) {
-                    // Round to reasonable precision for display
-                    let frame_rate_rounded = (frame_rate * 100.0).round() / 100.0;
-                    metadata.insert(
-                        format!("QuickTime:VideoFrameRate{}", track_suffix),
-                        TagValue::Float(frame_rate_rounded),
-                    );
-                }
-            }
+        && timescale > 0
+    {
+        let frame_rate = timescale as f64 / sample_delta as f64;
+        // Only output if this looks like a reasonable frame rate (1-240 fps)
+        if (1.0..=240.0).contains(&frame_rate) {
+            // Round to reasonable precision for display
+            let frame_rate_rounded = (frame_rate * 100.0).round() / 100.0;
+            metadata.insert(
+                format!("QuickTime:VideoFrameRate{}", track_suffix),
+                TagValue::Float(frame_rate_rounded),
+            );
+        }
+    }
 
     Ok(())
 }
@@ -1114,28 +1126,30 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
         if !name_data.is_empty() && name_data[0] > 0 && name_data[0] < 128 {
             let length = name_data[0] as usize;
             if name_data.len() > length
-                && let Ok(name) = std::str::from_utf8(&name_data[1..=length]) {
-                    let trimmed = name.trim();
-                    if !trimmed.is_empty() {
-                        metadata.insert(
-                            "QuickTime:HandlerDescription".to_string(),
-                            TagValue::String(trimmed.to_string()),
-                        );
-                    }
+                && let Ok(name) = std::str::from_utf8(&name_data[1..=length])
+            {
+                let trimmed = name.trim();
+                if !trimmed.is_empty() {
+                    metadata.insert(
+                        "QuickTime:HandlerDescription".to_string(),
+                        TagValue::String(trimmed.to_string()),
+                    );
                 }
+            }
         } else {
             // Try null-terminated string
             if let Some(null_pos) = name_data.iter().position(|&b| b == 0)
                 && null_pos > 0
-                    && let Ok(name) = std::str::from_utf8(&name_data[..null_pos]) {
-                        let trimmed = name.trim();
-                        if !trimmed.is_empty() {
-                            metadata.insert(
-                                "QuickTime:HandlerDescription".to_string(),
-                                TagValue::String(trimmed.to_string()),
-                            );
-                        }
-                    }
+                && let Ok(name) = std::str::from_utf8(&name_data[..null_pos])
+            {
+                let trimmed = name.trim();
+                if !trimmed.is_empty() {
+                    metadata.insert(
+                        "QuickTime:HandlerDescription".to_string(),
+                        TagValue::String(trimmed.to_string()),
+                    );
+                }
+            }
         }
     }
 
@@ -1267,20 +1281,21 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
 
                 // Handle GPS coordinates (©xyz atom)
                 if atom_bytes == b"\xa9xyz"
-                    && let Some((lat, lon, alt)) = parse_iso6709(&value) {
-                        metadata.insert("QuickTime:GPSLatitude".to_string(), TagValue::Float(lat));
-                        metadata.insert("QuickTime:GPSLongitude".to_string(), TagValue::Float(lon));
-                        if let Some(altitude) = alt {
-                            metadata.insert(
-                                "QuickTime:GPSAltitude".to_string(),
-                                TagValue::Float(altitude),
-                            );
-                        }
+                    && let Some((lat, lon, alt)) = parse_iso6709(&value)
+                {
+                    metadata.insert("QuickTime:GPSLatitude".to_string(), TagValue::Float(lat));
+                    metadata.insert("QuickTime:GPSLongitude".to_string(), TagValue::Float(lon));
+                    if let Some(altitude) = alt {
                         metadata.insert(
-                            "QuickTime:GPSCoordinates".to_string(),
-                            TagValue::new_string(value.clone()),
+                            "QuickTime:GPSAltitude".to_string(),
+                            TagValue::Float(altitude),
                         );
                     }
+                    metadata.insert(
+                        "QuickTime:GPSCoordinates".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
+                }
 
                 if let Some(suffix) = suffix {
                     metadata.insert(
@@ -1411,12 +1426,13 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                     if atom.data.len() >= 4 {
                         let r = EndianReader::big_endian(atom.data);
                         if let Some(bpm) = r.u16_at(2)
-                            && bpm > 0 {
-                                metadata.insert(
-                                    "QuickTime:BeatsPerMinute".to_string(),
-                                    TagValue::Integer(bpm as i64),
-                                );
-                            }
+                            && bpm > 0
+                        {
+                            metadata.insert(
+                                "QuickTime:BeatsPerMinute".to_string(),
+                                TagValue::Integer(bpm as i64),
+                            );
+                        }
                     }
                 }
                 "fmt " => {
@@ -1576,101 +1592,101 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
 
             // Each item contains a data atom
             if let Some(data_atom) = item.find_child("data")
-                && let Some(value) = extract_itunes_data_value(data_atom.data) {
-                    let mut add_year_tag = false;
-                    let tag_name: Cow<'static, str> = match atom_bytes {
-                        b"\xa9nam" => Cow::Borrowed("ItemList:Title"),
-                        b"\xa9ART" => Cow::Borrowed("ItemList:Artist"),
-                        b"\xa9alb" => Cow::Borrowed("ItemList:Album"),
-                        b"\xa9day" => {
-                            add_year_tag = true;
-                            Cow::Borrowed("ItemList:ContentCreateDate")
-                        }
-                        b"\xa9cmt" => Cow::Borrowed("ItemList:Comment"),
-                        b"\xa9gen" => Cow::Borrowed("ItemList:Genre"),
-                        b"\xa9too" => Cow::Borrowed("ItemList:Encoder"),
-                        b"aART" => Cow::Borrowed("ItemList:AlbumArtist"),
-                        b"\xa9wrt" => Cow::Borrowed("ItemList:Composer"),
-                        b"\xa9grp" => Cow::Borrowed("ItemList:Grouping"),
-                        b"\xa9lyr" => Cow::Borrowed("ItemList:Lyrics"),
-                        b"trkn" => Cow::Borrowed("ItemList:TrackNumber"),
-                        b"disk" => Cow::Borrowed("ItemList:DiscNumber"),
-                        b"cprt" | b"\xa9cpy" => Cow::Borrowed("ItemList:Copyright"),
-                        b"tmpo" => Cow::Borrowed("ItemList:BeatsPerMinute"),
-                        b"covr" => Cow::Borrowed("ItemList:CoverArt"),
-                        b"gnre" => Cow::Borrowed("ItemList:Genre"),
-                        b"desc" => Cow::Borrowed("ItemList:Description"),
-                        b"ldes" => Cow::Borrowed("ItemList:LongDescription"),
-                        _ => {
-                            if let Ok(s) = std::str::from_utf8(atom_bytes) {
-                                Cow::Owned(format!("ItemList:{}", s))
-                            } else {
-                                Cow::Owned(format!(
-                                    "ItemList:{:02X}{:02X}{:02X}{:02X}",
-                                    atom_bytes[0], atom_bytes[1], atom_bytes[2], atom_bytes[3]
-                                ))
-                            }
-                        }
-                    };
-
-                    // Also insert into QuickTime: namespace for iTunes ilst metadata
-                    // This matches ExifTool behavior which uses QuickTime: prefix
-                    let qt_tag = match atom_bytes {
-                        b"\xa9nam" => Some("QuickTime:Title"),
-                        b"\xa9ART" => Some("QuickTime:Artist"),
-                        b"\xa9alb" => Some("QuickTime:Album"),
-                        b"\xa9day" => Some("QuickTime:ContentCreateDate"),
-                        b"\xa9cmt" => Some("QuickTime:Comment"),
-                        b"\xa9gen" => Some("QuickTime:Genre"),
-                        b"\xa9too" => Some("QuickTime:Encoder"),
-                        b"aART" => Some("QuickTime:AlbumArtist"),
-                        b"\xa9wrt" => Some("QuickTime:Composer"),
-                        b"\xa9grp" => Some("QuickTime:Grouping"),
-                        b"\xa9lyr" => Some("QuickTime:Lyrics"),
-                        b"cprt" | b"\xa9cpy" => Some("QuickTime:Copyright"),
-                        b"tmpo" => Some("QuickTime:BeatsPerMinute"),
-                        b"covr" => Some("QuickTime:CoverArt"),
-                        b"gnre" => Some("QuickTime:Genre"),
-                        b"desc" => Some("QuickTime:Description"),
-                        b"ldes" => Some("QuickTime:LongDescription"),
-                        _ => None,
-                    };
-                    if let Some(qt_tag_name) = qt_tag {
-                        metadata.insert(qt_tag_name.to_string(), value.clone());
+                && let Some(value) = extract_itunes_data_value(data_atom.data)
+            {
+                let mut add_year_tag = false;
+                let tag_name: Cow<'static, str> = match atom_bytes {
+                    b"\xa9nam" => Cow::Borrowed("ItemList:Title"),
+                    b"\xa9ART" => Cow::Borrowed("ItemList:Artist"),
+                    b"\xa9alb" => Cow::Borrowed("ItemList:Album"),
+                    b"\xa9day" => {
+                        add_year_tag = true;
+                        Cow::Borrowed("ItemList:ContentCreateDate")
                     }
+                    b"\xa9cmt" => Cow::Borrowed("ItemList:Comment"),
+                    b"\xa9gen" => Cow::Borrowed("ItemList:Genre"),
+                    b"\xa9too" => Cow::Borrowed("ItemList:Encoder"),
+                    b"aART" => Cow::Borrowed("ItemList:AlbumArtist"),
+                    b"\xa9wrt" => Cow::Borrowed("ItemList:Composer"),
+                    b"\xa9grp" => Cow::Borrowed("ItemList:Grouping"),
+                    b"\xa9lyr" => Cow::Borrowed("ItemList:Lyrics"),
+                    b"trkn" => Cow::Borrowed("ItemList:TrackNumber"),
+                    b"disk" => Cow::Borrowed("ItemList:DiscNumber"),
+                    b"cprt" | b"\xa9cpy" => Cow::Borrowed("ItemList:Copyright"),
+                    b"tmpo" => Cow::Borrowed("ItemList:BeatsPerMinute"),
+                    b"covr" => Cow::Borrowed("ItemList:CoverArt"),
+                    b"gnre" => Cow::Borrowed("ItemList:Genre"),
+                    b"desc" => Cow::Borrowed("ItemList:Description"),
+                    b"ldes" => Cow::Borrowed("ItemList:LongDescription"),
+                    _ => {
+                        if let Ok(s) = std::str::from_utf8(atom_bytes) {
+                            Cow::Owned(format!("ItemList:{}", s))
+                        } else {
+                            Cow::Owned(format!(
+                                "ItemList:{:02X}{:02X}{:02X}{:02X}",
+                                atom_bytes[0], atom_bytes[1], atom_bytes[2], atom_bytes[3]
+                            ))
+                        }
+                    }
+                };
 
-                    metadata.insert(tag_name.into_owned(), value.clone());
-
-                    if add_year_tag
-                        && let TagValue::String(ref text) = value
-                            && text.len() >= 4 {
-                                let year = text.chars().take(4).collect::<String>();
-                                metadata.insert(
-                                    "ItemList:Year".to_string(),
-                                    TagValue::new_string(year),
-                                );
-                            }
-
-                    // Handle TrackNumber and DiscNumber formatted as "X of Y"
-                    if (atom_bytes == b"trkn" || atom_bytes == b"disk")
-                        && let TagValue::Binary(ref data) = value
-                            && data.len() >= 6 {
-                                let r = EndianReader::big_endian(data);
-                                let current = r.u16_at(2).unwrap_or(0);
-                                let total = r.u16_at(4).unwrap_or(0);
-                                let formatted = if total > 0 {
-                                    format!("{} of {}", current, total)
-                                } else {
-                                    format!("{}", current)
-                                };
-                                let tag = if atom_bytes == b"trkn" {
-                                    "QuickTime:TrackNumber"
-                                } else {
-                                    "QuickTime:DiskNumber"
-                                };
-                                metadata.insert(tag.to_string(), TagValue::new_string(formatted));
-                            }
+                // Also insert into QuickTime: namespace for iTunes ilst metadata
+                // This matches ExifTool behavior which uses QuickTime: prefix
+                let qt_tag = match atom_bytes {
+                    b"\xa9nam" => Some("QuickTime:Title"),
+                    b"\xa9ART" => Some("QuickTime:Artist"),
+                    b"\xa9alb" => Some("QuickTime:Album"),
+                    b"\xa9day" => Some("QuickTime:ContentCreateDate"),
+                    b"\xa9cmt" => Some("QuickTime:Comment"),
+                    b"\xa9gen" => Some("QuickTime:Genre"),
+                    b"\xa9too" => Some("QuickTime:Encoder"),
+                    b"aART" => Some("QuickTime:AlbumArtist"),
+                    b"\xa9wrt" => Some("QuickTime:Composer"),
+                    b"\xa9grp" => Some("QuickTime:Grouping"),
+                    b"\xa9lyr" => Some("QuickTime:Lyrics"),
+                    b"cprt" | b"\xa9cpy" => Some("QuickTime:Copyright"),
+                    b"tmpo" => Some("QuickTime:BeatsPerMinute"),
+                    b"covr" => Some("QuickTime:CoverArt"),
+                    b"gnre" => Some("QuickTime:Genre"),
+                    b"desc" => Some("QuickTime:Description"),
+                    b"ldes" => Some("QuickTime:LongDescription"),
+                    _ => None,
+                };
+                if let Some(qt_tag_name) = qt_tag {
+                    metadata.insert(qt_tag_name.to_string(), value.clone());
                 }
+
+                metadata.insert(tag_name.into_owned(), value.clone());
+
+                if add_year_tag
+                    && let TagValue::String(ref text) = value
+                    && text.len() >= 4
+                {
+                    let year = text.chars().take(4).collect::<String>();
+                    metadata.insert("ItemList:Year".to_string(), TagValue::new_string(year));
+                }
+
+                // Handle TrackNumber and DiscNumber formatted as "X of Y"
+                if (atom_bytes == b"trkn" || atom_bytes == b"disk")
+                    && let TagValue::Binary(ref data) = value
+                    && data.len() >= 6
+                {
+                    let r = EndianReader::big_endian(data);
+                    let current = r.u16_at(2).unwrap_or(0);
+                    let total = r.u16_at(4).unwrap_or(0);
+                    let formatted = if total > 0 {
+                        format!("{} of {}", current, total)
+                    } else {
+                        format!("{}", current)
+                    };
+                    let tag = if atom_bytes == b"trkn" {
+                        "QuickTime:TrackNumber"
+                    } else {
+                        "QuickTime:DiskNumber"
+                    };
+                    metadata.insert(tag.to_string(), TagValue::new_string(formatted));
+                }
+            }
         }
     }
 
@@ -1702,38 +1718,34 @@ fn extract_mp4_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), S
                 .unwrap_or(0);
 
             if let Some(data_atom) = item.find_child("data")
-                && let Some(value) = extract_itunes_data_value(data_atom.data) {
-                    // Look up the key name
-                    if let Some(key_name) = key_map.get(&key_index) {
-                        // Map Apple-specific keys to standard tag names
-                        let tag_name = map_apple_key_to_tag(key_name);
-                        metadata.insert(tag_name, value.clone());
+                && let Some(value) = extract_itunes_data_value(data_atom.data)
+            {
+                // Look up the key name
+                if let Some(key_name) = key_map.get(&key_index) {
+                    // Map Apple-specific keys to standard tag names
+                    let tag_name = map_apple_key_to_tag(key_name);
+                    metadata.insert(tag_name, value.clone());
 
-                        // Special handling for GPS coordinates
-                        if key_name == "com.apple.quicktime.location.ISO6709"
-                            && let TagValue::String(ref gps_str) = value
-                                && let Some((lat, lon, alt)) = parse_iso6709(gps_str) {
-                                    metadata.insert(
-                                        "QuickTime:GPSLatitude".to_string(),
-                                        TagValue::Float(lat),
-                                    );
-                                    metadata.insert(
-                                        "QuickTime:GPSLongitude".to_string(),
-                                        TagValue::Float(lon),
-                                    );
-                                    if let Some(altitude) = alt {
-                                        metadata.insert(
-                                            "QuickTime:GPSAltitude".to_string(),
-                                            TagValue::Float(altitude),
-                                        );
-                                    }
-                                }
-                    } else {
-                        // Fallback to using the atom type as the tag name
-                        let tag_name = format!("MP4:{}", item.atom_type.as_str());
-                        metadata.insert(tag_name, value);
+                    // Special handling for GPS coordinates
+                    if key_name == "com.apple.quicktime.location.ISO6709"
+                        && let TagValue::String(ref gps_str) = value
+                        && let Some((lat, lon, alt)) = parse_iso6709(gps_str)
+                    {
+                        metadata.insert("QuickTime:GPSLatitude".to_string(), TagValue::Float(lat));
+                        metadata.insert("QuickTime:GPSLongitude".to_string(), TagValue::Float(lon));
+                        if let Some(altitude) = alt {
+                            metadata.insert(
+                                "QuickTime:GPSAltitude".to_string(),
+                                TagValue::Float(altitude),
+                            );
+                        }
                     }
+                } else {
+                    // Fallback to using the atom type as the tag name
+                    let tag_name = format!("MP4:{}", item.atom_type.as_str());
+                    metadata.insert(tag_name, value);
                 }
+            }
         }
     }
 
@@ -1953,9 +1965,10 @@ fn extract_heif_metadata(
 
     // Extract EXIF data from mdat if we found an Exif item
     if let Some(id) = exif_item_id
-        && let Some(&(offset, length)) = item_locations.get(&id) {
-            extract_exif_from_mdat(root_atoms, offset, length, metadata);
-        }
+        && let Some(&(offset, length)) = item_locations.get(&id)
+    {
+        extract_exif_from_mdat(root_atoms, offset, length, metadata);
+    }
 
     Ok(())
 }
@@ -2082,16 +2095,17 @@ fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
         if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
             let r = EndianReader::big_endian(atom.data);
             if let (Some(width), Some(height)) = (r.u32_at(4), r.u32_at(8))
-                && !metadata.contains_key("HEIF:ImageWidth") {
-                    metadata.insert(
-                        "HEIF:ImageWidth".to_string(),
-                        TagValue::Integer(width as i64),
-                    );
-                    metadata.insert(
-                        "HEIF:ImageHeight".to_string(),
-                        TagValue::Integer(height as i64),
-                    );
-                }
+                && !metadata.contains_key("HEIF:ImageWidth")
+            {
+                metadata.insert(
+                    "HEIF:ImageWidth".to_string(),
+                    TagValue::Integer(width as i64),
+                );
+                metadata.insert(
+                    "HEIF:ImageHeight".to_string(),
+                    TagValue::Integer(height as i64),
+                );
+            }
         }
     }
 }
@@ -2262,25 +2276,25 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
 
     // Parse ExifIFD if present
     if let Some(offset) = exif_ifd_offset
-        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
-            for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
-                let tag_name = lookup_tag_name(tag_id, "ExifIFD");
-                let tag_value =
-                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
-                metadata.insert(tag_name, tag_value);
-            }
+        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order)
+    {
+        for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
+            let tag_name = lookup_tag_name(tag_id, "ExifIFD");
+            let tag_value = raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+            metadata.insert(tag_name, tag_value);
         }
+    }
 
     // Parse GPS IFD if present
     if let Some(offset) = gps_ifd_offset
-        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
-            for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
-                let tag_name = lookup_tag_name(tag_id, "GPS");
-                let tag_value =
-                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
-                metadata.insert(tag_name, tag_value);
-            }
+        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order)
+    {
+        for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
+            let tag_name = lookup_tag_name(tag_id, "GPS");
+            let tag_value = raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+            metadata.insert(tag_name, tag_value);
         }
+    }
 
     Ok(())
 }

@@ -340,10 +340,22 @@ fn parse_jumbf_description(data: &[u8], metadata: &mut MetadataMap) -> Result<()
     // Format UUID as hex string
     let uuid_str = format!(
         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-        uuid[0], uuid[1], uuid[2], uuid[3],
-        uuid[4], uuid[5], uuid[6], uuid[7],
-        uuid[8], uuid[9], uuid[10], uuid[11],
-        uuid[12], uuid[13], uuid[14], uuid[15]
+        uuid[0],
+        uuid[1],
+        uuid[2],
+        uuid[3],
+        uuid[4],
+        uuid[5],
+        uuid[6],
+        uuid[7],
+        uuid[8],
+        uuid[9],
+        uuid[10],
+        uuid[11],
+        uuid[12],
+        uuid[13],
+        uuid[14],
+        uuid[15]
     );
 
     metadata.insert("JUMBF:ContentType".to_string(), TagValue::String(uuid_str));
@@ -365,12 +377,13 @@ fn parse_jumbf_description(data: &[u8], metadata: &mut MetadataMap) -> Result<()
             // Label is UTF-8 null-terminated string after toggles
             if let Some(null_pos) = data[17..].iter().position(|&b| b == 0)
                 && let Ok(label) = std::str::from_utf8(&data[17..17 + null_pos])
-                    && !label.is_empty() {
-                        metadata.insert(
-                            "JUMBF:Label".to_string(),
-                            TagValue::String(label.to_string()),
-                        );
-                    }
+                && !label.is_empty()
+            {
+                metadata.insert(
+                    "JUMBF:Label".to_string(),
+                    TagValue::String(label.to_string()),
+                );
+            }
         }
     }
 
@@ -401,10 +414,22 @@ fn parse_uuid_box(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
         let uuid = &data[0..16];
         let uuid_str = format!(
             "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-            uuid[0], uuid[1], uuid[2], uuid[3],
-            uuid[4], uuid[5], uuid[6], uuid[7],
-            uuid[8], uuid[9], uuid[10], uuid[11],
-            uuid[12], uuid[13], uuid[14], uuid[15]
+            uuid[0],
+            uuid[1],
+            uuid[2],
+            uuid[3],
+            uuid[4],
+            uuid[5],
+            uuid[6],
+            uuid[7],
+            uuid[8],
+            uuid[9],
+            uuid[10],
+            uuid[11],
+            uuid[12],
+            uuid[13],
+            uuid[14],
+            uuid[15]
         );
 
         metadata.insert("JUMBF:UUID".to_string(), TagValue::String(uuid_str));
@@ -457,33 +482,34 @@ fn parse_c2pa_claim(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 
     // Try to parse as JSON if it looks like JSON
     if (data.starts_with(b"{") || data.starts_with(b"["))
-        && let Ok(json_str) = std::str::from_utf8(data) {
-            // Look for common C2PA claim fields
-            if json_str.contains("\"dc:title\"") {
-                metadata.insert(
-                    "C2PA:ClaimGenerator".to_string(),
-                    TagValue::String("Present in claim".to_string()),
-                );
-            }
-            if json_str.contains("\"actions\"") {
-                metadata.insert(
-                    "C2PA:Actions".to_string(),
-                    TagValue::String("Present in claim".to_string()),
-                );
-            }
-            if json_str.contains("\"assertions\"") {
-                metadata.insert(
-                    "C2PA:Assertions".to_string(),
-                    TagValue::String("Present in claim".to_string()),
-                );
-            }
-            if json_str.contains("\"ingredients\"") {
-                metadata.insert(
-                    "C2PA:Ingredients".to_string(),
-                    TagValue::String("Present in claim".to_string()),
-                );
-            }
+        && let Ok(json_str) = std::str::from_utf8(data)
+    {
+        // Look for common C2PA claim fields
+        if json_str.contains("\"dc:title\"") {
+            metadata.insert(
+                "C2PA:ClaimGenerator".to_string(),
+                TagValue::String("Present in claim".to_string()),
+            );
         }
+        if json_str.contains("\"actions\"") {
+            metadata.insert(
+                "C2PA:Actions".to_string(),
+                TagValue::String("Present in claim".to_string()),
+            );
+        }
+        if json_str.contains("\"assertions\"") {
+            metadata.insert(
+                "C2PA:Assertions".to_string(),
+                TagValue::String("Present in claim".to_string()),
+            );
+        }
+        if json_str.contains("\"ingredients\"") {
+            metadata.insert(
+                "C2PA:Ingredients".to_string(),
+                TagValue::String("Present in claim".to_string()),
+            );
+        }
+    }
 
     Ok(())
 }
@@ -659,10 +685,12 @@ mod tests {
 
         let result = parse_c2pa_signature(cose_data, &mut metadata);
         assert!(result.is_ok());
-        assert!(metadata
-            .get_string("C2PA:ClaimSignature")
-            .unwrap()
-            .contains("Binary signature"));
+        assert!(
+            metadata
+                .get_string("C2PA:ClaimSignature")
+                .unwrap()
+                .contains("Binary signature")
+        );
         assert_eq!(
             metadata.get_string("C2PA:SignatureFormat").as_deref(),
             Some("COSE")

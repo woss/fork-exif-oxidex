@@ -29,8 +29,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
-use crate::io::timestamp::filetime_to_iso8601;
 use crate::io::EndianReader;
+use crate::io::timestamp::filetime_to_iso8601;
 
 /// Registry hive signature: "regf" (4 bytes)
 const REGF_MAGIC: &[u8] = b"regf";

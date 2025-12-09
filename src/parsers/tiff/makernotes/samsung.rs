@@ -31,9 +31,9 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
 use super::registries::samsung::samsung_registry;
-use super::shared::array_extractors::extract_i16_value;
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::extract_i16_value;
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
 
 // Samsung signature for validation
 const SAMSUNG_SIGNATURE: &[u8] = b"Samsung";
@@ -146,7 +146,7 @@ impl MakerNoteParser for SamsungParser {
 #[cfg(test)]
 mod tests {
     use super::super::registries::samsung::{
-        decode_zoom_level, LENS_TYPE, PORTRAIT_EFFECT, SCENE_OPTIMIZER, SCENE_TYPE, SINGLE_TAKE,
+        LENS_TYPE, PORTRAIT_EFFECT, SCENE_OPTIMIZER, SCENE_TYPE, SINGLE_TAKE, decode_zoom_level,
     };
     use super::super::shared::generic_decoders::ON_OFF;
     use super::*;

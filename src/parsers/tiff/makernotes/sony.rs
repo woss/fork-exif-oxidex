@@ -33,17 +33,17 @@ use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::collections::HashMap;
 
 use super::registries::sony::sony_registry;
+use super::shared::MakerNoteParser;
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::generic_decoders::ON_OFF;
-use super::shared::MakerNoteParser;
 use super::sony_lens_database::{get_lens_database, lookup_lens_name};
 
 // Import declarative decoder macros
@@ -686,11 +686,7 @@ fn find_ifd_start(data: &[u8]) -> usize {
     }
 
     // Sanity check: don't skip more than 16 bytes
-    if offset > 16 {
-        0
-    } else {
-        offset
-    }
+    if offset > 16 { 0 } else { offset }
 }
 
 /// Internal implementation of Sony MakerNote parsing.
@@ -798,13 +794,14 @@ fn parse_sony_makernote_impl(
             SONY_LENS_ID => {
                 if let Some(value_str) = extract_integer_value(entry)
                     && let Ok(lens_id) = value_str.parse::<u16>()
-                        && lens_id > 0 {
-                            if let Some(lens_name) = lookup_lens_name(lens_id) {
-                                tags.insert("Sony:LensType".to_string(), lens_name);
-                            } else {
-                                tags.insert("Sony:LensID".to_string(), lens_id.to_string());
-                            }
-                        }
+                    && lens_id > 0
+                {
+                    if let Some(lens_name) = lookup_lens_name(lens_id) {
+                        tags.insert("Sony:LensType".to_string(), lens_name);
+                    } else {
+                        tags.insert("Sony:LensID".to_string(), lens_id.to_string());
+                    }
+                }
             }
 
             // Array-based tags - processed via registry schemas
@@ -849,10 +846,11 @@ fn parse_sony_makernote_impl(
                             let offset = entry.value_offset as usize;
                             if let (Some(num), Some(den)) =
                                 (reader.u32_at(offset), reader.u32_at(offset + 4))
-                                && den != 0 {
-                                    let tag_name = sony_tag_to_name(entry.tag_id);
-                                    tags.insert(tag_name, format!("{}/{}", num, den));
-                                }
+                                && den != 0
+                            {
+                                let tag_name = sony_tag_to_name(entry.tag_id);
+                                tags.insert(tag_name, format!("{}/{}", num, den));
+                            }
                         }
                     }
                     // UNDEFINED (arbitrary bytes) - skip binary data
@@ -879,10 +877,11 @@ fn parse_sony_makernote_impl(
                             let offset = entry.value_offset as usize;
                             if let (Some(num), Some(den)) =
                                 (reader.i32_at(offset), reader.i32_at(offset + 4))
-                                && den != 0 {
-                                    let tag_name = sony_tag_to_name(entry.tag_id);
-                                    tags.insert(tag_name, format!("{}/{}", num, den));
-                                }
+                                && den != 0
+                            {
+                                let tag_name = sony_tag_to_name(entry.tag_id);
+                                tags.insert(tag_name, format!("{}/{}", num, den));
+                            }
                         }
                     }
                     _ => continue, // Skip unknown field types

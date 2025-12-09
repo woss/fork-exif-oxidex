@@ -13,7 +13,7 @@ use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::buffered_reader::BufferedReader;
 use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::tag_db::lookup_tag_name;
 
 const PSD_SIGNATURE: &[u8] = b"8BPS";

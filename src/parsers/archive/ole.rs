@@ -381,9 +381,11 @@ impl VBAAnalyzer {
             }
 
             if let Some((snippet, _)) = Self::analyze_module(reader, entry, header)
-                && !snippet.is_empty() && snippet.len() > 10 {
-                    code_snippets.push(format!("{}:\n{}", entry.name, snippet));
-                }
+                && !snippet.is_empty()
+                && snippet.len() > 10
+            {
+                code_snippets.push(format!("{}:\n{}", entry.name, snippet));
+            }
         }
 
         if !code_snippets.is_empty() {

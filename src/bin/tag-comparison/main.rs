@@ -9,7 +9,7 @@ mod comparison;
 mod extraction;
 mod models;
 
-use comparison::{generate_markdown_reports, ComparisonEngine};
+use comparison::{ComparisonEngine, generate_markdown_reports};
 use extraction::{ExifToolExtractor, OxiDexExtractor};
 use models::ComparisonReport;
 
@@ -195,9 +195,10 @@ fn detect_formats(
                     }
                 } else if path.is_file()
                     && let Some(ext) = path.extension().and_then(|e| e.to_str())
-                        && let Some(format) = extension_to_format(ext) {
-                            formats.insert(format.to_string());
-                        }
+                    && let Some(format) = extension_to_format(ext)
+                {
+                    formats.insert(format.to_string());
+                }
             }
         }
         Ok(())

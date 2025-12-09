@@ -42,7 +42,7 @@ use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::writers::atomic_writer::write_atomic;
 use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, NaiveDateTime, Timelike, Utc};
-use std::collections::{btree_map::Entry, BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, btree_map::Entry};
 use std::path::Path;
 use std::str;
 
@@ -329,21 +329,23 @@ fn parse_xref_table(xref_data: &[u8]) -> Result<HashMap<u32, u64>> {
         // Parse subsection header: "start_obj_num count"
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() == 2
-            && let (Ok(start_num), Ok(count)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
-                // Parse each entry in this subsection
-                for i in 0..count {
-                    if let Some(entry_line) = lines.next() {
-                        let entry_parts: Vec<&str> = entry_line.split_whitespace().collect();
-                        if entry_parts.len() >= 3
-                            && let Ok(offset) = entry_parts[0].parse::<u64>() {
-                                let in_use = entry_parts[2];
-                                if in_use == "n" {
-                                    object_offsets.insert(start_num + i, offset);
-                                }
-                            }
+            && let (Ok(start_num), Ok(count)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>())
+        {
+            // Parse each entry in this subsection
+            for i in 0..count {
+                if let Some(entry_line) = lines.next() {
+                    let entry_parts: Vec<&str> = entry_line.split_whitespace().collect();
+                    if entry_parts.len() >= 3
+                        && let Ok(offset) = entry_parts[0].parse::<u64>()
+                    {
+                        let in_use = entry_parts[2];
+                        if in_use == "n" {
+                            object_offsets.insert(start_num + i, offset);
+                        }
                     }
                 }
             }
+        }
     }
 
     Ok(object_offsets)
@@ -425,18 +427,19 @@ fn write_info_object(
 
     for (key, value) in metadata.iter() {
         if let Some(field) = key.strip_prefix("PDF:")
-            && let Some((canonical, source)) = canonicalize_pdf_field(field) {
-                match entries.entry(canonical) {
-                    Entry::Vacant(entry) => {
+            && let Some((canonical, source)) = canonicalize_pdf_field(field)
+        {
+            match entries.entry(canonical) {
+                Entry::Vacant(entry) => {
+                    entry.insert((value, source));
+                }
+                Entry::Occupied(mut entry) => {
+                    if matches!(source, FieldSource::Canonical) {
                         entry.insert((value, source));
-                    }
-                    Entry::Occupied(mut entry) => {
-                        if matches!(source, FieldSource::Canonical) {
-                            entry.insert((value, source));
-                        }
                     }
                 }
             }
+        }
     }
 
     for (field_name, (value, _)) in entries {
@@ -460,12 +463,13 @@ fn serialize_pdf_field(buffer: &mut Vec<u8>, field_name: &str, value: &TagValue)
     match value {
         TagValue::String(s) => {
             if matches!(field_name, "CreationDate" | "ModDate")
-                && let Some(pdf_date) = convert_exif_string_to_pdf_date(s) {
-                    buffer.extend_from_slice(b"(D:");
-                    buffer.extend_from_slice(pdf_date.as_bytes());
-                    buffer.extend_from_slice(b")\n");
-                    return Ok(());
-                }
+                && let Some(pdf_date) = convert_exif_string_to_pdf_date(s)
+            {
+                buffer.extend_from_slice(b"(D:");
+                buffer.extend_from_slice(pdf_date.as_bytes());
+                buffer.extend_from_slice(b")\n");
+                return Ok(());
+            }
             serialize_pdf_text_string(buffer, s);
         }
         TagValue::Integer(i) => {

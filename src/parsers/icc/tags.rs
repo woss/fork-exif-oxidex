@@ -5,8 +5,8 @@
 
 use super::binary::{read_s15fixed16, read_signature, read_u16fixed16, read_u32_be};
 use super::registries::{
-    lookup_in_table, TagType, GEOMETRY_TYPES, ILLUMINANT_TYPES, OBSERVER_TYPES, TAG_REGISTRY,
-    TECHNOLOGIES,
+    GEOMETRY_TYPES, ILLUMINANT_TYPES, OBSERVER_TYPES, TAG_REGISTRY, TECHNOLOGIES, TagType,
+    lookup_in_table,
 };
 use crate::core::TagValue;
 use crate::error::{ExifToolError, Result};

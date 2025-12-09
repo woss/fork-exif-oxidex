@@ -26,37 +26,38 @@ pub fn detect_zip_variant(reader: &dyn FileReader) -> FileFormat {
 
     let size = reader.size() as usize;
     if let Ok(all_data) = reader.read(0, size)
-        && let Ok(mut archive) = ZipArchive::new(Cursor::new(all_data)) {
-            // Check for specific marker files in priority order
+        && let Ok(mut archive) = ZipArchive::new(Cursor::new(all_data))
+    {
+        // Check for specific marker files in priority order
 
-            if archive.by_name("mimetype").is_ok() {
-                return FileFormat::EPUB;
-            }
-
-            if archive.by_name("word/document.xml").is_ok() {
-                return FileFormat::DOCX;
-            }
-
-            if archive.by_name("xl/workbook.xml").is_ok() {
-                return FileFormat::XLSX;
-            }
-
-            if archive.by_name("ppt/presentation.xml").is_ok() {
-                return FileFormat::PPTX;
-            }
-
-            if archive.by_name("Index/Presentation.iwa").is_ok() {
-                return FileFormat::Keynote;
-            }
-
-            // Numbers and Pages both have Document.iwa, check for Tables
-            if archive.by_name("Index/Document.iwa").is_ok() {
-                if archive.by_name("Index/Tables/").is_ok() {
-                    return FileFormat::Numbers;
-                }
-                return FileFormat::Pages;
-            }
+        if archive.by_name("mimetype").is_ok() {
+            return FileFormat::EPUB;
         }
+
+        if archive.by_name("word/document.xml").is_ok() {
+            return FileFormat::DOCX;
+        }
+
+        if archive.by_name("xl/workbook.xml").is_ok() {
+            return FileFormat::XLSX;
+        }
+
+        if archive.by_name("ppt/presentation.xml").is_ok() {
+            return FileFormat::PPTX;
+        }
+
+        if archive.by_name("Index/Presentation.iwa").is_ok() {
+            return FileFormat::Keynote;
+        }
+
+        // Numbers and Pages both have Document.iwa, check for Tables
+        if archive.by_name("Index/Document.iwa").is_ok() {
+            if archive.by_name("Index/Tables/").is_ok() {
+                return FileFormat::Numbers;
+            }
+            return FileFormat::Pages;
+        }
+    }
 
     FileFormat::ZIP
 }

@@ -5,8 +5,8 @@
 
 use crate::io::EndianReader;
 use nom::{
-    number::complete::{le_u16, le_u32},
     IResult,
+    number::complete::{le_u16, le_u32},
 };
 
 /// IMAGE_COR20_HEADER (CLR Runtime Header) - 72 bytes
@@ -241,19 +241,19 @@ fn parse_cli_metadata(
     if let Some(tables_off) = tables_offset
         && let Some((name, version, culture, token, framework)) =
             parse_assembly_table(data, tables_off, tables_size)
-        {
-            return Some((
-                name,
-                version,
-                if culture.is_empty() {
-                    "neutral".to_string()
-                } else {
-                    culture
-                },
-                token,
-                framework,
-            ));
-        }
+    {
+        return Some((
+            name,
+            version,
+            if culture.is_empty() {
+                "neutral".to_string()
+            } else {
+                culture
+            },
+            token,
+            framework,
+        ));
+    }
 
     // Fallback: extract basic info from version string
     Some((

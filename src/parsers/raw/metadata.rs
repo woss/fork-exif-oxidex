@@ -26,7 +26,7 @@ use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::raw::RawFormat;
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::tag_db::lookup_tag_name;
 
 /// Parse metadata from camera raw file
@@ -272,45 +272,45 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
 
                 // Parse EXIF Sub-IFD if present
                 if let Some(offset) = exif_ifd_offset
-                    && let Ok(exif_tags) = parse_ifd(&reader, offset, byte_order) {
-                        // Also check EXIF IFD for MakerNote and Make tags
-                        let mut exif_makernote: Option<Vec<u8>> = None;
-                        let mut exif_make: Option<String> = None;
+                    && let Ok(exif_tags) = parse_ifd(&reader, offset, byte_order)
+                {
+                    // Also check EXIF IFD for MakerNote and Make tags
+                    let mut exif_makernote: Option<Vec<u8>> = None;
+                    let mut exif_make: Option<String> = None;
 
-                        for (tag_id, field_type, value_count, raw_bytes) in &exif_tags {
-                            let bytes = raw_bytes.as_ref();
+                    for (tag_id, field_type, value_count, raw_bytes) in &exif_tags {
+                        let bytes = raw_bytes.as_ref();
 
-                            // MakerNote in EXIF IFD (more common location)
-                            if *tag_id == 0x927C {
-                                exif_makernote = Some(bytes.to_vec());
-                                continue;
-                            }
-
-                            // Make tag in EXIF IFD
-                            if *tag_id == 0x010F && *field_type == 2 {
-                                let make_str = String::from_utf8_lossy(bytes);
-                                exif_make =
-                                    Some(make_str.trim_end_matches('\0').trim().to_string());
-                            }
-
-                            let tag_name = lookup_tag_name(*tag_id, "ExifIFD");
-                            let tag_value = raw_bytes_to_simple_tag_value(
-                                bytes,
-                                *field_type,
-                                *value_count,
-                                byte_order,
-                            );
-                            metadata.insert(tag_name, tag_value);
+                        // MakerNote in EXIF IFD (more common location)
+                        if *tag_id == 0x927C {
+                            exif_makernote = Some(bytes.to_vec());
+                            continue;
                         }
 
-                        // Prefer EXIF IFD MakerNote/Make over IFD0 versions
-                        if exif_makernote.is_some() {
-                            makernote_data = exif_makernote;
+                        // Make tag in EXIF IFD
+                        if *tag_id == 0x010F && *field_type == 2 {
+                            let make_str = String::from_utf8_lossy(bytes);
+                            exif_make = Some(make_str.trim_end_matches('\0').trim().to_string());
                         }
-                        if exif_make.is_some() {
-                            camera_make = exif_make;
-                        }
+
+                        let tag_name = lookup_tag_name(*tag_id, "ExifIFD");
+                        let tag_value = raw_bytes_to_simple_tag_value(
+                            bytes,
+                            *field_type,
+                            *value_count,
+                            byte_order,
+                        );
+                        metadata.insert(tag_name, tag_value);
                     }
+
+                    // Prefer EXIF IFD MakerNote/Make over IFD0 versions
+                    if exif_makernote.is_some() {
+                        makernote_data = exif_makernote;
+                    }
+                    if exif_make.is_some() {
+                        camera_make = exif_make;
+                    }
+                }
 
                 // Parse MakerNote if present and we have the camera make
                 if let (Some(make), Some(mn_data)) = (camera_make.as_ref(), makernote_data.as_ref())
@@ -335,18 +335,19 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
 
                 // Parse GPS Sub-IFD if present
                 if let Some(offset) = gps_ifd_offset
-                    && let Ok(gps_tags) = parse_ifd(&reader, offset, byte_order) {
-                        for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
-                            let tag_name = lookup_tag_name(tag_id, "GPS");
-                            let tag_value = raw_bytes_to_simple_tag_value(
-                                raw_bytes.as_ref(),
-                                field_type,
-                                value_count,
-                                byte_order,
-                            );
-                            metadata.insert(tag_name, tag_value);
-                        }
+                    && let Ok(gps_tags) = parse_ifd(&reader, offset, byte_order)
+                {
+                    for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
+                        let tag_name = lookup_tag_name(tag_id, "GPS");
+                        let tag_value = raw_bytes_to_simple_tag_value(
+                            raw_bytes.as_ref(),
+                            field_type,
+                            value_count,
+                            byte_order,
+                        );
+                        metadata.insert(tag_name, tag_value);
                     }
+                }
 
                 // Parse SubIFD(s) if present - crucial for RAW formats
                 // SubIFDs contain RAW image data, compression info, and RAW-specific tags
@@ -474,13 +475,14 @@ fn extract_dng_tags(metadata: &mut MetadataMap) {
     // DNGVersion is stored as 4 bytes: major.minor.tertiary.quaternary
     // Example: [1, 4, 0, 0] = version 1.4.0.0
     if let Some(TagValue::Binary(bytes)) = metadata.get("IFD0:DNGVersion")
-        && bytes.len() >= 4 {
-            let version_str = format!("{}.{}.{}.{}", bytes[0], bytes[1], bytes[2], bytes[3]);
-            metadata.insert(
-                "DNG:VersionString".to_string(),
-                TagValue::new_string(version_str),
-            );
-        }
+        && bytes.len() >= 4
+    {
+        let version_str = format!("{}.{}.{}.{}", bytes[0], bytes[1], bytes[2], bytes[3]);
+        metadata.insert(
+            "DNG:VersionString".to_string(),
+            TagValue::new_string(version_str),
+        );
+    }
 
     // Mark critical DNG tags for easier identification
     // This helps downstream applications know which color calibration data is available
@@ -565,22 +567,23 @@ fn extract_cr2_tags(metadata: &mut MetadataMap) {
 
         // Extract RAW image dimensions if available
         if let Some(width) = metadata.get("SubIFD0:ImageWidth")
-            && let Some(height) = metadata.get("SubIFD0:ImageHeight") {
-                let width_val = match width {
-                    TagValue::Integer(i) => i.to_string(),
-                    TagValue::String(s) => s.clone(),
-                    _ => format!("{:?}", width),
-                };
-                let height_val = match height {
-                    TagValue::Integer(i) => i.to_string(),
-                    TagValue::String(s) => s.clone(),
-                    _ => format!("{:?}", height),
-                };
-                metadata.insert(
-                    "CR2:RAWImageSize".to_string(),
-                    TagValue::new_string(format!("{}x{}", width_val, height_val)),
-                );
-            }
+            && let Some(height) = metadata.get("SubIFD0:ImageHeight")
+        {
+            let width_val = match width {
+                TagValue::Integer(i) => i.to_string(),
+                TagValue::String(s) => s.clone(),
+                _ => format!("{:?}", width),
+            };
+            let height_val = match height {
+                TagValue::Integer(i) => i.to_string(),
+                TagValue::String(s) => s.clone(),
+                _ => format!("{:?}", height),
+            };
+            metadata.insert(
+                "CR2:RAWImageSize".to_string(),
+                TagValue::new_string(format!("{}x{}", width_val, height_val)),
+            );
+        }
     }
 
     // Check for JPEG preview in IFD1
@@ -676,22 +679,23 @@ fn extract_nef_tags(metadata: &mut MetadataMap) {
 
         // Extract RAW image dimensions
         if let Some(width) = metadata.get("SubIFD0:ImageWidth")
-            && let Some(height) = metadata.get("SubIFD0:ImageHeight") {
-                let width_val = match width {
-                    TagValue::Integer(i) => i.to_string(),
-                    TagValue::String(s) => s.clone(),
-                    _ => format!("{:?}", width),
-                };
-                let height_val = match height {
-                    TagValue::Integer(i) => i.to_string(),
-                    TagValue::String(s) => s.clone(),
-                    _ => format!("{:?}", height),
-                };
-                metadata.insert(
-                    "NEF:RAWImageSize".to_string(),
-                    TagValue::new_string(format!("{}x{}", width_val, height_val)),
-                );
-            }
+            && let Some(height) = metadata.get("SubIFD0:ImageHeight")
+        {
+            let width_val = match width {
+                TagValue::Integer(i) => i.to_string(),
+                TagValue::String(s) => s.clone(),
+                _ => format!("{:?}", width),
+            };
+            let height_val = match height {
+                TagValue::Integer(i) => i.to_string(),
+                TagValue::String(s) => s.clone(),
+                _ => format!("{:?}", height),
+            };
+            metadata.insert(
+                "NEF:RAWImageSize".to_string(),
+                TagValue::new_string(format!("{}x{}", width_val, height_val)),
+            );
+        }
     }
 
     // Check for bit depth
@@ -988,20 +992,18 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                                 if let Some(offset) = exif_ifd_offset
                                     && let Ok(exif_tags) =
                                         parse_ifd(&exif_reader, offset, byte_order)
-                                    {
-                                        for (tag_id, field_type, value_count, raw_bytes) in
-                                            exif_tags
-                                        {
-                                            let tag_name = lookup_tag_name(tag_id, "ExifIFD");
-                                            let tag_value = raw_bytes_to_simple_tag_value(
-                                                raw_bytes.as_ref(),
-                                                field_type,
-                                                value_count,
-                                                byte_order,
-                                            );
-                                            metadata.insert(tag_name, tag_value);
-                                        }
+                                {
+                                    for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
+                                        let tag_name = lookup_tag_name(tag_id, "ExifIFD");
+                                        let tag_value = raw_bytes_to_simple_tag_value(
+                                            raw_bytes.as_ref(),
+                                            field_type,
+                                            value_count,
+                                            byte_order,
+                                        );
+                                        metadata.insert(tag_name, tag_value);
                                     }
+                                }
                             }
                         }
                     }
@@ -1353,7 +1355,7 @@ mod tests {
         data.extend_from_slice(&0xC612u16.to_le_bytes()); // Tag ID
         data.extend_from_slice(&1u16.to_le_bytes()); // Type: BYTE
         data.extend_from_slice(&4u32.to_le_bytes()); // Count: 4
-                                                     // Version 1.4.0.0 stored inline
+        // Version 1.4.0.0 stored inline
         data.extend_from_slice(&[1, 4, 0, 0]);
 
         // Next IFD offset

@@ -10,10 +10,10 @@
 //! - Heuristic conversion for unknown or ambiguous types
 //! - Utility functions for reading multi-byte values in different byte orders
 
+use crate::core::TagValue;
 use crate::core::operations_helpers::{
     gcd, is_datetime_string, is_printable_ascii, parse_exif_datetime, read_i32, read_u16, read_u32,
 };
-use crate::core::TagValue;
 use crate::parsers::common::exif_types::ExifType;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 
@@ -543,9 +543,10 @@ fn handle_ascii_type(bytes: &[u8]) -> TagValue {
     let s = s.trim_end_matches('\0');
     if !s.is_empty() {
         if is_datetime_string(s)
-            && let Ok(dt) = parse_exif_datetime(s) {
-                return TagValue::DateTime(dt);
-            }
+            && let Ok(dt) = parse_exif_datetime(s)
+        {
+            return TagValue::DateTime(dt);
+        }
         return TagValue::new_string(s.to_string());
     }
     TagValue::new_string(String::new())
@@ -584,9 +585,10 @@ fn heuristic_bytes_to_tag_value(bytes: &[u8], byte_order: ByteOrder) -> TagValue
         let s = s.trim_end_matches('\0');
         if !s.is_empty() {
             if is_datetime_string(s)
-                && let Ok(dt) = parse_exif_datetime(s) {
-                    return TagValue::DateTime(dt);
-                }
+                && let Ok(dt) = parse_exif_datetime(s)
+            {
+                return TagValue::DateTime(dt);
+            }
             return TagValue::new_string(s.to_string());
         }
     }

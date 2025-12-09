@@ -23,11 +23,11 @@
 
 use crate::core::FileReader;
 use crate::error::{ExifToolError, Result};
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder, IfdEntries};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntries, parse_ifd};
 use nom::{
+    IResult,
     bytes::complete::{tag, take},
     number::complete::be_u32,
-    IResult,
 };
 use std::io;
 
@@ -1032,8 +1032,8 @@ mod tests {
 
     #[test]
     fn test_parse_ztxt_chunk() {
-        use flate2::write::ZlibEncoder;
         use flate2::Compression;
+        use flate2::write::ZlibEncoder;
         use std::io::Write;
 
         // Create compressed text data

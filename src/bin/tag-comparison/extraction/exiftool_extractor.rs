@@ -422,8 +422,9 @@ mod tests {
         let tags = extractor.parse_exiftool_json(&json);
         assert_eq!(tags.len(), 3);
         assert!(tags.iter().any(|t| t.name == "Make" && t.family == "EXIF"));
-        assert!(tags
-            .iter()
-            .any(|t| t.name == "Creator" && t.family == "XMP"));
+        assert!(
+            tags.iter()
+                .any(|t| t.name == "Creator" && t.family == "XMP")
+        );
     }
 }

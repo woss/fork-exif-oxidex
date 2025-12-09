@@ -60,31 +60,33 @@ pub fn parse_icc_profile_segment(data: &[u8], metadata: &mut MetadataMap) -> Res
 
         // Profile class (bytes 12-15)
         if profile_data.len() >= 16
-            && let Ok(class) = std::str::from_utf8(&profile_data[12..16]) {
-                let class_desc = match class {
-                    "scnr" => "Input Device Profile",
-                    "mntr" => "Display Device Profile",
-                    "prtr" => "Output Device Profile",
-                    "link" => "DeviceLink Profile",
-                    "spac" => "ColorSpace Conversion Profile",
-                    "abst" => "Abstract Profile",
-                    "nmcl" => "Named Color Profile",
-                    _ => class,
-                };
-                metadata.insert(
-                    "ICC_Profile:ProfileClass".to_string(),
-                    TagValue::String(class_desc.to_string()),
-                );
-            }
+            && let Ok(class) = std::str::from_utf8(&profile_data[12..16])
+        {
+            let class_desc = match class {
+                "scnr" => "Input Device Profile",
+                "mntr" => "Display Device Profile",
+                "prtr" => "Output Device Profile",
+                "link" => "DeviceLink Profile",
+                "spac" => "ColorSpace Conversion Profile",
+                "abst" => "Abstract Profile",
+                "nmcl" => "Named Color Profile",
+                _ => class,
+            };
+            metadata.insert(
+                "ICC_Profile:ProfileClass".to_string(),
+                TagValue::String(class_desc.to_string()),
+            );
+        }
 
         // Color space (bytes 16-19)
         if profile_data.len() >= 20
-            && let Ok(color_space) = std::str::from_utf8(&profile_data[16..20]) {
-                metadata.insert(
-                    "ICC_Profile:ColorSpace".to_string(),
-                    TagValue::String(color_space.trim().to_string()),
-                );
-            }
+            && let Ok(color_space) = std::str::from_utf8(&profile_data[16..20])
+        {
+            metadata.insert(
+                "ICC_Profile:ColorSpace".to_string(),
+                TagValue::String(color_space.trim().to_string()),
+            );
+        }
     }
 
     Ok(())

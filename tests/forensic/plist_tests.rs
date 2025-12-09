@@ -9,7 +9,7 @@ mod common;
 
 use common::TestReader;
 use oxidex::core::TagValue;
-use oxidex::parsers::specialized::plist::{parse_plist_metadata, PlistParser};
+use oxidex::parsers::specialized::plist::{PlistParser, parse_plist_metadata};
 
 /// Binary plist magic bytes
 const BPLIST_MAGIC: &[u8; 6] = b"bplist";

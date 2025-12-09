@@ -32,10 +32,10 @@ use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::registries::qualcomm::{qualcomm_registry, QUALCOMM_ISP_VERSION};
-use super::shared::array_extractors::{extract_i16_value, extract_u32_value};
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
+use super::registries::qualcomm::{QUALCOMM_ISP_VERSION, qualcomm_registry};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::{extract_i16_value, extract_u32_value};
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
 
 // Qualcomm signature for validation
 const QUALCOMM_SIGNATURE: &[u8] = b"Qualcomm";
@@ -166,8 +166,8 @@ impl MakerNoteParser for QualcommParser {
 #[cfg(test)]
 mod tests {
     use super::super::registries::qualcomm::{
-        decode_zoom_level, CHROMA_FLASH, CLEAR_SIGHT, CLEAR_SIGHT_MODE, HDR_MODE, OPTIZOOM,
-        SCENE_TYPE,
+        CHROMA_FLASH, CLEAR_SIGHT, CLEAR_SIGHT_MODE, HDR_MODE, OPTIZOOM, SCENE_TYPE,
+        decode_zoom_level,
     };
     use super::super::shared::generic_decoders::ON_OFF;
     use super::*;

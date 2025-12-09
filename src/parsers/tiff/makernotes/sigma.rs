@@ -19,9 +19,9 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use super::registries::sigma::sigma_registry;
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
-use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
+use super::shared::tag_registry::TagRegistry;
 use super::sigma_lens_database::lookup_lens_name;
 
 // ===== Sigma MakerNote Tag IDs =====

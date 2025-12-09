@@ -123,10 +123,11 @@ impl OutputFormatter for HumanReadableFormatter {
         for (tag_name, tag_value) in tags {
             // Skip large binary data fields to prevent terminal corruption
             if let TagValue::Binary(bytes) = tag_value
-                && bytes.len() > 256 {
-                    // Skip large binary fields in human-readable output
-                    continue;
-                }
+                && bytes.len() > 256
+            {
+                // Skip large binary fields in human-readable output
+                continue;
+            }
 
             // Skip known problematic tags that contain structured binary/text data
             // These tags are typically very large and not useful in default output
@@ -220,9 +221,10 @@ impl OutputFormatter for JsonFormatter {
 /// - Struct → JSON object (recursive)
 fn tag_value_to_json(tag_name: Option<&str>, value: &TagValue) -> serde_json::Value {
     if let Some(name) = tag_name
-        && let Some(label) = friendly_enum_name(name, value) {
-            return serde_json::Value::String(label);
-        }
+        && let Some(label) = friendly_enum_name(name, value)
+    {
+        return serde_json::Value::String(label);
+    }
 
     match value {
         TagValue::String(s) => serde_json::Value::String(s.clone()),
@@ -339,10 +341,11 @@ impl OutputFormatter for CsvFormatter {
         for (tag_name, tag_value) in tags {
             // Skip large binary data fields to prevent CSV corruption
             if let TagValue::Binary(bytes) = tag_value
-                && bytes.len() > 256 {
-                    // Skip large binary fields in CSV output
-                    continue;
-                }
+                && bytes.len() > 256
+            {
+                // Skip large binary fields in CSV output
+                continue;
+            }
 
             let formatted_value = format_tag_value(tag_name, tag_value);
             if wtr.write_record([tag_name, &formatted_value]).is_err() {
@@ -415,9 +418,10 @@ impl OutputFormatter for ShortFormatter {
         for (tag_name, tag_value) in tags {
             // Skip large binary data fields
             if let TagValue::Binary(bytes) = tag_value
-                && bytes.len() > 256 {
-                    continue;
-                }
+                && bytes.len() > 256
+            {
+                continue;
+            }
 
             // Skip known problematic tags
             if matches!(
@@ -533,16 +537,18 @@ fn format_tag_value(tag_name: &str, value: &TagValue) -> String {
 fn friendly_enum_name(tag_name: &str, value: &TagValue) -> Option<String> {
     // First, check if this is a GPS reference value (string-based)
     if let TagValue::String(s) = value
-        && let Some(formatted) = format_gps_reference(tag_name, s) {
-            return Some(formatted);
-        }
+        && let Some(formatted) = format_gps_reference(tag_name, s)
+    {
+        return Some(formatted);
+    }
 
     // Also handle GPS reference values that may be stored as integers
     // (e.g., GPSAltitudeRef 0/1 or GPSDifferential 0/1)
     if let TagValue::Integer(i) = value
-        && let Some(formatted) = format_gps_reference(tag_name, &i.to_string()) {
-            return Some(formatted);
-        }
+        && let Some(formatted) = format_gps_reference(tag_name, &i.to_string())
+    {
+        return Some(formatted);
+    }
 
     // Then try TIFF enum lookup for integer values
     let tag_id = lookup_tiff_enum_tag_id(tag_name)?;
@@ -1098,9 +1104,11 @@ mod tests {
 
         // CSV reader should correctly parse values with commas and quotes
         assert!(records.iter().any(|r| r.get(1) == Some("Doe, John")));
-        assert!(records
-            .iter()
-            .any(|r| r.get(1) == Some("Copyright \"2023\"")));
+        assert!(
+            records
+                .iter()
+                .any(|r| r.get(1) == Some("Copyright \"2023\""))
+        );
     }
 
     #[test]

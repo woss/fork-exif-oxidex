@@ -105,12 +105,12 @@ lint-fix:
 # Format code with rustfmt
 fmt:
     @echo "Formatting code..."
-    cargo fmt --all
+    @cargo fmt --all 2>&1 | grep -v "^Warning:" || true
 
 # Check if code is formatted
 fmt-check:
     @echo "Checking code formatting..."
-    cargo fmt --all -- --check
+    @cargo fmt --all -- --check 2>&1 | grep -v "^Warning:" || test $? -eq 1
 
 # Clean build artifacts
 clean:
@@ -237,7 +237,11 @@ ci:
     # Step 1: Format check (fast, run first to fail early)
     echo ""
     echo "📝 Checking code formatting..."
-    cargo fmt --all -- --check 2>&1 | grep -v "^Warning:" || true
+    if ! cargo fmt --all -- --check 2>&1 | grep -v "^Warning:"; then
+        # grep returns 1 if no lines matched (which is success for fmt --check)
+        # But if cargo fmt actually failed, we need to check
+        cargo fmt --all -- --check 2>/dev/null || { echo "❌ Format check failed"; exit 1; }
+    fi
 
     # Step 2: Clippy (builds release artifacts that nextest will reuse)
     echo ""

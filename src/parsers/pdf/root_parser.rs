@@ -27,11 +27,11 @@
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use nom::{
+    IResult,
     bytes::complete::{tag, take_until, take_while1},
     character::complete::multispace0,
     combinator::map_res,
     sequence::preceded,
-    IResult,
 };
 use std::collections::HashMap;
 use std::str;
@@ -406,8 +406,8 @@ fn parse_root_object(input: &[u8]) -> Result<HashMap<String, String>> {
 
 /// Parses dictionary entries (key-value pairs)
 fn parse_dict_entries(input: &[u8]) -> IResult<&[u8], HashMap<String, String>> {
-    use nom::multi::many0;
     use nom::Parser;
+    use nom::multi::many0;
 
     let (input, pairs) = many0(parse_dict_entry).parse(input)?;
     let dict = pairs.into_iter().collect();
@@ -543,15 +543,16 @@ fn detect_javascript(root_data: &[u8], reader: &dyn FileReader, context: &PdfCon
         // Try to follow the OpenAction reference if it exists
         if let Ok(action_ref) = find_dict_reference(root_data, "/OpenAction")
             && let Ok(offset) = context.get_object_offset(action_ref.object_num, "OpenAction")
-                && let Ok(action_data) = reader.read(
-                    offset,
-                    std::cmp::min(1024, reader.size().saturating_sub(offset) as usize),
-                ) {
-                    let action_str = String::from_utf8_lossy(action_data);
-                    if action_str.contains("/JS") || action_str.contains("/JavaScript") {
-                        return true;
-                    }
-                }
+            && let Ok(action_data) = reader.read(
+                offset,
+                std::cmp::min(1024, reader.size().saturating_sub(offset) as usize),
+            )
+        {
+            let action_str = String::from_utf8_lossy(action_data);
+            if action_str.contains("/JS") || action_str.contains("/JavaScript") {
+                return true;
+            }
+        }
     }
 
     // Search for /JavaScript keyword anywhere in root data
@@ -613,8 +614,8 @@ fn parse_object_reference(input: &[u8]) -> IResult<&[u8], ObjectRef> {
 
 /// Parses a decimal number from bytes
 fn parse_number(input: &[u8]) -> IResult<&[u8], u64> {
-    use nom::character::complete::digit1;
     use nom::Parser;
+    use nom::character::complete::digit1;
 
     preceded(
         multispace0,

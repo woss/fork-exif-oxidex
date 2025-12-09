@@ -31,10 +31,10 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use super::registries::parrot::parrot_registry;
-use super::shared::array_extractors::{extract_i16_array, extract_i32_value, extract_string};
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
-use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::{extract_i16_array, extract_i32_value, extract_string};
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
+use super::shared::tag_registry::TagRegistry;
 
 // ============================================================================
 // Parrot MakerNote Tag IDs (for parsing reference)
@@ -171,42 +171,43 @@ impl ParrotParser {
 
         // Handle i16 array tags (flight metrics, gimbal angles, battery, etc.)
         if let Some(array) = extract_i16_array(entry, data, byte_order)
-            && let Some(&value) = array.first() {
-                // Apply tag-specific formatting
-                let formatted_value = match tag_id {
-                    // Flight mode has a registry decoder
-                    PARROT_FLIGHT_MODE => TAG_REGISTRY.decode_i16(tag_id, value),
+            && let Some(&value) = array.first()
+        {
+            // Apply tag-specific formatting
+            let formatted_value = match tag_id {
+                // Flight mode has a registry decoder
+                PARROT_FLIGHT_MODE => TAG_REGISTRY.decode_i16(tag_id, value),
 
-                    // Altitude: cm to meters
-                    PARROT_ALTITUDE => format_altitude(value),
+                // Altitude: cm to meters
+                PARROT_ALTITUDE => format_altitude(value),
 
-                    // Speed: 0.1 m/s to m/s
-                    PARROT_SPEED => format_speed(value),
+                // Speed: 0.1 m/s to m/s
+                PARROT_SPEED => format_speed(value),
 
-                    // Direction: degrees
-                    PARROT_DIRECTION => format!("{}°", value),
+                // Direction: degrees
+                PARROT_DIRECTION => format!("{}°", value),
 
-                    // Gimbal angles: 0.1 degrees to degrees
-                    PARROT_GIMBAL_PITCH | PARROT_GIMBAL_ROLL => format_gimbal_angle(value),
+                // Gimbal angles: 0.1 degrees to degrees
+                PARROT_GIMBAL_PITCH | PARROT_GIMBAL_ROLL => format_gimbal_angle(value),
 
-                    // Gimbal yaw: degrees
-                    PARROT_GIMBAL_YAW => format!("{}°", value),
+                // Gimbal yaw: degrees
+                PARROT_GIMBAL_YAW => format!("{}°", value),
 
-                    // Battery: percentage
-                    PARROT_BATTERY => format!("{}%", value),
+                // Battery: percentage
+                PARROT_BATTERY => format!("{}%", value),
 
-                    // WiFi: dBm signal strength
-                    PARROT_WIFI_SIGNAL => format!("{} dBm", value),
+                // WiFi: dBm signal strength
+                PARROT_WIFI_SIGNAL => format!("{} dBm", value),
 
-                    // Home distance: meters
-                    PARROT_DISTANCE => format!("{} m", value),
+                // Home distance: meters
+                PARROT_DISTANCE => format!("{} m", value),
 
-                    // Fallback for unhandled i16 tags
-                    _ => return,
-                };
+                // Fallback for unhandled i16 tags
+                _ => return,
+            };
 
-                tags.insert(format!("Parrot:{}", tag_name), formatted_value);
-            }
+            tags.insert(format!("Parrot:{}", tag_name), formatted_value);
+        }
     }
 }
 

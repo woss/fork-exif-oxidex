@@ -38,11 +38,11 @@
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use nom::{
+    IResult,
     bytes::complete::{tag, take_until, take_while},
     character::complete::{digit1, multispace0},
     combinator::{map_res, opt},
     sequence::preceded,
-    IResult,
 };
 use std::collections::HashMap;
 use std::str;
@@ -607,7 +607,7 @@ fn parse_number(input: &[u8]) -> IResult<&[u8], u64> {
 
 /// Parses a signed decimal number from bytes (for /P permissions)
 fn parse_signed_number(input: &[u8]) -> IResult<&[u8], i32> {
-    use nom::{combinator::recognize, sequence::pair, Parser};
+    use nom::{Parser, combinator::recognize, sequence::pair};
     preceded(
         multispace0,
         map_res(

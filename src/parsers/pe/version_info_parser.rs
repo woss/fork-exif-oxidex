@@ -3,8 +3,8 @@
 use crate::io::EndianReader;
 use crate::parsers::pe::structures::VsFixedFileInfo;
 use nom::{
-    number::complete::{le_u16, le_u32},
     IResult,
+    number::complete::{le_u16, le_u32},
 };
 use std::collections::HashMap;
 

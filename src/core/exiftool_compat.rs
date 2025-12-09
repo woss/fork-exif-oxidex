@@ -171,37 +171,42 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // Convert single-character direction codes to full names
     // ---------------------------------------------------------------------
     if is_gps_lat_ref(base_name)
-        && let Some(s) = value.as_string() {
-            return TagValue::String(format_gps_lat_ref(s));
-        }
+        && let Some(s) = value.as_string()
+    {
+        return TagValue::String(format_gps_lat_ref(s));
+    }
 
     if is_gps_lon_ref(base_name)
-        && let Some(s) = value.as_string() {
-            return TagValue::String(format_gps_lon_ref(s));
-        }
+        && let Some(s) = value.as_string()
+    {
+        return TagValue::String(format_gps_lon_ref(s));
+    }
 
     // ---------------------------------------------------------------------
     // Rule 2: GPS Direction References (True North / Magnetic North)
     // ---------------------------------------------------------------------
     if is_gps_direction_ref(base_name)
-        && let Some(s) = value.as_string() {
-            return TagValue::String(format_gps_direction_ref(s));
-        }
+        && let Some(s) = value.as_string()
+    {
+        return TagValue::String(format_gps_direction_ref(s));
+    }
 
     // ---------------------------------------------------------------------
     // Rule 3: GPS Speed and Distance References
     // ---------------------------------------------------------------------
     if is_gps_speed_ref(base_name)
         && let Some(s) = value.as_string()
-            && let Some(formatted) = format_gps_speed_ref(s) {
-                return TagValue::String(formatted);
-            }
+        && let Some(formatted) = format_gps_speed_ref(s)
+    {
+        return TagValue::String(formatted);
+    }
 
     if is_gps_dest_distance_ref(base_name)
         && let Some(s) = value.as_string()
-            && let Some(formatted) = format_gps_dest_distance_ref(s) {
-                return TagValue::String(formatted);
-            }
+        && let Some(formatted) = format_gps_dest_distance_ref(s)
+    {
+        return TagValue::String(formatted);
+    }
 
     // ---------------------------------------------------------------------
     // Rule 4: GPS Status Tags (GPSStatus, GPSMeasureMode, GPSDifferential)
@@ -221,16 +226,17 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
         }
         // Handle integer values for GPSDifferential (0 -> "No Correction", 1 -> "Differential Corrected")
         if base_name == "GPSDifferential"
-            && let Some(i) = value.as_integer() {
-                let formatted = match i {
-                    0 => Some("No Correction".to_string()),
-                    1 => Some("Differential Corrected".to_string()),
-                    _ => None,
-                };
-                if let Some(f) = formatted {
-                    return TagValue::String(f);
-                }
+            && let Some(i) = value.as_integer()
+        {
+            let formatted = match i {
+                0 => Some("No Correction".to_string()),
+                1 => Some("Differential Corrected".to_string()),
+                _ => None,
+            };
+            if let Some(f) = formatted {
+                return TagValue::String(f);
             }
+        }
     }
 
     // ---------------------------------------------------------------------
@@ -239,22 +245,24 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     if is_gps_altitude_ref(base_name) {
         // Handle string values ("0", "1", "\x00", "\x01")
         if let Some(s) = value.as_string()
-            && let Some(formatted) = format_gps_altitude_ref(s) {
-                return TagValue::String(formatted);
-            }
+            && let Some(formatted) = format_gps_altitude_ref(s)
+        {
+            return TagValue::String(formatted);
+        }
         // Handle binary values (single byte)
         if let TagValue::Binary(data) = value
-            && !data.is_empty() {
-                // Convert first byte to string for the formatter
-                let byte_str = match data[0] {
-                    0 => "0",
-                    1 => "1",
-                    _ => return value.clone(),
-                };
-                if let Some(formatted) = format_gps_altitude_ref(byte_str) {
-                    return TagValue::String(formatted);
-                }
+            && !data.is_empty()
+        {
+            // Convert first byte to string for the formatter
+            let byte_str = match data[0] {
+                0 => "0",
+                1 => "1",
+                _ => return value.clone(),
+            };
+            if let Some(formatted) = format_gps_altitude_ref(byte_str) {
+                return TagValue::String(formatted);
             }
+        }
         // Handle integer values
         if let Some(i) = value.as_integer() {
             let int_str = match i {
@@ -272,20 +280,22 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // Rule 6: GPS Processing Method (binary data with encoding prefix)
     // ---------------------------------------------------------------------
     if is_gps_processing_method(base_name)
-        && let TagValue::Binary(data) = value {
-            let decoded = decode_gps_processing_method(data);
-            if !decoded.is_empty() {
-                return TagValue::String(decoded);
-            }
+        && let TagValue::Binary(data) = value
+    {
+        let decoded = decode_gps_processing_method(data);
+        if !decoded.is_empty() {
+            return TagValue::String(decoded);
         }
+    }
 
     // ---------------------------------------------------------------------
     // Rule 7: Binary Decoders (CFAPattern, SceneType, version bytes)
     // ---------------------------------------------------------------------
     if is_cfa_pattern(base_name)
-        && let TagValue::Binary(data) = value {
-            return TagValue::String(decode_cfa_pattern(data));
-        }
+        && let TagValue::Binary(data) = value
+    {
+        return TagValue::String(decode_cfa_pattern(data));
+    }
 
     if is_scene_type(base_name) {
         if let TagValue::Binary(data) = value {
@@ -305,12 +315,13 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     }
 
     if is_version_tag(base_name)
-        && let TagValue::Binary(data) = value {
-            let decoded = decode_version_bytes(data);
-            if !decoded.is_empty() {
-                return TagValue::String(decoded);
-            }
+        && let TagValue::Binary(data) = value
+    {
+        let decoded = decode_version_bytes(data);
+        if !decoded.is_empty() {
+            return TagValue::String(decoded);
         }
+    }
 
     // ---------------------------------------------------------------------
     // Rule 8: APP14 Flags (APP14Flags0, APP14Flags1)
@@ -318,22 +329,24 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // ---------------------------------------------------------------------
     if is_app14_flags_tag(base_name)
         && let Some(i) = value.as_integer()
-            && i == 0 {
-                return TagValue::String("(none)".to_string());
-            }
-            // Non-zero values are returned as-is (pass through to default)
+        && i == 0
+    {
+        return TagValue::String("(none)".to_string());
+    }
+    // Non-zero values are returned as-is (pass through to default)
 
     // ---------------------------------------------------------------------
     // Rule 9: Enum Tags (ExposureProgram)
     // Convert integer enum values to human-readable strings
     // ---------------------------------------------------------------------
     if is_exposure_program(base_name)
-        && let Some(i) = value.as_integer() {
-            // ExposureProgram values are typically small positive integers
-            // Safe to cast from i64 to u32 for the formatter
-            let formatted = format_exposure_program(i as u32);
-            return TagValue::String(formatted);
-        }
+        && let Some(i) = value.as_integer()
+    {
+        // ExposureProgram values are typically small positive integers
+        // Safe to cast from i64 to u32 for the formatter
+        let formatted = format_exposure_program(i as u32);
+        return TagValue::String(formatted);
+    }
 
     // ---------------------------------------------------------------------
     // Rule 10: ICC_Profile Matrix Tags (5 decimal precision)
@@ -363,20 +376,22 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // Format whole numbers without decimal places (0, 255, 128 not 0.0, 255.0)
     // ---------------------------------------------------------------------
     if is_integer_precision_tag(base_name)
-        && let Some(s) = value.as_string() {
-            let formatted = format_integer_precision_values(s);
-            return TagValue::String(formatted);
-        }
+        && let Some(s) = value.as_string()
+    {
+        let formatted = format_integer_precision_values(s);
+        return TagValue::String(formatted);
+    }
 
     // ---------------------------------------------------------------------
     // Rule 12: Three Decimal Precision Tags (YCbCrCoefficients)
     // Format with 3 decimal places (0.299 0.587 0.114 not 0.2990000000...)
     // ---------------------------------------------------------------------
     if is_three_decimal_tag(base_name)
-        && let Some(s) = value.as_string() {
-            let formatted = format_three_decimal_values(s);
-            return TagValue::String(formatted);
-        }
+        && let Some(s) = value.as_string()
+    {
+        let formatted = format_three_decimal_values(s);
+        return TagValue::String(formatted);
+    }
 
     // ---------------------------------------------------------------------
     // Rule 13: UserComment (decode binary text encoding)
@@ -384,24 +399,26 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // ---------------------------------------------------------------------
     if is_user_comment(base_name)
         && let TagValue::Binary(data) = value
-            && let Some(decoded) = decode_user_comment(data) {
-                // Only return if we got meaningful text (not empty or just nulls)
-                if !decoded.is_empty() {
-                    return TagValue::String(decoded);
-                }
-            }
+        && let Some(decoded) = decode_user_comment(data)
+    {
+        // Only return if we got meaningful text (not empty or just nulls)
+        if !decoded.is_empty() {
+            return TagValue::String(decoded);
+        }
+    }
 
     // ---------------------------------------------------------------------
     // Rule 14: ThumbnailImage (format binary thumbnail data)
     // Format thumbnail images with ExifTool-compatible message
     // ---------------------------------------------------------------------
     if is_thumbnail_image(base_name)
-        && let TagValue::Binary(data) = value {
-            return TagValue::String(format!(
-                "(Binary data {} bytes, use -b option to extract)",
-                data.len()
-            ));
-        }
+        && let TagValue::Binary(data) = value
+    {
+        return TagValue::String(format!(
+            "(Binary data {} bytes, use -b option to extract)",
+            data.len()
+        ));
+    }
 
     // ---------------------------------------------------------------------
     // Rule 15: Percentage Tags (Quality, MeasurementFlare)
@@ -453,16 +470,17 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
             numerator,
             denominator,
         } = value
-            && *denominator != 0 {
-                let float_val = *numerator as f64 / *denominator as f64;
-                let float_str = if float_val.fract() == 0.0 {
-                    format!("{:.0}", float_val)
-                } else {
-                    format!("{}", float_val)
-                };
-                let formatted = format_with_unit(tag_name, &float_str);
-                return TagValue::String(formatted);
-            }
+            && *denominator != 0
+        {
+            let float_val = *numerator as f64 / *denominator as f64;
+            let float_str = if float_val.fract() == 0.0 {
+                format!("{:.0}", float_val)
+            } else {
+                format!("{}", float_val)
+            };
+            let formatted = format_with_unit(tag_name, &float_str);
+            return TagValue::String(formatted);
+        }
     }
 
     // ---------------------------------------------------------------------
@@ -474,14 +492,16 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // converted to string.
     // ---------------------------------------------------------------------
     if let Some(f) = value.as_float()
-        && let Some(formatted) = format_special_float_values(f) {
-            return TagValue::String(formatted);
-        }
+        && let Some(formatted) = format_special_float_values(f)
+    {
+        return TagValue::String(formatted);
+    }
     // Handle Rational values with denominator 0 (would produce infinity)
     if let TagValue::Rational { denominator, .. } = value
-        && *denominator == 0 {
-            return TagValue::String("undef".to_string());
-        }
+        && *denominator == 0
+    {
+        return TagValue::String("undef".to_string());
+    }
     // Also handle string representations of special values
     if let Some(s) = value.as_string() {
         if s == "inf" || s == "-inf" || s == "Infinity" || s == "-Infinity" {
@@ -498,25 +518,28 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // Some parsers output title-case 'True'/'False' which we normalize here
     // ---------------------------------------------------------------------
     if tag_name.starts_with("XMP")
-        && let Some(s) = value.as_string() {
-            if s == "True" {
-                return TagValue::String("true".to_string());
-            }
-            if s == "False" {
-                return TagValue::String("false".to_string());
-            }
+        && let Some(s) = value.as_string()
+    {
+        if s == "True" {
+            return TagValue::String("true".to_string());
         }
+        if s == "False" {
+            return TagValue::String("false".to_string());
+        }
+    }
 
     // ---------------------------------------------------------------------
     // Rule 19: XMP LensInfo Formatting
     // ExifTool formats LensInfo as "45-100mm f/4" instead of raw rationals
     // Format: "{min}-{max}mm f/{f_min}[-{f_max}]" or "{focal}mm f/{f}" for primes
     // ---------------------------------------------------------------------
-    if base_name == "LensInfo" && tag_name.starts_with("XMP")
+    if base_name == "LensInfo"
+        && tag_name.starts_with("XMP")
         && let Some(s) = value.as_string()
-            && let Some(formatted) = format_xmp_lens_info(s) {
-                return TagValue::String(formatted);
-            }
+        && let Some(formatted) = format_xmp_lens_info(s)
+    {
+        return TagValue::String(formatted);
+    }
 
     // ---------------------------------------------------------------------
     // Rule 20: Default - Return original value unchanged

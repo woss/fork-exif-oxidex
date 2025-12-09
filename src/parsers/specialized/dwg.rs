@@ -137,9 +137,10 @@ impl FormatParser for DWGParser {
 
         // Check for encryption
         if let Ok(encrypted) = Self::is_encrypted(reader)
-            && encrypted {
-                metadata.insert("Encrypted".to_string(), TagValue::String("Yes".to_string()));
-            }
+            && encrypted
+        {
+            metadata.insert("Encrypted".to_string(), TagValue::String("Yes".to_string()));
+        }
 
         // Extract codepage if available
         if let Ok(Some(codepage)) = Self::read_codepage(reader) {

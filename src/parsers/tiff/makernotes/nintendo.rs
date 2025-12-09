@@ -30,11 +30,11 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use super::registries::nintendo::nintendo_registry;
+use super::shared::MakerNoteParser;
 use super::shared::array_extractors::{extract_i16_array, extract_string};
 use super::shared::generic_decoders::ON_OFF;
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
 use super::shared::tag_registry::TagRegistry;
-use super::shared::MakerNoteParser;
 
 // Nintendo signature
 const NINTENDO_SIGNATURE: &[u8] = b"Nintendo";
@@ -152,9 +152,10 @@ impl NintendoParser {
         match tag_id {
             0x0001 | 0x0002 | 0x0107 => {
                 if let Some(s) = extract_string(entry, data, byte_order)
-                    && let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
-                        tags.insert(format!("Nintendo:{}", name), s);
-                    }
+                    && let Some(name) = TAG_REGISTRY.get_tag_name(tag_id)
+                {
+                    tags.insert(format!("Nintendo:{}", name), s);
+                }
                 return;
             }
             _ => {}
@@ -162,30 +163,31 @@ impl NintendoParser {
 
         // Handle i16 array tags
         if let Some(array) = extract_i16_array(entry, data, byte_order)
-            && let Some(&value) = array.first() {
-                let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
-                    Some(name) => name,
-                    None => return,
-                };
+            && let Some(&value) = array.first()
+        {
+            let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
+                Some(name) => name,
+                None => return,
+            };
 
-                // Try registry decoders first for decoded tags
-                let formatted_value = TAG_REGISTRY.decode_i16(tag_id, value);
+            // Try registry decoders first for decoded tags
+            let formatted_value = TAG_REGISTRY.decode_i16(tag_id, value);
 
-                // Fallback to custom formatters for tags without registry decoders
-                let formatted_value = if formatted_value == value.to_string() {
-                    match tag_id {
-                        0x0102 => format_parallax(value),
-                        0x0103 => format_3d_effect(value),
-                        0x0104 => ON_OFF.decode(value),
-                        0x0105 => format_yes_no(value),
-                        _ => return,
-                    }
-                } else {
-                    formatted_value
-                };
+            // Fallback to custom formatters for tags without registry decoders
+            let formatted_value = if formatted_value == value.to_string() {
+                match tag_id {
+                    0x0102 => format_parallax(value),
+                    0x0103 => format_3d_effect(value),
+                    0x0104 => ON_OFF.decode(value),
+                    0x0105 => format_yes_no(value),
+                    _ => return,
+                }
+            } else {
+                formatted_value
+            };
 
-                tags.insert(format!("Nintendo:{}", tag_name), formatted_value);
-            }
+            tags.insert(format!("Nintendo:{}", tag_name), formatted_value);
+        }
     }
 }
 

@@ -60,7 +60,7 @@
 use crate::core::FileReader;
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder, IfdEntries};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntries, parse_ifd};
 use crate::parsers::tiff::makernote_dispatcher::dispatch_makernote;
 use std::collections::{HashMap, HashSet};
 
@@ -143,7 +143,7 @@ pub fn parse_tiff_header(reader: &dyn FileReader) -> Result<TiffHeader> {
             return Err(ExifToolError::parse_error(format!(
                 "Invalid TIFF byte order marker: 0x{:02X}{:02X}",
                 header[0], header[1]
-            )))
+            )));
         }
     };
 
@@ -405,20 +405,21 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
                         let offset_bytes = &value_bytes[i * 4..(i + 1) * 4];
                         if let Some(sub_ifd_offset) =
                             extract_u32_from_tag_value(offset_bytes, byte_order)
-                            && !visited_offsets.contains(&(sub_ifd_offset as u64)) {
-                                match parse_ifd(reader, sub_ifd_offset as u64, byte_order) {
-                                    Ok(sub_tags) => {
-                                        all_tags.extend(sub_tags);
-                                        visited_offsets.insert(sub_ifd_offset as u64);
-                                    }
-                                    Err(e) => {
-                                        eprintln!(
-                                            "Warning: Failed to parse sub-IFD at offset {}: {}",
-                                            sub_ifd_offset, e
-                                        );
-                                    }
+                            && !visited_offsets.contains(&(sub_ifd_offset as u64))
+                        {
+                            match parse_ifd(reader, sub_ifd_offset as u64, byte_order) {
+                                Ok(sub_tags) => {
+                                    all_tags.extend(sub_tags);
+                                    visited_offsets.insert(sub_ifd_offset as u64);
+                                }
+                                Err(e) => {
+                                    eprintln!(
+                                        "Warning: Failed to parse sub-IFD at offset {}: {}",
+                                        sub_ifd_offset, e
+                                    );
                                 }
                             }
+                        }
                     }
                 }
                 MAKERNOTE => {

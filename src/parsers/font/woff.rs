@@ -266,13 +266,14 @@ impl FormatParser for WOFFParser {
 
             if reader.size() >= meta_offset + meta_length as u64
                 && let Ok(compressed) = reader.read(meta_offset, meta_length)
-                    && let Ok(decompressed) = Self::decompress_zlib(compressed)
-                        && let Ok(xml_str) = String::from_utf8(decompressed) {
-                            let xml_metadata = Self::parse_xml_metadata(&xml_str);
-                            for (key, value) in xml_metadata {
-                                metadata.insert(key, TagValue::String(value));
-                            }
-                        }
+                && let Ok(decompressed) = Self::decompress_zlib(compressed)
+                && let Ok(xml_str) = String::from_utf8(decompressed)
+            {
+                let xml_metadata = Self::parse_xml_metadata(&xml_str);
+                for (key, value) in xml_metadata {
+                    metadata.insert(key, TagValue::String(value));
+                }
+            }
         }
 
         // Try to extract font names from name table
@@ -281,21 +282,22 @@ impl FormatParser for WOFFParser {
             let table_length = name_table.comp_length as usize;
 
             if reader.size() >= table_offset + table_length as u64
-                && let Ok(compressed) = reader.read(table_offset, table_length) {
-                    // Try decompression if compressed
-                    let name_data = if name_table.comp_length < name_table.orig_length {
-                        Self::decompress_zlib(compressed).unwrap_or_else(|_| compressed.to_vec())
-                    } else {
-                        compressed.to_vec()
-                    };
+                && let Ok(compressed) = reader.read(table_offset, table_length)
+            {
+                // Try decompression if compressed
+                let name_data = if name_table.comp_length < name_table.orig_length {
+                    Self::decompress_zlib(compressed).unwrap_or_else(|_| compressed.to_vec())
+                } else {
+                    compressed.to_vec()
+                };
 
-                    let names = Self::extract_names_from_table(&name_data);
-                    for (key, value) in names {
-                        if !metadata.contains_key(&key) {
-                            metadata.insert(key, TagValue::String(value));
-                        }
+                let names = Self::extract_names_from_table(&name_data);
+                for (key, value) in names {
+                    if !metadata.contains_key(&key) {
+                        metadata.insert(key, TagValue::String(value));
                     }
                 }
+            }
         }
 
         Ok(metadata)
@@ -423,14 +425,20 @@ mod tests {
         "#;
         let metadata = WOFFParser::parse_xml_metadata(xml);
 
-        assert!(metadata
-            .iter()
-            .any(|(k, v)| k == "WOFFVendor" && v == "Test Vendor"));
-        assert!(metadata
-            .iter()
-            .any(|(k, v)| k == "WOFFDescription" && v == "Test Font Description"));
-        assert!(metadata
-            .iter()
-            .any(|(k, v)| k == "WOFFLicense" && v == "MIT License"));
+        assert!(
+            metadata
+                .iter()
+                .any(|(k, v)| k == "WOFFVendor" && v == "Test Vendor")
+        );
+        assert!(
+            metadata
+                .iter()
+                .any(|(k, v)| k == "WOFFDescription" && v == "Test Font Description")
+        );
+        assert!(
+            metadata
+                .iter()
+                .any(|(k, v)| k == "WOFFLicense" && v == "MIT License")
+        );
     }
 }

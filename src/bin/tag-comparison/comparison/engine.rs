@@ -123,14 +123,16 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle GPS altitude precision: "9.046 m" vs "9.0 m"
-    if tag_key.contains("GPSAltitude") && !tag_key.contains("Ref")
-        && let Some(m_pos) = normalized.find(" m") {
-            let num_str = &normalized[..m_pos];
-            if let Ok(val) = num_str.parse::<f64>() {
-                // Round to 1 decimal place
-                return format!("{:.1} m", val);
-            }
+    if tag_key.contains("GPSAltitude")
+        && !tag_key.contains("Ref")
+        && let Some(m_pos) = normalized.find(" m")
+    {
+        let num_str = &normalized[..m_pos];
+        if let Ok(val) = num_str.parse::<f64>() {
+            // Round to 1 decimal place
+            return format!("{:.1} m", val);
         }
+    }
 
     // Handle MPF:MPFVersion byte order: "0100" vs "0010"
     // Both represent version 1.0, just different byte ordering interpretations
@@ -179,9 +181,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     if tag_key.contains("GainControl") {
         if let Some(start) = normalized.find('(')
             && let Some(end) = normalized.find(')')
-                && let Ok(val) = normalized[start + 1..end].parse::<i32>() {
-                    return val.to_string();
-                }
+            && let Ok(val) = normalized[start + 1..end].parse::<i32>()
+        {
+            return val.to_string();
+        }
         // Already a number
         if normalized.parse::<i32>().is_ok() {
             return normalized.to_string();
@@ -224,9 +227,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     // Handle YCbCrSubSampling: "Unknown (2)" vs "2"
     if tag_key.contains("YCbCrSubSampling") {
         if let Some(start) = normalized.find('(')
-            && let Some(end) = normalized.find(')') {
-                return normalized[start + 1..end].to_string();
-            }
+            && let Some(end) = normalized.find(')')
+        {
+            return normalized[start + 1..end].to_string();
+        }
         // Single number
         if normalized.parse::<i32>().is_ok() {
             return normalized.to_string();
@@ -307,11 +311,13 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle FocalPlaneResolution precision: "19041.32231" vs "19041.32231405"
-    if tag_key.contains("FocalPlane") && tag_key.contains("Resolution")
-        && let Ok(val) = normalized.parse::<f64>() {
-            // Round to 5 decimal places
-            return format!("{:.5}", val);
-        }
+    if tag_key.contains("FocalPlane")
+        && tag_key.contains("Resolution")
+        && let Ok(val) = normalized.parse::<f64>()
+    {
+        // Round to 5 decimal places
+        return format!("{:.5}", val);
+    }
 
     // Handle ICC_Profile percentage values: "0.999%" vs "0.99945%"
     if tag_key.starts_with("ICC_Profile:") && normalized.ends_with('%') {
@@ -339,9 +345,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         }
         // Handle dotted format -> normalize
         if let Some((major, minor)) = normalized.split_once('.')
-            && let (Ok(maj), Ok(min)) = (major.parse::<u32>(), minor.parse::<u32>()) {
-                return format!("{}.{:02}", maj, min);
-            }
+            && let (Ok(maj), Ok(min)) = (major.parse::<u32>(), minor.parse::<u32>())
+        {
+            return format!("{}.{:02}", maj, min);
+        }
     }
 
     // Handle "n/a" vs "0" or specific values
@@ -406,9 +413,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
 
     // Handle XMP ColorClass: "0 (None)" vs "0" - MUST come before parenthetical normalization
     if tag_key.contains("ColorClass")
-        && let Some(paren_idx) = normalized.find(" (") {
-            return normalized[..paren_idx].to_string();
-        }
+        && let Some(paren_idx) = normalized.find(" (")
+    {
+        return normalized[..paren_idx].to_string();
+    }
 
     // Handle parenthetical case normalization: "0 (Normal)" vs "0 (normal)"
     if normalized.contains('(') && normalized.contains(')') {
@@ -479,9 +487,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         // Extract number from "Unknown (X)" format
         if let Some(start) = normalized.find('(')
             && let Some(end) = normalized.find(')')
-                && let Ok(val) = normalized[start + 1..end].parse::<i32>() {
-                    return val.to_string();
-                }
+            && let Ok(val) = normalized[start + 1..end].parse::<i32>()
+        {
+            return val.to_string();
+        }
     }
 
     // Handle FlashActivity: "0" vs "Did not fire" - both mean no flash
@@ -548,17 +557,20 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle XMP rational values: "104/100" vs "1.04"
-    if tag_key.starts_with("XMP") && normalized.contains('/') && !normalized.contains(' ')
+    if tag_key.starts_with("XMP")
+        && normalized.contains('/')
+        && !normalized.contains(' ')
         && let Some((num, denom)) = normalized.split_once('/')
-            && let (Ok(n), Ok(d)) = (num.parse::<f64>(), denom.parse::<f64>())
-                && d != 0.0 {
-                    let val = n / d;
-                    // Round to reasonable precision
-                    return format!("{:.6}", val)
-                        .trim_end_matches('0')
-                        .trim_end_matches('.')
-                        .to_string();
-                }
+        && let (Ok(n), Ok(d)) = (num.parse::<f64>(), denom.parse::<f64>())
+        && d != 0.0
+    {
+        let val = n / d;
+        // Round to reasonable precision
+        return format!("{:.6}", val)
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string();
+    }
 
     // Handle boolean values: "Yes" vs "true", "No" vs "false"
     if tag_key.starts_with("XMP") {
@@ -662,10 +674,10 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
     }
 
     // Handle Urgency formatting: "8 (least urgent)" vs "8"
-    if tag_key.contains("Urgency") {
-        if let Some(paren_idx) = normalized.find(" (") {
-            return normalized[..paren_idx].to_string();
-        }
+    if tag_key.contains("Urgency")
+        && let Some(paren_idx) = normalized.find(" (")
+    {
+        return normalized[..paren_idx].to_string();
     }
 
     // Normalize binary data descriptions

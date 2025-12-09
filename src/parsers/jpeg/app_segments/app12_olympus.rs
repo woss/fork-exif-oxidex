@@ -414,12 +414,13 @@ fn parse_rational_value(value: &str) -> Option<TagValue> {
         let denominator_str = value[slash_pos + 1..].trim();
 
         if let (Ok(num), Ok(denom)) = (numerator_str.parse::<i32>(), denominator_str.parse::<i32>())
-            && denom != 0 {
-                return Some(TagValue::Rational {
-                    numerator: num,
-                    denominator: denom,
-                });
-            }
+            && denom != 0
+        {
+            return Some(TagValue::Rational {
+                numerator: num,
+                denominator: denom,
+            });
+        }
     }
 
     // Check for decimal format

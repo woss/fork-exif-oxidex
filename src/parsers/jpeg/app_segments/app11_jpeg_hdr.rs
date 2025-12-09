@@ -267,37 +267,42 @@ fn parse_hdr_ratio_image_segment(data: &[u8], metadata: &mut MetadataMap) -> Res
     // Parse Alpha - exposure coefficient (4 bytes float32 at offset 2)
     if data.len() >= 6
         && let Some(alpha) = reader.f32_at(2)
-            && alpha.is_finite() {
-                metadata.insert("APP11:Alpha".to_string(), TagValue::Float(alpha as f64));
-            }
+        && alpha.is_finite()
+    {
+        metadata.insert("APP11:Alpha".to_string(), TagValue::Float(alpha as f64));
+    }
 
     // Parse Beta - contrast coefficient (4 bytes float32 at offset 6)
     if data.len() >= 10
         && let Some(beta) = reader.f32_at(6)
-            && beta.is_finite() {
-                metadata.insert("APP11:Beta".to_string(), TagValue::Float(beta as f64));
-            }
+        && beta.is_finite()
+    {
+        metadata.insert("APP11:Beta".to_string(), TagValue::Float(beta as f64));
+    }
 
     // Parse Ln0 - lower luminance bound (4 bytes float32 at offset 10)
     if data.len() >= 14
         && let Some(ln0) = reader.f32_at(10)
-            && ln0.is_finite() {
-                metadata.insert("APP11:Ln0".to_string(), TagValue::Float(ln0 as f64));
-            }
+        && ln0.is_finite()
+    {
+        metadata.insert("APP11:Ln0".to_string(), TagValue::Float(ln0 as f64));
+    }
 
     // Parse Ln1 - upper luminance bound (4 bytes float32 at offset 14)
     if data.len() >= 18
         && let Some(ln1) = reader.f32_at(14)
-            && ln1.is_finite() {
-                metadata.insert("APP11:Ln1".to_string(), TagValue::Float(ln1 as f64));
-            }
+        && ln1.is_finite()
+    {
+        metadata.insert("APP11:Ln1".to_string(), TagValue::Float(ln1 as f64));
+    }
 
     // Parse S2n - signal-to-noise estimate (4 bytes float32 at offset 18)
     if data.len() >= 22
         && let Some(s2n) = reader.f32_at(18)
-            && s2n.is_finite() {
-                metadata.insert("APP11:S2n".to_string(), TagValue::Float(s2n as f64));
-            }
+        && s2n.is_finite()
+    {
+        metadata.insert("APP11:S2n".to_string(), TagValue::Float(s2n as f64));
+    }
 
     // Check for ratio image data (anything after the 22-byte header)
     if data.len() > HDR_HEADER_SIZE {
@@ -373,37 +378,42 @@ fn parse_jpeg_hdr_parameter_segment(data: &[u8], metadata: &mut MetadataMap) -> 
     // Parse Alpha coefficient (4 bytes float32 at offset 2)
     if data.len() >= 6
         && let Some(alpha) = reader.f32_at(2)
-            && alpha.is_finite() {
-                metadata.insert("APP11:Alpha".to_string(), TagValue::Float(alpha as f64));
-            }
+        && alpha.is_finite()
+    {
+        metadata.insert("APP11:Alpha".to_string(), TagValue::Float(alpha as f64));
+    }
 
     // Parse Beta coefficient (4 bytes float32 at offset 6)
     if data.len() >= 10
         && let Some(beta) = reader.f32_at(6)
-            && beta.is_finite() {
-                metadata.insert("APP11:Beta".to_string(), TagValue::Float(beta as f64));
-            }
+        && beta.is_finite()
+    {
+        metadata.insert("APP11:Beta".to_string(), TagValue::Float(beta as f64));
+    }
 
     // Parse Ln0 - lower luminance bound (4 bytes float32 at offset 10)
     if data.len() >= 14
         && let Some(ln0) = reader.f32_at(10)
-            && ln0.is_finite() {
-                metadata.insert("APP11:Ln0".to_string(), TagValue::Float(ln0 as f64));
-            }
+        && ln0.is_finite()
+    {
+        metadata.insert("APP11:Ln0".to_string(), TagValue::Float(ln0 as f64));
+    }
 
     // Parse Ln1 - upper luminance bound (4 bytes float32 at offset 14)
     if data.len() >= 18
         && let Some(ln1) = reader.f32_at(14)
-            && ln1.is_finite() {
-                metadata.insert("APP11:Ln1".to_string(), TagValue::Float(ln1 as f64));
-            }
+        && ln1.is_finite()
+    {
+        metadata.insert("APP11:Ln1".to_string(), TagValue::Float(ln1 as f64));
+    }
 
     // Parse S2n - signal-to-noise estimate (4 bytes float32 at offset 18)
     if data.len() >= 22
         && let Some(s2n) = reader.f32_at(18)
-            && s2n.is_finite() {
-                metadata.insert("APP11:S2n".to_string(), TagValue::Float(s2n as f64));
-            }
+        && s2n.is_finite()
+    {
+        metadata.insert("APP11:S2n".to_string(), TagValue::Float(s2n as f64));
+    }
 
     // Check for ratio image data (anything after the 22-byte header)
     if data.len() > HDR_HEADER_SIZE {
@@ -476,9 +486,10 @@ pub fn extract_hdr_parameters(data: &[u8]) -> Result<JpegHdrParameters> {
         if let Some(size_start) = ratio_str.find("Binary data ") {
             let size_part = &ratio_str[size_start + 12..];
             if let Some(size_end) = size_part.find(' ')
-                && let Ok(size) = size_part[..size_end].parse::<usize>() {
-                    params.ratio_image_size = Some(size);
-                }
+                && let Ok(size) = size_part[..size_end].parse::<usize>()
+            {
+                params.ratio_image_size = Some(size);
+            }
         }
     } else {
         params.has_ratio_image = false;

@@ -3,7 +3,7 @@
 //! This module provides utilities for analyzing dynamic library dependencies
 //! extracted from Mach-O files.
 
-use super::structures::{load_command, DylibCommand};
+use super::structures::{DylibCommand, load_command};
 
 // =============================================================================
 // Dylib Analysis
@@ -196,10 +196,11 @@ impl DylibCategory {
 pub fn extract_library_name(path: &str) -> String {
     // Handle framework paths
     if path.contains(".framework/")
-        && let Some(pos) = path.rfind(".framework/") {
-            let framework_name = &path[pos + 11..]; // Skip ".framework/"
-            return framework_name.to_string();
-        }
+        && let Some(pos) = path.rfind(".framework/")
+    {
+        let framework_name = &path[pos + 11..]; // Skip ".framework/"
+        return framework_name.to_string();
+    }
 
     // Handle regular library paths
     if let Some(pos) = path.rfind('/') {

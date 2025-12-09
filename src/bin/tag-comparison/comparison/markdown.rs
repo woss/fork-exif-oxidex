@@ -95,15 +95,16 @@ fn generate_index(
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().is_some_and(|e| e == "md")
-                && let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                    // Skip index, baseline, and already-listed formats
-                    if stem != "index"
-                        && !stem.contains("baseline")
-                        && !listed_formats.contains(&stem.to_lowercase())
-                    {
-                        other_formats.push(stem.to_string());
-                    }
+                && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
+            {
+                // Skip index, baseline, and already-listed formats
+                if stem != "index"
+                    && !stem.contains("baseline")
+                    && !listed_formats.contains(&stem.to_lowercase())
+                {
+                    other_formats.push(stem.to_string());
                 }
+            }
         }
     }
 

@@ -3,11 +3,11 @@
 //! This module provides parsing for the ELF file header (Elf32_Ehdr/Elf64_Ehdr),
 //! which is always located at the beginning of an ELF file.
 
-use crate::parsers::elf::structures::{ei_index, elf_class, elf_data, ElfHeader};
+use crate::parsers::elf::structures::{ElfHeader, ei_index, elf_class, elf_data};
 use nom::{
+    IResult,
     bytes::complete::take,
     number::complete::{be_u16, be_u32, be_u64, le_u16, le_u32, le_u64},
-    IResult,
 };
 
 /// Parses the ELF identification bytes (e_ident)
@@ -55,7 +55,7 @@ pub fn parse_elf_header(input: &[u8]) -> IResult<&[u8], ElfHeader> {
             return Err(nom::Err::Error(nom::error::Error::new(
                 input,
                 nom::error::ErrorKind::Verify,
-            )))
+            )));
         }
     };
 
@@ -67,7 +67,7 @@ pub fn parse_elf_header(input: &[u8]) -> IResult<&[u8], ElfHeader> {
             return Err(nom::Err::Error(nom::error::Error::new(
                 input,
                 nom::error::ErrorKind::Verify,
-            )))
+            )));
         }
     };
 

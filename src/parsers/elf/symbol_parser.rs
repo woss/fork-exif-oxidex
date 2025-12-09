@@ -4,10 +4,10 @@
 //! Symbol tables contain information about functions, variables, and other symbols.
 
 use crate::parsers::elf::section_header_parser::get_string_from_strtab;
-use crate::parsers::elf::structures::{shn_index, stb_binding, stt_type, Symbol, SymbolInfo};
+use crate::parsers::elf::structures::{Symbol, SymbolInfo, shn_index, stb_binding, stt_type};
 use nom::{
-    number::complete::{be_u16, be_u32, be_u64, be_u8, le_u16, le_u32, le_u64, le_u8},
     IResult,
+    number::complete::{be_u8, be_u16, be_u32, be_u64, le_u8, le_u16, le_u32, le_u64},
 };
 
 /// Parses a single ELF64 symbol in little-endian format

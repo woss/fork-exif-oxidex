@@ -81,12 +81,13 @@ fn parse_jpeg_hdr_generic(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
     if !data.is_empty() {
         let reader = EndianReader::big_endian(data);
         if let Some(version_byte) = reader.u8_at(0)
-            && version_byte > 0 {
-                metadata.insert(
-                    "JPEG-HDR:HDRVersion".to_string(),
-                    TagValue::Integer(version_byte as i64),
-                );
-            }
+            && version_byte > 0
+        {
+            metadata.insert(
+                "JPEG-HDR:HDRVersion".to_string(),
+                TagValue::Integer(version_byte as i64),
+            );
+        }
     }
 
     // Extract parameters if available
@@ -95,12 +96,13 @@ fn parse_jpeg_hdr_generic(data: &[u8], metadata: &mut MetadataMap) -> Result<(),
 
         // Try to read exposure compensation (often at offset 2-5)
         if let Some(exposure) = reader.u16_at(2)
-            && exposure > 0 {
-                metadata.insert(
-                    "JPEG-HDR:ExposureCompensation".to_string(),
-                    TagValue::Integer(exposure as i64),
-                );
-            }
+            && exposure > 0
+        {
+            metadata.insert(
+                "JPEG-HDR:ExposureCompensation".to_string(),
+                TagValue::Integer(exposure as i64),
+            );
+        }
     }
 
     Ok(())

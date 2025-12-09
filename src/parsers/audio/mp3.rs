@@ -39,9 +39,9 @@ use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use nom::{
+    IResult,
     bytes::complete::{tag, take},
     number::complete::be_u8,
-    IResult,
 };
 
 /// ID3v2 signature
@@ -209,11 +209,13 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
         offset += frame_size as usize;
 
         // Parse text frames
-        if frame_id.starts_with('T') && frame_id != "TXXX"
-            && let Ok(text) = parse_text_frame(frame_data) {
-                let tag_name = format!("ID3:{}", map_frame_id_to_tag_name(&frame_id));
-                metadata.insert(tag_name, TagValue::new_string(text));
-            }
+        if frame_id.starts_with('T')
+            && frame_id != "TXXX"
+            && let Ok(text) = parse_text_frame(frame_data)
+        {
+            let tag_name = format!("ID3:{}", map_frame_id_to_tag_name(&frame_id));
+            metadata.insert(tag_name, TagValue::new_string(text));
+        }
     }
 
     Ok(())

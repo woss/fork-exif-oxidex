@@ -27,7 +27,7 @@
 //! Type2 tags are found in newer Samsung Galaxy smartphones.
 //! Some tag IDs overlap between Type1 and Type2 with different meanings.
 
-use super::super::shared::generic_decoders::{SimpleValueDecoder, ON_OFF};
+use super::super::shared::generic_decoders::{ON_OFF, SimpleValueDecoder};
 use super::super::shared::tag_registry::TagRegistry;
 use once_cell::sync::Lazy;
 

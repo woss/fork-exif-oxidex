@@ -58,10 +58,10 @@ use crate::error::{ExifToolError, Result};
 use crate::io::{ByteOrder as IoByteOrder, EndianReader};
 use crate::parsers::common::exif_types::ExifType;
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::borrow::Cow;
 

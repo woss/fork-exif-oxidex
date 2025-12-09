@@ -13,7 +13,7 @@ use crate::parsers::jpeg::app_segments::{
 };
 use crate::parsers::jpeg::segment_parser::Segment;
 use crate::parsers::jpeg::xmp_parser::extract_xmp_from_segments;
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::parsers::tiff::tiff_subreader::TiffSubReader;
 use crate::tag_db::lookup_tag_name;
 

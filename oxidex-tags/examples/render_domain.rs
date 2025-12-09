@@ -21,7 +21,9 @@ fn main() {
         "document" => ("Document Formats", &*document::DOCUMENT_TAGS),
         "specialty" => ("Specialty Formats", &*specialty::SPECIALTY_TAGS),
         other => {
-            eprintln!("Unknown domain '{other}'. Expected one of: core, camera, media, image, document, specialty");
+            eprintln!(
+                "Unknown domain '{other}'. Expected one of: core, camera, media, image, document, specialty"
+            );
             process::exit(2);
         }
     };

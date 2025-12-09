@@ -98,8 +98,10 @@ fn main() {
                     tag_count
                 );
             } else {
-                eprintln!("cargo:warning=Generated tag database has only {} tags (expected {}+), using fallback",
-                    tag_count, MIN_TAG_COUNT);
+                eprintln!(
+                    "cargo:warning=Generated tag database has only {} tags (expected {}+), using fallback",
+                    tag_count, MIN_TAG_COUNT
+                );
                 create_fallback_generated_tags().unwrap_or_else(|e| {
                     panic!("Failed to create fallback tag database: {}", e);
                 });

@@ -28,8 +28,8 @@ use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::extract_i16_array;
 
 /// Camera model identifier
 pub const LYTRO_MODEL: u16 = 0x0001;
@@ -154,11 +154,7 @@ fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
     let s = String::from_utf8_lossy(&data[offset..offset + count])
         .trim_end_matches('\0')
         .to_string();
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }
 
 /// Lytro Light Field Camera MakerNote parser
@@ -255,51 +251,48 @@ impl MakerNoteParser for LytroParser {
                 }
                 _ => {
                     if let Some(array) = extract_i16_array(&entry, parse_data, byte_order)
-                        && let Some(&val) = array.first() {
-                            let (tag_name, formatted_value) = match tag {
-                                LYTRO_MICROLENS_PITCH => {
-                                    ("MicrolensPitch", format_microlens_pitch(val))
-                                }
-                                LYTRO_MICROLENS_ROTATION => {
-                                    ("MicrolensRotation", format_rotation(val))
-                                }
-                                LYTRO_DEPTH_MIN => ("DepthMin", format_depth(val)),
-                                LYTRO_DEPTH_MAX => ("DepthMax", format_depth(val)),
-                                LYTRO_FOCUS_DEPTH => ("FocusDepth", format_depth(val)),
-                                LYTRO_REFOCUS_RANGE => ("RefocusRange", format_depth(val)),
-                                LYTRO_SENSOR_RESOLUTION => {
-                                    ("SensorResolution", decode_sensor_resolution(val))
-                                }
-                                LYTRO_IMAGE_ORIENTATION => {
-                                    ("ImageOrientation", decode_orientation(val))
-                                }
-                                LYTRO_EXPOSURE_DURATION => {
-                                    ("ExposureDuration", format_exposure(val))
-                                }
-                                LYTRO_ISO_SPEED => ("ISO", val.to_string()),
-                                LYTRO_ZOOM_FACTOR => ("ZoomFactor", format_zoom(val)),
-                                LYTRO_DEPTH_MAP_ENABLED => (
-                                    "DepthMapEnabled",
-                                    if val != 0 {
-                                        "Yes".to_string()
-                                    } else {
-                                        "No".to_string()
-                                    },
-                                ),
-                                LYTRO_PERSPECTIVE_SHIFT => (
-                                    "PerspectiveShiftCapable",
-                                    if val != 0 {
-                                        "Yes".to_string()
-                                    } else {
-                                        "No".to_string()
-                                    },
-                                ),
-                                LYTRO_TEMPERATURE => ("SensorTemperature", format_temperature(val)),
-                                LYTRO_RAW_DATA_SIZE => ("RawDataSize", format_data_size(val)),
-                                _ => continue,
-                            };
-                            tags.insert(format!("Lytro:{}", tag_name), formatted_value);
-                        }
+                        && let Some(&val) = array.first()
+                    {
+                        let (tag_name, formatted_value) = match tag {
+                            LYTRO_MICROLENS_PITCH => {
+                                ("MicrolensPitch", format_microlens_pitch(val))
+                            }
+                            LYTRO_MICROLENS_ROTATION => ("MicrolensRotation", format_rotation(val)),
+                            LYTRO_DEPTH_MIN => ("DepthMin", format_depth(val)),
+                            LYTRO_DEPTH_MAX => ("DepthMax", format_depth(val)),
+                            LYTRO_FOCUS_DEPTH => ("FocusDepth", format_depth(val)),
+                            LYTRO_REFOCUS_RANGE => ("RefocusRange", format_depth(val)),
+                            LYTRO_SENSOR_RESOLUTION => {
+                                ("SensorResolution", decode_sensor_resolution(val))
+                            }
+                            LYTRO_IMAGE_ORIENTATION => {
+                                ("ImageOrientation", decode_orientation(val))
+                            }
+                            LYTRO_EXPOSURE_DURATION => ("ExposureDuration", format_exposure(val)),
+                            LYTRO_ISO_SPEED => ("ISO", val.to_string()),
+                            LYTRO_ZOOM_FACTOR => ("ZoomFactor", format_zoom(val)),
+                            LYTRO_DEPTH_MAP_ENABLED => (
+                                "DepthMapEnabled",
+                                if val != 0 {
+                                    "Yes".to_string()
+                                } else {
+                                    "No".to_string()
+                                },
+                            ),
+                            LYTRO_PERSPECTIVE_SHIFT => (
+                                "PerspectiveShiftCapable",
+                                if val != 0 {
+                                    "Yes".to_string()
+                                } else {
+                                    "No".to_string()
+                                },
+                            ),
+                            LYTRO_TEMPERATURE => ("SensorTemperature", format_temperature(val)),
+                            LYTRO_RAW_DATA_SIZE => ("RawDataSize", format_data_size(val)),
+                            _ => continue,
+                        };
+                        tags.insert(format!("Lytro:{}", tag_name), formatted_value);
+                    }
                 }
             }
             offset += 12;

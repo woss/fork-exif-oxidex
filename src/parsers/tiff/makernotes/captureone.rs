@@ -37,9 +37,9 @@
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use std::collections::HashMap;
 
-use super::shared::array_extractors::{extract_i16_array, extract_string};
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::{extract_i16_array, extract_string};
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
 
 // Import the Capture One tag registry
 use super::registries::captureone::CAPTUREONE_TAGS;
@@ -186,10 +186,11 @@ impl CaptureOneParser {
         // Handle numeric tags using registry for O(1) lookup and automatic decoding
         if let Some(tag_name) = CAPTUREONE_TAGS.get_tag_name(tag)
             && let Some(array) = extract_i16_array(entry, data, byte_order)
-                && let Some(&val) = array.first() {
-                    let decoded = CAPTUREONE_TAGS.decode_i16(tag, val);
-                    tags.insert(format!("CaptureOne:{}", tag_name), decoded);
-                }
+            && let Some(&val) = array.first()
+        {
+            let decoded = CAPTUREONE_TAGS.decode_i16(tag, val);
+            tags.insert(format!("CaptureOne:{}", tag_name), decoded);
+        }
     }
 }
 

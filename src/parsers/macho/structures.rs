@@ -560,11 +560,7 @@ pub struct MachHeader {
 impl MachHeader {
     /// Returns the size of the header in bytes (28 for 32-bit, 32 for 64-bit)
     pub fn header_size(&self) -> usize {
-        if self.is_64bit {
-            32
-        } else {
-            28
-        }
+        if self.is_64bit { 32 } else { 28 }
     }
 
     /// Returns human-readable CPU type name
@@ -724,11 +720,22 @@ impl UuidCommand {
     pub fn uuid_string(&self) -> String {
         format!(
             "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-            self.uuid[0], self.uuid[1], self.uuid[2], self.uuid[3],
-            self.uuid[4], self.uuid[5],
-            self.uuid[6], self.uuid[7],
-            self.uuid[8], self.uuid[9],
-            self.uuid[10], self.uuid[11], self.uuid[12], self.uuid[13], self.uuid[14], self.uuid[15]
+            self.uuid[0],
+            self.uuid[1],
+            self.uuid[2],
+            self.uuid[3],
+            self.uuid[4],
+            self.uuid[5],
+            self.uuid[6],
+            self.uuid[7],
+            self.uuid[8],
+            self.uuid[9],
+            self.uuid[10],
+            self.uuid[11],
+            self.uuid[12],
+            self.uuid[13],
+            self.uuid[14],
+            self.uuid[15]
         )
     }
 }

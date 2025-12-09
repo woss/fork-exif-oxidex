@@ -10,7 +10,7 @@ pub mod canon;
 pub mod captureone; // Capture One migration complete (Batch 4, Task 4.2)
 pub mod nikoncapture;
 pub mod sony; // Sony migration complete (Task 6) // Nikon Capture migration complete (Batch 4, Task 4.3)
-              // pub mod google;
+// pub mod google;
 
 // Batch 1: Traditional Camera Manufacturers
 pub mod fujifilm; // Fujifilm migration (Batch 1, Task 1.4)
@@ -64,7 +64,7 @@ pub mod scalado;
 pub use apple::apple_registry;
 pub use canon::canon_registry;
 pub use sony::sony_registry; // Sony migration complete (Task 6)
-                             // pub use google::google_registry;
+// pub use google::google_registry;
 
 // Batch 1 exports
 pub use fujifilm::fujifilm_registry;

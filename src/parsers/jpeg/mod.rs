@@ -18,4 +18,4 @@ pub mod segment_parser;
 pub mod xmp_parser;
 
 // Re-export segment parser types for convenient access
-pub use segment_parser::{parse_segments, Segment};
+pub use segment_parser::{Segment, parse_segments};

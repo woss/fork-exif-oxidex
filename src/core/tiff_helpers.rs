@@ -6,7 +6,7 @@
 use super::{FileReader, MetadataMap, TagValue};
 use crate::core::operations_helpers::read_u32;
 use crate::core::tag_conversion::raw_bytes_to_tag_value;
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::parsers::tiff::makernote_dispatcher::dispatch_makernote;
 use crate::tag_db::lookup_tag_name;
 use std::collections::HashMap;
@@ -386,10 +386,11 @@ fn parse_interop_subifd(
             // Apply special formatting for InteropIndex
             // ExifTool formats this as "R98 - DCF basic file (sRGB)" etc.
             if tag_id == INTEROP_INDEX
-                && let Some(raw_index) = tag_value.as_string() {
-                    let formatted = format_interop_index(raw_index);
-                    tag_value = TagValue::String(formatted);
-                }
+                && let Some(raw_index) = tag_value.as_string()
+            {
+                let formatted = format_interop_index(raw_index);
+                tag_value = TagValue::String(formatted);
+            }
 
             metadata.insert(tag_name, tag_value);
         }

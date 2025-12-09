@@ -34,12 +34,12 @@ use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use nom::{
+    IResult,
     bytes::complete::{tag, take_until, take_while, take_while1},
     character::complete::{digit1, multispace0},
     combinator::map_res,
     multi::many0,
     sequence::{delimited, preceded},
-    IResult,
 };
 use std::collections::HashMap;
 use std::str;
@@ -758,10 +758,12 @@ fn parse_hex_string(input: &[u8]) -> IResult<&[u8], String> {
 /// Decodes a hex string, trying UTF-16BE with BOM first, then Latin-1
 fn decode_hex_string(hex_clean: &str) -> String {
     // Try UTF-16BE with BOM (FEFF prefix)
-    if hex_clean.len() >= 4 && hex_clean.starts_with("FEFF")
-        && let Some(decoded) = decode_utf16be_hex(&hex_clean[4..]) {
-            return decoded;
-        }
+    if hex_clean.len() >= 4
+        && hex_clean.starts_with("FEFF")
+        && let Some(decoded) = decode_utf16be_hex(&hex_clean[4..])
+    {
+        return decoded;
+    }
 
     // Fall back to Latin-1/ASCII
     decode_latin1_hex(hex_clean)

@@ -14,16 +14,16 @@ use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::collections::HashMap;
 
 use super::fujifilm_lens_database::lookup_lens_name;
-use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 use crate::const_decoder;
 
 // ===== Fujifilm MakerNote Tag IDs =====
@@ -740,23 +740,25 @@ impl MakerNoteParser for FujifilmParser {
                 // Focus pixel coordinates (array)
                 FUJI_FOCUS_PIXEL => {
                     if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
-                        && array.len() >= 2 {
-                            tags.insert(
-                                "MakerNotes:FocusPixel".to_string(),
-                                format!("X:{} Y:{}", array[0], array[1]),
-                            );
-                        }
+                        && array.len() >= 2
+                    {
+                        tags.insert(
+                            "MakerNotes:FocusPixel".to_string(),
+                            format!("X:{} Y:{}", array[0], array[1]),
+                        );
+                    }
                 }
 
                 // Face positions (array) - complex structure, basic extraction
                 FUJI_FACE_POSITIONS => {
                     if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
-                        && !array.is_empty() {
-                            tags.insert(
-                                "MakerNotes:FacePositions".to_string(),
-                                format!("{} coordinates", array.len() / 4),
-                            );
-                        }
+                        && !array.is_empty()
+                    {
+                        tags.insert(
+                            "MakerNotes:FacePositions".to_string(),
+                            format!("{} coordinates", array.len() / 4),
+                        );
+                    }
                 }
 
                 // ===== NEW TAG HANDLING =====
@@ -858,12 +860,13 @@ impl MakerNoteParser for FujifilmParser {
 
                 FUJI_PIXEL_SHIFT_OFFSET_NEW => {
                     if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
-                        && array.len() >= 2 {
-                            tags.insert(
-                                "MakerNotes:PixelShiftOffset".to_string(),
-                                format!("X:{} Y:{}", array[0], array[1]),
-                            );
-                        }
+                        && array.len() >= 2
+                    {
+                        tags.insert(
+                            "MakerNotes:PixelShiftOffset".to_string(),
+                            format!("X:{} Y:{}", array[0], array[1]),
+                        );
+                    }
                 }
 
                 // Panorama tags
@@ -1006,23 +1009,22 @@ impl MakerNoteParser for FujifilmParser {
 
                 FUJI_FACE_ELEMENT_TYPES => {
                     if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
-                        && !array.is_empty() {
-                            let types: Vec<String> = array.iter().map(|v| v.to_string()).collect();
-                            tags.insert(
-                                "MakerNotes:FaceElementTypes".to_string(),
-                                types.join(", "),
-                            );
-                        }
+                        && !array.is_empty()
+                    {
+                        let types: Vec<String> = array.iter().map(|v| v.to_string()).collect();
+                        tags.insert("MakerNotes:FaceElementTypes".to_string(), types.join(", "));
+                    }
                 }
 
                 FUJI_FACE_ELEMENT_POSITIONS => {
                     if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
-                        && !array.is_empty() {
-                            tags.insert(
-                                "MakerNotes:FaceElementPositions".to_string(),
-                                format!("{} coordinates", array.len() / 4),
-                            );
-                        }
+                        && !array.is_empty()
+                    {
+                        tags.insert(
+                            "MakerNotes:FaceElementPositions".to_string(),
+                            format!("{} coordinates", array.len() / 4),
+                        );
+                    }
                 }
 
                 // Other tags - skip unknown tags

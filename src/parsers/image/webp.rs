@@ -11,7 +11,7 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::tag_db::lookup_tag_name;
 use std::io;
 
@@ -351,25 +351,25 @@ fn parse_webp_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 
     // Parse ExifIFD
     if let Some(offset) = exif_ifd_offset
-        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
-            for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
-                let tag_name = lookup_tag_name(tag_id, "ExifIFD");
-                let tag_value =
-                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
-                metadata.insert(tag_name, tag_value);
-            }
+        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order)
+    {
+        for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
+            let tag_name = lookup_tag_name(tag_id, "ExifIFD");
+            let tag_value = raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+            metadata.insert(tag_name, tag_value);
         }
+    }
 
     // Parse GPS IFD
     if let Some(offset) = gps_ifd_offset
-        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
-            for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
-                let tag_name = lookup_tag_name(tag_id, "GPS");
-                let tag_value =
-                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
-                metadata.insert(tag_name, tag_value);
-            }
+        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order)
+    {
+        for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
+            let tag_name = lookup_tag_name(tag_id, "GPS");
+            let tag_value = raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, byte_order);
+            metadata.insert(tag_name, tag_value);
         }
+    }
 
     Ok(())
 }
@@ -441,9 +441,10 @@ fn raw_bytes_to_tag_value(
             }
             ExifType::Rational if bytes.len() >= 8 => {
                 if let Some((num, den)) = reader.rational_at(0)
-                    && den != 0 {
-                        return TagValue::Float(num as f64 / den as f64);
-                    }
+                    && den != 0
+                {
+                    return TagValue::Float(num as f64 / den as f64);
+                }
             }
             ExifType::Undefined => {
                 if bytes
@@ -460,9 +461,10 @@ fn raw_bytes_to_tag_value(
             }
             ExifType::SRational if bytes.len() >= 8 => {
                 if let Some((num, den)) = reader.srational_at(0)
-                    && den != 0 {
-                        return TagValue::Float(num as f64 / den as f64);
-                    }
+                    && den != 0
+                {
+                    return TagValue::Float(num as f64 / den as f64);
+                }
             }
             _ => {}
         }

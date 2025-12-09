@@ -43,9 +43,9 @@ mod value_conversion;
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use chunk_parser::{
-    parse_bkgd_chunk, parse_chrm_chunk, parse_chunk, parse_gama_chunk, parse_hist_chunk,
-    parse_ihdr_chunk, parse_itxt_chunk, parse_phys_chunk, parse_png_signature, parse_sbit_chunk,
-    parse_text_chunk, parse_time_chunk, parse_ztxt_chunk, PNG_SIGNATURE,
+    PNG_SIGNATURE, parse_bkgd_chunk, parse_chrm_chunk, parse_chunk, parse_gama_chunk,
+    parse_hist_chunk, parse_ihdr_chunk, parse_itxt_chunk, parse_phys_chunk, parse_png_signature,
+    parse_sbit_chunk, parse_text_chunk, parse_time_chunk, parse_ztxt_chunk,
 };
 
 /// Parses PNG file and extracts all metadata.
@@ -345,47 +345,45 @@ pub fn parse_png_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 // Parse iCCP chunk (ICC profile)
                 // Structure: profile name (null-terminated) + compression method (1 byte) + compressed profile data
                 if let Some(null_pos) = chunk.data.iter().position(|&b| b == 0)
-                    && null_pos + 2 <= chunk.data.len() {
-                        let _profile_name = String::from_utf8_lossy(&chunk.data[..null_pos]);
-                        let compression_method = chunk.data[null_pos + 1];
+                    && null_pos + 2 <= chunk.data.len()
+                {
+                    let _profile_name = String::from_utf8_lossy(&chunk.data[..null_pos]);
+                    let compression_method = chunk.data[null_pos + 1];
 
-                        if compression_method == 0 {
-                            // Deflate/Inflate compression
-                            let compressed_data = &chunk.data[null_pos + 2..];
+                    if compression_method == 0 {
+                        // Deflate/Inflate compression
+                        let compressed_data = &chunk.data[null_pos + 2..];
 
-                            // Decompress ICC profile data
-                            use flate2::read::ZlibDecoder;
-                            use std::io::Read;
+                        // Decompress ICC profile data
+                        use flate2::read::ZlibDecoder;
+                        use std::io::Read;
 
-                            let mut decoder = ZlibDecoder::new(compressed_data);
-                            let mut icc_data = Vec::new();
+                        let mut decoder = ZlibDecoder::new(compressed_data);
+                        let mut icc_data = Vec::new();
 
-                            if decoder.read_to_end(&mut icc_data).is_ok() {
-                                // Parse ICC profile
-                                match crate::parsers::icc::parse_icc_profile_data(&icc_data) {
-                                    Ok(icc_tags) => {
-                                        // Add all ICC tags to metadata with "Profile:" prefix
-                                        for (tag_name, value) in icc_tags {
-                                            metadata.insert(format!("Profile:{}", tag_name), value);
-                                        }
-                                    }
-                                    Err(e) => {
-                                        eprintln!(
-                                            "Warning: Failed to parse ICC profile in PNG: {}",
-                                            e
-                                        );
+                        if decoder.read_to_end(&mut icc_data).is_ok() {
+                            // Parse ICC profile
+                            match crate::parsers::icc::parse_icc_profile_data(&icc_data) {
+                                Ok(icc_tags) => {
+                                    // Add all ICC tags to metadata with "Profile:" prefix
+                                    for (tag_name, value) in icc_tags {
+                                        metadata.insert(format!("Profile:{}", tag_name), value);
                                     }
                                 }
-                            } else {
-                                eprintln!("Warning: Failed to decompress iCCP chunk data");
+                                Err(e) => {
+                                    eprintln!("Warning: Failed to parse ICC profile in PNG: {}", e);
+                                }
                             }
                         } else {
-                            eprintln!(
-                                "Warning: Unknown iCCP compression method: {}",
-                                compression_method
-                            );
+                            eprintln!("Warning: Failed to decompress iCCP chunk data");
                         }
+                    } else {
+                        eprintln!(
+                            "Warning: Unknown iCCP compression method: {}",
+                            compression_method
+                        );
                     }
+                }
             }
 
             _ => {

@@ -5,14 +5,14 @@
 //! The writer preserves image data (IDAT chunks) unchanged while updating
 //! metadata chunks (tEXt, iTXt, eXIf) based on the modified MetadataMap.
 
-use crate::core::metadata_map::MetadataMap;
 use crate::core::FileReader;
+use crate::core::metadata_map::MetadataMap;
 use crate::error::{ExifToolError, Result};
-use crate::parsers::png::chunk_parser::{parse_chunk, PngChunk, PNG_SIGNATURE};
+use crate::parsers::png::chunk_parser::{PNG_SIGNATURE, PngChunk, parse_chunk};
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 use crate::writers::atomic_writer::write_atomic;
 use crate::writers::tiff_writer::serialize_ifd;
-use crc::{Crc, CRC_32_ISO_HDLC};
+use crc::{CRC_32_ISO_HDLC, Crc};
 use std::path::Path;
 
 /// CRC-32 instance for PNG chunk validation
@@ -282,19 +282,21 @@ pub fn write_png_metadata(
     // Process tEXt chunks
     for (tag_name, tag_value) in modified_metadata.iter() {
         if let Some(keyword) = tag_name.strip_prefix("PNG:tEXt:")
-            && let Some(text) = tag_value.as_string() {
-                let data = serialize_text_chunk(keyword, text);
-                metadata_chunks.push((b"tEXt", data));
-            }
+            && let Some(text) = tag_value.as_string()
+        {
+            let data = serialize_text_chunk(keyword, text);
+            metadata_chunks.push((b"tEXt", data));
+        }
     }
 
     // Process iTXt chunks
     for (tag_name, tag_value) in modified_metadata.iter() {
         if let Some(keyword) = tag_name.strip_prefix("PNG:iTXt:")
-            && let Some(text) = tag_value.as_string() {
-                let data = serialize_itxt_chunk(keyword, text);
-                metadata_chunks.push((b"iTXt", data));
-            }
+            && let Some(text) = tag_value.as_string()
+        {
+            let data = serialize_itxt_chunk(keyword, text);
+            metadata_chunks.push((b"iTXt", data));
+        }
     }
 
     // Process eXIf chunk

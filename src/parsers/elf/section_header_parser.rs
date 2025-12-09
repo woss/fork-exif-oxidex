@@ -5,8 +5,8 @@
 
 use crate::parsers::elf::structures::SectionHeader;
 use nom::{
-    number::complete::{be_u32, be_u64, le_u32, le_u64},
     IResult,
+    number::complete::{be_u32, be_u64, le_u32, le_u64},
 };
 
 /// Parses a single ELF64 section header in little-endian format

@@ -880,12 +880,13 @@ fn parse_chapter_display(
                 let data_offset = offset + hdr_size;
 
                 if elem_id == CHAP_STRING
-                    && let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
-                        metadata.insert(
-                            format!("{}Title", chapter_prefix),
-                            TagValue::new_string(value),
-                        );
-                    }
+                    && let Ok(value) = read_string(reader, data_offset, elem_size as usize)
+                {
+                    metadata.insert(
+                        format!("{}Title", chapter_prefix),
+                        TagValue::new_string(value),
+                    );
+                }
 
                 offset = data_offset + elem_size;
             }
@@ -1213,7 +1214,7 @@ mod tests {
         data.extend_from_slice(&[0x42, 0x86]);
         data.push(0x81); // size = 1
         data.push(0x01); // value = 1
-                         // DocType (0x4282)
+        // DocType (0x4282)
         data.extend_from_slice(&[0x42, 0x82]);
         data.push(0x84); // size = 4
         data.extend_from_slice(b"webm");

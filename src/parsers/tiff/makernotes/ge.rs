@@ -26,9 +26,9 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use super::registries::ge::ge_registry;
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
-use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
+use super::shared::tag_registry::TagRegistry;
 
 // Decodes GE image quality
 const_decoder!(pub DECODE_QUALITY, u16, [

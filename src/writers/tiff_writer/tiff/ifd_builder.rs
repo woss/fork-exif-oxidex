@@ -8,7 +8,7 @@ use crate::error::Result;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 
 use super::byte_writer::{write_u16, write_u32};
-use super::ifd_entry::{convert_tag_value_to_entry, IfdEntryData};
+use super::ifd_entry::{IfdEntryData, convert_tag_value_to_entry};
 use super::validator::validate_tag_for_tiff;
 
 /// Special tag IDs for IFD pointers

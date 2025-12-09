@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_version_info_from_build_version() {
-        use crate::parsers::macho::structures::{build_tool, platform, BuildToolVersion};
+        use crate::parsers::macho::structures::{BuildToolVersion, build_tool, platform};
 
         let cmd = BuildVersionCommand {
             platform: platform::PLATFORM_MACOS,

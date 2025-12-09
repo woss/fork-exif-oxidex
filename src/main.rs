@@ -8,7 +8,7 @@ use oxidex::cli::output_formatter::{
     CsvFormatter, HumanReadableFormatter, JsonFormatter, OutputFormatter, ShortFormatter,
 };
 use oxidex::cli::rename;
-use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
+use oxidex::core::date_shift::{ShiftOperation, shift_metadata_dates};
 use oxidex::core::exiftool_compat::format_for_exiftool;
 use oxidex::core::operations::{
     clear_all_metadata, copy_metadata, modify_tag, read_metadata, remove_tag,

@@ -5,9 +5,9 @@
 //! Focus is on metadata extraction, not cryptographic validation.
 
 use nom::{
+    IResult,
     bytes::complete::{tag, take},
     number::complete::{le_u16, le_u32},
-    IResult,
 };
 
 /// WIN_CERTIFICATE structure header (8 bytes minimum)
@@ -245,9 +245,10 @@ fn find_certificates_section(data: &[u8]) -> Option<&[u8]> {
     while offset < data.len() {
         // Look for context-specific tag [0] (0xA0)
         if data[offset] == 0xA0
-            && let Ok((_, content)) = parse_asn1_length_and_content(&data[offset + 1..]) {
-                return Some(content);
-            }
+            && let Ok((_, content)) = parse_asn1_length_and_content(&data[offset + 1..])
+        {
+            return Some(content);
+        }
         offset += 1;
     }
     None
@@ -304,16 +305,20 @@ fn extract_serial_number(tbs_data: &[u8]) -> Option<String> {
     let mut offset = 0;
 
     // Skip optional version (context tag [0])
-    if offset < tbs_data.len() && tbs_data[offset] == 0xA0
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0xA0
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Parse serial number (INTEGER)
-    if offset < tbs_data.len() && tbs_data[offset] == 0x02
-        && let Ok((_, content)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            return Some(bytes_to_hex(content));
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x02
+        && let Ok((_, content)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        return Some(bytes_to_hex(content));
+    }
 
     None
 }
@@ -324,45 +329,55 @@ fn extract_distinguished_name(tbs_data: &[u8], is_issuer: bool) -> Option<Distin
 
     // Skip version, serial, signature algorithm
     // Version (optional)
-    if offset < tbs_data.len() && tbs_data[offset] == 0xA0
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0xA0
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Serial number
-    if offset < tbs_data.len() && tbs_data[offset] == 0x02
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x02
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Signature algorithm
-    if offset < tbs_data.len() && tbs_data[offset] == 0x30
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x30
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Now we're at issuer DN (SEQUENCE)
-    if offset < tbs_data.len() && tbs_data[offset] == 0x30
-        && let Ok((rest, issuer_content)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            if is_issuer {
-                return Some(parse_distinguished_name_content(issuer_content));
-            }
-            offset = tbs_data.len() - rest.len();
-
-            // Skip validity (SEQUENCE)
-            if offset < tbs_data.len() && tbs_data[offset] == 0x30
-                && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-                    offset = tbs_data.len() - rest.len();
-                }
-
-            // Now we're at subject DN
-            if offset < tbs_data.len() && tbs_data[offset] == 0x30
-                && let Ok((_, subject_content)) =
-                    parse_asn1_length_and_content(&tbs_data[offset + 1..])
-                {
-                    return Some(parse_distinguished_name_content(subject_content));
-                }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x30
+        && let Ok((rest, issuer_content)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        if is_issuer {
+            return Some(parse_distinguished_name_content(issuer_content));
         }
+        offset = tbs_data.len() - rest.len();
+
+        // Skip validity (SEQUENCE)
+        if offset < tbs_data.len()
+            && tbs_data[offset] == 0x30
+            && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+        {
+            offset = tbs_data.len() - rest.len();
+        }
+
+        // Now we're at subject DN
+        if offset < tbs_data.len()
+            && tbs_data[offset] == 0x30
+            && let Ok((_, subject_content)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+        {
+            return Some(parse_distinguished_name_content(subject_content));
+        }
+    }
 
     None
 }
@@ -383,34 +398,36 @@ fn parse_distinguished_name_content(dn_data: &[u8]) -> DistinguishedName {
             // SET
             if let Ok((rest, set_content)) = parse_asn1_length_and_content(&dn_data[offset + 1..]) {
                 // Parse SEQUENCE inside SET
-                if !set_content.is_empty() && set_content[0] == 0x30
-                    && let Ok((_, seq_content)) = parse_asn1_length_and_content(&set_content[1..]) {
-                        // Parse OID
-                        if !seq_content.is_empty() && seq_content[0] == 0x06
-                            && let Ok((attr_rest, oid_bytes)) =
-                                parse_asn1_length_and_content(&seq_content[1..])
+                if !set_content.is_empty()
+                    && set_content[0] == 0x30
+                    && let Ok((_, seq_content)) = parse_asn1_length_and_content(&set_content[1..])
+                {
+                    // Parse OID
+                    if !seq_content.is_empty()
+                        && seq_content[0] == 0x06
+                        && let Ok((attr_rest, oid_bytes)) =
+                            parse_asn1_length_and_content(&seq_content[1..])
+                    {
+                        // Parse string value (various string types: 0x0C, 0x13, 0x14, 0x16, 0x1E)
+                        if !attr_rest.is_empty() {
+                            let string_tag = attr_rest[0];
+                            if matches!(string_tag, 0x0C | 0x13 | 0x14 | 0x16 | 0x1E)
+                                && let Ok((_, string_bytes)) =
+                                    parse_asn1_length_and_content(&attr_rest[1..])
                             {
-                                // Parse string value (various string types: 0x0C, 0x13, 0x14, 0x16, 0x1E)
-                                if !attr_rest.is_empty() {
-                                    let string_tag = attr_rest[0];
-                                    if matches!(string_tag, 0x0C | 0x13 | 0x14 | 0x16 | 0x1E)
-                                        && let Ok((_, string_bytes)) =
-                                            parse_asn1_length_and_content(&attr_rest[1..])
-                                        {
-                                            let value = String::from_utf8_lossy(string_bytes)
-                                                .trim()
-                                                .to_string();
+                                let value =
+                                    String::from_utf8_lossy(string_bytes).trim().to_string();
 
-                                            // Check which OID this is
-                                            if oid_bytes == cn_oid {
-                                                dn.cn = Some(value);
-                                            } else if oid_bytes == o_oid {
-                                                dn.o = Some(value);
-                                            }
-                                        }
+                                // Check which OID this is
+                                if oid_bytes == cn_oid {
+                                    dn.cn = Some(value);
+                                } else if oid_bytes == o_oid {
+                                    dn.o = Some(value);
                                 }
                             }
+                        }
                     }
+                }
                 offset = dn_data.len() - rest.len();
             } else {
                 break;
@@ -429,34 +446,44 @@ fn extract_validity_dates(tbs_data: &[u8]) -> Option<(String, String)> {
 
     // Skip version, serial, signature algorithm, issuer
     // Version (optional)
-    if offset < tbs_data.len() && tbs_data[offset] == 0xA0
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0xA0
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Serial number
-    if offset < tbs_data.len() && tbs_data[offset] == 0x02
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x02
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Signature algorithm
-    if offset < tbs_data.len() && tbs_data[offset] == 0x30
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x30
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Issuer
-    if offset < tbs_data.len() && tbs_data[offset] == 0x30
-        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            offset = tbs_data.len() - rest.len();
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x30
+        && let Ok((rest, _)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        offset = tbs_data.len() - rest.len();
+    }
 
     // Now we're at validity (SEQUENCE containing two times)
-    if offset < tbs_data.len() && tbs_data[offset] == 0x30
-        && let Ok((_, validity_content)) = parse_asn1_length_and_content(&tbs_data[offset + 1..]) {
-            return parse_validity_content(validity_content);
-        }
+    if offset < tbs_data.len()
+        && tbs_data[offset] == 0x30
+        && let Ok((_, validity_content)) = parse_asn1_length_and_content(&tbs_data[offset + 1..])
+    {
+        return parse_validity_content(validity_content);
+    }
 
     None
 }
@@ -473,10 +500,10 @@ fn parse_validity_content(validity_data: &[u8]) -> Option<(String, String)> {
         if (time_tag == 0x17 || time_tag == 0x18)
             && let Ok((rest, time_bytes)) =
                 parse_asn1_length_and_content(&validity_data[offset + 1..])
-            {
-                not_before = parse_asn1_time(time_bytes, time_tag == 0x17);
-                offset = validity_data.len() - rest.len();
-            }
+        {
+            not_before = parse_asn1_time(time_bytes, time_tag == 0x17);
+            offset = validity_data.len() - rest.len();
+        }
     }
 
     // Parse notAfter
@@ -484,9 +511,9 @@ fn parse_validity_content(validity_data: &[u8]) -> Option<(String, String)> {
         let time_tag = validity_data[offset];
         if (time_tag == 0x17 || time_tag == 0x18)
             && let Ok((_, time_bytes)) = parse_asn1_length_and_content(&validity_data[offset + 1..])
-            {
-                not_after = parse_asn1_time(time_bytes, time_tag == 0x17);
-            }
+        {
+            not_after = parse_asn1_time(time_bytes, time_tag == 0x17);
+        }
     }
 
     match (not_before, not_after) {

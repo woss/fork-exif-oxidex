@@ -40,9 +40,9 @@ use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+use super::shared::MakerNoteParser;
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::tag_registry::TagRegistry;
-use super::shared::MakerNoteParser;
 
 use super::registries::dji::dji_registry;
 
@@ -199,11 +199,7 @@ fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
         .trim_end_matches('\0')
         .to_string();
 
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }
 
 // ============================================================================
@@ -277,10 +273,11 @@ impl DjiParser {
 
             // Try i16 array extraction (most DJI tags)
             if let Some(array) = extract_i16_array(entry, data, byte_order)
-                && let Some(&value) = array.first() {
-                    let decoded = DJI_TAGS.decode_i16(entry.tag_id, value);
-                    tags.insert(format!("DJI:{}", tag_name), decoded);
-                }
+                && let Some(&value) = array.first()
+            {
+                let decoded = DJI_TAGS.decode_i16(entry.tag_id, value);
+                tags.insert(format!("DJI:{}", tag_name), decoded);
+            }
         }
         // Unknown tags are silently skipped for forward compatibility
     }
@@ -379,10 +376,10 @@ impl MakerNoteParser for DjiParser {
 mod tests {
     use super::*;
     use crate::parsers::tiff::makernotes::registries::dji::{
+        COLOR_MODE, FLIGHT_MODE, GPS_SIGNAL, IMAGE_FORMAT, OBSTACLE_AVOIDANCE, WHITE_BALANCE,
         decode_obstacle_avoidance, format_altitude, format_aperture, format_battery_level,
         format_degrees, format_ev, format_flight_time, format_gimbal_angle, format_gps_coordinate,
-        format_iso, format_meters, format_shutter_speed, format_speed, format_voltage, COLOR_MODE,
-        FLIGHT_MODE, GPS_SIGNAL, IMAGE_FORMAT, OBSTACLE_AVOIDANCE, WHITE_BALANCE,
+        format_iso, format_meters, format_shutter_speed, format_speed, format_voltage,
     };
 
     #[test]

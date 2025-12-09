@@ -28,10 +28,10 @@ use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::collections::HashMap;
 

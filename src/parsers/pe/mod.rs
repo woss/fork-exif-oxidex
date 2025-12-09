@@ -74,9 +74,10 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         // Read data between DOS stub and PE header for Rich Header parsing
         let rich_region_size = (pe_offset - 0x80) as usize + 128;
         if let Ok(rich_data) = reader.read(0, 0x80 + rich_region_size)
-            && let Some(rich_header) = parse_rich_header(rich_data, 0x80, pe_offset as usize) {
-                extract_rich_header_metadata(&rich_header, &mut metadata);
-            }
+            && let Some(rich_header) = parse_rich_header(rich_data, 0x80, pe_offset as usize)
+        {
+            extract_rich_header_metadata(&rich_header, &mut metadata);
+        }
         // Note: If Rich Header parsing fails, we silently continue (not all PE files have it)
     }
 
@@ -138,206 +139,207 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
 
     // Step 6: Find .rsrc section
     if let Some(_resource_dir_rva) = resource_dir_rva
-        && let Some(rsrc_section) = sections.iter().find(|s| s.name_str() == ".rsrc") {
-            // Step 7: Read resource section data
-            let rsrc_file_offset = rsrc_section.pointer_to_raw_data as u64;
-            let rsrc_size = rsrc_section.size_of_raw_data as usize;
-            let rsrc_data = reader.read(rsrc_file_offset, rsrc_size)?;
+        && let Some(rsrc_section) = sections.iter().find(|s| s.name_str() == ".rsrc")
+    {
+        // Step 7: Read resource section data
+        let rsrc_file_offset = rsrc_section.pointer_to_raw_data as u64;
+        let rsrc_size = rsrc_section.size_of_raw_data as usize;
+        let rsrc_data = reader.read(rsrc_file_offset, rsrc_size)?;
 
-            // Step 8: Find VERSION_INFO resource (type 16)
-            if let Some((version_rva, version_size)) = find_resource_data(
-                rsrc_data,
-                rsrc_file_offset,
-                resource_types::RT_VERSION,
-                None,
-            ) {
-                // Convert RVA to file offset
-                // RVA is relative to image base, need to convert using section info
-                let version_offset_in_section = version_rva - rsrc_section.virtual_address as u64;
-                let version_file_offset = rsrc_file_offset + version_offset_in_section;
+        // Step 8: Find VERSION_INFO resource (type 16)
+        if let Some((version_rva, version_size)) = find_resource_data(
+            rsrc_data,
+            rsrc_file_offset,
+            resource_types::RT_VERSION,
+            None,
+        ) {
+            // Convert RVA to file offset
+            // RVA is relative to image base, need to convert using section info
+            let version_offset_in_section = version_rva - rsrc_section.virtual_address as u64;
+            let version_file_offset = rsrc_file_offset + version_offset_in_section;
 
-                // Step 9: Read and parse VERSION_INFO data
-                let version_data = reader.read(version_file_offset, version_size as usize)?;
-                if let Some((fixed_info, strings)) = parse_version_info(version_data) {
-                    // Step 10: Extract VERSION_INFO metadata
-                    extract_version_info_metadata(&fixed_info, &strings, &mut metadata);
-                }
+            // Step 9: Read and parse VERSION_INFO data
+            let version_data = reader.read(version_file_offset, version_size as usize)?;
+            if let Some((fixed_info, strings)) = parse_version_info(version_data) {
+                // Step 10: Extract VERSION_INFO metadata
+                extract_version_info_metadata(&fixed_info, &strings, &mut metadata);
             }
         }
+    }
 
     // Step 11: Parse debug directory if present (data directory index 6)
     if let Some(ref nt_header) = nt_header_opt
         && let Some(&(debug_rva, debug_size)) = nt_header.data_directories.get(6)
-            && debug_rva > 0 && debug_size > 0 {
-                // Find section containing debug directory
-                if let Some(debug_section) = sections.iter().find(|s| {
-                    debug_rva >= s.virtual_address && debug_rva < s.virtual_address + s.virtual_size
-                }) {
-                    let debug_offset = debug_section.pointer_to_raw_data as u64
-                        + (debug_rva - debug_section.virtual_address) as u64;
+        && debug_rva > 0
+        && debug_size > 0
+    {
+        // Find section containing debug directory
+        if let Some(debug_section) = sections.iter().find(|s| {
+            debug_rva >= s.virtual_address && debug_rva < s.virtual_address + s.virtual_size
+        }) {
+            let debug_offset = debug_section.pointer_to_raw_data as u64
+                + (debug_rva - debug_section.virtual_address) as u64;
 
-                    let debug_data = reader.read(debug_offset, debug_size as usize)?;
+            let debug_data = reader.read(debug_offset, debug_size as usize)?;
 
-                    // Parse debug directory entries
-                    let mut offset = 0;
-                    while offset + 28 <= debug_size as usize {
-                        if let Ok((_, entry)) = parse_debug_directory_entry(&debug_data[offset..]) {
-                            // Check for CodeView debug info
-                            if entry.debug_type == debug_types::IMAGE_DEBUG_TYPE_CODEVIEW
-                                && entry.pointer_to_raw_data > 0
-                                && entry.size_of_data > 0
-                            {
-                                let cv_data = reader.read(
-                                    entry.pointer_to_raw_data as u64,
-                                    entry.size_of_data as usize,
-                                )?;
+            // Parse debug directory entries
+            let mut offset = 0;
+            while offset + 28 <= debug_size as usize {
+                if let Ok((_, entry)) = parse_debug_directory_entry(&debug_data[offset..]) {
+                    // Check for CodeView debug info
+                    if entry.debug_type == debug_types::IMAGE_DEBUG_TYPE_CODEVIEW
+                        && entry.pointer_to_raw_data > 0
+                        && entry.size_of_data > 0
+                    {
+                        let cv_data = reader.read(
+                            entry.pointer_to_raw_data as u64,
+                            entry.size_of_data as usize,
+                        )?;
 
-                                use debug_parser::{parse_codeview_nb10, parse_codeview_rsds};
+                        use debug_parser::{parse_codeview_nb10, parse_codeview_rsds};
 
-                                // Try RSDS first (newer format)
-                                if let Some(rsds) = parse_codeview_rsds(cv_data) {
-                                    extract_rsds_metadata(&rsds, &mut metadata);
-                                } else if let Some(nb10) = parse_codeview_nb10(cv_data) {
-                                    extract_nb10_metadata(&nb10, &mut metadata);
-                                }
-                                break;
-                            }
-                            offset += 28;
-                        } else {
-                            break;
+                        // Try RSDS first (newer format)
+                        if let Some(rsds) = parse_codeview_rsds(cv_data) {
+                            extract_rsds_metadata(&rsds, &mut metadata);
+                        } else if let Some(nb10) = parse_codeview_nb10(cv_data) {
+                            extract_nb10_metadata(&nb10, &mut metadata);
                         }
+                        break;
                     }
+                    offset += 28;
+                } else {
+                    break;
                 }
             }
+        }
+    }
 
     // Step 12: Parse export directory if present (data directory index 0)
     if let Some(ref nt_header) = nt_header_opt
         && let Some(&(export_rva, export_size)) = nt_header.data_directories.first()
-            && export_rva > 0 && export_size > 0 {
-                // Parse exports (pass sections for RVA resolution)
-                if let Ok(export_info) = parse_exports(reader, export_rva, export_size, &sections) {
-                    extract_export_metadata(&export_info, &mut metadata);
-                }
-            }
+        && export_rva > 0
+        && export_size > 0
+    {
+        // Parse exports (pass sections for RVA resolution)
+        if let Ok(export_info) = parse_exports(reader, export_rva, export_size, &sections) {
+            extract_export_metadata(&export_info, &mut metadata);
+        }
+    }
 
     // Step 13: Parse import directory if present (data directory index 1)
     if let Some(ref nt_header) = nt_header_opt
         && let Some(&(import_rva, import_size)) = nt_header.data_directories.get(1)
-            && import_rva > 0 {
-                // Find section containing import directory
-                if let Some(import_section) = sections.iter().find(|s| {
-                    import_rva >= s.virtual_address
-                        && import_rva < s.virtual_address + s.virtual_size
-                }) {
-                    let import_offset = import_section.pointer_to_raw_data as u64
-                        + (import_rva - import_section.virtual_address) as u64;
+        && import_rva > 0
+    {
+        // Find section containing import directory
+        if let Some(import_section) = sections.iter().find(|s| {
+            import_rva >= s.virtual_address && import_rva < s.virtual_address + s.virtual_size
+        }) {
+            let import_offset = import_section.pointer_to_raw_data as u64
+                + (import_rva - import_section.virtual_address) as u64;
 
-                    // Read import directory (use directory size from PE header, or limit to 100 descriptors max)
-                    let max_descriptors = 100;
-                    // Use the actual import directory size if available, otherwise estimate
-                    let import_data_size =
-                        if import_size > 0 && import_size < 20 * max_descriptors as u32 {
-                            import_size as usize
-                        } else {
-                            20 * max_descriptors
-                        };
+            // Read import directory (use directory size from PE header, or limit to 100 descriptors max)
+            let max_descriptors = 100;
+            // Use the actual import directory size if available, otherwise estimate
+            let import_data_size = if import_size > 0 && import_size < 20 * max_descriptors as u32 {
+                import_size as usize
+            } else {
+                20 * max_descriptors
+            };
 
-                    if let Ok(import_data) = reader.read(import_offset, import_data_size) {
-                        let mut imports = Vec::new();
-                        let mut offset = 0;
+            if let Ok(import_data) = reader.read(import_offset, import_data_size) {
+                let mut imports = Vec::new();
+                let mut offset = 0;
 
-                        // Parse import descriptors until we hit a null descriptor
-                        while offset + 20 <= import_data.len() && imports.len() < max_descriptors {
-                            if let Ok((_, descriptor)) =
-                                parse_import_descriptor(&import_data[offset..])
-                            {
-                                if descriptor.is_null() {
-                                    break;
-                                }
-
-                                // Parse imports for this DLL (limit to 100 functions per DLL)
-                                if let Some(import_info) = parse_dll_imports(
-                                    reader,
-                                    &descriptor,
-                                    &sections,
-                                    is_pe32_plus,
-                                    100,
-                                ) {
-                                    imports.push(import_info);
-                                }
-
-                                offset += 20;
-                            } else {
-                                break;
-                            }
+                // Parse import descriptors until we hit a null descriptor
+                while offset + 20 <= import_data.len() && imports.len() < max_descriptors {
+                    if let Ok((_, descriptor)) = parse_import_descriptor(&import_data[offset..]) {
+                        if descriptor.is_null() {
+                            break;
                         }
 
-                        // Extract import metadata
-                        if !imports.is_empty() {
-                            extract_import_metadata(&imports, &mut metadata);
+                        // Parse imports for this DLL (limit to 100 functions per DLL)
+                        if let Some(import_info) =
+                            parse_dll_imports(reader, &descriptor, &sections, is_pe32_plus, 100)
+                        {
+                            imports.push(import_info);
                         }
+
+                        offset += 20;
+                    } else {
+                        break;
                     }
                 }
+
+                // Extract import metadata
+                if !imports.is_empty() {
+                    extract_import_metadata(&imports, &mut metadata);
+                }
             }
+        }
+    }
 
     // Step 14: Parse digital signature if present (data directory index 4 - Security)
     // NOTE: This is a FILE offset, not an RVA (unlike other data directories)
     if let Some(ref nt_header) = nt_header_opt
         && let Some(&(cert_offset, cert_size)) = nt_header.data_directories.get(4)
-            && cert_offset > 0 && cert_size > 0 {
-                // Read certificate data from file offset
-                if let Ok(cert_data) = reader.read(cert_offset as u64, cert_size as usize) {
-                    // Parse WIN_CERTIFICATE structure
-                    if let Ok((_, win_cert)) = parse_win_certificate(cert_data) {
-                        // Extract signature information from PKCS#7 data
-                        if let Some(sig_info) = parse_signature_info(&win_cert.certificate_data) {
-                            extract_signature_metadata(&sig_info, &mut metadata);
-                        }
-                    }
+        && cert_offset > 0
+        && cert_size > 0
+    {
+        // Read certificate data from file offset
+        if let Ok(cert_data) = reader.read(cert_offset as u64, cert_size as usize) {
+            // Parse WIN_CERTIFICATE structure
+            if let Ok((_, win_cert)) = parse_win_certificate(cert_data) {
+                // Extract signature information from PKCS#7 data
+                if let Some(sig_info) = parse_signature_info(&win_cert.certificate_data) {
+                    extract_signature_metadata(&sig_info, &mut metadata);
                 }
             }
+        }
+    }
 
     // Step 15: Parse .NET CLR header if present (data directory index 14)
     if let Some(ref nt_header) = nt_header_opt
         && let Some(&(clr_rva, clr_size)) = nt_header.data_directories.get(14)
-            && clr_rva > 0 && clr_size > 0 {
-                // Find section containing CLR header
-                if let Some(clr_section) = sections.iter().find(|s| {
-                    clr_rva >= s.virtual_address && clr_rva < s.virtual_address + s.virtual_size
-                }) {
-                    let clr_offset = clr_section.pointer_to_raw_data as u64
-                        + (clr_rva - clr_section.virtual_address) as u64;
+        && clr_rva > 0
+        && clr_size > 0
+    {
+        // Find section containing CLR header
+        if let Some(clr_section) = sections
+            .iter()
+            .find(|s| clr_rva >= s.virtual_address && clr_rva < s.virtual_address + s.virtual_size)
+        {
+            let clr_offset = clr_section.pointer_to_raw_data as u64
+                + (clr_rva - clr_section.virtual_address) as u64;
 
-                    // Read CLR header (72 bytes)
-                    if let Ok(clr_data) = reader.read(clr_offset, 72)
-                        && let Ok((_, clr_header)) = parse_clr_header(clr_data) {
-                            // Parse .NET metadata if present
-                            let (metadata_rva, metadata_size) = clr_header.metadata;
-                            if metadata_rva > 0 && metadata_size > 0 {
-                                // Find section containing metadata
-                                if let Some(metadata_section) = sections.iter().find(|s| {
-                                    metadata_rva >= s.virtual_address
-                                        && metadata_rva < s.virtual_address + s.virtual_size
-                                }) {
-                                    let metadata_offset = metadata_section.pointer_to_raw_data
-                                        as u64
-                                        + (metadata_rva - metadata_section.virtual_address) as u64;
+            // Read CLR header (72 bytes)
+            if let Ok(clr_data) = reader.read(clr_offset, 72)
+                && let Ok((_, clr_header)) = parse_clr_header(clr_data)
+            {
+                // Parse .NET metadata if present
+                let (metadata_rva, metadata_size) = clr_header.metadata;
+                if metadata_rva > 0 && metadata_size > 0 {
+                    // Find section containing metadata
+                    if let Some(metadata_section) = sections.iter().find(|s| {
+                        metadata_rva >= s.virtual_address
+                            && metadata_rva < s.virtual_address + s.virtual_size
+                    }) {
+                        let metadata_offset = metadata_section.pointer_to_raw_data as u64
+                            + (metadata_rva - metadata_section.virtual_address) as u64;
 
-                                    // Read metadata (limit to 64KB for safety)
-                                    let metadata_read_size =
-                                        std::cmp::min(metadata_size as usize, 65536);
-                                    if let Ok(metadata_data) =
-                                        reader.read(metadata_offset, metadata_read_size)
-                                        && let Some(dotnet_info) =
-                                            parse_dotnet_metadata(metadata_data, &clr_header)
-                                        {
-                                            extract_dotnet_metadata(&dotnet_info, &mut metadata);
-                                        }
-                                }
-                            }
+                        // Read metadata (limit to 64KB for safety)
+                        let metadata_read_size = std::cmp::min(metadata_size as usize, 65536);
+                        if let Ok(metadata_data) = reader.read(metadata_offset, metadata_read_size)
+                            && let Some(dotnet_info) =
+                                parse_dotnet_metadata(metadata_data, &clr_header)
+                        {
+                            extract_dotnet_metadata(&dotnet_info, &mut metadata);
                         }
+                    }
                 }
             }
+        }
+    }
 
     Ok(metadata)
 }

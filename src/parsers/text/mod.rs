@@ -5,5 +5,5 @@
 pub mod txt;
 pub mod vcf;
 
-pub use txt::{parse_txt_metadata, TXTParser};
+pub use txt::{TXTParser, parse_txt_metadata};
 pub use vcf::VCFParser;

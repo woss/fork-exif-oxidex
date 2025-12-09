@@ -646,7 +646,7 @@ mod tests {
     fn test_raw_bytes_to_tag_value_integer_u16() {
         use crate::parsers::tiff::ifd_parser::ByteOrder;
         let bytes = [0x05, 0x00]; // 5 in little-endian
-                                  // Use tag_id=0x0112 (Orientation) instead of 0
+        // Use tag_id=0x0112 (Orientation) instead of 0
         let value = raw_bytes_to_tag_value(&bytes, 3, 1, 0x0112, ByteOrder::LittleEndian); // Type 3 = SHORT
         assert_eq!(value.as_integer(), Some(5));
     }
@@ -655,7 +655,7 @@ mod tests {
     fn test_raw_bytes_to_tag_value_integer_u32() {
         use crate::parsers::tiff::ifd_parser::ByteOrder;
         let bytes = [0x64, 0x00, 0x00, 0x00]; // 100 in little-endian
-                                              // Use tag_id=0x0100 (ImageWidth) instead of 0
+        // Use tag_id=0x0100 (ImageWidth) instead of 0
         let value = raw_bytes_to_tag_value(&bytes, 4, 1, 0x0100, ByteOrder::LittleEndian); // Type 4 = LONG
         assert_eq!(value.as_integer(), Some(100));
     }
@@ -664,7 +664,7 @@ mod tests {
     fn test_raw_bytes_to_tag_value_binary() {
         use crate::parsers::tiff::ifd_parser::ByteOrder;
         let bytes = vec![0xFF, 0xD8, 0xFF, 0xE0, 0x10, 0x20]; // Non-ASCII bytes
-                                                              // Use tag_id=0xFFFF which doesn't match any special handlers
+        // Use tag_id=0xFFFF which doesn't match any special handlers
         let value = raw_bytes_to_tag_value(&bytes, 7, 1, 0xFFFF, ByteOrder::LittleEndian); // Type 7 = UNDEFINED
         assert!(value.is_binary());
     }

@@ -171,22 +171,25 @@ pub fn parse_canon_af_info(data: &[u8], byte_order: bool) -> MetadataMap {
 
     // Parse NumAFPoints - total AF points on the camera
     if let Some(num_points) = read_i16(AF_NUM_AF_POINTS)
-        && num_points > 0 && num_points <= 1000 {
-            // Sanity check: no camera has >1000 AF points
-            metadata.insert(
-                "Canon:NumAFPoints",
-                TagValue::new_integer(num_points as i64),
-            );
-        }
+        && num_points > 0
+        && num_points <= 1000
+    {
+        // Sanity check: no camera has >1000 AF points
+        metadata.insert(
+            "Canon:NumAFPoints",
+            TagValue::new_integer(num_points as i64),
+        );
+    }
 
     // Parse ValidAFPoints - number of active/available AF points
     if let Some(valid_points) = read_i16(AF_VALID_AF_POINTS)
-        && (0..=1000).contains(&valid_points) {
-            metadata.insert(
-                "Canon:ValidAFPoints",
-                TagValue::new_integer(valid_points as i64),
-            );
-        }
+        && (0..=1000).contains(&valid_points)
+    {
+        metadata.insert(
+            "Canon:ValidAFPoints",
+            TagValue::new_integer(valid_points as i64),
+        );
+    }
 
     // Parse AFAreaMode - how AF points are selected
     if let Some(area_mode) = read_i16(AF_AREA_MODE) {
@@ -555,7 +558,7 @@ mod tests {
         data.extend_from_slice(&5i16.to_le_bytes()); // valid_points
         data.extend_from_slice(&2i16.to_le_bytes()); // area_mode
         data.extend_from_slice(&0i16.to_le_bytes()); // width_count
-                                                     // Pad
+        // Pad
         for _ in 0..5 {
             data.extend_from_slice(&0i16.to_le_bytes());
         }
@@ -606,7 +609,7 @@ mod tests {
         data.extend_from_slice(&100i16.to_le_bytes()); // Claim 100 elements
         data.extend_from_slice(&9i16.to_le_bytes()); // NumAFPoints
         data.extend_from_slice(&9i16.to_le_bytes()); // ValidAFPoints
-                                                     // Data is truncated here
+        // Data is truncated here
 
         let metadata = parse_canon_af_info(&data, false);
 

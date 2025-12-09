@@ -34,9 +34,9 @@ use crate::parsers::tiff::ifd_parser::ByteOrder;
 use std::collections::HashMap;
 
 use super::registries::gimp::gimp_registry;
-use super::shared::array_extractors::extract_string;
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::extract_string;
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
 
 /// GIMP MakerNote parser implementing the MakerNoteParser trait
 #[derive(Default)]
@@ -96,11 +96,11 @@ impl MakerNoteParser for GimpParser {
                     // Numeric tags - try as i16 array
                     if let Some(array) = super::shared::array_extractors::extract_i16_array(
                         entry, parse_data, byte_order,
-                    )
-                        && let Some(&val) = array.first() {
-                            let formatted_value = registry.decode_i16(entry.tag_id, val);
-                            tags.insert(format!("GIMP:{}", tag_name), formatted_value);
-                        }
+                    ) && let Some(&val) = array.first()
+                    {
+                        let formatted_value = registry.decode_i16(entry.tag_id, val);
+                        tags.insert(format!("GIMP:{}", tag_name), formatted_value);
+                    }
                 }
             }
         })?;

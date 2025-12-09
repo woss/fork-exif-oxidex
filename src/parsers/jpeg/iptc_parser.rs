@@ -7,9 +7,9 @@ use crate::core::value_formatter::{format_iptc_date, format_iptc_time};
 use crate::error::Result;
 use crate::parsers::jpeg::segment_parser::Segment;
 use nom::{
+    IResult,
     bytes::complete::{tag, take},
     number::complete::{be_u16, be_u32, u8 as nom_u8},
-    IResult,
 };
 
 // Constants

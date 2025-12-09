@@ -49,11 +49,11 @@ use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::parsers::pdf::shared::PdfContext;
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_until},
     character::complete::{digit1, multispace0},
     combinator::map_res,
     sequence::preceded,
-    IResult, Parser,
 };
 use std::str;
 

@@ -20,9 +20,9 @@
 use crate::core::{MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use nom::{
+    IResult,
     bytes::complete::{tag, take},
     number::complete::{be_u16, be_u32, u8 as nom_u8},
-    IResult,
 };
 
 // Constants
@@ -347,9 +347,10 @@ pub fn parse_photoshop_irb(data: &[u8]) -> Result<MetadataMap> {
                     }
                     RES_CAPTION => {
                         if let Ok(caption) = parse_caption(block.data)
-                            && !caption.is_empty() {
-                                metadata.insert("Photoshop:Caption", TagValue::String(caption));
-                            }
+                            && !caption.is_empty()
+                        {
+                            metadata.insert("Photoshop:Caption", TagValue::String(caption));
+                        }
                     }
                     RES_GLOBAL_ANGLE => {
                         if let Ok(angle) = parse_global_angle(block.data) {
@@ -452,7 +453,7 @@ mod tests {
         data.extend_from_slice(&[0x00, 0x48, 0x00, 0x00]);
         data.extend_from_slice(&[0x00, 0x01]); // H unit: inches
         data.extend_from_slice(&[0x00, 0x01]); // Width unit: inches
-                                               // V resolution: 72.0
+        // V resolution: 72.0
         data.extend_from_slice(&[0x00, 0x48, 0x00, 0x00]);
         data.extend_from_slice(&[0x00, 0x01]); // V unit: inches
         data.extend_from_slice(&[0x00, 0x01]); // Height unit: inches

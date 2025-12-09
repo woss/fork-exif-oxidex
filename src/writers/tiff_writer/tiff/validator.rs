@@ -4,8 +4,8 @@
 //! correctly written to TIFF format. It checks tag families, tag IDs, and
 //! value compatibility.
 
-use crate::core::metadata_map::MetadataMap;
 use crate::core::TagId;
+use crate::core::metadata_map::MetadataMap;
 use crate::error::{ExifToolError, Result};
 use crate::tag_db::tag_registry;
 

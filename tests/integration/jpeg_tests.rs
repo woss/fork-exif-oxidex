@@ -11,7 +11,7 @@ use oxidex::core::{FileFormat, FileReader};
 use oxidex::io::MMapReader;
 use oxidex::parsers::detection::detect_format;
 use oxidex::parsers::jpeg::segment_parser::parse_segments;
-use oxidex::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use oxidex::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use std::io::Write;
 use std::path::Path;
 use tempfile::NamedTempFile;
@@ -832,8 +832,8 @@ fn create_minimal_icc_profile() -> Vec<u8> {
 
 #[test]
 fn test_jpeg_with_icc_profile() {
-    use oxidex::core::jpeg_helpers::process_icc_segments;
     use oxidex::core::MetadataMap;
+    use oxidex::core::jpeg_helpers::process_icc_segments;
     use oxidex::parsers::jpeg::segment_parser::parse_segments;
 
     // Create minimal JPEG with APP2 (ICC) segment

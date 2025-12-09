@@ -277,23 +277,24 @@ impl RARParser {
             // Try to parse header
             if let Ok((_, pos1)) = Self::read_rar5_u32(block_data, 0)
                 && let Ok((header_size, pos2)) = Self::read_rar5_vint(block_data, pos1)
-                    && let Ok((header_type, _)) = Self::read_rar5_vint(block_data, pos2) {
-                        if header_type == RAR5_HEADER_FILE {
-                            file_count += 1;
-                        }
+                && let Ok((header_type, _)) = Self::read_rar5_vint(block_data, pos2)
+            {
+                if header_type == RAR5_HEADER_FILE {
+                    file_count += 1;
+                }
 
-                        // Advance to next block
-                        if header_size == 0 || header_size > 1024 * 1024 {
-                            break;
-                        }
-                        offset += header_size;
+                // Advance to next block
+                if header_size == 0 || header_size > 1024 * 1024 {
+                    break;
+                }
+                offset += header_size;
 
-                        // Safety limit
-                        if file_count >= 10000 {
-                            break;
-                        }
-                        continue;
-                    }
+                // Safety limit
+                if file_count >= 10000 {
+                    break;
+                }
+                continue;
+            }
             break;
         }
 
@@ -391,7 +392,7 @@ mod tests {
         // Create minimal RAR4 archive with header
         let mut data = b"Rar!".to_vec();
         data.extend_from_slice(&[0x1A, 0x07, 0x00]); // RAR4 signature
-                                                     // Archive header block
+        // Archive header block
         data.extend_from_slice(&[
             0x33, 0x92, // HEAD_CRC
             0x73, // HEAD_TYPE (archive)

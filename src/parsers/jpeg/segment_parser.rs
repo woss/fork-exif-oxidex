@@ -39,9 +39,9 @@
 use crate::core::FileReader;
 use crate::error::ExifToolError;
 use nom::{
+    IResult,
     bytes::complete::{tag, take},
     number::complete::be_u16,
-    IResult,
 };
 
 // JPEG marker constants

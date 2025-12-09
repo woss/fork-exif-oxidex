@@ -40,9 +40,9 @@
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use nom::{
+    IResult,
     bytes::complete::{tag, take_until},
     character::complete::multispace0,
-    IResult,
 };
 use std::str;
 
@@ -322,10 +322,10 @@ fn parse_object_reference(input: &[u8]) -> IResult<&[u8], ObjectRef> {
 fn parse_number(input: &[u8]) -> IResult<&[u8], i64> {
     use nom::combinator::map_res;
     use nom::{
+        Parser,
         character::complete::{digit1, one_of},
         combinator::{opt, recognize},
         sequence::{pair, preceded},
-        Parser,
     };
 
     preceded(

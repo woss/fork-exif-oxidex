@@ -139,9 +139,10 @@ impl OTFParser {
             };
 
             if let Some(field) = field_name
-                && !decoded.is_empty() {
-                    metadata.insert(field.to_string(), TagValue::String(decoded));
-                }
+                && !decoded.is_empty()
+            {
+                metadata.insert(field.to_string(), TagValue::String(decoded));
+            }
         }
 
         Ok(())
@@ -173,23 +174,25 @@ impl OTFParser {
         let created_data = reader.read(offset + 20, 8)?;
         let created_r = EndianReader::big_endian(created_data);
         if let Some(created) = created_r.i64_at(0)
-            && created > 0 {
-                let unix_timestamp = created - EPOCH_DELTA;
-                if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
-                    metadata.insert("CreatedDate".to_string(), TagValue::String(timestamp_str));
-                }
+            && created > 0
+        {
+            let unix_timestamp = created - EPOCH_DELTA;
+            if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
+                metadata.insert("CreatedDate".to_string(), TagValue::String(timestamp_str));
             }
+        }
 
         // Modified timestamp at offset 28 (8 bytes)
         let modified_data = reader.read(offset + 28, 8)?;
         let modified_r = EndianReader::big_endian(modified_data);
         if let Some(modified) = modified_r.i64_at(0)
-            && modified > 0 {
-                let unix_timestamp = modified - EPOCH_DELTA;
-                if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
-                    metadata.insert("ModifiedDate".to_string(), TagValue::String(timestamp_str));
-                }
+            && modified > 0
+        {
+            let unix_timestamp = modified - EPOCH_DELTA;
+            if let Some(timestamp_str) = Self::format_timestamp(unix_timestamp) {
+                metadata.insert("ModifiedDate".to_string(), TagValue::String(timestamp_str));
             }
+        }
 
         Ok(())
     }
@@ -283,16 +286,18 @@ impl FormatParser for OTFParser {
 
         // Parse name table
         if let Some(name_table) = Self::find_table(&tables, b"name")
-            && let Err(e) = Self::parse_name_table(reader, name_table, &mut metadata) {
-                // Log error but continue parsing
-                eprintln!("Warning: Failed to parse name table: {}", e);
-            }
+            && let Err(e) = Self::parse_name_table(reader, name_table, &mut metadata)
+        {
+            // Log error but continue parsing
+            eprintln!("Warning: Failed to parse name table: {}", e);
+        }
 
         // Parse head table
         if let Some(head_table) = Self::find_table(&tables, b"head")
-            && let Err(e) = Self::parse_head_table(reader, head_table, &mut metadata) {
-                eprintln!("Warning: Failed to parse head table: {}", e);
-            }
+            && let Err(e) = Self::parse_head_table(reader, head_table, &mut metadata)
+        {
+            eprintln!("Warning: Failed to parse head table: {}", e);
+        }
 
         Ok(metadata)
     }

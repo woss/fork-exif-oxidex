@@ -28,17 +28,17 @@ use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::collections::HashMap;
 
 use super::pentax_lens_database::lookup_lens_name;
+use super::shared::MakerNoteParser;
 use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 use super::shared::generic_decoders::ON_OFF;
-use super::shared::MakerNoteParser;
 
 // Import declarative decoder macros
 use crate::const_decoder;

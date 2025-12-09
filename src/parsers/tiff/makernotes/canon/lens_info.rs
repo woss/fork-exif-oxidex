@@ -293,59 +293,65 @@ pub fn parse_canon_lens_info(data: &[u8], byte_order: bool) -> MetadataMap {
 
     // Parse MinFocalLength (offset 2)
     if let Some(min_focal) = read_u16(data, MIN_FOCAL_LENGTH_OFFSET, byte_order)
-        && min_focal > 0 && min_focal != 0xFFFF {
-            metadata.insert(
-                "Canon:MinFocalLength",
-                TagValue::new_string(format!("{} mm", min_focal)),
-            );
-        }
+        && min_focal > 0
+        && min_focal != 0xFFFF
+    {
+        metadata.insert(
+            "Canon:MinFocalLength",
+            TagValue::new_string(format!("{} mm", min_focal)),
+        );
+    }
 
     // Parse MaxFocalLength (offset 4)
     if let Some(max_focal) = read_u16(data, MAX_FOCAL_LENGTH_OFFSET, byte_order)
-        && max_focal > 0 && max_focal != 0xFFFF {
-            metadata.insert(
-                "Canon:MaxFocalLength",
-                TagValue::new_string(format!("{} mm", max_focal)),
-            );
-        }
+        && max_focal > 0
+        && max_focal != 0xFFFF
+    {
+        metadata.insert(
+            "Canon:MaxFocalLength",
+            TagValue::new_string(format!("{} mm", max_focal)),
+        );
+    }
 
     // Parse MinAperture (offset 6) - largest f-number, smallest opening
     if let Some(min_aperture_raw) = read_u16(data, MIN_APERTURE_OFFSET, byte_order)
-        && let Some(f_number) = apex_to_fnumber(min_aperture_raw) {
-            metadata.insert(
-                "Canon:MinAperture",
-                TagValue::new_string(format_fnumber(f_number)),
-            );
-        }
+        && let Some(f_number) = apex_to_fnumber(min_aperture_raw)
+    {
+        metadata.insert(
+            "Canon:MinAperture",
+            TagValue::new_string(format_fnumber(f_number)),
+        );
+    }
 
     // Parse MaxAperture (offset 8) - smallest f-number, largest opening
     if let Some(max_aperture_raw) = read_u16(data, MAX_APERTURE_OFFSET, byte_order)
-        && let Some(f_number) = apex_to_fnumber(max_aperture_raw) {
-            metadata.insert(
-                "Canon:MaxAperture",
-                TagValue::new_string(format_fnumber(f_number)),
-            );
-        }
+        && let Some(f_number) = apex_to_fnumber(max_aperture_raw)
+    {
+        metadata.insert(
+            "Canon:MaxAperture",
+            TagValue::new_string(format_fnumber(f_number)),
+        );
+    }
 
     // Parse LensModel string (offset 10, variable length)
     // Only attempt if data is long enough
     if data.len() > LENS_MODEL_OFFSET
         && let Some(lens_model) = read_ascii_string(data, LENS_MODEL_OFFSET, MAX_LENS_MODEL_LENGTH)
-        {
-            metadata.insert("Canon:LensModel", TagValue::new_string(lens_model));
-        }
+    {
+        metadata.insert("Canon:LensModel", TagValue::new_string(lens_model));
+    }
 
     // Parse LensSerialNumber (offset 74, variable length)
     // Only attempt if data is long enough
     if data.len() > LENS_SERIAL_NUMBER_OFFSET
         && let Some(serial) =
             read_ascii_string(data, LENS_SERIAL_NUMBER_OFFSET, MAX_SERIAL_NUMBER_LENGTH)
-        {
-            // Validate serial number format (should be alphanumeric)
-            if serial.chars().all(|c| c.is_alphanumeric() || c == '-') {
-                metadata.insert("Canon:LensSerialNumber", TagValue::new_string(serial));
-            }
+    {
+        // Validate serial number format (should be alphanumeric)
+        if serial.chars().all(|c| c.is_alphanumeric() || c == '-') {
+            metadata.insert("Canon:LensSerialNumber", TagValue::new_string(serial));
         }
+    }
 
     metadata
 }

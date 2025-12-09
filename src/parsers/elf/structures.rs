@@ -741,11 +741,7 @@ pub struct ElfHeader {
 impl ElfHeader {
     /// Returns the ELF class as a human-readable string
     pub fn class_str(&self) -> &'static str {
-        if self.is_64bit {
-            "64-bit"
-        } else {
-            "32-bit"
-        }
+        if self.is_64bit { "64-bit" } else { "32-bit" }
     }
 
     /// Returns the endianness as a human-readable string

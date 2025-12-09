@@ -182,11 +182,7 @@ pub fn parse_string_to_tag_value(value: &str) -> TagValue {
 ///
 /// The GCD of a and b
 pub fn gcd(a: u32, b: u32) -> u32 {
-    if b == 0 {
-        a
-    } else {
-        gcd(b, a % b)
-    }
+    if b == 0 { a } else { gcd(b, a % b) }
 }
 
 // ============================================================================

@@ -32,13 +32,13 @@
 
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
-use crate::parsers::pdf::shared::{find_dict_name, PdfContext};
+use crate::parsers::pdf::shared::{PdfContext, find_dict_name};
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_until, take_while1},
     character::complete::{digit1, multispace0},
     combinator::map_res,
     sequence::preceded,
-    IResult, Parser,
 };
 use std::collections::HashSet;
 use std::str;

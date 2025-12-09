@@ -29,7 +29,7 @@
 
 #![allow(dead_code)]
 
-use crate::core::{decode_flags, FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
+use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue, decode_flags};
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 
@@ -347,14 +347,14 @@ impl LNKParser {
                 if let Ok(bytes) = reader.read(
                     path_offset,
                     std::cmp::min(260, (reader.size() - path_offset) as usize),
-                )
-                    && let Some(null_pos) = bytes.iter().position(|&b| b == 0) {
-                        let path_str = String::from_utf8_lossy(&bytes[..null_pos]);
-                        metadata.insert(
-                            "LocalBasePath".to_string(),
-                            TagValue::String(path_str.to_string()),
-                        );
-                    }
+                ) && let Some(null_pos) = bytes.iter().position(|&b| b == 0)
+                {
+                    let path_str = String::from_utf8_lossy(&bytes[..null_pos]);
+                    metadata.insert(
+                        "LocalBasePath".to_string(),
+                        TagValue::String(path_str.to_string()),
+                    );
+                }
             }
         }
 
@@ -408,12 +408,22 @@ impl LNKParser {
                         let guid_bytes = reader.read(current_offset + 8, 16)?;
                         let guid = format!(
                             "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-                            guid_bytes[3], guid_bytes[2], guid_bytes[1], guid_bytes[0],
-                            guid_bytes[5], guid_bytes[4],
-                            guid_bytes[7], guid_bytes[6],
-                            guid_bytes[8], guid_bytes[9],
-                            guid_bytes[10], guid_bytes[11], guid_bytes[12],
-                            guid_bytes[13], guid_bytes[14], guid_bytes[15]
+                            guid_bytes[3],
+                            guid_bytes[2],
+                            guid_bytes[1],
+                            guid_bytes[0],
+                            guid_bytes[5],
+                            guid_bytes[4],
+                            guid_bytes[7],
+                            guid_bytes[6],
+                            guid_bytes[8],
+                            guid_bytes[9],
+                            guid_bytes[10],
+                            guid_bytes[11],
+                            guid_bytes[12],
+                            guid_bytes[13],
+                            guid_bytes[14],
+                            guid_bytes[15]
                         );
                         metadata.insert("KnownFolderID".to_string(), TagValue::String(guid));
                     }
@@ -455,12 +465,22 @@ impl LNKParser {
         let droid_volume = reader.read(offset + 32, 16)?;
         let droid_vol_guid = format!(
             "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-            droid_volume[3], droid_volume[2], droid_volume[1], droid_volume[0],
-            droid_volume[5], droid_volume[4],
-            droid_volume[7], droid_volume[6],
-            droid_volume[8], droid_volume[9],
-            droid_volume[10], droid_volume[11], droid_volume[12],
-            droid_volume[13], droid_volume[14], droid_volume[15]
+            droid_volume[3],
+            droid_volume[2],
+            droid_volume[1],
+            droid_volume[0],
+            droid_volume[5],
+            droid_volume[4],
+            droid_volume[7],
+            droid_volume[6],
+            droid_volume[8],
+            droid_volume[9],
+            droid_volume[10],
+            droid_volume[11],
+            droid_volume[12],
+            droid_volume[13],
+            droid_volume[14],
+            droid_volume[15]
         );
         metadata.insert(
             "DroidVolumeID".to_string(),
@@ -471,12 +491,22 @@ impl LNKParser {
         let droid_file = reader.read(offset + 48, 16)?;
         let droid_file_guid = format!(
             "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
-            droid_file[3], droid_file[2], droid_file[1], droid_file[0],
-            droid_file[5], droid_file[4],
-            droid_file[7], droid_file[6],
-            droid_file[8], droid_file[9],
-            droid_file[10], droid_file[11], droid_file[12],
-            droid_file[13], droid_file[14], droid_file[15]
+            droid_file[3],
+            droid_file[2],
+            droid_file[1],
+            droid_file[0],
+            droid_file[5],
+            droid_file[4],
+            droid_file[7],
+            droid_file[6],
+            droid_file[8],
+            droid_file[9],
+            droid_file[10],
+            droid_file[11],
+            droid_file[12],
+            droid_file[13],
+            droid_file[14],
+            droid_file[15]
         );
         metadata.insert("DroidFileID".to_string(), TagValue::String(droid_file_guid));
 
@@ -584,11 +614,13 @@ impl FormatParser for LNKParser {
         let mut current_offset = LNK_HEADER_SIZE as u64;
 
         // Skip LinkTargetIDList if present
-        if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0 && current_offset + 2 <= reader.size()
+        if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0
+            && current_offset + 2 <= reader.size()
             && let Ok(id_list_bytes) = reader.read(current_offset, 2)
-                && let Some(id_list_size) = EndianReader::little_endian(id_list_bytes).u16_at(0) {
-                    current_offset += 2 + id_list_size as u64;
-                }
+            && let Some(id_list_size) = EndianReader::little_endian(id_list_bytes).u16_at(0)
+        {
+            current_offset += 2 + id_list_size as u64;
+        }
 
         // Read LinkInfo if present
         if link_flags & FLAG_HAS_LINK_INFO != 0 {
@@ -602,52 +634,52 @@ impl FormatParser for LNKParser {
         if link_flags & FLAG_HAS_NAME != 0
             && let Ok((name, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
-            {
-                if !name.is_empty() {
-                    metadata.insert("Name".to_string(), TagValue::String(name));
-                }
-                current_offset += bytes_read as u64;
+        {
+            if !name.is_empty() {
+                metadata.insert("Name".to_string(), TagValue::String(name));
             }
+            current_offset += bytes_read as u64;
+        }
 
         if link_flags & FLAG_HAS_RELATIVE_PATH != 0
             && let Ok((path, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
-            {
-                if !path.is_empty() {
-                    metadata.insert("RelativePath".to_string(), TagValue::String(path));
-                }
-                current_offset += bytes_read as u64;
+        {
+            if !path.is_empty() {
+                metadata.insert("RelativePath".to_string(), TagValue::String(path));
             }
+            current_offset += bytes_read as u64;
+        }
 
         if link_flags & FLAG_HAS_WORKING_DIR != 0
             && let Ok((dir, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
-            {
-                if !dir.is_empty() {
-                    metadata.insert("WorkingDirectory".to_string(), TagValue::String(dir));
-                }
-                current_offset += bytes_read as u64;
+        {
+            if !dir.is_empty() {
+                metadata.insert("WorkingDirectory".to_string(), TagValue::String(dir));
             }
+            current_offset += bytes_read as u64;
+        }
 
         if link_flags & FLAG_HAS_ARGUMENTS != 0
             && let Ok((args, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
-            {
-                if !args.is_empty() {
-                    metadata.insert("CommandLineArguments".to_string(), TagValue::String(args));
-                }
-                current_offset += bytes_read as u64;
+        {
+            if !args.is_empty() {
+                metadata.insert("CommandLineArguments".to_string(), TagValue::String(args));
             }
+            current_offset += bytes_read as u64;
+        }
 
         if link_flags & FLAG_HAS_ICON_LOCATION != 0
             && let Ok((icon, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
-            {
-                if !icon.is_empty() {
-                    metadata.insert("IconLocation".to_string(), TagValue::String(icon));
-                }
-                current_offset += bytes_read as u64;
+        {
+            if !icon.is_empty() {
+                metadata.insert("IconLocation".to_string(), TagValue::String(icon));
             }
+            current_offset += bytes_read as u64;
+        }
 
         // Read Extra Data Blocks (forensic tracking information)
         let _ = Self::read_extra_data_blocks(reader, current_offset, &mut metadata);

@@ -37,15 +37,15 @@ use crate::const_decoder;
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
-    parse_ifd_entries, IfdParserConfig,
+    IfdParserConfig, parse_ifd_entries,
 };
 use crate::parsers::tiff::makernotes::shared::value_extractors::{
     extract_i16_value, extract_i32_value, extract_string_with_byteorder, extract_u32_value,
 };
 use std::collections::HashMap;
 
-use super::shared::array_extractors::extract_i16_array;
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::extract_i16_array;
 
 // ============================================================================
 // APPLE MAKERNOTE TAG IDS
@@ -665,55 +665,59 @@ impl AppleParser {
             // Focus distance range (min/max in meters)
             APPLE_FOCUS_DISTANCE_RANGE => {
                 if let Some(values) = extract_i16_array(entry, data, byte_order)
-                    && values.len() >= 2 {
-                        let near = (values[0] as f64) / 100.0;
-                        let far = (values[1] as f64) / 100.0;
-                        tags.insert(
-                            "Apple:FocusDistanceRange".to_string(),
-                            format!("{:.2} - {:.2} m", near, far),
-                        );
-                    }
+                    && values.len() >= 2
+                {
+                    let near = (values[0] as f64) / 100.0;
+                    let far = (values[1] as f64) / 100.0;
+                    tags.insert(
+                        "Apple:FocusDistanceRange".to_string(),
+                        format!("{:.2} - {:.2} m", near, far),
+                    );
+                }
             }
 
             // Acceleration vector (X, Y, Z)
             APPLE_ACCELERATION_VECTOR => {
                 if let Some(values) = extract_i16_array(entry, data, byte_order)
-                    && values.len() >= 3 {
-                        // Values are typically in fixed-point format
-                        let x = (values[0] as f64) / 1000.0;
-                        let y = (values[1] as f64) / 1000.0;
-                        let z = (values[2] as f64) / 1000.0;
-                        tags.insert(
-                            "Apple:AccelerationVector".to_string(),
-                            format!("({:.3}, {:.3}, {:.3})", x, y, z),
-                        );
-                    }
+                    && values.len() >= 3
+                {
+                    // Values are typically in fixed-point format
+                    let x = (values[0] as f64) / 1000.0;
+                    let y = (values[1] as f64) / 1000.0;
+                    let z = (values[2] as f64) / 1000.0;
+                    tags.insert(
+                        "Apple:AccelerationVector".to_string(),
+                        format!("({:.3}, {:.3}, {:.3})", x, y, z),
+                    );
+                }
             }
 
             // AE matrix (complex array)
             APPLE_AE_MATRIX => {
                 if let Some(values) = extract_i16_array(entry, data, byte_order)
-                    && !values.is_empty() {
-                        // Format as array of values
-                        let formatted: Vec<String> = values.iter().map(|v| v.to_string()).collect();
-                        tags.insert("Apple:AEMatrix".to_string(), formatted.join(" "));
-                    }
+                    && !values.is_empty()
+                {
+                    // Format as array of values
+                    let formatted: Vec<String> = values.iter().map(|v| v.to_string()).collect();
+                    tags.insert("Apple:AEMatrix".to_string(), formatted.join(" "));
+                }
             }
 
             // Color correction matrix
             APPLE_COLOR_CORRECTION_MATRIX => {
                 if let Some(values) = extract_i16_array(entry, data, byte_order)
-                    && !values.is_empty() {
-                        // 3x3 matrix stored as 9 values
-                        let formatted: Vec<String> = values
-                            .iter()
-                            .map(|v| format!("{:.4}", (*v as f64) / 10000.0))
-                            .collect();
-                        tags.insert(
-                            "Apple:ColorCorrectionMatrix".to_string(),
-                            formatted.join(" "),
-                        );
-                    }
+                    && !values.is_empty()
+                {
+                    // 3x3 matrix stored as 9 values
+                    let formatted: Vec<String> = values
+                        .iter()
+                        .map(|v| format!("{:.4}", (*v as f64) / 10000.0))
+                        .collect();
+                    tags.insert(
+                        "Apple:ColorCorrectionMatrix".to_string(),
+                        formatted.join(" "),
+                    );
+                }
             }
 
             // RunTime (complex plist structure, store as raw for now)

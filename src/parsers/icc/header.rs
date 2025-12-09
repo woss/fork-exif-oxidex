@@ -5,8 +5,8 @@
 
 use super::binary::{read_s15fixed16, read_signature, read_u16_be, read_u32_be, read_u64_be};
 use super::registries::{
-    lookup_in_table, HeaderField, CMM_TYPES, MANUFACTURERS, PLATFORMS, PROFILE_CLASSES,
-    RENDERING_INTENTS,
+    CMM_TYPES, HeaderField, MANUFACTURERS, PLATFORMS, PROFILE_CLASSES, RENDERING_INTENTS,
+    lookup_in_table,
 };
 use crate::core::TagValue;
 use crate::error::Result;

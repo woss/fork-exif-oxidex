@@ -32,10 +32,10 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use super::registries::infiray::infiray_registry;
-use super::shared::array_extractors::extract_i16_array;
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
-use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::extract_i16_array;
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
+use super::shared::tag_registry::TagRegistry;
 
 const INFIRAY_SIGNATURE: &[u8] = b"InfiRay";
 
@@ -132,11 +132,7 @@ fn extract_string(entry: &IfdEntry, data: &[u8]) -> Option<String> {
         .trim_end_matches('\0')
         .to_string();
 
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }
 
 /// InfiRay Thermal Camera MakerNote parser
@@ -164,44 +160,46 @@ impl InfiRayParser {
         // Handle string tags (Model, Serial, Firmware)
         if let 0x0001..=0x0003 = tag_id {
             if let Some(s) = extract_string(entry, data)
-                && let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
-                    tags.insert(format!("InfiRay:{}", name), s);
-                }
+                && let Some(name) = TAG_REGISTRY.get_tag_name(tag_id)
+            {
+                tags.insert(format!("InfiRay:{}", name), s);
+            }
             return;
         }
 
         // Handle i16 array tags
         if let Some(array) = extract_i16_array(entry, data, byte_order)
-            && let Some(&val) = array.first() {
-                let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
-                    Some(name) => name,
-                    None => return,
-                };
+            && let Some(&val) = array.first()
+        {
+            let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
+                Some(name) => name,
+                None => return,
+            };
 
-                let formatted_value = match tag_id {
-                    0x0100..=0x0102 => format_temperature(val),
-                    0x0103 => format_emissivity(val),
-                    0x0104 => format_distance(val),
-                    0x0105 => decode_palette(val),
-                    0x0106 | 0x0107 => format_temperature(val),
-                    0x0108 => format_temperature(val),
-                    0x0109 => format!("{}%", val),
-                    0x010A => decode_enhancement(val),
-                    0x010B => format_zoom(val),
-                    0x010C..=0x010E => val.to_string(),
-                    0x010F | 0x0110 => {
-                        if val != 0 {
-                            "On".to_string()
-                        } else {
-                            "Off".to_string()
-                        }
+            let formatted_value = match tag_id {
+                0x0100..=0x0102 => format_temperature(val),
+                0x0103 => format_emissivity(val),
+                0x0104 => format_distance(val),
+                0x0105 => decode_palette(val),
+                0x0106 | 0x0107 => format_temperature(val),
+                0x0108 => format_temperature(val),
+                0x0109 => format!("{}%", val),
+                0x010A => decode_enhancement(val),
+                0x010B => format_zoom(val),
+                0x010C..=0x010E => val.to_string(),
+                0x010F | 0x0110 => {
+                    if val != 0 {
+                        "On".to_string()
+                    } else {
+                        "Off".to_string()
                     }
-                    0x0111 => decode_unit(val),
-                    _ => return,
-                };
+                }
+                0x0111 => decode_unit(val),
+                _ => return,
+            };
 
-                tags.insert(format!("InfiRay:{}", tag_name), formatted_value);
-            }
+            tags.insert(format!("InfiRay:{}", tag_name), formatted_value);
+        }
     }
 }
 

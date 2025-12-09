@@ -16,22 +16,22 @@ use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
-    parse_ifd_entries, IfdParserConfig,
+    IfdParserConfig, parse_ifd_entries,
 };
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::collections::HashMap;
 
 use super::canon_lens_database::lookup_lens_name;
+use super::shared::MakerNoteParser;
 use super::shared::array_extractors::extract_i16_array;
 use super::shared::value_extractors::{
     extract_inline_value, extract_integer_value, extract_string_value,
 };
-use super::shared::MakerNoteParser;
 use crate::bitfield_decoder;
 use crate::const_decoder;
 
@@ -1580,11 +1580,7 @@ fn parse_canon_makernote_impl(
                     // Get focal units for focal length calculations (index 25)
                     let focal_units = if array.len() > CAMERA_SETTINGS_FOCAL_UNITS {
                         let units = array[CAMERA_SETTINGS_FOCAL_UNITS];
-                        if units > 0 {
-                            units
-                        } else {
-                            1
-                        }
+                        if units > 0 { units } else { 1 }
                     } else {
                         1
                     };
@@ -1985,19 +1981,22 @@ fn parse_canon_makernote_impl(
                 if let Some(array) = extract_canon_i16_array(entry, ifd_data, byte_order) {
                     // Number of AF points
                     if let Some(&num_points) = array.get(AF_INFO_NUM_AF_POINTS)
-                        && num_points > 0 {
-                            tags.insert("Canon:NumAFPoints".to_string(), num_points.to_string());
-                        }
+                        && num_points > 0
+                    {
+                        tags.insert("Canon:NumAFPoints".to_string(), num_points.to_string());
+                    }
 
                     // AF area dimensions
                     if let Some(&width) = array.get(AF_INFO_IMAGE_WIDTH)
-                        && width > 0 {
-                            tags.insert("Canon:AFImageWidth".to_string(), width.to_string());
-                        }
+                        && width > 0
+                    {
+                        tags.insert("Canon:AFImageWidth".to_string(), width.to_string());
+                    }
                     if let Some(&height) = array.get(AF_INFO_IMAGE_HEIGHT)
-                        && height > 0 {
-                            tags.insert("Canon:AFImageHeight".to_string(), height.to_string());
-                        }
+                        && height > 0
+                    {
+                        tags.insert("Canon:AFImageHeight".to_string(), height.to_string());
+                    }
 
                     // AF points in focus (bitmask)
                     if let Some(&points_in_focus) = array.get(AF_INFO_POINTS_IN_FOCUS) {

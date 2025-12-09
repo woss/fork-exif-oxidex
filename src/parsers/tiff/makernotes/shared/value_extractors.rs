@@ -160,11 +160,7 @@ pub fn extract_string_with_byteorder(
         .trim()
         .to_string();
 
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }
 
 /// Extract inline bytes from value_offset

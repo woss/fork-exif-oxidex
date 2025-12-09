@@ -512,9 +512,11 @@ fn parse_camera_info_1d(data: &[u8], reader: &EndianReader, metadata: &mut Metad
 
     // Index 10: FocalLength (int16u, units may vary)
     if let Some(focal) = reader.u16_at(OFFSET_FOCAL_LENGTH_1D * 2)
-        && focal > 0 && focal < 2000 {
-            metadata.insert("Canon:FocalLengthRaw", TagValue::new_integer(focal as i64));
-        }
+        && focal > 0
+        && focal < 2000
+    {
+        metadata.insert("Canon:FocalLengthRaw", TagValue::new_integer(focal as i64));
+    }
 
     // Index 13: LensType (int8u)
     if data.len() > OFFSET_LENS_TYPE {
@@ -526,21 +528,25 @@ fn parse_camera_info_1d(data: &[u8], reader: &EndianReader, metadata: &mut Metad
 
     // Index 14: ShortFocal (int16u) - minimum focal length
     if let Some(short_focal) = reader.u16_at(OFFSET_SHORT_FOCAL_1D * 2)
-        && short_focal > 0 && short_focal < 2000 {
-            metadata.insert(
-                "Canon:MinFocalLength",
-                TagValue::new_string(format!("{} mm", short_focal)),
-            );
-        }
+        && short_focal > 0
+        && short_focal < 2000
+    {
+        metadata.insert(
+            "Canon:MinFocalLength",
+            TagValue::new_string(format!("{} mm", short_focal)),
+        );
+    }
 
     // Index 16: LongFocal (int16u) - maximum focal length
     if let Some(long_focal) = reader.u16_at(OFFSET_LONG_FOCAL_1D * 2)
-        && long_focal > 0 && long_focal < 2000 {
-            metadata.insert(
-                "Canon:MaxFocalLength",
-                TagValue::new_string(format!("{} mm", long_focal)),
-            );
-        }
+        && long_focal > 0
+        && long_focal < 2000
+    {
+        metadata.insert(
+            "Canon:MaxFocalLength",
+            TagValue::new_string(format!("{} mm", long_focal)),
+        );
+    }
 
     // Indices 65-81 contain various tags for 1D (if data is long enough)
     // Index 65: SharpnessFrequency
@@ -569,12 +575,13 @@ fn parse_camera_info_1d(data: &[u8], reader: &EndianReader, metadata: &mut Metad
 
     // Index 69-70: ColorTemperature (int16u)
     if let Some(color_temp) = reader.u16_at(69)
-        && (2500..=10000).contains(&color_temp) {
-            metadata.insert(
-                "Canon:ColorTemperature",
-                TagValue::new_string(format!("{} K", color_temp)),
-            );
-        }
+        && (2500..=10000).contains(&color_temp)
+    {
+        metadata.insert(
+            "Canon:ColorTemperature",
+            TagValue::new_string(format!("{} K", color_temp)),
+        );
+    }
 
     // Index 81: PictureStyle
     if data.len() > 81 {
@@ -603,9 +610,11 @@ fn parse_camera_info_1d_mkii(data: &[u8], reader: &EndianReader, metadata: &mut 
 
     // Index 9: FocalLength (int16u)
     if let Some(focal) = reader.u16_at(OFFSET_FOCAL_LENGTH_1D_MKII)
-        && focal > 0 && focal < 2000 {
-            metadata.insert("Canon:FocalLengthRaw", TagValue::new_integer(focal as i64));
-        }
+        && focal > 0
+        && focal < 2000
+    {
+        metadata.insert("Canon:FocalLengthRaw", TagValue::new_integer(focal as i64));
+    }
 
     // Index 13: LensType (int8u)
     if data.len() > OFFSET_LENS_TYPE {
@@ -617,21 +626,25 @@ fn parse_camera_info_1d_mkii(data: &[u8], reader: &EndianReader, metadata: &mut 
 
     // Index 17: ShortFocal (int16u)
     if let Some(short_focal) = reader.u16_at(OFFSET_SHORT_FOCAL_1D_MKII)
-        && short_focal > 0 && short_focal < 2000 {
-            metadata.insert(
-                "Canon:MinFocalLength",
-                TagValue::new_string(format!("{} mm", short_focal)),
-            );
-        }
+        && short_focal > 0
+        && short_focal < 2000
+    {
+        metadata.insert(
+            "Canon:MinFocalLength",
+            TagValue::new_string(format!("{} mm", short_focal)),
+        );
+    }
 
     // Index 19: LongFocal (int16u)
     if let Some(long_focal) = reader.u16_at(OFFSET_LONG_FOCAL_1D_MKII)
-        && long_focal > 0 && long_focal < 2000 {
-            metadata.insert(
-                "Canon:MaxFocalLength",
-                TagValue::new_string(format!("{} mm", long_focal)),
-            );
-        }
+        && long_focal > 0
+        && long_focal < 2000
+    {
+        metadata.insert(
+            "Canon:MaxFocalLength",
+            TagValue::new_string(format!("{} mm", long_focal)),
+        );
+    }
 
     // Index 45: FocalType (int8u)
     if data.len() > OFFSET_FOCAL_TYPE_1D_MKII {
@@ -653,12 +666,13 @@ fn parse_camera_info_1d_mkii(data: &[u8], reader: &EndianReader, metadata: &mut 
 
     // Index 55-56: ColorTemperature (int16u)
     if let Some(color_temp) = reader.u16_at(OFFSET_COLOR_TEMP_1D_MKII)
-        && (2500..=10000).contains(&color_temp) {
-            metadata.insert(
-                "Canon:ColorTemperature",
-                TagValue::new_string(format!("{} K", color_temp)),
-            );
-        }
+        && (2500..=10000).contains(&color_temp)
+    {
+        metadata.insert(
+            "Canon:ColorTemperature",
+            TagValue::new_string(format!("{} K", color_temp)),
+        );
+    }
 }
 
 /// Parses CameraInfo for 5D-style cameras (5D, 5DmkII, 5DmkIII, etc.).
@@ -679,12 +693,14 @@ fn parse_camera_info_5d(data: &[u8], reader: &EndianReader, metadata: &mut Metad
 
     // Try to extract firmware version string (typically at offset 28 for some models)
     if let Some(firmware) = extract_string(data, OFFSET_FIRMWARE_5D, 32)
-        && firmware.len() >= 3 && firmware.chars().any(|c| c.is_ascii_digit()) {
-            metadata.insert(
-                "Canon:FirmwareVersionInternal",
-                TagValue::new_string(firmware),
-            );
-        }
+        && firmware.len() >= 3
+        && firmware.chars().any(|c| c.is_ascii_digit())
+    {
+        metadata.insert(
+            "Canon:FirmwareVersionInternal",
+            TagValue::new_string(firmware),
+        );
+    }
 
     // Extract lens information if present
     // Index 15: LensType for 5D
@@ -709,12 +725,13 @@ fn parse_camera_info_5d(data: &[u8], reader: &EndianReader, metadata: &mut Metad
     }
 
     if let Some(color_temp) = reader.u16_at(37)
-        && (2500..=10000).contains(&color_temp) {
-            metadata.insert(
-                "Canon:ColorTemperature",
-                TagValue::new_string(format!("{} K", color_temp)),
-            );
-        }
+        && (2500..=10000).contains(&color_temp)
+    {
+        metadata.insert(
+            "Canon:ColorTemperature",
+            TagValue::new_string(format!("{} K", color_temp)),
+        );
+    }
 }
 
 /// Parses CameraInfo for modern xxD cameras (60D, 70D, 80D, etc.).
@@ -752,12 +769,13 @@ fn parse_camera_info_modern(data: &[u8], reader: &EndianReader, metadata: &mut M
     }
 
     if let Some(color_temp) = reader.u16_at(41)
-        && (2500..=10000).contains(&color_temp) {
-            metadata.insert(
-                "Canon:ColorTemperature",
-                TagValue::new_string(format!("{} K", color_temp)),
-            );
-        }
+        && (2500..=10000).contains(&color_temp)
+    {
+        metadata.insert(
+            "Canon:ColorTemperature",
+            TagValue::new_string(format!("{} K", color_temp)),
+        );
+    }
 
     // Picture style
     if data.len() > 45 {

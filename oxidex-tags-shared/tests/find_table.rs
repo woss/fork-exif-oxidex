@@ -1,4 +1,4 @@
-use oxidex_tags_shared::{find_table, LookupError, Tag, TagDatabase, TagTable};
+use oxidex_tags_shared::{LookupError, Tag, TagDatabase, TagTable, find_table};
 
 fn sample_db() -> TagDatabase {
     TagDatabase {

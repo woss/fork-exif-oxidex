@@ -28,18 +28,18 @@ use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::collections::HashMap;
 
 use super::olympus_lens_database::{get_lens_database, lookup_lens_name};
 use super::registries::olympus::olympus_registry;
+use super::shared::MakerNoteParser;
 use super::shared::array_extractors::{extract_i16_array, extract_i32_array, extract_u16_array};
 use super::shared::generic_decoders::ON_OFF;
-use super::shared::MakerNoteParser;
 
 // ===== Olympus MakerNote Tag IDs =====
 // Based on ExifTool Olympus.pm tag definitions
@@ -479,9 +479,10 @@ impl MakerNoteParser for OlympusParser {
                         if entry.field_type == 2 {
                             // ASCII field type
                             if let Some(value) = extract_string_value(&entry, data, base_offset)
-                                && let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
-                                    tags.insert(format!("Olympus:{}", tag_name), value);
-                                }
+                                && let Some(tag_name) = registry.get_tag_name(entry.tag_id)
+                            {
+                                tags.insert(format!("Olympus:{}", tag_name), value);
+                            }
                         } else {
                             // Numeric tags that don't require special handling
                             let value = entry.value_offset as i32;
@@ -632,9 +633,10 @@ fn parse_sub_ifd(
             if entry.field_type == 2 {
                 // ASCII string
                 if let Some(value) = extract_string_value(&entry, data, base_offset)
-                    && let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
-                        tags.insert(format!("Olympus:{}:{}", sub_ifd_name, tag_name), value);
-                    }
+                    && let Some(tag_name) = registry.get_tag_name(entry.tag_id)
+                {
+                    tags.insert(format!("Olympus:{}:{}", sub_ifd_name, tag_name), value);
+                }
             } else {
                 // Numeric value
                 let value = entry.value_offset as i32;

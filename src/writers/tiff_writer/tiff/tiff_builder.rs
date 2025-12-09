@@ -8,7 +8,7 @@ use crate::error::Result;
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 
 use super::byte_writer::write_tiff_header;
-use super::ifd_builder::{IfdBuilder, EXIF_IFD_POINTER, GPS_INFO_IFD_POINTER};
+use super::ifd_builder::{EXIF_IFD_POINTER, GPS_INFO_IFD_POINTER, IfdBuilder};
 use super::validator::separate_by_ifd;
 
 // ============================================================================

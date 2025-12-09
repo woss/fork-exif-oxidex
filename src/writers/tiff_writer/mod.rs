@@ -47,8 +47,8 @@
 
 mod tiff;
 
-use crate::core::metadata_map::MetadataMap;
 use crate::core::FileReader;
+use crate::core::metadata_map::MetadataMap;
 use crate::error::Result;
 use crate::parsers::tiff::file_parser::parse_tiff_header;
 use crate::parsers::tiff::ifd_parser::ByteOrder;

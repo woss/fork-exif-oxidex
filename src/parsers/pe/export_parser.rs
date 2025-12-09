@@ -4,7 +4,7 @@ use crate::core::FileReader;
 use crate::error::Result;
 use crate::io::EndianReader;
 use crate::parsers::pe::structures::{ExportInfo, ImageExportDirectory, SectionHeader};
-use nom::{number::complete::le_u32, IResult};
+use nom::{IResult, number::complete::le_u32};
 
 /// Parse IMAGE_EXPORT_DIRECTORY structure (40 bytes)
 pub fn parse_export_directory(input: &[u8]) -> IResult<&[u8], ImageExportDirectory> {
@@ -103,11 +103,11 @@ pub fn parse_exports(
             let offset = (i * 4) as usize;
             if let Some(function_rva) = eat_reader.u32_at(offset)
                 && function_rva > 0
-                    && function_rva >= export_section_start
-                    && function_rva < export_section_end
-                {
-                    forwarded_count += 1;
-                }
+                && function_rva >= export_section_start
+                && function_rva < export_section_end
+            {
+                forwarded_count += 1;
+            }
         }
     }
 
@@ -126,9 +126,10 @@ pub fn parse_exports(
             let offset = (i * 4) as usize;
             if let Some(name_rva) = name_table_reader.u32_at(offset)
                 && let Some(name_file_offset) = rva_to_file_offset(name_rva, sections)
-                    && let Ok(name) = read_string_at_offset(reader, name_file_offset) {
-                        function_names.push(name);
-                    }
+                && let Ok(name) = read_string_at_offset(reader, name_file_offset)
+            {
+                function_names.push(name);
+            }
         }
     }
 

@@ -3,5 +3,5 @@ mod types;
 mod validator;
 
 pub use doc::{render_domain_summary, render_table_preview};
-pub use types::{find_table, LookupError, Tag, TagDatabase, TagTable};
-pub use validator::{validate_database, ValidationError, ValidationIssue};
+pub use types::{LookupError, Tag, TagDatabase, TagTable, find_table};
+pub use validator::{ValidationError, ValidationIssue, validate_database};

@@ -394,7 +394,7 @@ fn test_elf_unknown_class() {
     data.push(99); // Invalid class value
     data.push(1); // Little-endian
     data.extend_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // Rest of e_ident
-                                                             // Pad to minimum header size
+    // Pad to minimum header size
     data.extend_from_slice(&[0; 48]); // Remaining bytes for ELF32/64 header
 
     let reader = TestReader::new(data);

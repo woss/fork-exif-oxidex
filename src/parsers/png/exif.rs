@@ -6,8 +6,8 @@
 use crate::core::{MetadataMap, TagValue};
 use crate::error::Result;
 use crate::io::{ByteOrder as IoByteOrder, EndianReader};
-use crate::parsers::png::chunk_parser::{parse_exif_chunk, ExifDataReader};
-use crate::parsers::tiff::ifd_parser::{parse_ifd, ByteOrder};
+use crate::parsers::png::chunk_parser::{ExifDataReader, parse_exif_chunk};
+use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::tag_db::lookup_tag_name;
 
 use super::value_conversion::{raw_bytes_to_tag_value, raw_bytes_to_tag_value_no_enum};
@@ -109,41 +109,43 @@ pub fn parse_and_insert_exif_tags(exif_data: &[u8], metadata: &mut MetadataMap) 
 
     // Parse EXIF Sub-IFD if present
     if let Some(offset) = exif_ifd_offset
-        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
-            for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
-                let base_tag_name = lookup_tag_name(tag_id, "ExifIFD");
-                let tag_value =
-                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, tag_id, byte_order);
+        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order)
+    {
+        for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
+            let base_tag_name = lookup_tag_name(tag_id, "ExifIFD");
+            let tag_value =
+                raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, tag_id, byte_order);
 
-                // Perl ExifTool outputs PNG eXIf tags in BOTH "ExifIFD:" AND "PNG:Exif" namespaces
-                // Add the ExifIFD: version (with enum interpretation)
-                metadata.insert(base_tag_name.clone(), tag_value);
+            // Perl ExifTool outputs PNG eXIf tags in BOTH "ExifIFD:" AND "PNG:Exif" namespaces
+            // Add the ExifIFD: version (with enum interpretation)
+            metadata.insert(base_tag_name.clone(), tag_value);
 
-                // Also add the PNG:Exif version (WITHOUT enum interpretation, raw values only)
-                if let Some(stripped) = base_tag_name.strip_prefix("ExifIFD:") {
-                    let raw_value = raw_bytes_to_tag_value_no_enum(
-                        &raw_bytes,
-                        field_type,
-                        value_count,
-                        tag_id,
-                        byte_order,
-                    );
-                    metadata.insert(format!("PNG:Exif{}", stripped), raw_value);
-                }
+            // Also add the PNG:Exif version (WITHOUT enum interpretation, raw values only)
+            if let Some(stripped) = base_tag_name.strip_prefix("ExifIFD:") {
+                let raw_value = raw_bytes_to_tag_value_no_enum(
+                    &raw_bytes,
+                    field_type,
+                    value_count,
+                    tag_id,
+                    byte_order,
+                );
+                metadata.insert(format!("PNG:Exif{}", stripped), raw_value);
             }
         }
+    }
 
     // Parse GPS Sub-IFD if present
     if let Some(offset) = gps_ifd_offset
-        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
-            for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
-                // GPS tags keep their "GPS:" prefix even in PNG eXIf chunks
-                let tag_name = lookup_tag_name(tag_id, "GPS");
-                let tag_value =
-                    raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, tag_id, byte_order);
-                metadata.insert(tag_name, tag_value);
-            }
+        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order)
+    {
+        for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
+            // GPS tags keep their "GPS:" prefix even in PNG eXIf chunks
+            let tag_name = lookup_tag_name(tag_id, "GPS");
+            let tag_value =
+                raw_bytes_to_tag_value(&raw_bytes, field_type, value_count, tag_id, byte_order);
+            metadata.insert(tag_name, tag_value);
         }
+    }
 
     Ok(())
 }

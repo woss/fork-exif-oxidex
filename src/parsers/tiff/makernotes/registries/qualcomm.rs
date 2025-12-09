@@ -14,7 +14,7 @@
 //! - Bokeh depth processing
 //! - Low-light enhancement
 
-use super::super::shared::generic_decoders::{SimpleValueDecoder, ON_OFF};
+use super::super::shared::generic_decoders::{ON_OFF, SimpleValueDecoder};
 use super::super::shared::tag_registry::TagRegistry;
 use std::sync::LazyLock;
 

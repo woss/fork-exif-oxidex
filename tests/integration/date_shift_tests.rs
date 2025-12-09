@@ -1,7 +1,7 @@
 //! Integration tests for date/time shifting operations
 
 use chrono::{Datelike, Timelike, Utc};
-use oxidex::core::date_shift::{shift_metadata_dates, ShiftOperation};
+use oxidex::core::date_shift::{ShiftOperation, shift_metadata_dates};
 use oxidex::core::operations::{read_metadata, write_metadata};
 use oxidex::core::tag_value::TagValue;
 use std::fs;

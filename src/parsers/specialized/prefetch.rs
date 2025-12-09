@@ -44,8 +44,8 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
-use crate::io::timestamp::filetime_to_iso8601;
 use crate::io::EndianReader;
+use crate::io::timestamp::filetime_to_iso8601;
 
 /// Prefetch signature: "SCCA" (4 bytes) for uncompressed files
 const PREFETCH_MAGIC: &[u8] = b"SCCA";
@@ -246,7 +246,7 @@ impl FormatParser for PrefetchParser {
             None => {
                 return Err(ExifToolError::parse_error(
                     "Invalid Prefetch signature (expected SCCA or MAM)",
-                ))
+                ));
             }
         };
 

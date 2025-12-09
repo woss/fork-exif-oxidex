@@ -322,18 +322,19 @@ pub fn shift_metadata_dates(
         // Shift all DateTime tags that exist in the metadata
         for tag_name in ALL_DATES_TAGS {
             if let Some(tag_value) = metadata.get(tag_name)
-                && let Some(dt) = tag_value.as_datetime() {
-                    // Apply shift
-                    let new_dt = if let Some(abs) = absolute_value {
-                        abs
-                    } else {
-                        apply_shift(*dt, offset.as_ref().unwrap(), op)?
-                    };
+                && let Some(dt) = tag_value.as_datetime()
+            {
+                // Apply shift
+                let new_dt = if let Some(abs) = absolute_value {
+                    abs
+                } else {
+                    apply_shift(*dt, offset.as_ref().unwrap(), op)?
+                };
 
-                    // Update the tag
-                    metadata.insert((*tag_name).to_string(), TagValue::new_datetime(new_dt));
-                    modified_count += 1;
-                }
+                // Update the tag
+                metadata.insert((*tag_name).to_string(), TagValue::new_datetime(new_dt));
+                modified_count += 1;
+            }
         }
 
         // Also check for any other DateTime tags in the metadata
@@ -345,18 +346,19 @@ pub fn shift_metadata_dates(
             }
 
             if let Some(tag_value) = metadata.get(&tag_name)
-                && let Some(dt) = tag_value.as_datetime() {
-                    // Apply shift
-                    let new_dt = if let Some(abs) = absolute_value {
-                        abs
-                    } else {
-                        apply_shift(*dt, offset.as_ref().unwrap(), op)?
-                    };
+                && let Some(dt) = tag_value.as_datetime()
+            {
+                // Apply shift
+                let new_dt = if let Some(abs) = absolute_value {
+                    abs
+                } else {
+                    apply_shift(*dt, offset.as_ref().unwrap(), op)?
+                };
 
-                    // Update the tag
-                    metadata.insert(tag_name, TagValue::new_datetime(new_dt));
-                    modified_count += 1;
-                }
+                // Update the tag
+                metadata.insert(tag_name, TagValue::new_datetime(new_dt));
+                modified_count += 1;
+            }
         }
     } else {
         // Shift specific tag only

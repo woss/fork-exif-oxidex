@@ -4,16 +4,16 @@
 
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_int};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::Path;
 
-use crate::core::operations::write_metadata;
 use crate::core::TagValue;
+use crate::core::operations::write_metadata;
 
-use super::context::{handle_to_context, handle_to_context_mut, ExifToolHandle};
+use super::context::{ExifToolHandle, handle_to_context, handle_to_context_mut};
 use super::error::{
-    error_to_code, set_last_error, EXIFTOOL_ERR_INTERNAL, EXIFTOOL_ERR_INVALID_TAG_VALUE,
-    EXIFTOOL_ERR_NULL_POINTER, EXIFTOOL_OK,
+    EXIFTOOL_ERR_INTERNAL, EXIFTOOL_ERR_INVALID_TAG_VALUE, EXIFTOOL_ERR_NULL_POINTER, EXIFTOOL_OK,
+    error_to_code, set_last_error,
 };
 
 // ============================================================================

@@ -8,5 +8,5 @@ pub mod format_detection;
 pub mod metadata;
 
 // Re-export the public API
-pub use format_detection::{detect_raw_format, RawFormat};
+pub use format_detection::{RawFormat, detect_raw_format};
 pub use metadata::parse_raw_metadata;

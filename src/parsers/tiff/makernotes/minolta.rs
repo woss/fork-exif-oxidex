@@ -30,9 +30,9 @@ use std::collections::HashMap;
 
 use super::minolta_lens_database::lookup_minolta_lens;
 use super::registries::minolta::minolta_registry;
-use super::shared::ifd_parser_base::{parse_ifd_entries, IfdParserConfig};
-use super::shared::tag_registry::TagRegistry;
 use super::shared::MakerNoteParser;
+use super::shared::ifd_parser_base::{IfdParserConfig, parse_ifd_entries};
+use super::shared::tag_registry::TagRegistry;
 
 // ===== Minolta MakerNote Tag IDs =====
 // Tag definitions are now centralized in the registry.

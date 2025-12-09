@@ -5,7 +5,7 @@
 
 use crate::core::{MetadataMap, TagValue};
 
-use super::dylib_parser::{get_dylib_names, get_dylib_paths, DylibStats};
+use super::dylib_parser::{DylibStats, get_dylib_names, get_dylib_paths};
 use super::load_command_parser::LoadCommand;
 use super::segment_parser::SegmentStats;
 use super::signature_parser::{has_developer_id, is_adhoc_signed};

@@ -8,9 +8,9 @@
 
 use crate::core::{MetadataMap, TagValue};
 use nom::{
-    bytes::complete::tag,
-    number::complete::{be_u16, be_u8},
     IResult,
+    bytes::complete::tag,
+    number::complete::{be_u8, be_u16},
 };
 
 /// Parse JFIF (APP0) segment data and extract metadata

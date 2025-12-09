@@ -52,7 +52,7 @@ use header_parser::{
 use load_command_parser::parse_all_load_commands;
 use metadata_extractor::{extract_macho_metadata, populate_macho_info};
 use signature_parser::parse_code_signature_info;
-use structures::{cpu_type, MachOInfo};
+use structures::{MachOInfo, cpu_type};
 
 // =============================================================================
 // MachOParser
@@ -147,9 +147,10 @@ impl MachOParser {
             let cs_size = cs_cmd.datasize as usize;
 
             if cs_offset + cs_size as u64 <= offset + size
-                && let Ok(cs_data) = reader.read(cs_offset, cs_size) {
-                    info.code_signature_info = parse_code_signature_info(cs_data);
-                }
+                && let Ok(cs_data) = reader.read(cs_offset, cs_size)
+            {
+                info.code_signature_info = parse_code_signature_info(cs_data);
+            }
         }
 
         Ok(info)
@@ -310,7 +311,7 @@ mod tests {
         // LC_UUID command (24 bytes)
         data.extend_from_slice(&structures::load_command::LC_UUID.to_le_bytes());
         data.extend_from_slice(&24u32.to_le_bytes()); // cmdsize
-                                                      // UUID bytes
+        // UUID bytes
         data.extend_from_slice(&[
             0x55, 0x0E, 0x84, 0x00, 0xE2, 0x9B, 0x41, 0xD4, 0xA7, 0x16, 0x44, 0x66, 0x55, 0x44,
             0x00, 0x00,

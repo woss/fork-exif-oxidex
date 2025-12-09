@@ -251,10 +251,10 @@ mod tests {
         data[1] = 0xF1; // Sync word low nibble + flags
         data[2] = 0x50; // Profile=1 (LC), Sample rate=4 (44100), private=0, channel start=0
         data[3] = 0x80; // Channel=2 (stereo), other flags
-                        // Frame length = 100 bytes (0x64 = 0b0000001100100)
-                        // Bits 11-12 in byte 3 (lower 2 bits): 0b00
-                        // Bits 3-10 in byte 4: 0b00001100 = 0x0C
-                        // Bits 0-2 in byte 5 (upper 3 bits): 0b100 = 0x80
+        // Frame length = 100 bytes (0x64 = 0b0000001100100)
+        // Bits 11-12 in byte 3 (lower 2 bits): 0b00
+        // Bits 3-10 in byte 4: 0b00001100 = 0x0C
+        // Bits 0-2 in byte 5 (upper 3 bits): 0b100 = 0x80
         data[4] = 0x0C; // Frame length middle byte
         data[5] = 0x80; // Frame length low bits + buffer fullness start
         data[6] = 0xFC; // Buffer fullness + frame count

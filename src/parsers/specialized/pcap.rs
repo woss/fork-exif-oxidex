@@ -302,13 +302,14 @@ impl PCAPParser {
             );
 
             if let Some(first) = first_ts
-                && last >= first {
-                    let duration = last - first;
-                    metadata.insert(
-                        "PCAP:Duration".to_string(),
-                        TagValue::String(Self::format_duration(duration)),
-                    );
-                }
+                && last >= first
+            {
+                let duration = last - first;
+                metadata.insert(
+                    "PCAP:Duration".to_string(),
+                    TagValue::String(Self::format_duration(duration)),
+                );
+            }
         }
 
         Ok(metadata)
@@ -414,90 +415,96 @@ impl PCAPParser {
                 PCAPNG_BLOCK_SHB => {
                     section_count += 1;
                     // Try to parse Section Header Block options
-                    if block_length > 28 && offset + block_length as u64 <= file_size
-                        && let Ok(shb_data) = reader.read(offset, block_length as usize) {
-                            // Parse options (starts at offset 24 in SHB)
-                            let opts = Self::parse_pcapng_options(&shb_data[24..], little_endian);
-                            if let Some(hw) = opts.get("hardware") {
-                                hardware = Some(hw.clone());
-                            }
-                            if let Some(o) = opts.get("os") {
-                                os = Some(o.clone());
-                            }
-                            if let Some(app) = opts.get("userappl") {
-                                application = Some(app.clone());
-                            }
+                    if block_length > 28
+                        && offset + block_length as u64 <= file_size
+                        && let Ok(shb_data) = reader.read(offset, block_length as usize)
+                    {
+                        // Parse options (starts at offset 24 in SHB)
+                        let opts = Self::parse_pcapng_options(&shb_data[24..], little_endian);
+                        if let Some(hw) = opts.get("hardware") {
+                            hardware = Some(hw.clone());
                         }
+                        if let Some(o) = opts.get("os") {
+                            os = Some(o.clone());
+                        }
+                        if let Some(app) = opts.get("userappl") {
+                            application = Some(app.clone());
+                        }
+                    }
                 }
                 PCAPNG_BLOCK_IDB => {
                     interface_count += 1;
                     // Parse IDB options
-                    if block_length > 20 && offset + block_length as u64 <= file_size
-                        && let Ok(idb_data) = reader.read(offset, block_length as usize) {
-                            // IDB header: link_type (2) + reserved (2) + snaplen (4) = 8 bytes after block header
-                            if idb_data.len() > 16 {
-                                let r = if little_endian {
-                                    EndianReader::little_endian(idb_data)
-                                } else {
-                                    EndianReader::big_endian(idb_data)
-                                };
+                    if block_length > 20
+                        && offset + block_length as u64 <= file_size
+                        && let Ok(idb_data) = reader.read(offset, block_length as usize)
+                    {
+                        // IDB header: link_type (2) + reserved (2) + snaplen (4) = 8 bytes after block header
+                        if idb_data.len() > 16 {
+                            let r = if little_endian {
+                                EndianReader::little_endian(idb_data)
+                            } else {
+                                EndianReader::big_endian(idb_data)
+                            };
 
-                                let link_type = r.u16_at(8).unwrap();
-                                let snaplen = r.u32_at(12).unwrap();
+                            let link_type = r.u16_at(8).unwrap();
+                            let snaplen = r.u32_at(12).unwrap();
 
-                                // First interface's link type
-                                if interface_count == 1 {
-                                    metadata.insert(
-                                        "PCAPNG:LinkType".to_string(),
-                                        TagValue::String(link_type.to_string()),
-                                    );
-                                    metadata.insert(
-                                        "PCAPNG:LinkTypeName".to_string(),
-                                        TagValue::String(
-                                            Self::link_type_name(link_type as u32).to_string(),
-                                        ),
-                                    );
-                                    metadata.insert(
-                                        "PCAPNG:SnapLen".to_string(),
-                                        TagValue::String(format!("{} bytes", snaplen)),
-                                    );
-                                }
+                            // First interface's link type
+                            if interface_count == 1 {
+                                metadata.insert(
+                                    "PCAPNG:LinkType".to_string(),
+                                    TagValue::String(link_type.to_string()),
+                                );
+                                metadata.insert(
+                                    "PCAPNG:LinkTypeName".to_string(),
+                                    TagValue::String(
+                                        Self::link_type_name(link_type as u32).to_string(),
+                                    ),
+                                );
+                                metadata.insert(
+                                    "PCAPNG:SnapLen".to_string(),
+                                    TagValue::String(format!("{} bytes", snaplen)),
+                                );
+                            }
 
-                                // Parse IDB options (starts at offset 16)
-                                let idb_opts =
-                                    Self::parse_pcapng_idb_options(&idb_data[16..], little_endian);
-                                for (key, value) in idb_opts {
-                                    if !metadata.contains_key(&key) {
-                                        metadata.insert(key, value);
-                                    }
+                            // Parse IDB options (starts at offset 16)
+                            let idb_opts =
+                                Self::parse_pcapng_idb_options(&idb_data[16..], little_endian);
+                            for (key, value) in idb_opts {
+                                if !metadata.contains_key(&key) {
+                                    metadata.insert(key, value);
                                 }
                             }
                         }
+                    }
                 }
                 PCAPNG_BLOCK_EPB | PCAPNG_BLOCK_SPB => {
                     packet_count += 1;
 
                     // Parse EPB timestamp for first and last packet
-                    if block_type == PCAPNG_BLOCK_EPB && block_length >= 32
+                    if block_type == PCAPNG_BLOCK_EPB
+                        && block_length >= 32
                         && let Ok(epb_data) = reader.read(offset, 32.min(block_length as usize))
-                            && epb_data.len() >= 20 {
-                                let r = if little_endian {
-                                    EndianReader::little_endian(epb_data)
-                                } else {
-                                    EndianReader::big_endian(epb_data)
-                                };
+                        && epb_data.len() >= 20
+                    {
+                        let r = if little_endian {
+                            EndianReader::little_endian(epb_data)
+                        } else {
+                            EndianReader::big_endian(epb_data)
+                        };
 
-                                // Timestamp is at offset 8 (after block header)
-                                // Stored as two 32-bit values: high (upper 32 bits) and low (lower 32 bits)
-                                let ts_high = r.u32_at(8).unwrap();
-                                let ts_low = r.u32_at(12).unwrap();
-                                let timestamp_us = ((ts_high as u64) << 32) | (ts_low as u64);
+                        // Timestamp is at offset 8 (after block header)
+                        // Stored as two 32-bit values: high (upper 32 bits) and low (lower 32 bits)
+                        let ts_high = r.u32_at(8).unwrap();
+                        let ts_low = r.u32_at(12).unwrap();
+                        let timestamp_us = ((ts_high as u64) << 32) | (ts_low as u64);
 
-                                if first_packet_ts.is_none() {
-                                    first_packet_ts = Some(timestamp_us);
-                                }
-                                last_packet_ts = Some(timestamp_us);
-                            }
+                        if first_packet_ts.is_none() {
+                            first_packet_ts = Some(timestamp_us);
+                        }
+                        last_packet_ts = Some(timestamp_us);
+                    }
                 }
                 PCAPNG_BLOCK_NRB => {
                     metadata.insert(
@@ -516,24 +523,25 @@ impl PCAPParser {
                 PCAPNG_BLOCK_ISB => {
                     // Interface Statistics Block
                     if let Ok(isb_data) = reader.read(offset, block_length as usize)
-                        && isb_data.len() >= 24 {
-                            let r = if little_endian {
-                                EndianReader::little_endian(isb_data)
-                            } else {
-                                EndianReader::big_endian(isb_data)
-                            };
+                        && isb_data.len() >= 24
+                    {
+                        let r = if little_endian {
+                            EndianReader::little_endian(isb_data)
+                        } else {
+                            EndianReader::big_endian(isb_data)
+                        };
 
-                            let isb_starttime_high = r.u32_at(12).unwrap();
-                            let isb_starttime_low = r.u32_at(16).unwrap();
-                            if isb_starttime_high != 0 || isb_starttime_low != 0 {
-                                let ts = ((isb_starttime_high as u64) << 32)
-                                    | (isb_starttime_low as u64);
-                                metadata.insert(
-                                    "PCAPNG:CaptureStartTime".to_string(),
-                                    TagValue::String(Self::format_pcapng_timestamp(ts)),
-                                );
-                            }
+                        let isb_starttime_high = r.u32_at(12).unwrap();
+                        let isb_starttime_low = r.u32_at(16).unwrap();
+                        if isb_starttime_high != 0 || isb_starttime_low != 0 {
+                            let ts =
+                                ((isb_starttime_high as u64) << 32) | (isb_starttime_low as u64);
+                            metadata.insert(
+                                "PCAPNG:CaptureStartTime".to_string(),
+                                TagValue::String(Self::format_pcapng_timestamp(ts)),
+                            );
                         }
+                    }
                 }
                 _ => {}
             }
@@ -591,14 +599,15 @@ impl PCAPParser {
             );
 
             if let Some(first_ts) = first_packet_ts
-                && last_ts >= first_ts {
-                    let duration_us = last_ts - first_ts;
-                    let duration_secs = duration_us / 1_000_000;
-                    metadata.insert(
-                        "PCAPNG:Duration".to_string(),
-                        TagValue::String(Self::format_duration(duration_secs as u32)),
-                    );
-                }
+                && last_ts >= first_ts
+            {
+                let duration_us = last_ts - first_ts;
+                let duration_secs = duration_us / 1_000_000;
+                metadata.insert(
+                    "PCAPNG:Duration".to_string(),
+                    TagValue::String(Self::format_duration(duration_secs as u32)),
+                );
+            }
         }
 
         Ok(metadata)
@@ -1272,7 +1281,7 @@ mod tests {
         data.extend_from_slice(&1u16.to_le_bytes()); // Link type (Ethernet)
         data.extend_from_slice(&0u16.to_le_bytes()); // Reserved
         data.extend_from_slice(&65535u32.to_le_bytes()); // SnapLen
-                                                         // Option: if_name (code 2), length 4, "eth0"
+        // Option: if_name (code 2), length 4, "eth0"
         data.extend_from_slice(&2u16.to_le_bytes()); // opt_code
         data.extend_from_slice(&4u16.to_le_bytes()); // opt_length
         data.extend_from_slice(b"eth0");
@@ -1333,12 +1342,12 @@ mod tests {
         let nrb_type: u32 = 0x00000004;
         data.extend_from_slice(&nrb_type.to_le_bytes());
         data.extend_from_slice(&28u32.to_le_bytes()); // Block length
-                                                      // NRB record: type 1 (IPv4), length, IP, name
+        // NRB record: type 1 (IPv4), length, IP, name
         data.extend_from_slice(&1u16.to_le_bytes()); // Record type (IPv4)
         data.extend_from_slice(&12u16.to_le_bytes()); // Record length
         data.extend_from_slice(&[192, 168, 1, 1]); // IP address
         data.extend_from_slice(b"router\0\0"); // Name (padded to 4 bytes)
-                                               // End of records
+        // End of records
         data.extend_from_slice(&0u16.to_le_bytes());
         data.extend_from_slice(&0u16.to_le_bytes());
         data.extend_from_slice(&28u32.to_le_bytes()); // Block length (repeated)

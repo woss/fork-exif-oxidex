@@ -16,11 +16,11 @@
 //! - Size = 0: Atom extends to end of file
 
 use nom::{
+    IResult,
     bytes::complete::take,
     combinator::map_opt,
     multi::many0,
     number::complete::{be_u32, be_u64},
-    IResult,
 };
 
 /// Four-character code identifying atom type

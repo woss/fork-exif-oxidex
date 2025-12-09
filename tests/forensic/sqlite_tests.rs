@@ -9,7 +9,7 @@ mod common;
 
 use common::TestReader;
 use oxidex::core::TagValue;
-use oxidex::parsers::specialized::sqlite::{parse_sqlite_metadata, SQLiteParser};
+use oxidex::parsers::specialized::sqlite::{SQLiteParser, parse_sqlite_metadata};
 
 /// SQLite magic signature: "SQLite format 3\0" (16 bytes)
 const SQLITE_MAGIC: &[u8; 16] = b"SQLite format 3\0";

@@ -5,11 +5,11 @@
 
 use crate::io::EndianReader;
 use nom::{
-    number::complete::{be_i32, be_u32, le_i32, le_u32},
     IResult,
+    number::complete::{be_i32, be_u32, le_i32, le_u32},
 };
 
-use super::structures::{magic, FatArch, FatHeader, MachHeader};
+use super::structures::{FatArch, FatHeader, MachHeader, magic};
 
 // =============================================================================
 // Magic Number Detection
@@ -316,20 +316,12 @@ pub fn parse_fat_archs(
 
 /// Returns the header size based on whether the file is 64-bit
 pub fn header_size(is_64bit: bool) -> usize {
-    if is_64bit {
-        32
-    } else {
-        28
-    }
+    if is_64bit { 32 } else { 28 }
 }
 
 /// Returns the FAT arch entry size based on whether the FAT is 64-bit
 pub fn fat_arch_size(is_64bit: bool) -> usize {
-    if is_64bit {
-        32
-    } else {
-        20
-    }
+    if is_64bit { 32 } else { 20 }
 }
 
 #[cfg(test)]

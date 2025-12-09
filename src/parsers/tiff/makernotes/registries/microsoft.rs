@@ -14,7 +14,7 @@
 //! - 4K video recording data
 //! - Audio recording settings
 
-use super::super::shared::generic_decoders::{SimpleValueDecoder, ON_OFF};
+use super::super::shared::generic_decoders::{ON_OFF, SimpleValueDecoder};
 use super::super::shared::tag_registry::TagRegistry;
 use once_cell::sync::Lazy;
 

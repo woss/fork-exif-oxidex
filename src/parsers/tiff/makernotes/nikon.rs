@@ -16,22 +16,22 @@ pub mod shot_info;
 use crate::error::{ExifToolError, Result};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, IfdEntry};
 use crate::parsers::tiff::makernotes::shared::ifd_parser_base::{
-    parse_ifd_entries, IfdParserConfig,
+    IfdParserConfig, parse_ifd_entries,
 };
 use crate::parsers::tiff::makernotes::shared::value_extractors::{
     extract_string_value, extract_string_with_offset,
 };
 use nom::{
+    IResult,
     combinator::map,
     multi::count,
     number::complete::{be_u16, be_u32, le_u16, le_u32},
-    IResult,
 };
 use std::collections::HashMap;
 
 use super::nikon_lens_database::lookup_lens_name;
-use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 use super::shared::MakerNoteParser;
+use super::shared::array_extractors::{extract_i16_array, extract_u16_array, extract_u32_array};
 
 // Nikon MakerNote Tag IDs (from ExifTool Nikon.pm)
 const NIKON_VERSION: u16 = 0x0001;
@@ -112,8 +112,8 @@ const NIKON_IMAGE_BOUNDARY: u16 = 0x0016; // Image Boundary
 const NIKON_IMAGE_ADJUSTMENT: u16 = 0x0080; // Image Adjustment
 const NIKON_AUX_LENS: u16 = 0x0082; // Auxiliary Lens
 const NIKON_MULTI_EXPOSURE: u16 = 0x00B2; // Multi Exposure
-                                          // Note: 0x00B0=ColorSpace, 0x00B7=VignetteControl, 0x00B8=DistortionControl are primary
-                                          // (HIGH_ISO_NR, AF_INFO2, FILE_INFO are alternate names for same tag IDs)
+// Note: 0x00B0=ColorSpace, 0x00B7=VignetteControl, 0x00B8=DistortionControl are primary
+// (HIGH_ISO_NR, AF_INFO2, FILE_INFO are alternate names for same tag IDs)
 
 // Nikon header signatures
 const NIKON_HEADER_TYPE2: &[u8] = b"Nikon\0\x02\x10\x00\x00";
@@ -564,12 +564,13 @@ impl MakerNoteParser for NikonParser {
                     // ColorBalance array (white balance RGB coefficients)
                     NIKON_COLOR_BALANCE_A => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && array.len() >= 4 {
-                                tags.insert(
-                                    "Nikon:WB_RBLevels".to_string(),
-                                    format!("{} {}", array[0], array[1]),
-                                );
-                            }
+                            && array.len() >= 4
+                        {
+                            tags.insert(
+                                "Nikon:WB_RBLevels".to_string(),
+                                format!("{} {}", array[0], array[1]),
+                            );
+                        }
                     }
 
                     // Additional string tags
@@ -731,19 +732,21 @@ impl MakerNoteParser for NikonParser {
                     // Array tags
                     NIKON_AF_INFO => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && !array.is_empty() {
-                                tags.insert("Nikon:AFInfo".to_string(), format!("{}", array[0]));
-                            }
+                            && !array.is_empty()
+                        {
+                            tags.insert("Nikon:AFInfo".to_string(), format!("{}", array[0]));
+                        }
                     }
 
                     NIKON_FLASH_INFO => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && !array.is_empty() {
-                                tags.insert(
-                                    "Nikon:FlashInfoVersion".to_string(),
-                                    format!("{}", array[0]),
-                                );
-                            }
+                            && !array.is_empty()
+                        {
+                            tags.insert(
+                                "Nikon:FlashInfoVersion".to_string(),
+                                format!("{}", array[0]),
+                            );
+                        }
                     }
 
                     NIKON_WORLD_TIME | NIKON_WORLD_TIME_ALT => {
@@ -759,94 +762,92 @@ impl MakerNoteParser for NikonParser {
 
                     NIKON_ISO_INFO | NIKON_ISO_INFO_ALT => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && !array.is_empty() {
-                                tags.insert(
-                                    "Nikon:ISOExpansion".to_string(),
-                                    format!("{}", array[0]),
-                                );
-                            }
+                            && !array.is_empty()
+                        {
+                            tags.insert("Nikon:ISOExpansion".to_string(), format!("{}", array[0]));
+                        }
                     }
 
                     NIKON_VR_INFO | NIKON_VR_INFO_ALT => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && !array.is_empty() {
-                                tags.insert(
-                                    "Nikon:VRInfoVersion".to_string(),
-                                    format!("{}", array[0]),
-                                );
-                                if array.len() > 1 {
-                                    let vr_mode = match array[1] {
-                                        0 => "Off",
-                                        1 => "Normal",
-                                        2 => "Active",
-                                        3 => "Sport",
-                                        _ => "Unknown",
-                                    };
-                                    tags.insert("Nikon:VRMode".to_string(), vr_mode.to_string());
-                                }
+                            && !array.is_empty()
+                        {
+                            tags.insert("Nikon:VRInfoVersion".to_string(), format!("{}", array[0]));
+                            if array.len() > 1 {
+                                let vr_mode = match array[1] {
+                                    0 => "Off",
+                                    1 => "Normal",
+                                    2 => "Active",
+                                    3 => "Sport",
+                                    _ => "Unknown",
+                                };
+                                tags.insert("Nikon:VRMode".to_string(), vr_mode.to_string());
                             }
+                        }
                     }
 
                     NIKON_MULTI_EXPOSURE => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && !array.is_empty() {
-                                let mode = match array[0] {
-                                    0 => "Off",
-                                    1 => "Multiple Exposure",
-                                    2 => "Image Overlay",
-                                    3 => "HDR",
-                                    _ => "Unknown",
-                                };
-                                tags.insert(
-                                    "Nikon:MultiExposureMode".to_string(),
-                                    mode.to_string(),
-                                );
-                            }
+                            && !array.is_empty()
+                        {
+                            let mode = match array[0] {
+                                0 => "Off",
+                                1 => "Multiple Exposure",
+                                2 => "Image Overlay",
+                                3 => "HDR",
+                                _ => "Unknown",
+                            };
+                            tags.insert("Nikon:MultiExposureMode".to_string(), mode.to_string());
+                        }
                     }
 
                     NIKON_IMAGE_BOUNDARY => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && array.len() >= 4 {
-                                tags.insert(
-                                    "Nikon:ImageBoundary".to_string(),
-                                    format!("{} {} {} {}", array[0], array[1], array[2], array[3]),
-                                );
-                            }
+                            && array.len() >= 4
+                        {
+                            tags.insert(
+                                "Nikon:ImageBoundary".to_string(),
+                                format!("{} {} {} {}", array[0], array[1], array[2], array[3]),
+                            );
+                        }
                     }
 
                     NIKON_CROP_HI_SPEED => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && !array.is_empty() {
-                                let mode = match array[0] {
-                                    0 => "Off",
-                                    1 => "1.3x Crop",
-                                    2 => "DX Crop",
-                                    3 => "5:4 Crop",
-                                    4 => "1:1 Crop",
-                                    _ => "Unknown Crop",
-                                };
-                                tags.insert("Nikon:CropHiSpeed".to_string(), mode.to_string());
-                            }
+                            && !array.is_empty()
+                        {
+                            let mode = match array[0] {
+                                0 => "Off",
+                                1 => "1.3x Crop",
+                                2 => "DX Crop",
+                                3 => "5:4 Crop",
+                                4 => "1:1 Crop",
+                                _ => "Unknown Crop",
+                            };
+                            tags.insert("Nikon:CropHiSpeed".to_string(), mode.to_string());
+                        }
                     }
 
                     NIKON_COLOR_BALANCE => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && array.len() >= 4 {
-                                tags.insert(
-                                    "Nikon:ColorBalance".to_string(),
-                                    format!("{} {} {} {}", array[0], array[1], array[2], array[3]),
-                                );
-                            }
+                            && array.len() >= 4
+                        {
+                            tags.insert(
+                                "Nikon:ColorBalance".to_string(),
+                                format!("{} {} {} {}", array[0], array[1], array[2], array[3]),
+                            );
+                        }
                     }
 
                     NIKON_PICTURE_CONTROL_DATA => {
                         if let Some(array) = extract_u16_array(entry, data, byte_order)
-                            && !array.is_empty() {
-                                tags.insert(
-                                    "Nikon:PictureControlVersion".to_string(),
-                                    format!("{}", array[0]),
-                                );
-                            }
+                            && !array.is_empty()
+                        {
+                            tags.insert(
+                                "Nikon:PictureControlVersion".to_string(),
+                                format!("{}", array[0]),
+                            );
+                        }
                     }
 
                     NIKON_SENSOR_PIXEL_SIZE => {

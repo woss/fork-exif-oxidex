@@ -72,7 +72,8 @@ impl ISOParser {
         offset: u64,
     ) -> Result<()> {
         let data = reader.read(offset, 17)?;
-        if data.len() >= 17 && !data[0..16].iter().all(|&b| b == b'0' || b == 0)
+        if data.len() >= 17
+            && !data[0..16].iter().all(|&b| b == b'0' || b == 0)
             && let (Ok(yr), Ok(mo), Ok(dy), Ok(hr), Ok(mi), Ok(se)) = (
                 std::str::from_utf8(&data[0..4]),
                 std::str::from_utf8(&data[4..6]),
@@ -80,12 +81,13 @@ impl ISOParser {
                 std::str::from_utf8(&data[8..10]),
                 std::str::from_utf8(&data[10..12]),
                 std::str::from_utf8(&data[12..14]),
-            ) {
-                metadata.insert(
-                    key.to_string(),
-                    TagValue::String(format!("{}:{}:{} {}:{}:{}", yr, mo, dy, hr, mi, se)),
-                );
-            }
+            )
+        {
+            metadata.insert(
+                key.to_string(),
+                TagValue::String(format!("{}:{}:{} {}:{}:{}", yr, mo, dy, hr, mi, se)),
+            );
+        }
         Ok(())
     }
 

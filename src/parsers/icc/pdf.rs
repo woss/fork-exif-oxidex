@@ -220,24 +220,26 @@ fn parse_xref_table(xref_data: &[u8]) -> Result<HashMap<u32, u64>> {
 
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() == 2
-            && let (Ok(start_obj), Ok(count)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
-                for j in 0..count {
-                    i += 1;
-                    if i >= lines.len() {
-                        break;
-                    }
+            && let (Ok(start_obj), Ok(count)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>())
+        {
+            for j in 0..count {
+                i += 1;
+                if i >= lines.len() {
+                    break;
+                }
 
-                    let entry_line = lines[i].trim();
-                    let entry_parts: Vec<&str> = entry_line.split_whitespace().collect();
+                let entry_line = lines[i].trim();
+                let entry_parts: Vec<&str> = entry_line.split_whitespace().collect();
 
-                    if entry_parts.len() >= 3
-                        && let Ok(offset) = entry_parts[0].parse::<u64>()
-                            && entry_parts[2] == "n" {
-                                let obj_num = start_obj + j;
-                                xref_map.insert(obj_num, offset);
-                            }
+                if entry_parts.len() >= 3
+                    && let Ok(offset) = entry_parts[0].parse::<u64>()
+                    && entry_parts[2] == "n"
+                {
+                    let obj_num = start_obj + j;
+                    xref_map.insert(obj_num, offset);
                 }
             }
+        }
 
         i += 1;
     }

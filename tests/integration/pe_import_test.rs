@@ -62,10 +62,10 @@ fn test_pe_with_imports() {
     // Directory 0: Export Table
     data.extend_from_slice(&0u32.to_le_bytes()); // RVA
     data.extend_from_slice(&0u32.to_le_bytes()); // Size
-                                                 // Directory 1: Import Table (RVA 0x3000, size doesn't matter much)
+    // Directory 1: Import Table (RVA 0x3000, size doesn't matter much)
     data.extend_from_slice(&0x3000u32.to_le_bytes()); // RVA
     data.extend_from_slice(&0x100u32.to_le_bytes()); // Size
-                                                     // Directories 2-15: Empty
+    // Directories 2-15: Empty
     for _ in 2..16 {
         data.extend_from_slice(&0u32.to_le_bytes());
         data.extend_from_slice(&0u32.to_le_bytes());

@@ -4,10 +4,10 @@
 //! which contains dynamic linking information (needed libraries, rpaths, etc.).
 
 use crate::parsers::elf::section_header_parser::get_string_from_strtab;
-use crate::parsers::elf::structures::{dt_tag, DynamicEntry, DynamicInfo};
+use crate::parsers::elf::structures::{DynamicEntry, DynamicInfo, dt_tag};
 use nom::{
-    number::complete::{be_u32, be_u64, le_u32, le_u64},
     IResult,
+    number::complete::{be_u32, be_u64, le_u32, le_u64},
 };
 
 /// Parses a single ELF64 dynamic entry in little-endian format

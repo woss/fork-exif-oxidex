@@ -7,8 +7,8 @@ use crate::parsers::pe::structures::{
     ImageImportDescriptor, ImportFunction, ImportInfo, SectionHeader,
 };
 use nom::{
-    number::complete::{le_u16, le_u32},
     IResult,
+    number::complete::{le_u16, le_u32},
 };
 
 /// Parse an IMAGE_IMPORT_DESCRIPTOR (20 bytes)
@@ -152,9 +152,10 @@ pub fn parse_dll_imports(
             let name_rva = value as u32;
             if let Some(name_offset) = rva_to_file_offset(name_rva, sections)
                 && let Ok(name_data) = reader.read(name_offset, 256)
-                    && let Ok((_, (hint, name))) = parse_import_by_name(name_data) {
-                        functions.push(ImportFunction::ByName { hint, name });
-                    }
+                && let Ok((_, (hint, name))) = parse_import_by_name(name_data)
+            {
+                functions.push(ImportFunction::ByName { hint, name });
+            }
         }
     }
 

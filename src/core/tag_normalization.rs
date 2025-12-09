@@ -95,11 +95,12 @@ pub fn normalize_tag_name(family: &str, name: &str) -> String {
 /// ```
 pub fn normalize_tag_family(tag_key: &str) -> String {
     if let Some((family, name)) = tag_key.split_once(':')
-        && let Some(normalized_family) = FAMILY_MAPPINGS.get(family) {
-            // Apply both family and name normalization
-            let normalized_name = normalize_tag_name(normalized_family, name);
-            return format!("{}:{}", normalized_family, normalized_name);
-        }
+        && let Some(normalized_family) = FAMILY_MAPPINGS.get(family)
+    {
+        // Apply both family and name normalization
+        let normalized_name = normalize_tag_name(normalized_family, name);
+        return format!("{}:{}", normalized_family, normalized_name);
+    }
     tag_key.to_string()
 }
 

@@ -95,12 +95,13 @@ pub fn extract_file_metadata(path: &Path) -> Result<MetadataMap> {
 
     // File name (basename without directory)
     if let Some(filename) = path.file_name()
-        && let Some(filename_str) = filename.to_str() {
-            metadata.insert(
-                "File:FileName".to_string(),
-                TagValue::new_string(filename_str.to_string()),
-            );
-        }
+        && let Some(filename_str) = filename.to_str()
+    {
+        metadata.insert(
+            "File:FileName".to_string(),
+            TagValue::new_string(filename_str.to_string()),
+        );
+    }
 
     // Directory (parent directory path)
     if let Some(parent) = path.parent() {
@@ -182,29 +183,30 @@ pub fn extract_file_metadata(path: &Path) -> Result<MetadataMap> {
 
     // File type and extension based on path
     if let Some(extension) = path.extension()
-        && let Some(ext_str) = extension.to_str() {
-            let ext_lower = ext_str.to_lowercase();
+        && let Some(ext_str) = extension.to_str()
+    {
+        let ext_lower = ext_str.to_lowercase();
 
-            // File type extension
-            metadata.insert(
-                "File:FileTypeExtension".to_string(),
-                TagValue::new_string(ext_lower.clone()),
-            );
+        // File type extension
+        metadata.insert(
+            "File:FileTypeExtension".to_string(),
+            TagValue::new_string(ext_lower.clone()),
+        );
 
-            // File type (human-readable)
-            let file_type = get_file_type(&ext_lower);
-            metadata.insert(
-                "File:FileType".to_string(),
-                TagValue::new_string(file_type.to_string()),
-            );
+        // File type (human-readable)
+        let file_type = get_file_type(&ext_lower);
+        metadata.insert(
+            "File:FileType".to_string(),
+            TagValue::new_string(file_type.to_string()),
+        );
 
-            // MIME type
-            let mime_type = get_mime_type(&ext_lower);
-            metadata.insert(
-                "File:MIMEType".to_string(),
-                TagValue::new_string(mime_type.to_string()),
-            );
-        }
+        // MIME type
+        let mime_type = get_mime_type(&ext_lower);
+        metadata.insert(
+            "File:MIMEType".to_string(),
+            TagValue::new_string(mime_type.to_string()),
+        );
+    }
 
     Ok(metadata)
 }
@@ -302,16 +304,17 @@ fn get_timezone_offset() -> String {
     {
         use std::process::Command;
         if let Ok(output) = Command::new("date").arg("+%z").output()
-            && let Ok(tz_str) = String::from_utf8(output.stdout) {
-                let trimmed = tz_str.trim();
-                if trimmed.len() >= 5 {
-                    // Format is +HHMM or -HHMM, convert to +HH:MM or -HH:MM
-                    let sign = &trimmed[0..1];
-                    let hours = &trimmed[1..3];
-                    let mins = &trimmed[3..5];
-                    return format!("{}{}:{}", sign, hours, mins);
-                }
+            && let Ok(tz_str) = String::from_utf8(output.stdout)
+        {
+            let trimmed = tz_str.trim();
+            if trimmed.len() >= 5 {
+                // Format is +HHMM or -HHMM, convert to +HH:MM or -HH:MM
+                let sign = &trimmed[0..1];
+                let hours = &trimmed[1..3];
+                let mins = &trimmed[3..5];
+                return format!("{}{}:{}", sign, hours, mins);
             }
+        }
     }
 
     // Default to +00:00 if we can't determine timezone

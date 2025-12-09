@@ -42,10 +42,10 @@
 
 #![allow(dead_code)]
 
-use crate::core::metadata_map::MetadataMap;
 use crate::core::FileReader;
+use crate::core::metadata_map::MetadataMap;
 use crate::error::{ExifToolError, Result};
-use crate::parsers::jpeg::{parse_segments, Segment};
+use crate::parsers::jpeg::{Segment, parse_segments};
 use crate::parsers::tiff::ifd_parser::ByteOrder;
 use crate::writers::tiff_writer::reconstruct_tiff_structure;
 

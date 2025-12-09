@@ -7,11 +7,11 @@
 //! - GNU properties (security features like CET, BTI)
 
 use crate::io::{ByteOrder, EndianReader};
-use crate::parsers::elf::structures::{nt_core, nt_gnu, NoteEntry};
+use crate::parsers::elf::structures::{NoteEntry, nt_core, nt_gnu};
 use nom::{
+    IResult,
     bytes::complete::take,
     number::complete::{be_u32, le_u32},
-    IResult,
 };
 
 /// Aligns a value up to a 4-byte boundary

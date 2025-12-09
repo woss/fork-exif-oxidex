@@ -18,7 +18,7 @@ const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
 /// Calculates CRC-32 for PNG chunks
 fn calculate_png_crc(chunk_type: &[u8; 4], data: &[u8]) -> u32 {
-    use crc::{Crc, CRC_32_ISO_HDLC};
+    use crc::{CRC_32_ISO_HDLC, Crc};
     let crc = Crc::<u32>::new(&CRC_32_ISO_HDLC);
     let mut digest = crc.digest();
     digest.update(chunk_type);

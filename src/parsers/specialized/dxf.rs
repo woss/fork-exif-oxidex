@@ -204,19 +204,21 @@ impl FormatParser for DXFParser {
 
         // Extract drawing extents (bounding box)
         if let Some(x) = content.header_vars.get("$EXTMIN_X")
-            && let Some(y) = content.header_vars.get("$EXTMIN_Y") {
-                metadata.insert(
-                    "ExtentMin".to_string(),
-                    TagValue::String(format!("{}, {}", x, y)),
-                );
-            }
+            && let Some(y) = content.header_vars.get("$EXTMIN_Y")
+        {
+            metadata.insert(
+                "ExtentMin".to_string(),
+                TagValue::String(format!("{}, {}", x, y)),
+            );
+        }
         if let Some(x) = content.header_vars.get("$EXTMAX_X")
-            && let Some(y) = content.header_vars.get("$EXTMAX_Y") {
-                metadata.insert(
-                    "ExtentMax".to_string(),
-                    TagValue::String(format!("{}, {}", x, y)),
-                );
-            }
+            && let Some(y) = content.header_vars.get("$EXTMAX_Y")
+        {
+            metadata.insert(
+                "ExtentMax".to_string(),
+                TagValue::String(format!("{}, {}", x, y)),
+            );
+        }
 
         // Entity and layer counts
         let counts = [

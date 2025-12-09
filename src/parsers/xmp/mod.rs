@@ -40,7 +40,7 @@ use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::Result;
 
 // Re-export main parsing function for convenience
-pub use history_parser::{parse_xmp_history, XmpHistoryEntry};
+pub use history_parser::{XmpHistoryEntry, parse_xmp_history};
 pub use namespace_mapping::namespace_to_family;
 pub use namespace_resolver::NamespaceResolver;
 pub use rdf_parser::parse_xmp;

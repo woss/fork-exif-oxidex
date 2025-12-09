@@ -1,5 +1,5 @@
 use oxidex_tags_shared::{
-    render_domain_summary, render_table_preview, validate_database, Tag, TagDatabase, TagTable,
+    Tag, TagDatabase, TagTable, render_domain_summary, render_table_preview, validate_database,
 };
 
 fn sample_tag(name: &str) -> Tag {

@@ -133,9 +133,9 @@ impl STLParser {
                         if parts.len() >= 3
                             && let (Ok(x), Ok(y), Ok(z)) =
                                 (parts[0].parse(), parts[1].parse(), parts[2].parse())
-                            {
-                                bbox.update(x, y, z);
-                            }
+                        {
+                            bbox.update(x, y, z);
+                        }
                     }
                 }
             }
