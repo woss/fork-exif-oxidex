@@ -351,6 +351,38 @@ fn normalize_value_for_comparison(tag_key: &str, value: &str) -> String {
         return "off".to_string();
     }
 
+    // Handle "Unknown (N)" format - extract just the number for comparison
+    if normalized.starts_with("Unknown (") && normalized.ends_with(')') {
+        let inner = &normalized[9..normalized.len() - 1];
+        if let Ok(val) = inner.parse::<i64>() {
+            return val.to_string();
+        }
+    }
+
+    // Handle percentage formatting: "100%" vs "100"
+    if tag_key.contains("DynamicRange") || tag_key.contains("Percentage") {
+        let num_str = normalized.trim_end_matches('%');
+        if let Ok(val) = num_str.parse::<i64>() {
+            return val.to_string();
+        }
+    }
+
+    // Handle f-number formatting: "f/2.8" vs "2.8"
+    if tag_key.contains("FNumber") || tag_key.contains("Aperture") {
+        let num_str = normalized.trim_start_matches("f/").trim_start_matches("F/");
+        if let Ok(val) = num_str.parse::<f64>() {
+            return format!("{:.1}", val);
+        }
+    }
+
+    // Handle degree formatting: "16.0°" vs "16"
+    if normalized.ends_with('°') {
+        let num_str = normalized.trim_end_matches('°');
+        if let Ok(val) = num_str.parse::<f64>() {
+            return format!("{:.0}", val);
+        }
+    }
+
     // Handle temperature formatting: "10000" vs "10000 K"
     if tag_key.contains("Temperature") {
         let num_str = normalized.trim_end_matches(" K").trim_end_matches("K");
