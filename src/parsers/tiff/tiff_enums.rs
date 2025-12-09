@@ -195,9 +195,16 @@ pub fn tiff_enum_to_string(tag_id: u16, value: i64) -> Option<String> {
 
         // CustomRendered (EXIF tag 0xA401)
         // Indicates if special processing was applied to the image
+        // Extended values (2+) are from Apple's HDR/Portrait processing
         0xA401 => match value {
             0 => Some("Normal".to_string()),
             1 => Some("Custom".to_string()),
+            2 => Some("HDR (no original saved)".to_string()),
+            3 => Some("HDR (original saved)".to_string()),
+            4 => Some("Original (for HDR)".to_string()),
+            6 => Some("Panorama".to_string()),
+            7 => Some("Portrait HDR".to_string()),
+            8 => Some("Portrait".to_string()),
             _ => None,
         },
 
