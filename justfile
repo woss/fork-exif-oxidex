@@ -861,6 +861,9 @@ compare-exiftool-full-update:
     echo "   OxiDex:   v$OXIDEX_VERSION"
     echo ""
 
+    # Ensure output directory exists
+    mkdir -p docs/reference/comparison
+
     ./target/release/tag-comparison \
         --exiftool "$EXIFTOOL_DIR/exiftool" \
         --samples "$COMBINED_DIR" \
