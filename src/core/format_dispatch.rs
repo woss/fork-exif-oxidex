@@ -57,6 +57,7 @@ use crate::parsers::specialized::stl::parse_stl_metadata;
 use crate::parsers::specialized::x509::parse_x509_metadata;
 use crate::parsers::text::txt::parse_txt_metadata;
 use crate::parsers::text::vcf::parse_vcf_metadata;
+use crate::parsers::video::asf::parse_asf_metadata;
 use crate::parsers::video::avi::parse_avi_metadata;
 use crate::parsers::video::flv::parse_flv_metadata;
 use crate::parsers::video::mkv::parse_mkv_metadata;
@@ -104,6 +105,7 @@ pub fn dispatch_format_parser(reader: &dyn FileReader, format: FileFormat) -> Re
         FileFormat::FLV => convert_string_error(parse_flv_metadata(reader), "FLV"),
         FileFormat::AVI => convert_string_error(parse_avi_metadata(reader), "AVI"),
         FileFormat::MTS => convert_string_error(parse_mts_metadata(reader), "MTS"),
+        FileFormat::ASF => convert_string_error(parse_asf_metadata(reader), "ASF"),
         FileFormat::MP3 => convert_string_error(parse_mp3_metadata(reader), "MP3"),
         FileFormat::FLAC => convert_string_error(parse_flac_metadata(reader), "FLAC"),
         FileFormat::AAC => convert_string_error(parse_aac_metadata(reader), "AAC"),

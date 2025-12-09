@@ -4,12 +4,14 @@
 
 #![allow(dead_code)]
 
+pub mod asf;
 pub mod avi;
 pub mod flv;
 pub mod mkv;
 pub mod mts;
 pub mod webm;
 
+pub use asf::{AsfParser, parse_asf_metadata};
 pub use avi::{AviParser, parse_avi_metadata};
 pub use flv::{FlvParser, parse_flv_metadata};
 pub use mkv::{MkvParser, parse_mkv_metadata};

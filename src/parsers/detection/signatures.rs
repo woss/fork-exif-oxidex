@@ -68,13 +68,19 @@ pub static SIMPLE_SIGNATURES: &[Signature] = &[
     signature!(b"\x76\x2F\x31\x01", 0, FileFormat::EXR),
     signature!(b"\x42\x50\x47\xFB", 0, FileFormat::BPG),
     signature!(b"\xFF\x0A", 0, FileFormat::JXL),
-    // Audio formats
+    // Audio/Video formats
     signature!(b"fLaC", 0, FileFormat::FLAC),
     signature!(b"ID3", 0, FileFormat::MP3),
     signature!(b"FLV", 0, FileFormat::FLV),
     signature!(b"MAC ", 0, FileFormat::APE),
     signature!(b"\x1A\x45\xDF\xA3", 0, FileFormat::MKV),
     signature!(b"OggS", 0, FileFormat::OGG),
+    // ASF/WMV - Header Object GUID
+    signature!(
+        b"\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C",
+        0,
+        FileFormat::ASF
+    ),
     // Document formats
     signature!(b"%PDF", 0, FileFormat::PDF),
     // Archive formats
