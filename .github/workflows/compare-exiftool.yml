@@ -1,0 +1,87 @@
+name: ExifTool Comparison
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'oxidex-tags-*/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Sundays at 3:00 AM UTC
+    - cron: '0 3 * * 0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  compare:
+    name: Compare with ExifTool
+    runs-on: arc-runner-set
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: extractions/setup-just@v2
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install ExifTool
+        run: sudo apt-get update -qq && sudo apt-get install -y libimage-exiftool-perl curl
+
+      - name: Fetch ExifTool version
+        id: exiftool-version
+        run: |
+          # Get version from exiftool.org/ver.txt
+          VERSION=$(curl -sA "OxiDex/1.0" --connect-timeout 10 --max-time 30 https://exiftool.org/ver.txt 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' || echo "")
+          if [[ -z "$VERSION" ]]; then
+            VERSION=$(exiftool -ver)
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "ExifTool version: $VERSION"
+
+      - name: Run comparison and update docs
+        run: just compare-exiftool-full-update
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet docs/reference/comparison/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit reports
+        if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/reference/comparison/
+          git add comparison.json || true
+          git commit -m "docs: update ExifTool comparison (v${{ steps.exiftool-version.outputs.version }})" || true
+          git push
