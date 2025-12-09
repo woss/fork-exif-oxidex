@@ -46,6 +46,7 @@
 //! assert!(result.len() >= 3); // XMPToolkit + Creator + Rating
 //! ```
 
+use crate::core::value_formatter::format_iptc_urgency;
 use crate::error::{ExifToolError, Result};
 use crate::parsers::xmp::namespace_resolver::NamespaceResolver;
 use quick_xml::Reader;
@@ -242,6 +243,15 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
 
         buf.clear();
     }
+
+    // Post-process results to apply formatting for specific tags
+    let results = results
+        .into_iter()
+        .map(|(tag, value)| {
+            let formatted = format_xmp_value(&tag, &value);
+            (tag, formatted)
+        })
+        .collect();
 
     Ok(results)
 }
@@ -501,6 +511,20 @@ fn capitalize_first_letter(s: &str) -> String {
     match chars.next() {
         None => String::new(),
         Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+    }
+}
+
+/// Formats XMP values to match ExifTool output conventions.
+///
+/// Applies special formatting for specific XMP tags:
+/// - Urgency: Adds human-readable description (e.g., "8" -> "8 (least urgent)")
+fn format_xmp_value(tag: &str, value: &str) -> String {
+    // Extract local tag name (after colon)
+    let local_name = tag.split(':').last().unwrap_or(tag);
+
+    match local_name {
+        "Urgency" => format_iptc_urgency(value),
+        _ => value.to_string(),
     }
 }
 
