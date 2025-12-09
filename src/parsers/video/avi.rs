@@ -232,21 +232,25 @@ fn parse_avih_chunk(
     let r = EndianReader::little_endian(avih_data);
 
     let microsec_per_frame = r.u32_at(0).unwrap_or(0);
+    let max_bytes_per_sec = r.u32_at(4).unwrap_or(0);
     let total_frames = r.u32_at(16).unwrap_or(0);
+    let stream_count = r.u32_at(24).unwrap_or(0);
     let width = r.u32_at(32).unwrap_or(0);
     let height = r.u32_at(36).unwrap_or(0);
 
     // Calculate frame rate from microseconds per frame
     if microsec_per_frame > 0 {
         let frame_rate = 1_000_000.0 / microsec_per_frame as f64;
+        // ExifTool outputs integer frame rate
         metadata.insert(
-            "RIFF:FrameRate".to_string(),
-            TagValue::new_string(format!("{:.2}", frame_rate)),
+            "RIFF:VideoFrameRate".to_string(),
+            TagValue::new_integer(frame_rate.round() as i64),
         );
     }
 
+    // TotalFrameCount - ExifTool tag name
     metadata.insert(
-        "RIFF:TotalFrames".to_string(),
+        "RIFF:TotalFrameCount".to_string(),
         TagValue::new_integer(total_frames as i64),
     );
     metadata.insert(
@@ -257,6 +261,23 @@ fn parse_avih_chunk(
         "RIFF:ImageHeight".to_string(),
         TagValue::new_integer(height as i64),
     );
+
+    // StreamCount
+    if stream_count > 0 {
+        metadata.insert(
+            "RIFF:StreamCount".to_string(),
+            TagValue::new_integer(stream_count as i64),
+        );
+    }
+
+    // MaxDataRate - convert to kB/s
+    if max_bytes_per_sec > 0 {
+        let kb_per_sec = max_bytes_per_sec / 1000;
+        metadata.insert(
+            "RIFF:MaxDataRate".to_string(),
+            TagValue::new_string(format!("{} kB/s", kb_per_sec)),
+        );
+    }
 
     // Calculate duration if we have frame rate and total frames
     if microsec_per_frame > 0 && total_frames > 0 {
@@ -279,8 +300,9 @@ fn parse_stream_list(
     metadata: &mut MetadataMap,
 ) -> Result<()> {
     let mut offset = start_offset;
-    let stream_prefix = format!("RIFF:Stream{}:", stream_num);
     let mut stream_type: Option<[u8; 4]> = None;
+    let is_first_video = !metadata.contains_key("RIFF:VideoCodec");
+    let is_first_audio = !metadata.contains_key("RIFF:AudioCodec");
 
     while offset + 8 < end_offset {
         // Read chunk header
@@ -300,36 +322,23 @@ fn parse_stream_list(
             b"strh" => {
                 // Parse stream header
                 if chunk_size >= 56 {
-                    stream_type = parse_stream_header(reader, offset, &stream_prefix, metadata)?;
+                    stream_type =
+                        parse_stream_header(reader, offset, is_first_video, is_first_audio, metadata)?;
                 }
             }
             b"strf" => {
                 // Parse stream format (depends on stream type)
                 if let Some(stype) = stream_type {
-                    parse_stream_format(
-                        reader,
-                        offset,
-                        chunk_size,
-                        &stype,
-                        &stream_prefix,
-                        metadata,
-                    )?;
+                    let is_first = match &stype {
+                        b"vids" => is_first_video,
+                        b"auds" => is_first_audio,
+                        _ => false,
+                    };
+                    parse_stream_format(reader, offset, chunk_size, &stype, is_first, metadata)?;
                 }
             }
             b"strn" => {
-                // Parse stream name
-                if let Ok(name_bytes) = reader.read(offset, chunk_size as usize) {
-                    let name = String::from_utf8_lossy(name_bytes)
-                        .trim_end_matches('\0')
-                        .trim()
-                        .to_string();
-                    if !name.is_empty() {
-                        metadata.insert(
-                            format!("{}StreamName", stream_prefix),
-                            TagValue::new_string(name),
-                        );
-                    }
-                }
+                // Parse stream name (skip for now, not commonly used)
             }
             _ => {}
         }
@@ -341,6 +350,9 @@ fn parse_stream_list(
         }
     }
 
+    // Track that we've processed this stream type
+    let _ = stream_num; // Silence unused warning
+
     Ok(())
 }
 
@@ -348,7 +360,8 @@ fn parse_stream_list(
 fn parse_stream_header(
     reader: &dyn FileReader,
     offset: u64,
-    stream_prefix: &str,
+    is_first_video: bool,
+    is_first_audio: bool,
     metadata: &mut MetadataMap,
 ) -> Result<Option<[u8; 4]>> {
     let strh_data = reader.read(offset, 56)?;
@@ -359,75 +372,86 @@ fn parse_stream_header(
     let scale = r.u32_at(20).unwrap_or(0);
     let rate = r.u32_at(24).unwrap_or(0);
     let length = r.u32_at(32).unwrap_or(0);
+    let quality = r.u32_at(44).unwrap_or(0);
 
-    // Stream type
-    let type_str = match &stream_type {
-        b"vids" => "Video",
-        b"auds" => "Audio",
-        b"txts" => "Text",
-        b"mids" => "MIDI",
-        _ => "Unknown",
-    };
-    metadata.insert(
-        format!("{}StreamType", stream_prefix),
-        TagValue::new_string(type_str.to_string()),
-    );
+    // Stream type (for first video stream)
+    if stream_type == *b"vids" && is_first_video {
+        metadata.insert(
+            "RIFF:StreamType".to_string(),
+            TagValue::new_string("Video".to_string()),
+        );
+    }
 
     // Codec FourCC
     let fourcc_str = String::from_utf8_lossy(&codec_fourcc).to_string();
-    if !fourcc_str.trim().is_empty() {
-        metadata.insert(
-            format!("{}CodecFourCC", stream_prefix),
-            TagValue::new_string(fourcc_str.clone()),
-        );
-
-        // Also add as generic codec for first video/audio stream
-        if stream_prefix.contains("Stream1:") {
-            if stream_type == *b"vids" {
-                metadata.insert(
-                    "RIFF:VideoCodec".to_string(),
-                    TagValue::new_string(fourcc_str),
-                );
-            } else if stream_type == *b"auds" {
-                metadata.insert(
-                    "RIFF:AudioCodec".to_string(),
-                    TagValue::new_string(fourcc_str),
-                );
-            }
-        }
-    }
-
-    // Calculate frame rate or sample rate
-    if rate > 0 && scale > 0 {
-        let fps = rate as f64 / scale as f64;
-        if stream_type == *b"vids" {
+    if !fourcc_str.trim().is_empty() && fourcc_str != "\0\0\0\0" {
+        if stream_type == *b"vids" && is_first_video {
             metadata.insert(
-                format!("{}FrameRate", stream_prefix),
-                TagValue::new_string(format!("{:.3}", fps)),
+                "RIFF:VideoCodec".to_string(),
+                TagValue::new_string(fourcc_str),
             );
-        } else if stream_type == *b"auds" {
+        } else if stream_type == *b"auds" && is_first_audio {
+            // Audio codec from strh is usually empty, strf has more info
             metadata.insert(
-                format!("{}SampleRate", stream_prefix),
-                TagValue::new_string(format!("{:.0}", fps)),
+                "RIFF:AudioCodec".to_string(),
+                TagValue::new_string(fourcc_str),
             );
         }
     }
 
-    // Stream length (in scale units)
-    if length > 0 {
+    // Video frame count and rate
+    if stream_type == *b"vids" && is_first_video && length > 0 {
         metadata.insert(
-            format!("{}StreamLength", stream_prefix),
+            "RIFF:VideoFrameCount".to_string(),
             TagValue::new_integer(length as i64),
         );
+        // FrameCount at stream level = same as VideoFrameCount
+        metadata.insert(
+            "RIFF:FrameCount".to_string(),
+            TagValue::new_integer(length as i64),
+        );
+    }
 
-        // Calculate duration
-        if rate > 0 && scale > 0 {
-            let duration_secs = (length as f64 * scale as f64) / rate as f64;
+    // Audio sample count
+    if stream_type == *b"auds" && is_first_audio && length > 0 {
+        metadata.insert(
+            "RIFF:AudioSampleCount".to_string(),
+            TagValue::new_integer(length as i64),
+        );
+    }
+
+    // Sample rate for audio streams
+    if stream_type == *b"auds" && is_first_audio && rate > 0 && scale > 0 {
+        let sample_rate = (rate as f64 / scale as f64) as i64;
+        // This is overwritten by strf parsing with more accurate value
+        if !metadata.contains_key("RIFF:AudioSampleRate") {
             metadata.insert(
-                format!("{}Duration", stream_prefix),
-                TagValue::new_string(format!("{:.3}", duration_secs)),
+                "RIFF:SampleRate".to_string(),
+                TagValue::new_integer(sample_rate),
             );
         }
+    }
+
+    // Quality (for video)
+    if stream_type == *b"vids" && is_first_video && quality > 0 {
+        metadata.insert(
+            "RIFF:Quality".to_string(),
+            TagValue::new_integer(quality as i64),
+        );
+    }
+
+    // SampleSize (variable vs fixed)
+    let sample_size = r.u32_at(48).unwrap_or(0);
+    if stream_type == *b"vids" && is_first_video {
+        let size_str = if sample_size == 0 {
+            "Variable"
+        } else {
+            "Fixed"
+        };
+        metadata.insert(
+            "RIFF:SampleSize".to_string(),
+            TagValue::new_string(size_str.to_string()),
+        );
     }
 
     Ok(Some(stream_type))
@@ -439,20 +463,20 @@ fn parse_stream_format(
     offset: u64,
     size: u64,
     stream_type: &[u8; 4],
-    stream_prefix: &str,
+    is_first: bool,
     metadata: &mut MetadataMap,
 ) -> Result<()> {
     match stream_type {
         b"vids" => {
             // Video format (BITMAPINFOHEADER)
             if size >= 40 {
-                parse_video_format(reader, offset, stream_prefix, metadata)?;
+                parse_video_format(reader, offset, is_first, metadata)?;
             }
         }
         b"auds" => {
             // Audio format (WAVEFORMATEX)
             if size >= 16 {
-                parse_audio_format(reader, offset, stream_prefix, metadata)?;
+                parse_audio_format(reader, offset, is_first, metadata)?;
             }
         }
         _ => {}
@@ -465,36 +489,22 @@ fn parse_stream_format(
 fn parse_video_format(
     reader: &dyn FileReader,
     offset: u64,
-    stream_prefix: &str,
+    is_first: bool,
     metadata: &mut MetadataMap,
 ) -> Result<()> {
     let bih_data = reader.read(offset, 40)?;
     let r = EndianReader::little_endian(bih_data);
 
-    let width = r.u32_at(4).unwrap_or(0);
-    let height = r.u32_at(8).unwrap_or(0);
+    let _width = r.u32_at(4).unwrap_or(0);
+    let _height = r.u32_at(8).unwrap_or(0);
     let bit_count = r.u16_at(14).unwrap_or(0);
-    let compression = [bih_data[16], bih_data[17], bih_data[18], bih_data[19]];
+    let _compression = [bih_data[16], bih_data[17], bih_data[18], bih_data[19]];
 
-    metadata.insert(
-        format!("{}ImageWidth", stream_prefix),
-        TagValue::new_integer(width as i64),
-    );
-    metadata.insert(
-        format!("{}ImageHeight", stream_prefix),
-        TagValue::new_integer(height as i64),
-    );
-    metadata.insert(
-        format!("{}BitDepth", stream_prefix),
-        TagValue::new_integer(bit_count as i64),
-    );
-
-    // Compression FourCC
-    let compression_str = String::from_utf8_lossy(&compression).to_string();
-    if !compression_str.trim().is_empty() && compression != [0, 0, 0, 0] {
+    // BitDepth for first video stream
+    if is_first && bit_count > 0 {
         metadata.insert(
-            format!("{}Compression", stream_prefix),
-            TagValue::new_string(compression_str),
+            "RIFF:BitDepth".to_string(),
+            TagValue::new_integer(bit_count as i64),
         );
     }
 
@@ -505,7 +515,7 @@ fn parse_video_format(
 fn parse_audio_format(
     reader: &dyn FileReader,
     offset: u64,
-    stream_prefix: &str,
+    is_first: bool,
     metadata: &mut MetadataMap,
 ) -> Result<()> {
     let wfx_data = reader.read(offset, 16)?;
@@ -517,57 +527,61 @@ fn parse_audio_format(
     let avg_bytes_per_sec = r.u32_at(8).unwrap_or(0);
     let bits_per_sample = r.u16_at(14).unwrap_or(0);
 
-    // Audio format tag
+    // Only output for first audio stream
+    if !is_first {
+        return Ok(());
+    }
+
+    // Encoding - human-readable format name
     let format_name = match format_tag {
-        0x0001 => "PCM",
-        0x0002 => "ADPCM",
+        0x0001 => "Microsoft PCM",
+        0x0002 => "Microsoft ADPCM",
         0x0003 => "IEEE Float",
-        0x0006 => "A-Law",
-        0x0007 => "Mu-Law",
-        0x0011 => "IMA ADPCM",
-        0x0016 => "G.723 ADPCM",
+        0x0006 => "ITU G.711 a-law",
+        0x0007 => "ITU G.711 mu-law",
+        0x0011 => "Intel DVI/IMA ADPCM",
+        0x0016 => "ITU G.723 ADPCM (Yamaha)",
         0x0031 => "GSM 6.10",
         0x0050 => "MPEG",
-        0x0055 => "MP3",
+        0x0055 => "MPEG Layer 3",
         0x0161 => "WMA v1",
         0x0162 => "WMA v2",
-        _ => "Unknown",
+        0xFFFE => "Extensible",
+        _ => "",
     };
     metadata.insert(
-        format!("{}AudioFormat", stream_prefix),
+        "RIFF:Encoding".to_string(),
         TagValue::new_string(format_name.to_string()),
     );
-    metadata.insert(
-        format!("{}AudioFormatTag", stream_prefix),
-        TagValue::new_integer(format_tag as i64),
-    );
 
+    // NumChannels
     metadata.insert(
-        format!("{}NumChannels", stream_prefix),
+        "RIFF:NumChannels".to_string(),
         TagValue::new_integer(channels as i64),
     );
+
+    // SampleRate - overwrites the value from strh
     metadata.insert(
-        format!("{}SampleRate", stream_prefix),
+        "RIFF:SampleRate".to_string(),
         TagValue::new_integer(samples_per_sec as i64),
     );
+    // Also output as AudioSampleRate for explicit audio tag
     metadata.insert(
-        format!("{}AvgBytesPerSec", stream_prefix),
+        "RIFF:AudioSampleRate".to_string(),
+        TagValue::new_integer(samples_per_sec as i64),
+    );
+
+    // AvgBytesPerSec
+    metadata.insert(
+        "RIFF:AvgBytesPerSec".to_string(),
         TagValue::new_integer(avg_bytes_per_sec as i64),
     );
 
+    // BitsPerSample
     if bits_per_sample > 0 {
         metadata.insert(
-            format!("{}BitsPerSample", stream_prefix),
+            "RIFF:BitsPerSample".to_string(),
             TagValue::new_integer(bits_per_sample as i64),
-        );
-    }
-
-    // Calculate bitrate
-    let bitrate_kbps = (avg_bytes_per_sec * 8) / 1000;
-    if bitrate_kbps > 0 {
-        metadata.insert(
-            format!("{}Bitrate", stream_prefix),
-            TagValue::new_string(format!("{} kbps", bitrate_kbps)),
         );
     }
 
