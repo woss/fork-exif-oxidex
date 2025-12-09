@@ -105,14 +105,44 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                         TagValue::Integer(height as i64),
                     );
 
-                    // Decode flags
+                    // Build WebP_Flags string like ExifTool
+                    // VP8X flags (from ExifTool RIFF.pm):
+                    //   Bit 1 (0x02) = Animation
+                    //   Bit 2 (0x04) = XMP
+                    //   Bit 3 (0x08) = EXIF
+                    //   Bit 4 (0x10) = Alpha
+                    //   Bit 5 (0x20) = ICC Profile
+                    // ExifTool outputs in order: XMP, EXIF, Alpha, Animation
+                    // (ICC is not included in WebP_Flags, it's a separate Has tag)
+                    let mut flag_parts = Vec::new();
+                    if flags & 0x04 != 0 {
+                        flag_parts.push("XMP");
+                    }
+                    if flags & 0x08 != 0 {
+                        flag_parts.push("EXIF");
+                    }
                     if flags & 0x10 != 0 {
+                        flag_parts.push("Alpha");
+                    }
+                    if flags & 0x02 != 0 {
+                        flag_parts.push("Animation");
+                    }
+                    if !flag_parts.is_empty() {
+                        metadata.insert(
+                            "WebP:WebP_Flags".to_string(),
+                            TagValue::String(flag_parts.join(", ")),
+                        );
+                    }
+
+                    // Keep individual flags for compatibility
+                    // Note: Bit 5 (0x20) = ICC, Bit 4 (0x10) = Alpha
+                    if flags & 0x20 != 0 {
                         metadata.insert(
                             "WebP:HasICCP".to_string(),
                             TagValue::String("Yes".to_string()),
                         );
                     }
-                    if flags & 0x20 != 0 {
+                    if flags & 0x10 != 0 {
                         metadata.insert(
                             "WebP:HasAlpha".to_string(),
                             TagValue::String("Yes".to_string()),
@@ -144,11 +174,41 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                     let vp8_data = reader.read(chunk_data_offset, 10)?;
                     let vp8_reader = EndianReader::little_endian(vp8_data);
                     // VP8 frame header starts with 3-byte frame tag
+                    let frame_tag = vp8_reader.u8_at(0).unwrap_or(1);
                     // Check if this is a keyframe
-                    if vp8_reader.u8_at(0).unwrap_or(1) & 0x01 == 0 {
+                    if frame_tag & 0x01 == 0 {
+                        // Extract VP8 version (bits 1-3 of frame tag)
+                        let version = (frame_tag >> 1) & 0x07;
+                        let version_str = match version {
+                            0 => "0 (bicubic reconstruction, normal loop)",
+                            1 => "1 (bilinear reconstruction, simple loop)",
+                            2 => "2 (bilinear reconstruction, no loop)",
+                            3 => "3 (no reconstruction, no loop)",
+                            _ => "Unknown",
+                        };
+                        metadata.insert(
+                            "WebP:VP8Version".to_string(),
+                            TagValue::String(version_str.to_string()),
+                        );
+
                         // Keyframe - dimensions at bytes 6-9
-                        let width = vp8_reader.u16_at(6).unwrap_or(0) & 0x3FFF;
-                        let height = vp8_reader.u16_at(8).unwrap_or(0) & 0x3FFF;
+                        let width_data = vp8_reader.u16_at(6).unwrap_or(0);
+                        let height_data = vp8_reader.u16_at(8).unwrap_or(0);
+                        let width = width_data & 0x3FFF;
+                        let height = height_data & 0x3FFF;
+
+                        // Extract scale factors (upper 2 bits)
+                        let horizontal_scale = (width_data >> 14) & 0x03;
+                        let vertical_scale = (height_data >> 14) & 0x03;
+
+                        metadata.insert(
+                            "WebP:HorizontalScale".to_string(),
+                            TagValue::Integer(horizontal_scale as i64),
+                        );
+                        metadata.insert(
+                            "WebP:VerticalScale".to_string(),
+                            TagValue::Integer(vertical_scale as i64),
+                        );
 
                         if !metadata.contains_key("WebP:ImageWidth") {
                             metadata.insert(
@@ -216,6 +276,56 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                     "WebP:ICCProfileSize".to_string(),
                     TagValue::Integer(chunk_size as i64),
                 );
+            }
+            b"ALPH" => {
+                // Alpha chunk - contains alpha compression info
+                // WebP spec byte layout: |Rsv|P|F|C| where:
+                //   C (Compression): bits 1-0
+                //   F (Filtering): bits 3-2
+                //   P (Preprocessing): bits 5-4
+                //   Rsv (Reserved): bits 7-6
+                if chunk_size >= 1 {
+                    let alph_data = reader.read(chunk_data_offset, 1)?;
+                    let flags = alph_data[0];
+
+                    // Bits 1-0: Compression method
+                    let compression = flags & 0x03;
+                    let compression_str = match compression {
+                        0 => "None",
+                        1 => "Lossless",
+                        _ => "Unknown",
+                    };
+                    metadata.insert(
+                        "WebP:AlphaCompression".to_string(),
+                        TagValue::String(compression_str.to_string()),
+                    );
+
+                    // Bits 3-2: Filtering method
+                    let filtering = (flags >> 2) & 0x03;
+                    let filtering_str = match filtering {
+                        0 => "None",
+                        1 => "Horizontal",
+                        2 => "Vertical",
+                        3 => "Gradient",
+                        _ => "Unknown",
+                    };
+                    metadata.insert(
+                        "WebP:AlphaFiltering".to_string(),
+                        TagValue::String(filtering_str.to_string()),
+                    );
+
+                    // Bits 5-4: Preprocessing
+                    let preprocessing = (flags >> 4) & 0x03;
+                    let preprocessing_str = match preprocessing {
+                        0 => "None",
+                        1 => "Level Reduction",
+                        _ => "Unknown",
+                    };
+                    metadata.insert(
+                        "WebP:AlphaPreprocessing".to_string(),
+                        TagValue::String(preprocessing_str.to_string()),
+                    );
+                }
             }
             b"ANIM" => {
                 // Animation control chunk

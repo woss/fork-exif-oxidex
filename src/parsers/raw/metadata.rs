@@ -1126,6 +1126,17 @@ fn raw_bytes_to_simple_tag_value(
                 return TagValue::new_rational(numerator as i32, denominator as i32);
             }
 
+            // SRATIONAL (two 32-bit signed)
+            ExifType::SRational if bytes.len() >= 8 => {
+                let reader = match byte_order {
+                    ByteOrder::LittleEndian => EndianReader::little_endian(bytes),
+                    ByteOrder::BigEndian => EndianReader::big_endian(bytes),
+                };
+                let numerator = reader.i32_at(0).unwrap_or(0);
+                let denominator = reader.i32_at(4).unwrap_or(1);
+                return TagValue::new_rational(numerator, denominator);
+            }
+
             _ => {}
         }
     }

@@ -148,6 +148,51 @@ impl OxiDexExtractor {
                     }
                 }
 
+                // Copyright and similar text tags - trim whitespace and null bytes to match ExifTool
+                // ExifTool trims empty copyright strings to empty
+                if name == "Copyright" || name == "Artist" || name == "ImageDescription" {
+                    // Trim null bytes and whitespace
+                    let trimmed = s
+                        .trim_end_matches('\0')
+                        .trim()
+                        .trim_end_matches('\0')
+                        .trim();
+                    if trimmed.is_empty() {
+                        return String::new();
+                    }
+                    return trimmed.to_string();
+                }
+
+                // ExposureTime might come as a string ratio like "10/2500" - simplify to "1/250"
+                if name == "ExposureTime"
+                    && let Some(slash_pos) = s.find('/')
+                {
+                    if let (Ok(num), Ok(den)) = (
+                        s[..slash_pos].parse::<i64>(),
+                        s[slash_pos + 1..].parse::<i64>(),
+                    ) {
+                        if den > 0 && num > 0 {
+                            // Find GCD to simplify the fraction
+                            fn gcd(a: i64, b: i64) -> i64 {
+                                if b == 0 {
+                                    a
+                                } else {
+                                    gcd(b, a % b)
+                                }
+                            }
+                            let g = gcd(num, den);
+                            let simplified_num = num / g;
+                            let simplified_den = den / g;
+                            if simplified_num == 1 {
+                                return format!("1/{}", simplified_den);
+                            } else if simplified_den == 1 {
+                                return simplified_num.to_string();
+                            }
+                            return format!("{}/{}", simplified_num, simplified_den);
+                        }
+                    }
+                }
+
                 // Try to format dates in EXIF style
                 if (key.contains("Date") || key.contains("Time"))
                     && (s.contains('T') || s.contains('-'))
@@ -164,6 +209,13 @@ impl OxiDexExtractor {
                 i.to_string()
             }
             TagValue::Float(f) => {
+                // ExposureTime should be formatted as a fraction (e.g., "1/250") for sub-second values
+                if name == "ExposureTime" && *f > 0.0 && *f < 1.0 {
+                    // Convert to fraction: find closest 1/N form
+                    let denominator = (1.0 / f).round() as i64;
+                    return format!("1/{}", denominator);
+                }
+
                 // Format floats with reasonable precision
                 let formatted = format!("{:.5}", f);
                 formatted
@@ -205,6 +257,33 @@ impl OxiDexExtractor {
                         return format!("1/{}", denominator);
                     } else {
                         return format!("{:.1}", exposure_time);
+                    }
+                }
+
+                // ExposureTime: format as simplified fraction (e.g., "1/250") for times < 1 second
+                if name == "ExposureTime" {
+                    let value = *numerator as f64 / *denominator as f64;
+                    if value < 1.0 && value > 0.0 {
+                        // Find GCD to simplify first
+                        fn gcd_i32(a: i32, b: i32) -> i32 {
+                            if b == 0 {
+                                a.abs()
+                            } else {
+                                gcd_i32(b, a % b)
+                            }
+                        }
+                        let g = gcd_i32(*numerator, *denominator);
+                        let simplified_num = numerator / g;
+                        let simplified_den = denominator / g;
+                        if simplified_num == 1 {
+                            return format!("1/{}", simplified_den);
+                        } else {
+                            // Approximate to 1/N form like ExifTool does
+                            let approx_denom = (1.0 / value).round() as i64;
+                            return format!("1/{}", approx_denom);
+                        }
+                    } else if value >= 1.0 {
+                        return format!("{:.1}", value);
                     }
                 }
 
@@ -258,6 +337,75 @@ impl OxiDexExtractor {
                     && let Ok(s) = std::str::from_utf8(bytes)
                 {
                     return s.to_string();
+                }
+
+                // ComponentsConfiguration - 4 bytes indicating component order
+                // Values: 0=doesn't exist, 1=Y, 2=Cb, 3=Cr, 4=R, 5=G, 6=B
+                if name == "ComponentsConfiguration" && bytes.len() == 4 {
+                    let components: Vec<&str> = bytes
+                        .iter()
+                        .map(|&b| match b {
+                            0 => "-",
+                            1 => "Y",
+                            2 => "Cb",
+                            3 => "Cr",
+                            4 => "R",
+                            5 => "G",
+                            6 => "B",
+                            _ => "?",
+                        })
+                        .collect();
+                    return components.join(", ");
+                }
+
+                // SRATIONAL tags stored as binary (8 bytes = numerator + denominator, both i32)
+                // BrightnessValue, ExposureCompensation, ShutterSpeedValue
+                if (name == "BrightnessValue"
+                    || name == "ExposureCompensation"
+                    || name == "ShutterSpeedValue"
+                    || name == "ExposureBiasValue")
+                    && bytes.len() == 8
+                {
+                    // Try both little-endian and big-endian
+                    let num_le = i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                    let den_le = i32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
+                    let num_be = i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                    let den_be = i32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
+
+                    // Use whichever gives a reasonable denominator (positive, non-zero)
+                    let (num, den) = if den_le > 0 && den_le < 1_000_000 {
+                        (num_le, den_le)
+                    } else if den_be > 0 && den_be < 1_000_000 {
+                        (num_be, den_be)
+                    } else {
+                        // Fallback to default binary display
+                        return format!(
+                            "(Binary data {} bytes, use -b option to extract)",
+                            bytes.len()
+                        );
+                    };
+
+                    if den != 0 {
+                        // ShutterSpeedValue requires APEX conversion
+                        if name == "ShutterSpeedValue" {
+                            let apex = num as f64 / den as f64;
+                            let exposure_time = (2.0_f64).powf(-apex);
+                            if exposure_time < 1.0 {
+                                let denominator = (1.0 / exposure_time).round() as i64;
+                                return format!("1/{}", denominator);
+                            } else {
+                                return format!("{:.1}", exposure_time);
+                            }
+                        }
+
+                        // Other tags: just format as decimal
+                        let value = num as f64 / den as f64;
+                        let formatted = format!("{:.9}", value);
+                        return formatted
+                            .trim_end_matches('0')
+                            .trim_end_matches('.')
+                            .to_string();
+                    }
                 }
 
                 // UserComment - starts with 8-byte encoding identifier followed by data
