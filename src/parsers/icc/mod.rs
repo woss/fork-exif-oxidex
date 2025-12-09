@@ -78,6 +78,32 @@ pub fn parse_icc_profile_data(data: &[u8]) -> Result<HashMap<String, TagValue>> 
     parse_icc_profile(data)
 }
 
+/// Parses a standalone ICC profile file.
+///
+/// This function reads an ICC profile file directly (not embedded in PDF/JPEG/etc.)
+/// and extracts all metadata with ICC_Profile: prefix.
+pub fn parse_icc_file(reader: &dyn FileReader) -> Result<MetadataMap> {
+    let mut metadata = MetadataMap::new();
+
+    // Read the entire ICC profile file
+    let size = reader.size() as usize;
+    let icc_data = reader.read(0, size)?;
+
+    // Parse the ICC profile
+    let icc_metadata = parse_icc_profile(&icc_data)?;
+
+    // Add ICC_Profile: prefix to all tags (to match ExifTool's family naming)
+    for (key, value) in icc_metadata {
+        metadata.insert(format!("ICC_Profile:{}", key), value);
+    }
+
+    if metadata.is_empty() {
+        return Err(ExifToolError::parse_error("No valid ICC profile data found"));
+    }
+
+    Ok(metadata)
+}
+
 // ============================================================================
 // CORE PARSING LOGIC
 // ============================================================================

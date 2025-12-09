@@ -54,6 +54,7 @@ use crate::parsers::specialized::obj::parse_obj_metadata;
 use crate::parsers::specialized::sqlite::parse_sqlite_metadata;
 use crate::parsers::specialized::stl::parse_stl_metadata;
 use crate::parsers::specialized::x509::parse_x509_metadata;
+use crate::parsers::icc::parse_icc_file;
 use crate::parsers::text::txt::parse_txt_metadata;
 use crate::parsers::text::vcf::parse_vcf_metadata;
 use crate::parsers::video::avi::parse_avi_metadata;
@@ -157,6 +158,7 @@ pub fn dispatch_format_parser(reader: &dyn FileReader, format: FileFormat) -> Re
         FileFormat::BMP => convert_string_error(parse_bmp_metadata(reader), "BMP"),
         FileFormat::WebP => convert_string_error(parse_webp_metadata(reader), "WebP"),
         FileFormat::X509 => convert_string_error(parse_x509_metadata(reader), "X.509"),
+        FileFormat::ICC => parse_icc_file(reader),
         _ => Err(ExifToolError::unsupported_format(format!(
             "Format {:?} not yet supported in this iteration",
             format

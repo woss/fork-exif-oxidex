@@ -111,6 +111,8 @@ pub static SIMPLE_SIGNATURES: &[Signature] = &[
     signature!(b"\x4d\x3c\xb2\xa1", 0, FileFormat::PCAP),   // PCAP nanosecond little-endian
     // X.509 Certificates
     signature!(b"-----BEGIN CERTIFICATE-----", 0, FileFormat::X509),
+    // ICC Profile (signature "acsp" at offset 36)
+    signature!(b"acsp", 36, FileFormat::ICC),
     // Archive formats with offset signatures
     signature!(b"ustar", 257, FileFormat::TAR),
     signature!(b"CD001", 32769, FileFormat::ISO),

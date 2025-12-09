@@ -271,6 +271,9 @@ pub enum FileFormat {
     /// X.509 Certificate (.crt, .cer, .pem, .der)
     X509,
 
+    /// ICC Color Profile (.icc, .icm)
+    ICC,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -361,6 +364,7 @@ impl FileFormat {
             FileFormat::PCAP => "PCAP",
             FileFormat::PCAPNG => "PCAP-NG",
             FileFormat::X509 => "X.509",
+            FileFormat::ICC => "ICC",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -453,6 +457,7 @@ impl FileFormat {
             FileFormat::PCAP => &["pcap", "cap"],
             FileFormat::PCAPNG => &["pcapng"],
             FileFormat::X509 => &["crt", "cer", "pem", "der"],
+            FileFormat::ICC => &["icc", "icm"],
             FileFormat::Unknown => &[],
         }
     }
