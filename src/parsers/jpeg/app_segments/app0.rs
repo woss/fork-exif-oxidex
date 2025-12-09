@@ -425,10 +425,7 @@ mod tests {
         );
 
         let result = parse_app0(&data);
-        assert!(
-            result.is_ok(),
-            "Should succeed with exactly minimum length"
-        );
+        assert!(result.is_ok(), "Should succeed with exactly minimum length");
     }
 
     /// Tests parsing with typical real-world values (72 DPI, 1.01 version).

@@ -425,10 +425,7 @@ fn parse_id3v1(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     );
 
     // ID3v1 tag size is always 128 bytes
-    metadata.insert(
-        "ID3TagSize".to_string(),
-        TagValue::new_integer(128),
-    );
+    metadata.insert("ID3TagSize".to_string(), TagValue::new_integer(128));
 
     // Extract fields (all ISO-8859-1 encoded)
     let title = decode_latin1(&data[3..33]);

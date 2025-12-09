@@ -567,10 +567,7 @@ pub fn parse_activephoto_segment(data: &[u8], metadata: &mut MetadataMap) -> Res
     if let Ok(text) = std::str::from_utf8(data) {
         if text.len() < 200 {
             // Only include as text if reasonably short
-            metadata.insert(
-                "APP10:Data".to_string(),
-                TagValue::String(text.to_string()),
-            );
+            metadata.insert("APP10:Data".to_string(), TagValue::String(text.to_string()));
         }
     }
 

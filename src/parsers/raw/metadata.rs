@@ -1488,7 +1488,8 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                                         }
 
                                         // Also use RAF-specific MakerNote parser to extract additional camera metadata
-                                        if let Ok(raf_tags) = raf_parser::parse_raf_makernote(mn_data, byte_order)
+                                        if let Ok(raf_tags) =
+                                            raf_parser::parse_raf_makernote(mn_data, byte_order)
                                         {
                                             for (tag_name, tag_value) in raf_tags {
                                                 // Only add if not already present from dispatcher

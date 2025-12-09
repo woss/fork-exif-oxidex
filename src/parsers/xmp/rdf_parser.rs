@@ -1555,7 +1555,10 @@ mod tests {
         assert!(prop_names.iter().any(|n| n == "XMP:Rights"));
 
         // Verify values
-        let title = result.iter().find(|(n, _)| n == "XMP:Title").map(|(_, v)| v);
+        let title = result
+            .iter()
+            .find(|(n, _)| n == "XMP:Title")
+            .map(|(_, v)| v);
         assert_eq!(title, Some(&"My Photo Collection".to_string()));
     }
 
@@ -1580,11 +1583,19 @@ mod tests {
         let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
 
         // Verify all 6 Photoshop tags are extracted with XMP-photoshop: prefix
-        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:AuthorsPosition"));
+        assert!(
+            prop_names
+                .iter()
+                .any(|n| n == "XMP-photoshop:AuthorsPosition")
+        );
         assert!(prop_names.iter().any(|n| n == "XMP-photoshop:Caption"));
         assert!(prop_names.iter().any(|n| n == "XMP-photoshop:CreditLine"));
         assert!(prop_names.iter().any(|n| n == "XMP-photoshop:Source"));
-        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:CopyrightNotice"));
+        assert!(
+            prop_names
+                .iter()
+                .any(|n| n == "XMP-photoshop:CopyrightNotice")
+        );
         assert!(prop_names.iter().any(|n| n == "XMP-photoshop:Instructions"));
     }
 
@@ -1617,7 +1628,10 @@ mod tests {
         assert!(prop_names.iter().any(|n| n == "XMP-tiff:DateTime"));
 
         // Verify values
-        let make = result.iter().find(|(n, _)| n == "XMP-tiff:Make").map(|(_, v)| v);
+        let make = result
+            .iter()
+            .find(|(n, _)| n == "XMP-tiff:Make")
+            .map(|(_, v)| v);
         assert_eq!(make, Some(&"Canon".to_string()));
     }
 
@@ -1644,7 +1658,11 @@ mod tests {
         assert!(prop_names.iter().any(|n| n == "XMP-exif:ISO"));
         assert!(prop_names.iter().any(|n| n == "XMP-exif:ShutterSpeed"));
         assert!(prop_names.iter().any(|n| n == "XMP-exif:Aperture"));
-        assert!(prop_names.iter().any(|n| n == "XMP-exif:ExposureCompensation"));
+        assert!(
+            prop_names
+                .iter()
+                .any(|n| n == "XMP-exif:ExposureCompensation")
+        );
         assert!(prop_names.iter().any(|n| n == "XMP-exif:FocalLength"));
     }
 
@@ -1705,7 +1723,11 @@ mod tests {
         assert!(prop_names.iter().any(|n| n == "XMP-tiff:Make"));
         assert!(prop_names.iter().any(|n| n == "XMP-exif:ISO"));
 
-        assert_eq!(result.len(), 4, "Expected 4 properties from multiple namespaces");
+        assert_eq!(
+            result.len(),
+            4,
+            "Expected 4 properties from multiple namespaces"
+        );
     }
 
     #[test]
