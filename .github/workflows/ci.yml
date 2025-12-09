@@ -42,8 +42,8 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest
-      - run: cargo build --release --all-features
-      - run: cargo nextest run --release --all-features
+      - run: cargo build --release --all-features --features tag-comparison-binary
+      - run: cargo nextest run --release --all-features --features tag-comparison-binary
       - name: Run doc tests
         run: cargo test --doc --all-features
       - name: Verify C header is up-to-date
