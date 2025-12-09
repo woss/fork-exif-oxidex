@@ -12,6 +12,7 @@ use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
+use crate::parsers::xmp::rdf_parser::parse_xmp;
 use crate::tag_db::lookup_tag_name;
 use std::io;
 
@@ -261,12 +262,12 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                 // XMP metadata - XML format
                 if chunk_size > 0 && chunk_data_offset + chunk_size <= file_size {
                     let xmp_data = reader.read(chunk_data_offset, chunk_size as usize)?;
-                    if let Ok(xmp_str) = std::str::from_utf8(xmp_data) {
-                        // Store raw XMP (could be parsed further)
-                        metadata.insert(
-                            "XMP:RawXMP".to_string(),
-                            TagValue::String(xmp_str.to_string()),
-                        );
+
+                    // Parse the XMP and extract metadata
+                    if let Ok(xmp_props) = parse_xmp(xmp_data) {
+                        for (name, value) in xmp_props {
+                            metadata.insert(name, TagValue::String(value));
+                        }
                     }
                 }
             }

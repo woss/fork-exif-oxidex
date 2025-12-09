@@ -102,6 +102,8 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
     let mut current_value = String::new();
     let mut depth = 0;
     let mut property_depth = 0;
+    let mut inside_collection = false; // Are we in a Bag/Seq/Alt?
+    let mut collection_values: Vec<String> = Vec::new(); // Collect rdf:li values
 
     loop {
         match reader.read_event_into(&mut buf) {
@@ -128,7 +130,15 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
                     if is_simple_property(&tag_name, &resolver) {
                         current_property = Some(tag_name.to_string());
                         current_value.clear();
+                        collection_values.clear();
+                        inside_collection = false;
                         property_depth = depth;
+                    }
+                } else if current_property.is_some() {
+                    // Check if this is a Bag/Seq/Alt container
+                    if is_collection_container(&tag_name, &resolver) {
+                        inside_collection = true;
+                        collection_values.clear();
                     }
                 }
             }
@@ -138,16 +148,30 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
 
                 if is_rdf_description(&tag_name, &resolver) {
                     inside_description = false;
+                } else if is_rdf_li(&tag_name, &resolver) && inside_collection {
+                    // End of rdf:li - save the collected value
+                    if !current_value.trim().is_empty() {
+                        collection_values.push(current_value.trim().to_string());
+                    }
+                    current_value.clear();
+                } else if is_collection_container(&tag_name, &resolver) {
+                    inside_collection = false;
                 } else if let Some(ref prop) = current_property
                     && depth == property_depth
                 {
                     // End of current property - extract tag name and value
-                    if !current_value.trim().is_empty() {
-                        let prefixed_name = format_tag_name(prop, &resolver);
+                    let prefixed_name = format_tag_name(prop, &resolver);
+
+                    if !collection_values.is_empty() {
+                        // Output collection as comma-separated list
+                        results.push((prefixed_name, collection_values.join(", ")));
+                    } else if !current_value.trim().is_empty() {
                         results.push((prefixed_name, current_value.trim().to_string()));
                     }
                     current_property = None;
                     current_value.clear();
+                    collection_values.clear();
+                    inside_collection = false;
                 }
                 depth -= 1;
             }
@@ -342,6 +366,32 @@ fn is_simple_property(tag_name: &str, resolver: &NamespaceResolver) -> bool {
 
     // No namespace prefix - treat as simple property
     true
+}
+
+/// Checks if a tag is an rdf:Bag, rdf:Seq, or rdf:Alt container.
+fn is_collection_container(tag_name: &str, resolver: &NamespaceResolver) -> bool {
+    if let Some(prefix) = NamespaceResolver::extract_prefix(tag_name) {
+        let local_name = NamespaceResolver::extract_local_name(tag_name);
+        if let Some(uri) = resolver.resolve_prefix(prefix)
+            && uri == "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        {
+            return matches!(local_name, "Bag" | "Seq" | "Alt");
+        }
+    }
+    false
+}
+
+/// Checks if a tag is an rdf:li element.
+fn is_rdf_li(tag_name: &str, resolver: &NamespaceResolver) -> bool {
+    if let Some(prefix) = NamespaceResolver::extract_prefix(tag_name) {
+        let local_name = NamespaceResolver::extract_local_name(tag_name);
+        if let Some(uri) = resolver.resolve_prefix(prefix)
+            && uri == "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        {
+            return local_name == "li";
+        }
+    }
+    false
 }
 
 /// Registers namespace declarations from an element's attributes.
