@@ -48,6 +48,9 @@ impl EPSParser {
 
     /// Extracts DSC (Document Structuring Convention) comments
     fn extract_dsc_comments(text: &str, metadata: &mut MetadataMap) {
+        let mut version: Option<String> = None;
+        let mut pages: Option<String> = None;
+
         for line in text.lines() {
             let line = line.trim();
 
@@ -64,6 +67,11 @@ impl EPSParser {
                         "PostScript:BoundingBox".to_string(),
                         TagValue::String(value.to_string()),
                     );
+                    // Also add EPS:BoundingBox for consistency with Worker 24 requirements
+                    metadata.insert(
+                        "EPS:BoundingBox".to_string(),
+                        TagValue::new_string(value.to_string()),
+                    );
                 }
             } else if let Some(value) = line.strip_prefix("%%HiResBoundingBox:") {
                 let value = value.trim();
@@ -74,14 +82,26 @@ impl EPSParser {
                     );
                 }
             } else if let Some(value) = line.strip_prefix("%%Creator:") {
+                let trimmed_value = value.trim().to_string();
                 metadata.insert(
                     "PostScript:Creator".to_string(),
-                    TagValue::String(value.trim().to_string()),
+                    TagValue::String(trimmed_value.clone()),
+                );
+                // Add EPS:Creator as per Worker 24 requirements
+                metadata.insert(
+                    "EPS:Creator".to_string(),
+                    TagValue::new_string(trimmed_value),
                 );
             } else if let Some(value) = line.strip_prefix("%%CreationDate:") {
+                let trimmed_value = value.trim().to_string();
                 metadata.insert(
                     "PostScript:CreateDate".to_string(),
-                    TagValue::String(value.trim().to_string()),
+                    TagValue::String(trimmed_value.clone()),
+                );
+                // Add EPS:CreationDate as per Worker 24 requirements
+                metadata.insert(
+                    "EPS:CreationDate".to_string(),
+                    TagValue::new_string(trimmed_value),
                 );
             } else if let Some(value) = line.strip_prefix("%%Title:") {
                 // Remove surrounding parentheses if present
@@ -91,14 +111,26 @@ impl EPSParser {
                 } else {
                     value
                 };
+                let value_str = value.to_string();
                 metadata.insert(
                     "PostScript:Title".to_string(),
-                    TagValue::String(value.to_string()),
+                    TagValue::String(value_str.clone()),
+                );
+                // Add EPS:Title as per Worker 24 requirements
+                metadata.insert(
+                    "EPS:Title".to_string(),
+                    TagValue::new_string(value_str),
                 );
             } else if let Some(value) = line.strip_prefix("%%For:") {
+                let trimmed_value = value.trim().to_string();
                 metadata.insert(
                     "PostScript:For".to_string(),
-                    TagValue::String(value.trim().to_string()),
+                    TagValue::String(trimmed_value.clone()),
+                );
+                // Add EPS:For as per Worker 24 requirements
+                metadata.insert(
+                    "EPS:For".to_string(),
+                    TagValue::new_string(trimmed_value),
                 );
             } else if let Some(value) = line.strip_prefix("%%DocumentData:") {
                 metadata.insert(
@@ -113,6 +145,7 @@ impl EPSParser {
             } else if let Some(value) = line.strip_prefix("%%Pages:") {
                 let value = value.trim();
                 if value != "(atend)" {
+                    pages = Some(value.to_string());
                     metadata.insert(
                         "PostScript:Pages".to_string(),
                         TagValue::String(value.to_string()),
@@ -124,7 +157,35 @@ impl EPSParser {
                     TagValue::String(value.trim().to_string()),
                 );
             }
+
+            // Extract version from first line %!PS-Adobe-X.X EPSF-X.X
+            if line.starts_with("%!PS-Adobe") && version.is_none() {
+                if let Some(version_str) = extract_eps_version_from_header(line) {
+                    version = Some(version_str);
+                }
+            }
         }
+
+        // Add EPS:Version if extracted from header
+        if let Some(v) = version {
+            metadata.insert(
+                "EPS:Version".to_string(),
+                TagValue::new_string(v),
+            );
+        }
+
+        // Add EPS:Pages as integer if available
+        if let Some(pages_str) = pages {
+            if let Ok(pages_int) = pages_str.parse::<i64>() {
+                metadata.insert(
+                    "EPS:Pages".to_string(),
+                    TagValue::new_integer(pages_int),
+                );
+            }
+        }
+
+        // EPS:Orientation is typically not in DSC comments, but we can try to infer from BoundingBox
+        // For now, we'll leave this for future enhancement
     }
 
     /// Extracts XMP metadata from EPS data
@@ -345,6 +406,33 @@ impl FormatParser for EPSParser {
     fn supports_format(&self, format: FileFormat) -> bool {
         matches!(format, FileFormat::EPS)
     }
+}
+
+/// Extracts EPS version from the header line
+/// Example: "%!PS-Adobe-3.0 EPSF-3.0" returns "3.0"
+fn extract_eps_version_from_header(header: &str) -> Option<String> {
+    // Look for EPSF-X.X pattern
+    if let Some(epsf_pos) = header.find("EPSF-") {
+        let after_epsf = &header[epsf_pos + 5..];
+        // Extract version number (typically X.X)
+        let version: String = after_epsf.chars()
+            .take_while(|c| c.is_numeric() || *c == '.')
+            .collect();
+        if !version.is_empty() {
+            return Some(version);
+        }
+    }
+    // Fallback: look for PS-Adobe-X.X pattern
+    if let Some(ps_pos) = header.find("PS-Adobe-") {
+        let after_ps = &header[ps_pos + 9..];
+        let version: String = after_ps.chars()
+            .take_while(|c| c.is_numeric() || *c == '.')
+            .collect();
+        if !version.is_empty() {
+            return Some(version);
+        }
+    }
+    None
 }
 
 /// Finds a subsequence in a byte slice

@@ -124,9 +124,15 @@ fn parse_id3v2(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Result<u3
     );
 
     // Add ID3Version tag (format: "ID3 v2.X" where X is the major version)
+    let id3_version_str = format!("ID3 v2.{}", id3v2_header.version);
     metadata.insert(
         "ID3Version".to_string(),
-        TagValue::new_string(format!("ID3 v2.{}", id3v2_header.version)),
+        TagValue::new_string(id3_version_str.clone()),
+    );
+    // Also add MP3:ID3Version for ExifTool compatibility
+    metadata.insert(
+        "MP3:ID3Version".to_string(),
+        TagValue::new_string(id3_version_str),
     );
 
     // Calculate ID3TagSize: synchsafe integer size + 10 bytes for header
@@ -419,9 +425,15 @@ fn parse_id3v1(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 
     // Add ID3Version tag for ID3v1 detection
     // ID3v1 doesn't have a version field, but we detect it by the TAG signature
+    let id3v1_version_str = "ID3 v1".to_string();
     metadata.insert(
         "ID3Version".to_string(),
-        TagValue::new_string("ID3 v1".to_string()),
+        TagValue::new_string(id3v1_version_str.clone()),
+    );
+    // Also add MP3:ID3Version for ExifTool compatibility
+    metadata.insert(
+        "MP3:ID3Version".to_string(),
+        TagValue::new_string(id3v1_version_str),
     );
 
     // ID3v1 tag size is always 128 bytes
@@ -549,6 +561,11 @@ fn parse_mpeg_audio_frame(
                     "MPEG:AudioBitrate".to_string(),
                     TagValue::new_string(format!("{} kbps", bitrate)),
                 );
+                // Also add MP3:BitRate in kbps format for ExifTool compatibility
+                metadata.insert(
+                    "MP3:BitRate".to_string(),
+                    TagValue::new_integer(bitrate as i64),
+                );
             }
 
             // Sample Rate (Hz)
@@ -556,6 +573,11 @@ fn parse_mpeg_audio_frame(
             if sample_rate > 0 {
                 metadata.insert(
                     "MPEG:SampleRate".to_string(),
+                    TagValue::new_integer(sample_rate as i64),
+                );
+                // Also add MP3:SampleRate for ExifTool compatibility
+                metadata.insert(
+                    "MP3:SampleRate".to_string(),
                     TagValue::new_integer(sample_rate as i64),
                 );
             }
@@ -571,6 +593,29 @@ fn parse_mpeg_audio_frame(
             metadata.insert(
                 "MPEG:ChannelMode".to_string(),
                 TagValue::new_string(channel_mode_str),
+            );
+
+            // Extract channel count from channel mode for MP3:Channels
+            let channel_count: i64 = match channel_mode {
+                0x00 | 0x01 | 0x02 => 2, // Stereo, Joint Stereo, Dual Channel = 2 channels
+                0x03 => 1,                 // Mono = 1 channel
+                _ => 2,
+            };
+            metadata.insert(
+                "MP3:Channels".to_string(),
+                TagValue::new_integer(channel_count),
+            );
+
+            // Determine audio encoding based on layer
+            let encoding = match layer {
+                1 => "MPEG Audio Layer I",
+                2 => "MPEG Audio Layer II",
+                3 => "MPEG Audio Layer III",
+                _ => "Unknown",
+            };
+            metadata.insert(
+                "MP3:AudioEncoding".to_string(),
+                TagValue::new_string(encoding),
             );
 
             // Mode Extension (only meaningful for Joint Stereo)

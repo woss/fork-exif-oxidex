@@ -280,9 +280,16 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
     );
 
     // Endianness
+    let endian_str = header.endian_str().to_string();
     metadata.insert(
         "ELF:Endianness".to_string(),
-        TagValue::String(header.endian_str().to_string()),
+        TagValue::String(endian_str.clone()),
+    );
+
+    // Add ELF:DataEncoding as alias for Endianness (for ExifTool compatibility)
+    metadata.insert(
+        "ELF:DataEncoding".to_string(),
+        TagValue::String(endian_str),
     );
 
     // OS/ABI
@@ -298,9 +305,16 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
     );
 
     // Object type
+    let type_str = header.type_str().to_string();
     metadata.insert(
         "ELF:ObjectType".to_string(),
-        TagValue::String(header.type_str().to_string()),
+        TagValue::String(type_str.clone()),
+    );
+
+    // Add ELF:Type as alias for ObjectType (for ExifTool compatibility)
+    metadata.insert(
+        "ELF:Type".to_string(),
+        TagValue::String(type_str),
     );
 
     // Machine architecture
@@ -317,6 +331,12 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
     metadata.insert(
         "ELF:Version".to_string(),
         TagValue::Integer(header.e_version as i64),
+    );
+
+    // Add ELF:Version as string as well for ExifTool compatibility
+    metadata.insert(
+        "ELF:VersionStr".to_string(),
+        TagValue::String(header.e_version.to_string()),
     );
 
     // Entry point
@@ -355,6 +375,12 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
         TagValue::Integer(header.e_phnum as i64),
     );
 
+    // Add ELF:ProgramHeaderCount as alias for PHCount (for ExifTool compatibility)
+    metadata.insert(
+        "ELF:ProgramHeaderCount".to_string(),
+        TagValue::Integer(header.e_phnum as i64),
+    );
+
     // Section header info
     metadata.insert(
         "ELF:SHOffset".to_string(),
@@ -366,6 +392,12 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
     );
     metadata.insert(
         "ELF:SHCount".to_string(),
+        TagValue::Integer(header.e_shnum as i64),
+    );
+
+    // Add ELF:SectionCount as alias for SHCount (for ExifTool compatibility)
+    metadata.insert(
+        "ELF:SectionCount".to_string(),
         TagValue::Integer(header.e_shnum as i64),
     );
 }

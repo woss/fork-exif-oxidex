@@ -126,6 +126,20 @@ impl FormatParser for AacParser {
                 // (there may be other metadata to extract)
                 eprintln!("Warning: Failed to extract iTunes metadata: {}", e);
             }
+
+            // Add AAC format-specific tags for M4A files
+            // AudioEncoding: Always "AAC" for M4A files
+            metadata.insert(
+                "AAC:AudioEncoding".to_string(),
+                TagValue::new_string("AAC".to_string()),
+            );
+
+            // iTunesVersion: M4A is iTunes version 1 format (could be enhanced in future)
+            metadata.insert(
+                "AAC:iTunesVersion".to_string(),
+                TagValue::new_string("1".to_string()),
+            );
+
             return Ok(metadata);
         }
 
@@ -163,6 +177,60 @@ impl FormatParser for AacParser {
         metadata.insert(
             "AAC:FrameLength".to_string(),
             TagValue::new_integer(adts_info.frame_length as i64),
+        );
+
+        // Add AAC format-specific tags for ExifTool compatibility
+
+        // AudioEncoding: Always "AAC" for AAC/ADTS files
+        metadata.insert(
+            "AAC:AudioEncoding".to_string(),
+            TagValue::new_string("AAC".to_string()),
+        );
+
+        // Channels: Convert channel_config to channel count
+        let channel_count: i64 = match adts_info.channel_config {
+            0 => 0,  // AOT Specific config (not standard)
+            1 => 1,  // Mono
+            2 => 2,  // Stereo
+            3 => 3,  // Stereo + Center
+            4 => 4,  // Stereo + Center + LFE (5.0 would be 5)
+            5 => 5,  // Stereo + Center + LFE + Back
+            6 => 6,  // 5.1 surround
+            7 => 8,  // 7.1 surround
+            _ => 2,  // Default to stereo for unknown
+        };
+        metadata.insert(
+            "AAC:Channels".to_string(),
+            TagValue::new_integer(channel_count),
+        );
+
+        // BitRate: Estimate from frame size and sample rate
+        // AAC frames typically contain 1024 samples
+        let samples_per_frame = 1024u64;
+        let bitrate_bps = (adts_info.frame_length as u64 * adts_info.sample_rate as u64 * 8) / samples_per_frame;
+        let bitrate_kbps = bitrate_bps / 1000;
+        metadata.insert(
+            "AAC:BitRate".to_string(),
+            TagValue::new_integer(bitrate_kbps as i64),
+        );
+
+        // ObjectType: Same as AudioObjectType but in a different tag format
+        metadata.insert(
+            "AAC:ObjectType".to_string(),
+            TagValue::new_string(adts_info.profile.to_string()),
+        );
+
+        // ProfileLevel: Format as "LC" or similar based on profile
+        let profile_level = match adts_info.profile {
+            "Main" => "Main",
+            "LC (Low Complexity)" => "LC",
+            "SSR (Scalable Sampling Rate)" => "SSR",
+            "LTP (Long Term Prediction)" => "LTP",
+            _ => "Unknown",
+        };
+        metadata.insert(
+            "AAC:ProfileLevel".to_string(),
+            TagValue::new_string(profile_level.to_string()),
         );
 
         // Estimate duration by counting frames (scan up to 1MB)

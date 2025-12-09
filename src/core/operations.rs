@@ -537,7 +537,61 @@ pub(crate) fn parse_tiff_metadata(reader: &dyn FileReader) -> Result<MetadataMap
     let mut metadata = MetadataMap::new();
     parse_ifd_chain(reader, first_ifd_offset, byte_order, &mut metadata)?;
 
+    // Add TIFF: prefixed format-specific tags from standard EXIF tags
+    // These map standard EXIF tag names to TIFF-specific format tags
+    // Collect the tags to add to avoid borrow checker issues
+    let tiff_tags = collect_tiff_format_tags(&metadata);
+    for (key, value) in tiff_tags {
+        metadata.insert(key, value);
+    }
+
     Ok(metadata)
+}
+
+/// Collects TIFF: prefixed format-specific tags from standard EXIF tags.
+///
+/// This function reads standard EXIF tag names from the metadata and creates
+/// corresponding TIFF: prefixed versions for format-specific identification.
+///
+/// Mapped tags:
+/// - ImageWidth -> TIFF:Width
+/// - ImageLength -> TIFF:Height
+/// - BitsPerSample -> TIFF:BitsPerSample
+/// - Compression -> TIFF:Compression
+/// - PhotometricInterpretation -> TIFF:PhotometricInterpretation
+/// - Orientation -> TIFF:Orientation
+/// - XResolution -> TIFF:XResolution
+/// - YResolution -> TIFF:YResolution
+fn collect_tiff_format_tags(source: &MetadataMap) -> Vec<(String, TagValue)> {
+    // Map standard EXIF tag names to TIFF: prefixed versions
+    let tag_mappings = [
+        ("ImageWidth", "TIFF:Width"),
+        ("ImageLength", "TIFF:Height"),
+        ("BitsPerSample", "TIFF:BitsPerSample"),
+        ("Compression", "TIFF:Compression"),
+        ("PhotometricInterpretation", "TIFF:PhotometricInterpretation"),
+        ("Orientation", "TIFF:Orientation"),
+        ("XResolution", "TIFF:XResolution"),
+        ("YResolution", "TIFF:YResolution"),
+    ];
+
+    let mut result = Vec::new();
+
+    for (source_tag, dest_tag) in &tag_mappings {
+        // Look for the source tag in IFD0 (main image)
+        let ifd0_key = format!("IFD0:{}", source_tag);
+        if let Some(value) = source.get(&ifd0_key) {
+            result.push((dest_tag.to_string(), value.clone()));
+            continue;
+        }
+
+        // Fall back to unprefixed version if IFD0 version not found
+        if let Some(value) = source.get(source_tag) {
+            result.push((dest_tag.to_string(), value.clone()));
+        }
+    }
+
+    result
 }
 
 /// Parses metadata from a Casio CAM file.

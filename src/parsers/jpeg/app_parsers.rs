@@ -373,6 +373,21 @@ pub fn parse_sof_segment(
         "File:ColorComponents".to_string(),
         TagValue::Integer(num_components as i64),
     );
+    // Also add JPEG: prefixed version for format-specific tagging
+    metadata.insert(
+        "JPEG:ColorComponents".to_string(),
+        TagValue::Integer(num_components as i64),
+    );
+
+    // Also add JPEG: prefixed versions for format-specific tagging
+    metadata.insert(
+        "JPEG:Width".to_string(),
+        TagValue::Integer(width as i64),
+    );
+    metadata.insert(
+        "JPEG:Height".to_string(),
+        TagValue::Integer(height as i64),
+    );
 
     // Encoding process - match ExifTool's format with coding suffix
     let encoding = match marker {
@@ -419,6 +434,9 @@ pub fn parse_sof_segment(
         );
     }
 
+    // Collect sampling factors for JPEG:SamplingFactors tag
+    let mut sampling_factors_vec = Vec::new();
+
     // Also keep JPEG: prefixed tags for component details
     offset = 6;
     for i in 0..num_components {
@@ -447,12 +465,24 @@ pub fn parse_sof_segment(
             TagValue::String(component_name.to_string()),
         );
 
+        let subsampling_str = format!("{}x{}", h_sampling, v_sampling);
         metadata.insert(
             format!("JPEG:YCbCrSubSampling_{}", i + 1),
-            TagValue::String(format!("{}x{}", h_sampling, v_sampling)),
+            TagValue::String(subsampling_str.clone()),
         );
 
+        // Collect sampling factors for the combined tag
+        sampling_factors_vec.push(subsampling_str);
+
         offset += 3;
+    }
+
+    // Add combined JPEG:SamplingFactors tag (comma-separated)
+    if !sampling_factors_vec.is_empty() {
+        metadata.insert(
+            "JPEG:SamplingFactors".to_string(),
+            TagValue::String(sampling_factors_vec.join(", ")),
+        );
     }
 
     Ok(())

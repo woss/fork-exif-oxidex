@@ -94,6 +94,25 @@ impl SVGParser {
         text.contains("<animate") || text.contains("<animateTransform")
     }
 
+    /// Counts SVG elements (shape elements, text, etc.)
+    /// Counts common SVG elements: rect, circle, ellipse, line, polyline, polygon, path, text, image, use, g
+    fn count_svg_elements(text: &str) -> i64 {
+        let mut count = 0i64;
+        let elements = ["<rect", "<circle", "<ellipse", "<line", "<polyline", "<polygon",
+                       "<path", "<text", "<image", "<use", "<g "];
+
+        for element in &elements {
+            // Count occurrences of each element tag
+            let mut start = 0;
+            while let Some(pos) = text[start..].find(element) {
+                count += 1;
+                start = start + pos + element.len();
+            }
+        }
+
+        count
+    }
+
     /// Extracts dc:creator content, handling RDF bags/sequences
     /// Handles formats like:
     /// - Simple: <dc:creator>Name</dc:creator>
@@ -293,18 +312,22 @@ impl FormatParser for SVGParser {
             if let Some(width) = Self::extract_attribute(svg_tag, "width")
                 && let Some(parsed) = Self::parse_dimension(&width)
             {
-                metadata.insert("ImageWidth".to_string(), TagValue::String(parsed));
+                metadata.insert("ImageWidth".to_string(), TagValue::String(parsed.clone()));
+                // Also add SVG:Width for Worker 26 compatibility
+                metadata.insert("SVG:Width".to_string(), TagValue::new_string(parsed));
             }
 
             if let Some(height) = Self::extract_attribute(svg_tag, "height")
                 && let Some(parsed) = Self::parse_dimension(&height)
             {
-                metadata.insert("ImageHeight".to_string(), TagValue::String(parsed));
+                metadata.insert("ImageHeight".to_string(), TagValue::String(parsed.clone()));
+                // Also add SVG:Height for Worker 26 compatibility
+                metadata.insert("SVG:Height".to_string(), TagValue::new_string(parsed));
             }
 
             // Extract viewBox for dimensions if width/height not present
             if let Some(viewbox) = Self::extract_attribute(svg_tag, "viewBox") {
-                metadata.insert("SVG:ViewBox".to_string(), TagValue::String(viewbox.clone()));
+                metadata.insert("SVG:ViewBox".to_string(), TagValue::new_string(viewbox.clone()));
 
                 // If no width/height, try to extract from viewBox
                 if !metadata.contains_key("ImageWidth")
@@ -320,9 +343,16 @@ impl FormatParser for SVGParser {
                 metadata.insert("SVG:Xmlns".to_string(), TagValue::String(xmlns));
             }
 
-            // Extract version - ExifTool calls this "SVGVersion"
+            // Extract version - ExifTool calls this "SVGVersion" or "Version"
             if let Some(version) = Self::extract_attribute(svg_tag, "version") {
-                metadata.insert("SVG:SVGVersion".to_string(), TagValue::String(version));
+                metadata.insert("SVG:SVGVersion".to_string(), TagValue::String(version.clone()));
+                // Also add SVG:Version for Worker 26 compatibility
+                metadata.insert("SVG:Version".to_string(), TagValue::new_string(version));
+            }
+
+            // Extract preserveAspectRatio
+            if let Some(preserve) = Self::extract_attribute(svg_tag, "preserveAspectRatio") {
+                metadata.insert("SVG:PreserveAspectRatio".to_string(), TagValue::new_string(preserve));
             }
         }
 
@@ -365,6 +395,29 @@ impl FormatParser for SVGParser {
                 TagValue::String("true".to_string()),
             );
         }
+
+        // Count SVG elements (shapes, text, etc.) for Worker 26
+        let element_count = Self::count_svg_elements(text);
+        if element_count > 0 {
+            metadata.insert(
+                "SVG:ElementCount".to_string(),
+                TagValue::new_integer(element_count),
+            );
+        }
+
+        // Check for <defs> definitions
+        let has_definitions = text.contains("<defs");
+        metadata.insert(
+            "SVG:HasDefinitions".to_string(),
+            TagValue::new_string(if has_definitions { "true" } else { "false" }),
+        );
+
+        // Check for <metadata> element
+        let has_metadata = text.contains("<metadata");
+        metadata.insert(
+            "SVG:HasMetadata".to_string(),
+            TagValue::new_string(if has_metadata { "true" } else { "false" }),
+        );
 
         Ok(metadata)
     }

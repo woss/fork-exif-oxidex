@@ -48,9 +48,15 @@ pub fn process_jfif_segments(segments: &[Segment], metadata: &mut MetadataMap) {
             let y_density = reader.u16_at(10).unwrap_or(0);
 
             // Add JFIF tags to metadata
+            let jfif_version = version_major as f64 + version_minor as f64 / 100.0;
             metadata.insert(
                 "JFIF:JFIFVersion".to_string(),
-                TagValue::Float(version_major as f64 + version_minor as f64 / 100.0),
+                TagValue::Float(jfif_version),
+            );
+            // Also add JPEG: prefixed version for format-specific tagging
+            metadata.insert(
+                "JPEG:JFIFVersion".to_string(),
+                TagValue::String(format!("{}.{:02}", version_major, version_minor)),
             );
 
             let unit_string = match units {
@@ -63,14 +69,29 @@ pub fn process_jfif_segments(segments: &[Segment], metadata: &mut MetadataMap) {
                 "JFIF:ResolutionUnit".to_string(),
                 TagValue::String(unit_string.to_string()),
             );
+            // Also add JPEG: prefixed version for format-specific tagging
+            metadata.insert(
+                "JPEG:ResolutionUnit".to_string(),
+                TagValue::String(unit_string.to_string()),
+            );
 
             metadata.insert(
                 "JFIF:XResolution".to_string(),
                 TagValue::Integer(x_density as i64),
             );
+            // Also add JPEG: prefixed version for format-specific tagging
+            metadata.insert(
+                "JPEG:XResolution".to_string(),
+                TagValue::Integer(x_density as i64),
+            );
 
             metadata.insert(
                 "JFIF:YResolution".to_string(),
+                TagValue::Integer(y_density as i64),
+            );
+            // Also add JPEG: prefixed version for format-specific tagging
+            metadata.insert(
+                "JPEG:YResolution".to_string(),
                 TagValue::Integer(y_density as i64),
             );
         }

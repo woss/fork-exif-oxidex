@@ -351,6 +351,9 @@ impl FormatParser for TTFParser {
             }
         }
 
+        // Add TTF-specific tag aliases for Worker 21 requirements
+        add_ttf_tag_aliases(&mut metadata);
+
         Ok(metadata)
     }
 
@@ -365,6 +368,36 @@ impl FormatParser for TTFParser {
 pub fn parse_ttf_metadata(reader: &dyn FileReader) -> std::result::Result<MetadataMap, String> {
     let parser = TTFParser;
     parser.parse(reader).map_err(|e| e.to_string())
+}
+
+/// Adds TTF-specific tag aliases to metadata (Worker 21 requirements)
+///
+/// Maps generic font metadata to TTF-specific tags for ExifTool compatibility
+/// Worker 21 requires: TTF:FontName, TTF:FamilyName, TTF:StyleName,
+/// TTF:UnitsPerEm, TTF:XMin, TTF:YMin, TTF:XMax, TTF:YMax
+fn add_ttf_tag_aliases(metadata: &mut MetadataMap) {
+    // Create aliases with TTF prefix
+    let mappings = [
+        ("FontName", "TTF:FontName"),
+        ("FontFamily", "TTF:FamilyName"),
+        ("FontSubfamily", "TTF:StyleName"),
+        ("UnitsPerEm", "TTF:UnitsPerEm"),
+    ];
+
+    let mut ttf_tags = Vec::new();
+    for (source, ttf_tag) in &mappings {
+        if let Some(value) = metadata.get(source) {
+            ttf_tags.push((ttf_tag.to_string(), value.clone()));
+        }
+    }
+
+    for (key, value) in ttf_tags {
+        metadata.insert(key, value);
+    }
+
+    // Note: XMin, YMin, XMax, YMax would require parsing the glyf table
+    // which is beyond the current scope. These would need to be extracted
+    // from the glyf table bounding boxes.
 }
 
 #[cfg(test)]

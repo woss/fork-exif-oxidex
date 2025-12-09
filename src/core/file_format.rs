@@ -240,6 +240,9 @@ pub enum FileFormat {
     /// vCard contact format (.vcf)
     VCF,
 
+    /// iCalendar format (.ics)
+    ICS,
+
     /// Email message format (.eml)
     EML,
 
@@ -366,6 +369,7 @@ impl FileFormat {
             FileFormat::FITS => "FITS",
             FileFormat::HDF5 => "HDF5",
             FileFormat::VCF => "vCard",
+            FileFormat::ICS => "iCalendar",
             FileFormat::EML => "EML",
             FileFormat::TXT => "TXT",
             FileFormat::LNK => "Windows Shortcut",
@@ -463,6 +467,7 @@ impl FileFormat {
             FileFormat::FITS => &["fits", "fit"],
             FileFormat::HDF5 => &["h5", "hdf5"],
             FileFormat::VCF => &["vcf", "vcard"],
+            FileFormat::ICS => &["ics", "ical"],
             FileFormat::EML => &["eml", "email"],
             FileFormat::TXT => &["txt", "text"],
             FileFormat::LNK => &["lnk"],

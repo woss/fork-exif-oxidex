@@ -337,6 +337,11 @@ fn parse_info(
                             let formatted = format!("{}:{:02}:{:02}", hours, mins, secs);
                             metadata.insert(
                                 "Matroska:Duration".to_string(),
+                                TagValue::new_string(formatted.clone()),
+                            );
+                            // Add MKV:Duration tag for format-specific output
+                            metadata.insert(
+                                "MKV:Duration".to_string(),
                                 TagValue::new_string(formatted),
                             );
                         }
@@ -626,11 +631,23 @@ fn parse_track_entry(
                     "Matroska:VideoCodecID".to_string(),
                     TagValue::new_string(track_info.codec_id.clone()),
                 );
+                // Add MKV:VideoCodec with human-readable codec name
+                let codec_name = convert_codec_id_to_name(&track_info.codec_id, 1);
+                metadata.insert(
+                    "MKV:VideoCodec".to_string(),
+                    TagValue::new_string(codec_name),
+                );
             }
             2 => {
                 metadata.insert(
                     "Matroska:AudioCodecID".to_string(),
                     TagValue::new_string(track_info.codec_id.clone()),
+                );
+                // Add MKV:AudioCodec with human-readable codec name
+                let codec_name = convert_codec_id_to_name(&track_info.codec_id, 2);
+                metadata.insert(
+                    "MKV:AudioCodec".to_string(),
+                    TagValue::new_string(codec_name),
                 );
             }
             _ => {}
@@ -674,12 +691,22 @@ fn parse_video_info(
                                 "Matroska:ImageWidth".to_string(),
                                 TagValue::new_integer(value as i64),
                             );
+                            // Add MKV:Width tag for format-specific output
+                            metadata.insert(
+                                "MKV:Width".to_string(),
+                                TagValue::new_integer(value as i64),
+                            );
                         }
                     }
                     PIXEL_HEIGHT => {
                         if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
                             metadata.insert(
                                 "Matroska:ImageHeight".to_string(),
+                                TagValue::new_integer(value as i64),
+                            );
+                            // Add MKV:Height tag for format-specific output
+                            metadata.insert(
+                                "MKV:Height".to_string(),
                                 TagValue::new_integer(value as i64),
                             );
                         }
@@ -713,6 +740,12 @@ fn parse_video_info(
                                 "Matroska:VideoFrameRate".to_string(),
                                 TagValue::new_integer(value as i64),
                             );
+                            // Add MKV:FrameRate tag with "fps" format
+                            let frame_rate_str = format!("{:.3} fps", value);
+                            metadata.insert(
+                                "MKV:FrameRate".to_string(),
+                                TagValue::new_string(frame_rate_str),
+                            );
                         }
                     }
                     _ => {}
@@ -731,6 +764,14 @@ fn parse_video_info(
             "Matroska:VideoFrameRate".to_string(),
             TagValue::new_integer(fps.round() as i64),
         );
+        // Add MKV:FrameRate tag if not already present
+        if !metadata.contains_key("MKV:FrameRate") {
+            let frame_rate_str = format!("{:.3} fps", fps);
+            metadata.insert(
+                "MKV:FrameRate".to_string(),
+                TagValue::new_string(frame_rate_str),
+            );
+        }
     }
 
     // Set scan type based on interlace flag
@@ -784,12 +825,22 @@ fn parse_audio_info(
                                 "Matroska:AudioSampleRate".to_string(),
                                 TagValue::new_integer(value as i64),
                             );
+                            // Add MKV:SampleRate tag for format-specific output
+                            metadata.insert(
+                                "MKV:SampleRate".to_string(),
+                                TagValue::new_integer(value as i64),
+                            );
                         }
                     }
                     CHANNELS => {
                         if let Ok(value) = read_uint(reader, data_offset, elem_size as usize) {
                             metadata.insert(
                                 "Matroska:AudioChannels".to_string(),
+                                TagValue::new_integer(value as i64),
+                            );
+                            // Add MKV:Channels tag for format-specific output
+                            metadata.insert(
+                                "MKV:Channels".to_string(),
                                 TagValue::new_integer(value as i64),
                             );
                         }
@@ -1159,6 +1210,96 @@ fn parse_attached_file(
     }
 
     Ok(())
+}
+
+/// Convert Matroska codec ID to human-readable codec name
+///
+/// Maps standardized Matroska codec IDs (like "V_UNCOMPRESSED", "V_AV1", "A_OPUS")
+/// to user-friendly codec names for the MKV: format tags.
+///
+/// # Arguments
+///
+/// * `codec_id` - The Matroska codec ID string (e.g., "V_VP9", "A_AAC")
+/// * `track_type` - The track type (1 = video, 2 = audio, etc.)
+///
+/// # Returns
+///
+/// A human-readable codec name or the original codec ID if not recognized
+fn convert_codec_id_to_name(codec_id: &str, track_type: u64) -> String {
+    match track_type {
+        // Video codecs
+        1 => match codec_id {
+            "V_UNCOMPRESSED" => "Uncompressed".to_string(),
+            "V_MPEG4/ISO/AVC" => "H.264".to_string(),
+            "V_MPEGH/ISO/HEVC" => "H.265".to_string(),
+            "V_AV1" => "AV1".to_string(),
+            "V_MPEG4/MS/V3" => "MPEG4 V3".to_string(),
+            "V_MPEG4/ISO/SP" => "MPEG4 Part 2".to_string(),
+            "V_MPEG4/ISO/ASP" => "MPEG4 Part 2".to_string(),
+            "V_MPEG1" => "MPEG1".to_string(),
+            "V_MPEG2" => "MPEG2".to_string(),
+            "V_REAL/RV10" => "RealVideo 1.0".to_string(),
+            "V_REAL/RV20" => "RealVideo 2.0".to_string(),
+            "V_REAL/RV30" => "RealVideo 3.0".to_string(),
+            "V_REAL/RV40" => "RealVideo 4.0".to_string(),
+            "V_VP8" => "VP8".to_string(),
+            "V_VP9" => "VP9".to_string(),
+            "V_QUICKTIME" => "QuickTime".to_string(),
+            "V_DIRAC" => "Dirac".to_string(),
+            "V_PRORES" => "ProRes".to_string(),
+            "V_FFV1" => "FFV1".to_string(),
+            "V_THEORA" => "Theora".to_string(),
+            "V_DAALA" => "Daala".to_string(),
+            "V_JPEG2000" => "JPEG 2000".to_string(),
+            "V_BETACODEC" => "BetaCodec".to_string(),
+            "V_VC1" => "VC-1".to_string(),
+            _ => codec_id.to_string(),
+        },
+        // Audio codecs
+        2 => match codec_id {
+            "A_MPEG/L1" => "MP1".to_string(),
+            "A_MPEG/L2" => "MP2".to_string(),
+            "A_MPEG/L3" => "MP3".to_string(),
+            "A_PCM/INT/LIT" => "PCM".to_string(),
+            "A_PCM/INT/BIG" => "PCM".to_string(),
+            "A_PCM/FLOAT/IEEE" => "PCM (IEEE Float)".to_string(),
+            "A_AC3" => "AC-3".to_string(),
+            "A_EAC3" => "E-AC-3".to_string(),
+            "A_ALAC" => "ALAC".to_string(),
+            "A_DTS" => "DTS".to_string(),
+            "A_DTS/CORE" => "DTS Core".to_string(),
+            "A_DTS/EXPRESS" => "DTS Express".to_string(),
+            "A_DTS/LOSSLESS" => "DTS-HD".to_string(),
+            "A_FLAC" => "FLAC".to_string(),
+            "A_TRUEHD" => "TrueHD".to_string(),
+            "A_MLP" => "MLP".to_string(),
+            "A_AAC/MPEG4/MAIN" => "AAC".to_string(),
+            "A_AAC/MPEG4/LC" => "AAC-LC".to_string(),
+            "A_AAC/MPEG4/SBR" => "AAC-HE".to_string(),
+            "A_AAC/MPEG4/LC/SBR" => "AAC-HE".to_string(),
+            "A_AAC/MPEG4/MAIN/SBR" => "AAC-HE Main".to_string(),
+            "A_AAC/MPEG2/MAIN" => "AAC".to_string(),
+            "A_AAC/MPEG2/LC" => "AAC-LC".to_string(),
+            "A_AAC/MPEG2/SBR" => "AAC-HE".to_string(),
+            "A_AAC/MPEG2/LC/SBR" => "AAC-HE".to_string(),
+            "A_VORBIS" => "Vorbis".to_string(),
+            "A_OPUS" => "Opus".to_string(),
+            "A_REAL/14_4" => "RealAudio 1".to_string(),
+            "A_REAL/28_8" => "RealAudio 2".to_string(),
+            "A_REAL/COOK" => "RealAudio Cook".to_string(),
+            "A_REAL/SIPR" => "RealAudio Sipr".to_string(),
+            "A_REAL/RALF" => "RealAudio RALF".to_string(),
+            "A_REAL/ATRC" => "RealAudio ATRC".to_string(),
+            "A_WAVPACK4" => "WavPack".to_string(),
+            "A_QUICKTIME" => "QuickTime Audio".to_string(),
+            "A_TWOS" => "PCM (Two's Complement)".to_string(),
+            "A_SOWT" => "PCM (Signed)".to_string(),
+            "A_MSADPCM" => "MS ADPCM".to_string(),
+            "A_IMAADPCM" => "IMA ADPCM".to_string(),
+            _ => codec_id.to_string(),
+        },
+        _ => codec_id.to_string(),
+    }
 }
 
 /// Parse EBML element header (ID + size)

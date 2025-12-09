@@ -469,6 +469,11 @@ impl FormatParser for GIFParser {
             "GIFVersion".to_string(),
             TagValue::String(version.to_string()),
         );
+        // Add GIF: prefixed version for format-specific tagging
+        metadata.insert(
+            "GIF:Version".to_string(),
+            TagValue::String(version.to_string()),
+        );
 
         // Logical Screen Descriptor fields
         let lsd = Self::read_logical_screen_descriptor(reader)?;
@@ -481,6 +486,15 @@ impl FormatParser for GIFParser {
             "ImageHeight".to_string(),
             TagValue::String(lsd.height.to_string()),
         );
+        // Add GIF: prefixed versions for format-specific tagging
+        metadata.insert(
+            "GIF:Width".to_string(),
+            TagValue::Integer(lsd.width as i64),
+        );
+        metadata.insert(
+            "GIF:Height".to_string(),
+            TagValue::Integer(lsd.height as i64),
+        );
 
         // ColorResolutionDepth - ExifTool tag name for bits per primary color
         metadata.insert(
@@ -489,21 +503,25 @@ impl FormatParser for GIFParser {
         );
 
         // HasColorMap - ExifTool tag for global color table flag
+        let has_color_map_str = if lsd.global_color_table_flag { "Yes" } else { "No" };
         metadata.insert(
             "HasColorMap".to_string(),
-            TagValue::String(
-                if lsd.global_color_table_flag {
-                    "Yes"
-                } else {
-                    "No"
-                }
-                .to_string(),
-            ),
+            TagValue::String(has_color_map_str.to_string()),
+        );
+        // Add GIF: prefixed version for format-specific tagging
+        metadata.insert(
+            "GIF:GlobalColorTable".to_string(),
+            TagValue::String(has_color_map_str.to_string()),
         );
 
         if lsd.global_color_table_flag {
             metadata.insert(
                 "GlobalColorTableSize".to_string(),
+                TagValue::Integer(lsd.global_color_table_size as i64),
+            );
+            // Add GIF: prefixed version for format-specific tagging
+            metadata.insert(
+                "GIF:ColorTableSize".to_string(),
                 TagValue::Integer(lsd.global_color_table_size as i64),
             );
             // BitsPerPixel - log2 of color table size
@@ -518,6 +536,11 @@ impl FormatParser for GIFParser {
         metadata.insert(
             "BackgroundColor".to_string(),
             TagValue::Integer(lsd.background_color_index as i64),
+        );
+        // Add GIF: prefixed version for format-specific tagging
+        metadata.insert(
+            "GIF:BackgroundColor".to_string(),
+            TagValue::String(format!("#{:02x}", lsd.background_color_index)),
         );
 
         // PixelAspectRatio - convert from raw value to actual ratio
@@ -538,6 +561,11 @@ impl FormatParser for GIFParser {
 
         metadata.insert(
             "FrameCount".to_string(),
+            TagValue::Integer(scan_result.frame_count as i64),
+        );
+        // Add GIF: prefixed version for format-specific tagging
+        metadata.insert(
+            "GIF:FrameCount".to_string(),
             TagValue::Integer(scan_result.frame_count as i64),
         );
 

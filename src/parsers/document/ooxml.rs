@@ -74,6 +74,9 @@ impl FormatParser for DocxParser {
         // Parse DOCX-specific properties
         parse_docx_specific(&mut archive, &mut metadata)?;
 
+        // Add DOCX-specific tag aliases for Worker 20 requirements
+        add_docx_tag_aliases(&mut metadata);
+
         Ok(metadata)
     }
 
@@ -600,6 +603,39 @@ pub fn parse_pptx_metadata(
     parser
         .parse(reader)
         .map_err(|e| format!("PPTX parse error: {}", e))
+}
+
+/// Adds DOCX-specific tag aliases to metadata (Worker 20 requirements)
+///
+/// Maps OOXML generic tags to DOCX-specific tags for ExifTool compatibility
+fn add_docx_tag_aliases(metadata: &mut MetadataMap) {
+    // Worker 20 requires: DOCX:Title, DOCX:Subject, DOCX:Creator, DOCX:Keywords,
+    // DOCX:Description, DOCX:Modified, DOCX:WordCount, DOCX:PageCount
+
+    // Create a list of mappings from OOXML tags to DOCX tags
+    let mappings = [
+        ("OOXML:Title", "DOCX:Title"),
+        ("OOXML:Subject", "DOCX:Subject"),
+        ("OOXML:Creator", "DOCX:Creator"),
+        ("OOXML:Keywords", "DOCX:Keywords"),
+        ("OOXML:Description", "DOCX:Description"),
+        ("OOXML:ModifyDate", "DOCX:Modified"),
+        ("OOXML:Words", "DOCX:WordCount"),
+        ("OOXML:Pages", "DOCX:PageCount"),
+    ];
+
+    // Clone existing tags and create aliases with DOCX prefix
+    let mut docx_tags = Vec::new();
+    for (ooxml_tag, docx_tag) in &mappings {
+        if let Some(value) = metadata.get(ooxml_tag) {
+            docx_tags.push((docx_tag.to_string(), value.clone()));
+        }
+    }
+
+    // Insert the DOCX aliases
+    for (key, value) in docx_tags {
+        metadata.insert(key, value);
+    }
 }
 
 #[cfg(test)]

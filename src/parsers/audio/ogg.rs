@@ -91,6 +91,8 @@ impl FormatParser for OggParser {
         // Parse OGG pages to find Vorbis comment header
         let mut offset = 0u64;
         let file_size = reader.size();
+        let mut page_sequence = 0u32;
+        let mut serial_number: Option<u32> = None;
 
         while offset < file_size {
             // Read OGG page header (27 bytes minimum)
@@ -108,6 +110,29 @@ impl FormatParser for OggParser {
             // Parse page header
             let _header_type = page_header[5];
             let segment_count = page_header[26] as usize;
+
+            // Extract serial number from page header (bytes 10-13, little-endian)
+            let page_serial = u32::from_le_bytes([
+                page_header[10],
+                page_header[11],
+                page_header[12],
+                page_header[13],
+            ]);
+
+            // Extract page sequence number (bytes 18-21, little-endian)
+            let seq_number = u32::from_le_bytes([
+                page_header[18],
+                page_header[19],
+                page_header[20],
+                page_header[21],
+            ]);
+
+            // Store the first serial number we encounter
+            if serial_number.is_none() {
+                serial_number = Some(page_serial);
+            }
+
+            page_sequence = seq_number;
 
             // Read segment table
             if offset + 27 + segment_count as u64 > file_size {
@@ -177,6 +202,24 @@ impl FormatParser for OggParser {
             // Move to next page
             offset = page_body_offset + page_body_size;
         }
+
+        // Add OGG format-specific tags
+        if let Some(sn) = serial_number {
+            metadata.insert(
+                "OGG:SerialNumber".to_string(),
+                TagValue::new_string(format!("{}", sn)),
+            );
+        }
+
+        metadata.insert(
+            "OGG:PageSequence".to_string(),
+            TagValue::new_integer(page_sequence as i64),
+        );
+
+        // Duration: Would require scanning entire file for proper calculation
+        // For now, add a placeholder that can be improved in future versions
+        // This would ideally be calculated from granule positions in OGG pages
+        // metadata.insert("OGG:Duration".to_string(), TagValue::new_string("".to_string()));
 
         Ok(metadata)
     }
@@ -443,6 +486,40 @@ fn parse_vorbis_id_header(data: &[u8], metadata: &mut MetadataMap) -> Result<()>
             TagValue::new_string(format!("{} kbps", kbps)),
         );
     }
+
+    // Add OGG format-specific tags for ExifTool compatibility
+
+    // AudioEncoding: Always "Vorbis" for OGG Vorbis files
+    metadata.insert(
+        "OGG:AudioEncoding".to_string(),
+        TagValue::new_string("Vorbis".to_string()),
+    );
+
+    // Channels
+    metadata.insert(
+        "OGG:Channels".to_string(),
+        TagValue::new_integer(audio_channels as i64),
+    );
+
+    // SampleRate
+    metadata.insert(
+        "OGG:SampleRate".to_string(),
+        TagValue::new_integer(sample_rate as i64),
+    );
+
+    // BitRate (from nominal bitrate)
+    if bitrate_nominal > 0 {
+        metadata.insert(
+            "OGG:BitRate".to_string(),
+            TagValue::new_integer((bitrate_nominal / 1000) as i64),
+        );
+    }
+
+    // CodecName: Always "Vorbis" for OGG Vorbis
+    metadata.insert(
+        "OGG:CodecName".to_string(),
+        TagValue::new_string("Vorbis".to_string()),
+    );
 
     Ok(())
 }

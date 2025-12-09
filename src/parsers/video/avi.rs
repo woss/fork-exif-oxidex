@@ -105,6 +105,66 @@ pub fn parse_avi_metadata(reader: &dyn FileReader) -> std::result::Result<Metada
     parser.parse(reader).map_err(|e| e.to_string())
 }
 
+/// Convert AVI FourCC codec code to human-readable codec name
+///
+/// Maps standard FourCC codes for video and audio codecs to user-friendly names.
+/// FourCC stands for "Four-Character Code" and is a common way to identify codecs in AVI.
+///
+/// # Arguments
+///
+/// * `fourcc` - The FourCC string (e.g., "H264", "DIVX", "MJPEG")
+/// * `is_video` - Whether this is a video codec (true) or audio codec (false)
+///
+/// # Returns
+///
+/// A human-readable codec name or the original FourCC if not recognized
+fn convert_fourcc_to_codec_name(fourcc: &str, is_video: bool) -> String {
+    let upper = fourcc.to_uppercase();
+
+    if is_video {
+        match upper.as_str() {
+            // Video codecs
+            "H264" | "AVC1" | "DAVC" => "H.264".to_string(),
+            "H265" | "HEVC" => "H.265".to_string(),
+            "HEVC" => "H.265".to_string(),
+            "AV01" => "AV1".to_string(),
+            "VP80" => "VP8".to_string(),
+            "VP90" => "VP9".to_string(),
+            "DIVX" | "DX50" => "DivX".to_string(),
+            "MPEG" => "MPEG1".to_string(),
+            "MPG4" | "MP4V" => "MPEG4".to_string(),
+            "MJPG" | "MJPS" => "Motion JPEG".to_string(),
+            "UNCOMPRESSED" => "Uncompressed".to_string(),
+            "RLE " => "RLE".to_string(),
+            "WMVP" | "WMV3" => "Windows Media Video".to_string(),
+            "VC1 " => "VC-1".to_string(),
+            "XVID" => "Xvid".to_string(),
+            "FFV1" => "FFV1".to_string(),
+            "THEORA" => "Theora".to_string(),
+            "I263" => "Intel H.263".to_string(),
+            "CVID" => "Cinepak".to_string(),
+            "WMV1" => "WMV1".to_string(),
+            "WMV2" => "WMV2".to_string(),
+            _ => upper.to_string(),
+        }
+    } else {
+        // Audio codecs
+        match upper.as_str() {
+            "PCM " => "PCM".to_string(),
+            "MP3 " | "55" => "MP3".to_string(),
+            "AAC " => "AAC".to_string(),
+            "AC3 " => "AC-3".to_string(),
+            "DTS " => "DTS".to_string(),
+            "FLAC" => "FLAC".to_string(),
+            "OPUS" => "Opus".to_string(),
+            "VORBIS" | "VORB" => "Vorbis".to_string(),
+            "WAVPACK4" => "WavPack".to_string(),
+            "ALAC" => "ALAC".to_string(),
+            _ => upper.to_string(),
+        }
+    }
+}
+
 /// Parse AVI RIFF chunks
 fn parse_avi_chunks(
     reader: &dyn FileReader,
@@ -295,6 +355,12 @@ fn parse_avih_chunk(
             "RIFF:VideoFrameRate".to_string(),
             TagValue::new_integer(frame_rate.round() as i64),
         );
+        // Add AVI:FrameRate tag with human-readable format
+        let frame_rate_str = format!("{:.3} fps", frame_rate);
+        metadata.insert(
+            "AVI:FrameRate".to_string(),
+            TagValue::new_string(frame_rate_str),
+        );
     }
 
     // Note: ExifTool only outputs TotalFrameCount from dmlh (OpenDML extended header),
@@ -304,8 +370,19 @@ fn parse_avih_chunk(
         "RIFF:ImageWidth".to_string(),
         TagValue::new_integer(width as i64),
     );
+    // Add AVI:Width tag
+    metadata.insert(
+        "AVI:Width".to_string(),
+        TagValue::new_integer(width as i64),
+    );
+
     metadata.insert(
         "RIFF:ImageHeight".to_string(),
+        TagValue::new_integer(height as i64),
+    );
+    // Add AVI:Height tag
+    metadata.insert(
+        "AVI:Height".to_string(),
         TagValue::new_integer(height as i64),
     );
 
@@ -329,9 +406,19 @@ fn parse_avih_chunk(
     // Calculate duration if we have frame rate and total frames
     if microsec_per_frame > 0 && total_frames > 0 {
         let duration_secs = (microsec_per_frame as f64 * total_frames as f64) / 1_000_000.0;
+        let duration_str = format!("{:.2}", duration_secs);
         metadata.insert(
             "RIFF:Duration".to_string(),
-            TagValue::new_string(format!("{:.2}", duration_secs)),
+            TagValue::new_string(duration_str.clone()),
+        );
+        // Add AVI:Duration tag in mm:ss.ms format
+        let total_secs = duration_secs.round() as u64;
+        let mins = total_secs / 60;
+        let secs = total_secs % 60;
+        let formatted = format!("{}:{:02}", mins, secs);
+        metadata.insert(
+            "AVI:Duration".to_string(),
+            TagValue::new_string(formatted),
         );
     }
 
@@ -490,14 +577,28 @@ fn parse_stream_header(
         if stream_type == *b"vids" && is_first_video {
             metadata.insert(
                 "RIFF:VideoCodec".to_string(),
-                TagValue::new_string(fourcc_str),
+                TagValue::new_string(fourcc_str.clone()),
+            );
+            // Add AVI:VideoCodec with human-readable codec name
+            let codec_name = convert_fourcc_to_codec_name(&fourcc_str, true);
+            metadata.insert(
+                "AVI:VideoCodec".to_string(),
+                TagValue::new_string(codec_name),
             );
         } else if stream_type == *b"auds" && is_first_audio {
             // Audio codec from strh is usually empty, strf has more info
             metadata.insert(
                 "RIFF:AudioCodec".to_string(),
-                TagValue::new_string(fourcc_str),
+                TagValue::new_string(fourcc_str.clone()),
             );
+            // Add AVI:AudioCodec with human-readable codec name if not empty
+            if !fourcc_str.trim().is_empty() {
+                let codec_name = convert_fourcc_to_codec_name(&fourcc_str, false);
+                metadata.insert(
+                    "AVI:AudioCodec".to_string(),
+                    TagValue::new_string(codec_name),
+                );
+            }
         }
     }
 
@@ -661,6 +762,11 @@ fn parse_audio_format(
         "RIFF:NumChannels".to_string(),
         TagValue::new_integer(channels as i64),
     );
+    // Add AVI:Channels tag for format-specific output
+    metadata.insert(
+        "AVI:Channels".to_string(),
+        TagValue::new_integer(channels as i64),
+    );
 
     // SampleRate - overwrites the value from strh
     metadata.insert(
@@ -672,12 +778,25 @@ fn parse_audio_format(
         "RIFF:AudioSampleRate".to_string(),
         TagValue::new_integer(samples_per_sec as i64),
     );
+    // Add AVI:SampleRate tag for format-specific output
+    metadata.insert(
+        "AVI:SampleRate".to_string(),
+        TagValue::new_integer(samples_per_sec as i64),
+    );
 
     // AvgBytesPerSec
     metadata.insert(
         "RIFF:AvgBytesPerSec".to_string(),
         TagValue::new_integer(avg_bytes_per_sec as i64),
     );
+    // Add AVI:AudioBitRate tag (convert bytes/sec to bits/sec)
+    if avg_bytes_per_sec > 0 {
+        let bit_rate = (avg_bytes_per_sec as i64) * 8;
+        metadata.insert(
+            "AVI:AudioBitRate".to_string(),
+            TagValue::new_integer(bit_rate),
+        );
+    }
 
     // BitsPerSample
     if bits_per_sample > 0 {

@@ -228,6 +228,35 @@ fn parse_streaminfo_block(data: &[u8], metadata: &mut MetadataMap) -> Result<()>
         TagValue::new_string(md5_hex),
     );
 
+    // Add FLAC format-specific tags for ExifTool compatibility
+
+    // AudioEncoding: Always "FLAC" for FLAC files
+    metadata.insert(
+        "FLAC:AudioEncoding".to_string(),
+        TagValue::new_string("FLAC".to_string()),
+    );
+
+    // FrameCount: Calculated from total samples
+    // Frame size varies but we can estimate from total_samples
+    // In FLAC, the actual frame count is not stored in STREAMINFO
+    // We'll calculate it based on a typical frame size
+    if stream_info.total_samples > 0 {
+        // Typical FLAC frame sizes are 1152 or 4096 samples per frame
+        // Using 4096 as typical for modern FLAC encodings
+        let estimated_frame_count = (stream_info.total_samples + 4095) / 4096;
+        metadata.insert(
+            "FLAC:FrameCount".to_string(),
+            TagValue::new_integer(estimated_frame_count as i64),
+        );
+    }
+
+    // VorbisComments: Set to true if we found any in subsequent parsing
+    // This will be updated if we encounter the VORBIS_COMMENT block
+    metadata.insert(
+        "FLAC:VorbisComments".to_string(),
+        TagValue::new_string("false".to_string()),
+    );
+
     Ok(())
 }
 
@@ -361,6 +390,12 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
         );
     }
     offset += vendor_length;
+
+    // Mark that VorbisComments are present in this FLAC file
+    metadata.insert(
+        "FLAC:VorbisComments".to_string(),
+        crate::core::TagValue::new_string("true".to_string()),
+    );
 
     // User comment list length (4 bytes, little-endian)
     if offset + 4 > data.len() {

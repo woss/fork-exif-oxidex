@@ -59,9 +59,15 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
         // Convert to human-readable date if possible
         use chrono::{TimeZone, Utc};
         if let Some(dt) = Utc.timestamp_opt(header.time_date_stamp as i64, 0).single() {
+            let timestamp_str = dt.format("%Y:%m:%d %H:%M:%S").to_string();
             metadata.insert(
                 "PE:CompileTime".to_string(),
-                TagValue::String(dt.format("%Y:%m:%d %H:%M:%S").to_string()),
+                TagValue::String(timestamp_str.clone()),
+            );
+            // Add PE:Timestamp as string for ExifTool compatibility
+            metadata.insert(
+                "PE:Timestamp".to_string(),
+                TagValue::String(timestamp_str),
             );
         }
     }
@@ -70,6 +76,12 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
     metadata.insert(
         "PE:Characteristics".to_string(),
         TagValue::Integer(header.characteristics as i64),
+    );
+
+    // Add PE:Characteristics as hex string
+    metadata.insert(
+        "PE:CharacteristicsHex".to_string(),
+        TagValue::String(format!("0x{:04X}", header.characteristics)),
     );
 
     // Decode characteristic bit flags into human-readable strings
@@ -167,10 +179,28 @@ pub fn extract_optional_metadata(
         TagValue::Integer(std_header.address_of_entry_point as i64),
     );
 
+    // Add PE:EntryPoint as hexadecimal string for ExifTool compatibility
+    metadata.insert(
+        "PE:EntryPointHex".to_string(),
+        TagValue::String(format!("0x{:X}", std_header.address_of_entry_point)),
+    );
+
     // Image base
     metadata.insert(
         "PE:ImageBase".to_string(),
         TagValue::Integer(nt_header.image_base as i64),
+    );
+
+    // Add PE:ImageBase as hexadecimal string for ExifTool compatibility
+    metadata.insert(
+        "PE:ImageBaseHex".to_string(),
+        TagValue::String(format!("0x{:X}", nt_header.image_base)),
+    );
+
+    // Add PE:SizeOfImage
+    metadata.insert(
+        "PE:SizeOfImage".to_string(),
+        TagValue::Integer(nt_header.size_of_image as i64),
     );
 
     // OS version
