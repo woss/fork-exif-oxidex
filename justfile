@@ -7,9 +7,12 @@ default:
     @just --list
 
 # Run all tests (matches CI exactly)
+# Note: Doctests are run separately without --release due to panic='abort' incompatibility
 test:
     @echo "Running all tests (matching CI)..."
-    cargo test --release --all-features
+    cargo test --release --all-features --lib --bins --tests
+    @echo "Running doctests (requires panic=unwind)..."
+    cargo test --all-features --doc
 
 # Run all tests with cargo-nextest (faster parallel execution)
 test-nextest:
