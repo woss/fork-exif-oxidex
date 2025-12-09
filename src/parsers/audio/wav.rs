@@ -134,11 +134,13 @@ pub(crate) fn parse_riff_chunks(
                 }
             }
             b"LIST" => {
-                // Parse LIST chunk (may contain INFO)
+                // Parse LIST chunk (may contain INFO or exif)
                 if chunk_size >= 4 {
                     let list_type = reader.read(offset, 4)?;
                     if &list_type == b"INFO" {
                         parse_info_chunk(reader, offset + 4, offset + chunk_size, metadata)?;
+                    } else if &list_type == b"exif" {
+                        parse_exif_chunk(reader, offset + 4, offset + chunk_size, metadata)?;
                     }
                 }
             }
@@ -319,6 +321,83 @@ fn parse_info_chunk(
                 tag_name.to_string(),
                 TagValue::new_string(tag_value.to_string()),
             );
+        }
+
+        // Move to next tag (align to even byte boundary)
+        offset += tag_size as u64;
+        if tag_size % 2 == 1 {
+            offset += 1;
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse EXIF chunk (EXIF 2.3 metadata for WAV audio files)
+///
+/// The LIST exif chunk contains EXIF tags with 4-byte IDs:
+/// - ever: ExifVersion
+/// - ecor: Make
+/// - emdl: Model
+/// - emnt: MakerNotes
+/// - erel: RelatedImageFile
+/// - etim: TimeCreated
+fn parse_exif_chunk(
+    reader: &dyn FileReader,
+    start_offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let mut offset = start_offset;
+
+    while offset + 8 < end_offset {
+        // Read tag header (4 byte ID + 4 byte size)
+        let tag_header = reader.read(offset, 8)?;
+        let header_reader = EndianReader::little_endian(tag_header);
+
+        let tag_id = &tag_header[0..4];
+        let tag_size = header_reader.u32_at(4).unwrap_or(0) as usize;
+
+        offset += 8;
+
+        if offset + tag_size as u64 > end_offset {
+            break;
+        }
+
+        // Read tag value
+        let tag_value_bytes = reader.read(offset, tag_size)?;
+
+        // Map EXIF tag IDs to readable names (EXIF 2.3 for WAV)
+        let tag_name = match tag_id {
+            b"ever" => "RIFF:ExifVersion",
+            b"ecor" => "RIFF:Make",
+            b"emdl" => "RIFF:Model",
+            b"emnt" => "RIFF:MakerNotes",
+            b"erel" => "RIFF:RelatedImageFile",
+            b"etim" => "RIFF:TimeCreated",
+            _ => {
+                // Unknown EXIF tag - skip
+                offset += tag_size as u64;
+                if tag_size % 2 == 1 {
+                    offset += 1;
+                }
+                continue;
+            }
+        };
+
+        // Handle different tag types
+        if tag_id == b"emnt" {
+            // MakerNotes is binary data - store as binary indicator (match ExifTool format)
+            let binary_msg = format!("(Binary data {} bytes, use -b option to extract)", tag_size);
+            metadata.insert(tag_name.to_string(), TagValue::new_string(binary_msg));
+        } else {
+            // Other tags are ASCII strings (null-terminated)
+            let (tag_value, _, _) = WINDOWS_1252.decode(tag_value_bytes);
+            let tag_value = tag_value.trim_end_matches('\0').trim();
+
+            if !tag_value.is_empty() {
+                metadata.insert(tag_name.to_string(), TagValue::new_string(tag_value.to_string()));
+            }
         }
 
         // Move to next tag (align to even byte boundary)
