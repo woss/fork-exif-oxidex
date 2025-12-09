@@ -398,11 +398,21 @@ impl OxiDexExtractor {
         matches!(family, "File" | "System" | "UNKNOWN")
     }
 
+    /// Capitalize the first letter of a string to match ExifTool naming conventions
+    fn capitalize_first(s: &str) -> String {
+        let mut chars = s.chars();
+        match chars.next() {
+            None => String::new(),
+            Some(first) => first.to_uppercase().chain(chars).collect(),
+        }
+    }
+
     fn normalize_for_comparison(tag_key: &str, format: Option<&str>) -> String {
         // Handle PNG special cases first
         // PNG:tEXt:Author → PNG:Author
         // PNG:tEXt:date:create → PNG:Datecreate
         // PNG-pHYs:PixelUnits → PNG:PixelUnits
+        // ExifTool capitalizes PNG text chunk keywords (comment → Comment)
         if let Some(rest) = tag_key.strip_prefix("PNG:tEXt:") {
             // Handle date:create → Datecreate format
             // ExifTool uses lowercase after "Date" (Datecreate, not DateCreate)
@@ -410,13 +420,19 @@ impl OxiDexExtractor {
                 // date:create → Datecreate, date:modify → Datemodify, date:timestamp → Datetimestamp
                 return format!("PNG:Date{}", date_part);
             }
-            return format!("PNG:{}", rest);
+            // Capitalize the keyword to match ExifTool (comment → Comment)
+            return format!("PNG:{}", Self::capitalize_first(rest));
         }
         if let Some(rest) = tag_key.strip_prefix("PNG-pHYs:") {
             return format!("PNG:{}", rest);
         }
         if let Some(rest) = tag_key.strip_prefix("PNG:iTXt:") {
-            return format!("PNG:{}", rest);
+            // Capitalize the keyword to match ExifTool
+            return format!("PNG:{}", Self::capitalize_first(rest));
+        }
+        if let Some(rest) = tag_key.strip_prefix("PNG:zTXt:") {
+            // Capitalize the keyword to match ExifTool
+            return format!("PNG:{}", Self::capitalize_first(rest));
         }
 
         if let Some((family, name)) = tag_key.split_once(':') {
@@ -429,6 +445,8 @@ impl OxiDexExtractor {
                 | "Samsung" => "MakerNotes",
                 // MP4/QuickTime: ItemList and UserData → QuickTime for comparison
                 "ItemList" | "UserData" => "QuickTime",
+                // WebP tags map to RIFF family in ExifTool
+                "WebP" => "RIFF",
                 // Keep other families unchanged
                 _ => family,
             };

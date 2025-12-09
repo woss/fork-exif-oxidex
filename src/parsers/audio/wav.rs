@@ -157,6 +157,25 @@ pub(crate) fn parse_riff_chunks(
     Ok(())
 }
 
+/// Decode audio format code to human-readable encoding name
+fn decode_audio_format(format: u16) -> &'static str {
+    match format {
+        0x0001 => "Microsoft PCM",
+        0x0002 => "Microsoft ADPCM",
+        0x0003 => "IEEE Float",
+        0x0006 => "ITU G.711 a-law",
+        0x0007 => "ITU G.711 mu-law",
+        0x0011 => "Intel DVI/IMA ADPCM",
+        0x0016 => "ITU G.723 ADPCM (Yamaha)",
+        0x0031 => "GSM 6.10",
+        0x0040 => "ITU G.721 ADPCM",
+        0x0055 => "MPEG",
+        0x0069 => "MPEG Layer 3",
+        0xFFFE => "Extensible",
+        _ => "Unknown",
+    }
+}
+
 /// Parse fmt chunk (format information)
 fn parse_fmt_chunk(reader: &dyn FileReader, offset: u64, metadata: &mut MetadataMap) -> Result<()> {
     let fmt_data = reader.read(offset, 16)?;
@@ -165,11 +184,13 @@ fn parse_fmt_chunk(reader: &dyn FileReader, offset: u64, metadata: &mut Metadata
     let audio_format = fmt_reader.u16_at(0).unwrap_or(0);
     let num_channels = fmt_reader.u16_at(2).unwrap_or(0);
     let sample_rate = fmt_reader.u32_at(4).unwrap_or(0);
+    let avg_bytes_per_sec = fmt_reader.u32_at(8).unwrap_or(0);
     let bits_per_sample = fmt_reader.u16_at(14).unwrap_or(0);
 
+    // Encoding - human-readable format name
     metadata.insert(
-        "RIFF:AudioFormat".to_string(),
-        TagValue::new_integer(audio_format as i64),
+        "RIFF:Encoding".to_string(),
+        TagValue::new_string(decode_audio_format(audio_format).to_string()),
     );
     metadata.insert(
         "RIFF:NumChannels".to_string(),
@@ -178,6 +199,10 @@ fn parse_fmt_chunk(reader: &dyn FileReader, offset: u64, metadata: &mut Metadata
     metadata.insert(
         "RIFF:SampleRate".to_string(),
         TagValue::new_integer(sample_rate as i64),
+    );
+    metadata.insert(
+        "RIFF:AvgBytesPerSec".to_string(),
+        TagValue::new_integer(avg_bytes_per_sec as i64),
     );
     metadata.insert(
         "RIFF:BitsPerSample".to_string(),

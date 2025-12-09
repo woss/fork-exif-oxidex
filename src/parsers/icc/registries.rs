@@ -527,7 +527,7 @@ pub static MANUFACTURERS: &[LookupEntry] = &[
     },
     LookupEntry {
         code: "none",
-        name: "",
+        name: "none",
     },
 ];
 
