@@ -45,6 +45,9 @@ const VORBIS_ID_HEADER: u8 = 0x01;
 /// Vorbis comment header packet type
 const VORBIS_COMMENT_HEADER: u8 = 0x03;
 
+/// OGG FLAC mapping header marker
+const OGG_FLAC_MARKER: u8 = 0x7F;
+
 /// OGG parser
 pub struct OggParser;
 
@@ -121,18 +124,28 @@ impl FormatParser for OggParser {
                 break;
             }
 
-            // Check if this is a Vorbis comment header
+            // Check if this is a Vorbis comment header or FLAC header
             if page_body_size > 0 {
                 let page_body = reader.read(page_body_offset, page_body_size as usize)?;
 
                 // Vorbis packets start with packet type (1 byte) + "vorbis" (6 bytes)
-                if page_body.len() >= 7
-                    && &page_body[1..7] == b"vorbis"
-                    && page_body[0] == VORBIS_COMMENT_HEADER
-                {
-                    // Parse Vorbis comments
-                    parse_vorbis_comments(&page_body[7..], &mut metadata)?;
-                    break; // Found comments, we're done
+                if page_body.len() >= 7 && &page_body[1..7] == b"vorbis" {
+                    match page_body[0] {
+                        VORBIS_ID_HEADER => {
+                            // Parse Vorbis identification header
+                            parse_vorbis_id_header(&page_body[7..], &mut metadata)?;
+                        }
+                        VORBIS_COMMENT_HEADER => {
+                            // Parse Vorbis comments
+                            parse_vorbis_comments(&page_body[7..], &mut metadata)?;
+                            break; // Found comments, we're done
+                        }
+                        _ => {}
+                    }
+                }
+                // OGG FLAC header: 0x7F "FLAC" version info + STREAMINFO
+                else if page_body.len() >= 13 && page_body[0] == OGG_FLAC_MARKER && &page_body[1..5] == b"FLAC" {
+                    parse_ogg_flac_header(&page_body, &mut metadata)?;
                 }
             }
 
@@ -188,9 +201,222 @@ fn map_vorbis_field_name(field_name: &str) -> String {
         // Cover art
         "COVERART" => "Vorbis:CoverArt".to_string(),
         "COVERARTMIME" => "Vorbis:CoverArtMIMEType".to_string(),
-        // Unknown - use raw name with Vorbis prefix
-        _ => format!("Vorbis:{}", field_name),
+        // Unknown - normalize tag name to PascalCase
+        // e.g., "MEDIAJUKEBOX:DATE" -> "MediajukeboxDate"
+        // e.g., "MEDIAJUKEBOX:TOOL NAME" -> "MediajukeboxToolName"
+        _ => {
+            // Normalize to PascalCase: split on : and space, capitalize first letter, lowercase rest
+            let normalized = field_name
+                .split(|c| c == ':' || c == ' ')
+                .map(|part| {
+                    let mut chars: Vec<char> = part.chars().collect();
+                    if !chars.is_empty() {
+                        chars[0] = chars[0].to_ascii_uppercase();
+                        for c in chars.iter_mut().skip(1) {
+                            *c = c.to_ascii_lowercase();
+                        }
+                    }
+                    chars.into_iter().collect::<String>()
+                })
+                .collect::<String>();
+            format!("Vorbis:{}", normalized)
+        }
     }
+}
+
+/// Parse OGG FLAC header (mapping header + STREAMINFO)
+fn parse_ogg_flac_header(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
+    // OGG FLAC mapping header structure:
+    // 1 byte: 0x7F marker
+    // 4 bytes: "FLAC"
+    // 1 byte: major version
+    // 1 byte: minor version
+    // 2 bytes: number of header packets (big-endian)
+    // 4 bytes: "fLaC" native FLAC signature
+    // 4 bytes: metadata block header
+    // 34 bytes: STREAMINFO data
+
+    if data.len() < 51 {
+        return Ok(());
+    }
+
+    // Verify "fLaC" signature at offset 9
+    if &data[9..13] != b"fLaC" {
+        return Ok(());
+    }
+
+    // STREAMINFO is at offset 13 (after "fLaC") + 4 (block header) = 17
+    // Block header: 1 byte type + 3 bytes size
+    let streaminfo_offset = 17;
+
+    if data.len() < streaminfo_offset + 34 {
+        return Ok(());
+    }
+
+    let streaminfo = &data[streaminfo_offset..];
+
+    // STREAMINFO format (34 bytes):
+    // 2 bytes: min block size
+    // 2 bytes: max block size
+    // 3 bytes: min frame size
+    // 3 bytes: max frame size
+    // 8 bytes: sample rate (20 bits), channels (3 bits), bits/sample (5 bits), total samples (36 bits)
+    // 16 bytes: MD5 signature
+
+    let block_size_min = u16::from_be_bytes([streaminfo[0], streaminfo[1]]);
+    let block_size_max = u16::from_be_bytes([streaminfo[2], streaminfo[3]]);
+    let frame_size_min =
+        ((streaminfo[4] as u32) << 16) | ((streaminfo[5] as u32) << 8) | (streaminfo[6] as u32);
+    let frame_size_max =
+        ((streaminfo[7] as u32) << 16) | ((streaminfo[8] as u32) << 8) | (streaminfo[9] as u32);
+
+    // Sample rate, channels, bits per sample, total samples packed into bytes 10-17
+    let sample_rate = ((streaminfo[10] as u32) << 12)
+        | ((streaminfo[11] as u32) << 4)
+        | ((streaminfo[12] as u32) >> 4);
+    let channels = ((streaminfo[12] >> 1) & 0x07) + 1;
+    let bits_per_sample = (((streaminfo[12] & 0x01) << 4) | (streaminfo[13] >> 4)) + 1;
+    let total_samples = (((streaminfo[13] as u64) & 0x0F) << 32)
+        | ((streaminfo[14] as u64) << 24)
+        | ((streaminfo[15] as u64) << 16)
+        | ((streaminfo[16] as u64) << 8)
+        | (streaminfo[17] as u64);
+
+    // MD5 signature (bytes 18-33)
+    let md5_sig = &streaminfo[18..34];
+    let md5_str: String = md5_sig.iter().map(|b| format!("{:02x}", b)).collect();
+
+    metadata.insert(
+        "FLAC:BlockSizeMin".to_string(),
+        TagValue::new_integer(block_size_min as i64),
+    );
+    metadata.insert(
+        "FLAC:BlockSizeMax".to_string(),
+        TagValue::new_integer(block_size_max as i64),
+    );
+    metadata.insert(
+        "FLAC:FrameSizeMin".to_string(),
+        TagValue::new_integer(frame_size_min as i64),
+    );
+    metadata.insert(
+        "FLAC:FrameSizeMax".to_string(),
+        TagValue::new_integer(frame_size_max as i64),
+    );
+    metadata.insert(
+        "FLAC:SampleRate".to_string(),
+        TagValue::new_integer(sample_rate as i64),
+    );
+    metadata.insert(
+        "FLAC:Channels".to_string(),
+        TagValue::new_integer(channels as i64),
+    );
+    metadata.insert(
+        "FLAC:BitsPerSample".to_string(),
+        TagValue::new_integer(bits_per_sample as i64),
+    );
+    metadata.insert(
+        "FLAC:TotalSamples".to_string(),
+        TagValue::new_integer(total_samples as i64),
+    );
+    metadata.insert("FLAC:MD5Signature".to_string(), TagValue::new_string(md5_str));
+
+    Ok(())
+}
+
+/// Simple base64 decoder for embedded binary data
+fn base64_decode(input: &str) -> std::result::Result<Vec<u8>, &'static str> {
+    const DECODE_TABLE: [i8; 256] = {
+        let mut table = [-1i8; 256];
+        let mut i = 0u8;
+        while i < 26 {
+            table[(b'A' + i) as usize] = i as i8;
+            table[(b'a' + i) as usize] = (i + 26) as i8;
+            i += 1;
+        }
+        let mut i = 0u8;
+        while i < 10 {
+            table[(b'0' + i) as usize] = (i + 52) as i8;
+            i += 1;
+        }
+        table[b'+' as usize] = 62;
+        table[b'/' as usize] = 63;
+        table
+    };
+
+    let bytes = input.as_bytes();
+    let mut output = Vec::with_capacity(bytes.len() * 3 / 4);
+    let mut buffer = 0u32;
+    let mut bits = 0u32;
+
+    for &byte in bytes {
+        if byte == b'=' {
+            break;
+        }
+        let val = DECODE_TABLE[byte as usize];
+        if val < 0 {
+            if byte.is_ascii_whitespace() {
+                continue;
+            }
+            return Err("Invalid base64 character");
+        }
+        buffer = (buffer << 6) | val as u32;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            output.push((buffer >> bits) as u8);
+            buffer &= (1 << bits) - 1;
+        }
+    }
+
+    Ok(output)
+}
+
+/// Parse Vorbis identification header
+fn parse_vorbis_id_header(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
+    // Vorbis identification header (after "vorbis" signature):
+    // 4 bytes: vorbis_version (u32 LE, always 0)
+    // 1 byte:  audio_channels
+    // 4 bytes: audio_sample_rate (u32 LE)
+    // 4 bytes: bitrate_maximum (i32 LE)
+    // 4 bytes: bitrate_nominal (i32 LE)
+    // 4 bytes: bitrate_minimum (i32 LE)
+    // Total: 21 bytes minimum
+
+    if data.len() < 21 {
+        return Ok(());
+    }
+
+    let reader = EndianReader::little_endian(data);
+
+    let vorbis_version = reader.u32_at(0).unwrap_or(0);
+    let audio_channels = data[4];
+    let sample_rate = reader.u32_at(5).unwrap_or(0);
+    let _bitrate_max = reader.i32_at(9).unwrap_or(0);
+    let bitrate_nominal = reader.i32_at(13).unwrap_or(0);
+    let _bitrate_min = reader.i32_at(17).unwrap_or(0);
+
+    metadata.insert(
+        "Vorbis:VorbisVersion".to_string(),
+        TagValue::new_integer(vorbis_version as i64),
+    );
+    metadata.insert(
+        "Vorbis:AudioChannels".to_string(),
+        TagValue::new_integer(audio_channels as i64),
+    );
+    metadata.insert(
+        "Vorbis:SampleRate".to_string(),
+        TagValue::new_integer(sample_rate as i64),
+    );
+    if bitrate_nominal > 0 {
+        // ExifTool formats bitrate as "N kbps"
+        let kbps = bitrate_nominal / 1000;
+        metadata.insert(
+            "Vorbis:NominalBitrate".to_string(),
+            TagValue::new_string(format!("{} kbps", kbps)),
+        );
+    }
+
+    Ok(())
 }
 
 /// Parse Vorbis comment data
@@ -253,7 +479,27 @@ fn parse_vorbis_comments(data: &[u8], metadata: &mut MetadataMap) -> Result<()> 
 
             // Map to ExifTool-compatible tag name
             let tag_name = map_vorbis_field_name(field_name);
-            metadata.insert(tag_name, TagValue::new_string(field_value.to_string()));
+
+            // Handle binary data (like CoverArt which is base64-encoded)
+            let upper_field = field_name.to_uppercase();
+            if upper_field == "COVERART" || upper_field == "METADATA_BLOCK_PICTURE" {
+                // Decode base64 to get actual size
+                if let Ok(decoded) = base64_decode(field_value) {
+                    let size = decoded.len();
+                    metadata.insert(
+                        tag_name,
+                        TagValue::new_string(format!(
+                            "(Binary data {} bytes, use -b option to extract)",
+                            size
+                        )),
+                    );
+                } else {
+                    // If decoding fails, just report the base64 size
+                    metadata.insert(tag_name, TagValue::new_string(field_value.to_string()));
+                }
+            } else {
+                metadata.insert(tag_name, TagValue::new_string(field_value.to_string()));
+            }
         }
 
         offset += comment_length;

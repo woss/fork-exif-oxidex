@@ -78,10 +78,9 @@ impl FormatParser for FlvParser {
         let has_video = (flags & 0x01) != 0;
         let has_audio = (flags & 0x04) != 0;
 
-        metadata.insert(
-            "Flash:FLVVersion".to_string(),
-            TagValue::new_integer(version as i64),
-        );
+        // Note: FLVVersion is available but ExifTool doesn't output it, so we skip it
+        let _version = version;
+
         metadata.insert(
             "Flash:HasVideo".to_string(),
             TagValue::new_string(if has_video { "Yes" } else { "No" }),
@@ -355,12 +354,21 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
                         );
                     }
                     // Format bitrates with "kbps" suffix
+                    // ExifTool formatting: video rounds to integer, audio shows one decimal
                     else if key_lower.contains("datarate") {
-                        // Store as integer kbps
-                        metadata.insert(
-                            tag_name.to_string(),
-                            TagValue::new_string(format!("{} kbps", value as i64)),
-                        );
+                        let formatted = if key_lower.starts_with("video") {
+                            // Video bitrate rounds to integer
+                            format!("{} kbps", value.round() as i64)
+                        } else {
+                            // Audio bitrate uses one decimal place, strips ".0"
+                            let rounded = (value * 10.0).round() / 10.0;
+                            if (rounded - rounded.floor()).abs() < 0.001 {
+                                format!("{} kbps", rounded as i64)
+                            } else {
+                                format!("{:.1} kbps", rounded)
+                            }
+                        };
+                        metadata.insert(tag_name.to_string(), TagValue::new_string(formatted));
                     }
                     // Track codec IDs
                     else if key_lower == "videocodecid" {
@@ -496,7 +504,8 @@ fn parse_on_metadata(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
 fn format_flv_date(timestamp_ms: f64, tz_offset_minutes: i16) -> String {
     // Convert ms to seconds
     let secs = (timestamp_ms / 1000.0) as i64;
-    let subsec_nanos = ((timestamp_ms % 1000.0) * 1_000_000.0) as u32;
+    // Use round() for proper microsecond precision
+    let subsec_micros = ((timestamp_ms % 1000.0) * 1000.0).round() as u32;
 
     // Calculate date/time components (simplified - assumes Unix epoch)
     // For a proper implementation, we'd use chrono, but we'll do basic math
@@ -523,7 +532,7 @@ fn format_flv_date(timestamp_ms: f64, tz_offset_minutes: i16) -> String {
         hours,
         minutes,
         seconds,
-        subsec_nanos / 1000,
+        subsec_micros,
         tz_sign,
         tz_hours,
         tz_mins
@@ -1119,10 +1128,11 @@ mod tests {
         assert!(result.is_ok());
 
         let metadata = result.unwrap();
-        assert_eq!(
-            metadata.get("Flash:FLVVersion").unwrap().as_integer(),
-            Some(1)
-        );
+        // FLVVersion is not output to match ExifTool behavior
+        assert!(metadata.get("Flash:FLVVersion").is_none());
+        // But HasVideo and HasAudio should be present
+        assert!(metadata.get("Flash:HasVideo").is_some());
+        assert!(metadata.get("Flash:HasAudio").is_some());
     }
 
     #[test]
