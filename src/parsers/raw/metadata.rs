@@ -988,13 +988,79 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                                     metadata.insert(tag_name, tag_value);
                                 }
 
+                                // Also look for GPS IFD pointer in IFD0
+                                let mut gps_ifd_offset = None;
+                                for (tag_id, _field_type, _value_count, raw_bytes) in &tags {
+                                    let bytes = raw_bytes.as_ref();
+                                    // GPS Sub-IFD pointer (tag 0x8825)
+                                    if *tag_id == 0x8825 && bytes.len() >= 4 {
+                                        let offset = read_u32(bytes, byte_order);
+                                        gps_ifd_offset = Some(offset as u64);
+                                    }
+                                }
+
                                 // Parse EXIF Sub-IFD if present
                                 if let Some(offset) = exif_ifd_offset
                                     && let Ok(exif_tags) =
                                         parse_ifd(&exif_reader, offset, byte_order)
                                 {
-                                    for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
-                                        let tag_name = lookup_tag_name(tag_id, "ExifIFD");
+                                    // Track MakerNote data
+                                    let mut makernote_data: Option<Vec<u8>> = None;
+
+                                    for (tag_id, field_type, value_count, raw_bytes) in &exif_tags {
+                                        let bytes = raw_bytes.as_ref();
+
+                                        // Check for MakerNote tag (0x927C)
+                                        if *tag_id == 0x927C {
+                                            makernote_data = Some(bytes.to_vec());
+                                            continue; // Don't add raw MakerNote to metadata
+                                        }
+
+                                        let tag_name = lookup_tag_name(*tag_id, "ExifIFD");
+                                        let tag_value = raw_bytes_to_simple_tag_value(
+                                            bytes,
+                                            *field_type,
+                                            *value_count,
+                                            byte_order,
+                                        );
+                                        metadata.insert(tag_name, tag_value);
+                                    }
+
+                                    // Parse MakerNote if present (Fujifilm camera)
+                                    if let Some(mn_data) = makernote_data.as_ref() {
+                                        // Use the MakerNote dispatcher for Fujifilm
+                                        let mut makernote_tags = std::collections::HashMap::new();
+                                        if let Err(e) =
+                                            crate::parsers::tiff::makernote_dispatcher::dispatch_makernote(
+                                                "FUJIFILM",
+                                                mn_data,
+                                                byte_order,
+                                                &mut makernote_tags,
+                                            )
+                                        {
+                                            eprintln!(
+                                                "Warning: Failed to parse Fujifilm MakerNote: {}",
+                                                e
+                                            );
+                                        } else {
+                                            // Add parsed MakerNote tags to metadata
+                                            for (tag_name, tag_value) in makernote_tags {
+                                                metadata.insert(
+                                                    tag_name,
+                                                    TagValue::new_string(tag_value),
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Parse GPS Sub-IFD if present
+                                if let Some(offset) = gps_ifd_offset
+                                    && let Ok(gps_tags) =
+                                        parse_ifd(&exif_reader, offset, byte_order)
+                                {
+                                    for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
+                                        let tag_name = lookup_tag_name(tag_id, "GPS");
                                         let tag_value = raw_bytes_to_simple_tag_value(
                                             raw_bytes.as_ref(),
                                             field_type,
