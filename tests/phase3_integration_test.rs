@@ -44,28 +44,28 @@ mod phase3_integration_tests {
         );
     }
 
-    /// Test 3: Verify workflow file exists
+    /// Test 3: Verify workflow file exists (deploy-docs.yml handles comparison)
     #[test]
     fn test_workflow_file_exists() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let workflow_path = Path::new(".github/workflows/deploy-docs.yml");
         assert!(
             workflow_path.exists(),
-            "compare-exiftool.yml workflow should exist"
+            "deploy-docs.yml workflow should exist"
         );
     }
 
     /// Test 4: Verify workflow has proper structure
     #[test]
     fn test_workflow_structure() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let workflow_path = Path::new(".github/workflows/deploy-docs.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         // Check essential workflow components
         assert!(content.contains("name:"), "workflow should have a name");
         assert!(content.contains("jobs:"), "workflow should have jobs");
         assert!(
-            content.contains("compare:"),
-            "workflow should have compare job"
+            content.contains("build-and-deploy:"),
+            "workflow should have build-and-deploy job"
         );
 
         // Check triggers
@@ -76,35 +76,35 @@ mod phase3_integration_tests {
         assert!(content.contains("push:"), "should trigger on push");
     }
 
-    /// Test 5: Verify workflow has permissions for commits
+    /// Test 5: Verify workflow has permissions for pages
     #[test]
     fn test_workflow_permissions() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let workflow_path = Path::new(".github/workflows/deploy-docs.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
-            content.contains("contents: write"),
-            "should have write permissions for commits"
+            content.contains("pages: write"),
+            "should have write permissions for pages"
         );
     }
 
-    /// Test 6: Verify ExifTool version detection (in commit message)
+    /// Test 6: Verify ExifTool comparison is run
     #[test]
-    fn test_exiftool_version_detection() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+    fn test_exiftool_comparison_step() {
+        let workflow_path = Path::new(".github/workflows/deploy-docs.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
-        // Version detection moved to commit step and just recipe
+        // Comparison is handled by just recipe
         assert!(
-            content.contains("exiftool.org/ver.txt"),
-            "workflow should detect ExifTool version from ver.txt"
+            content.contains("compare-exiftool-full-update"),
+            "workflow should run compare-exiftool-full-update recipe"
         );
     }
 
     /// Test 7: Verify cache configuration for Rust dependencies
     #[test]
     fn test_cache_configuration() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let workflow_path = Path::new(".github/workflows/deploy-docs.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
@@ -121,7 +121,7 @@ mod phase3_integration_tests {
     /// Test 8: Verify just recipe is used for comparison
     #[test]
     fn test_comparison_binary_usage() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+        let workflow_path = Path::new(".github/workflows/deploy-docs.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         // Workflow now uses just recipe which handles building and running
@@ -152,17 +152,20 @@ mod phase3_integration_tests {
         );
     }
 
-    /// Test 10: Verify commit step
+    /// Test 10: Verify deploy step
     #[test]
-    fn test_commit_step() {
-        let workflow_path = Path::new(".github/workflows/compare-exiftool.yml");
+    fn test_deploy_step() {
+        let workflow_path = Path::new(".github/workflows/deploy-docs.yml");
         let content = fs::read_to_string(workflow_path).expect("should read workflow file");
 
         assert!(
-            content.contains("Commit reports"),
-            "workflow should have commit step"
+            content.contains("deploy-pages"),
+            "workflow should have deploy step"
         );
-        assert!(content.contains("git push"), "workflow should push changes");
+        assert!(
+            content.contains("upload-pages-artifact"),
+            "workflow should upload pages artifact"
+        );
     }
 }
 
