@@ -208,13 +208,31 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
         let frame_data = &data[offset..offset + frame_size as usize];
         offset += frame_size as usize;
 
-        // Parse text frames
-        if frame_id.starts_with('T')
+        // Parse text frames (T* frames except TXXX/TXX which are user-defined)
+        let is_text_frame = frame_id.starts_with('T')
             && frame_id != "TXXX"
+            && frame_id != "TXX";
+
+        // Parse comment frames (COM/COMM)
+        let is_comment_frame = frame_id == "COM" || frame_id == "COMM";
+
+        // Parse lyrics frames (ULT/USLT)
+        let is_lyrics_frame = frame_id == "ULT" || frame_id == "USLT";
+
+        if is_text_frame
             && let Ok(text) = parse_text_frame(frame_data)
         {
             let tag_name = format!("ID3:{}", map_frame_id_to_tag_name(&frame_id));
             metadata.insert(tag_name, TagValue::new_string(text));
+        } else if is_comment_frame
+            && let Ok(text) = parse_comment_frame(frame_data)
+        {
+            metadata.insert("ID3:Comment".to_string(), TagValue::new_string(text));
+        } else if is_lyrics_frame
+            && let Ok(text) = parse_comment_frame(frame_data)
+        {
+            // Lyrics frame has same structure as comment frame
+            metadata.insert("ID3:Lyrics".to_string(), TagValue::new_string(text));
         }
     }
 
@@ -242,16 +260,131 @@ fn parse_text_frame(data: &[u8]) -> Result<String> {
     Ok(decoded.trim_end_matches('\0').to_string())
 }
 
+/// Parse comment frame (COM/COMM - encoding + language + short desc + text)
+fn parse_comment_frame(data: &[u8]) -> Result<String> {
+    if data.len() < 5 {
+        return Err(ExifToolError::parse_error("Comment frame too short"));
+    }
+
+    let encoding_byte = data[0];
+    // Skip language (3 bytes) and find short description null terminator
+    let text_start = &data[4..];
+
+    let encoding = match encoding_byte {
+        0 => encoding_rs::WINDOWS_1252,
+        1 => encoding_rs::UTF_16LE,
+        2 => encoding_rs::UTF_16BE,
+        3 => encoding_rs::UTF_8,
+        _ => encoding_rs::UTF_8,
+    };
+
+    // For UTF-16 encodings, find double-null terminator
+    let content_start = if encoding_byte == 1 || encoding_byte == 2 {
+        // UTF-16: look for double null terminator
+        let mut pos = 0;
+        while pos + 1 < text_start.len() {
+            if text_start[pos] == 0 && text_start[pos + 1] == 0 {
+                pos += 2;
+                break;
+            }
+            pos += 2;
+        }
+        pos
+    } else {
+        // Latin-1 or UTF-8: look for single null
+        text_start.iter().position(|&b| b == 0).map_or(0, |p| p + 1)
+    };
+
+    let comment_data = &text_start[content_start..];
+    let (decoded, _, _) = encoding.decode(comment_data);
+    Ok(decoded.trim_end_matches('\0').to_string())
+}
+
 /// Map ID3v2 frame ID to tag name
+/// Supports both ID3v2.2 (3-char) and ID3v2.3/v2.4 (4-char) frame IDs
 fn map_frame_id_to_tag_name(frame_id: &str) -> &str {
     match frame_id {
+        // ID3v2.3/v2.4 frame IDs (4 characters)
+        "TIT1" => "Grouping",
         "TIT2" => "Title",
+        "TIT3" => "Subtitle",
         "TPE1" => "Artist",
+        "TPE2" => "Band",
+        "TPE3" => "Conductor",
+        "TPE4" => "Remixer",
         "TALB" => "Album",
-        "TYER" | "TDRC" => "Year",
+        "TYER" => "Year",
+        "TDRC" => "Year",
+        "TDAT" => "Date",
         "TCON" => "Genre",
         "TRCK" => "Track",
+        "TPOS" => "PartOfSet",
         "COMM" => "Comment",
+        "TCOM" => "Composer",
+        "TPUB" => "Publisher",
+        "TCOP" => "Copyright",
+        "TENC" => "EncodedBy",
+        "TSSE" => "EncoderSettings",
+        "TBPM" => "BeatsPerMinute",
+        "TKEY" => "InitialKey",
+        "TLAN" => "Language",
+        "TLEN" => "Length",
+        "TMED" => "OriginalMedia",
+        "TOAL" => "OriginalAlbum",
+        "TOFN" => "OriginalFilename",
+        "TOLY" => "OriginalLyricist",
+        "TOPE" => "OriginalArtist",
+        "TORY" => "OriginalYear",
+        "TEXT" => "Lyricist",
+        "USLT" => "Lyrics",
+        "WCOM" => "CommercialURL",
+        "WCOP" => "CopyrightURL",
+        "WOAF" => "FileURL",
+        "WOAR" => "ArtistURL",
+        "WOAS" => "SourceURL",
+        "WORS" => "StationURL",
+        "WPAY" => "PaymentURL",
+        "WPUB" => "PublisherURL",
+
+        // ID3v2.2 frame IDs (3 characters)
+        "TT1" => "Grouping",
+        "TT2" => "Title",
+        "TT3" => "Subtitle",
+        "TP1" => "Artist",
+        "TP2" => "Band",
+        "TP3" => "Conductor",
+        "TP4" => "Remixer",
+        "TAL" => "Album",
+        "TYE" => "Year",
+        "TDA" => "Date",
+        "TCO" => "Genre",
+        "TRK" => "Track",
+        "TPA" => "PartOfSet",
+        "COM" => "Comment",
+        "TCM" => "Composer",
+        "TPB" => "Publisher",
+        "TCR" => "Copyright",
+        "TEN" => "EncodedBy",
+        "TSS" => "EncoderSettings",
+        "TBP" => "BeatsPerMinute",
+        "TKE" => "InitialKey",
+        "TLA" => "Language",
+        "TLE" => "Length",
+        "TMT" => "OriginalMedia",
+        "TOT" => "OriginalAlbum",
+        "TOF" => "OriginalFilename",
+        "TOL" => "OriginalLyricist",
+        "TOA" => "OriginalArtist",
+        "TOR" => "OriginalYear",
+        "TXT" => "Lyricist",
+        "ULT" => "Lyrics",
+        "WCM" => "CommercialURL",
+        "WCP" => "CopyrightURL",
+        "WAF" => "FileURL",
+        "WAR" => "ArtistURL",
+        "WAS" => "SourceURL",
+        "WPB" => "PublisherURL",
+
         _ => frame_id,
     }
 }
