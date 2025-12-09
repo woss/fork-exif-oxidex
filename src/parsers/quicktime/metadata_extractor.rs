@@ -340,6 +340,19 @@ fn extract_file_level_metadata(root_atoms: &[Atom], metadata: &mut MetadataMap) 
                 "M4V " => "Apple iTunes Video (.M4V) Video",
                 "qt  " => "Apple QuickTime (.MOV/QT)",
                 "mp4 " => "MP4 Base Media v1 [IS0 14496-12:2003]",
+                // HEIF/HEIC brands
+                "mif1" => "High Efficiency Image Format still image (.HEIC)",
+                "msf1" => "High Efficiency Image Format sequence (.HEICS)",
+                "heic" => "High Efficiency Image Coding (.HEIC)",
+                "heix" => "High Efficiency Image Coding (.HEIC)",
+                "hevc" => "High Efficiency Video Coding (.HEVC)",
+                "hevx" => "High Efficiency Video Coding (.HEVC)",
+                "heim" => "High Efficiency Image Coding Multiview",
+                "heis" => "High Efficiency Image Coding Scalable",
+                "hevm" => "High Efficiency Video Coding Multiview",
+                "hevs" => "High Efficiency Video Coding Scalable",
+                "avif" => "AV1 Image File Format (.AVIF)",
+                "avis" => "AV1 Image Sequence File Format",
                 _ => brand,
             };
             metadata.insert(
@@ -394,12 +407,12 @@ fn extract_file_level_metadata(root_atoms: &[Atom], metadata: &mut MetadataMap) 
             );
             metadata.insert(
                 "QuickTime:MediaDataOffset".to_string(),
-                TagValue::Integer((offset + 8) as i64), // +8 for atom header
+                TagValue::Integer((offset + atom.header_size as u64) as i64),
             );
             break;
         }
-        // Calculate atom size (8-byte header + data length)
-        offset += 8 + atom.data.len() as u64;
+        // Calculate atom size (header + data length), accounting for extended headers
+        offset += atom.header_size as u64 + atom.data.len() as u64;
     }
 }
 
@@ -1096,6 +1109,9 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
             "meta" => "Timed Metadata",
             "text" => "Text Track",
             "tmcd" => "Time Code",
+            "pict" => "Picture",
+            "auxv" => "Auxiliary Video",
+            "auxC" => "Auxiliary Codec",
             _ => handler_str,
         };
         metadata.insert(
@@ -2615,6 +2631,7 @@ mod tests {
         let stts = Atom {
             atom_type: FourCC::from_string("stts").unwrap(),
             data: &stts_data,
+            header_size: 8,
         };
 
         let mut metadata = MetadataMap::new();
@@ -2649,6 +2666,7 @@ mod tests {
         let stts = Atom {
             atom_type: FourCC::from_string("stts").unwrap(),
             data: &stts_data,
+            header_size: 8,
         };
 
         let mut metadata = MetadataMap::new();
