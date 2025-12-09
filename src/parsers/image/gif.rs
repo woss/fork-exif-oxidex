@@ -375,18 +375,20 @@ impl FormatParser for GIFParser {
             TagValue::String(lsd.height.to_string()),
         );
 
+        // ColorResolutionDepth - ExifTool tag name for bits per primary color
         metadata.insert(
-            "ColorResolution".to_string(),
+            "ColorResolutionDepth".to_string(),
             TagValue::Integer(lsd.color_resolution as i64),
         );
 
+        // HasColorMap - ExifTool tag for global color table flag
         metadata.insert(
-            "HasGlobalColorTable".to_string(),
+            "HasColorMap".to_string(),
             TagValue::String(
                 if lsd.global_color_table_flag {
-                    "yes"
+                    "Yes"
                 } else {
-                    "no"
+                    "No"
                 }
                 .to_string(),
             ),
@@ -397,17 +399,33 @@ impl FormatParser for GIFParser {
                 "GlobalColorTableSize".to_string(),
                 TagValue::Integer(lsd.global_color_table_size as i64),
             );
+            // BitsPerPixel - log2 of color table size
+            let bits_per_pixel = (lsd.global_color_table_size as f64).log2() as i64;
+            metadata.insert(
+                "BitsPerPixel".to_string(),
+                TagValue::Integer(bits_per_pixel),
+            );
         }
 
+        // BackgroundColor - ExifTool uses this name (not BackgroundColorIndex)
         metadata.insert(
-            "BackgroundColorIndex".to_string(),
+            "BackgroundColor".to_string(),
             TagValue::Integer(lsd.background_color_index as i64),
         );
 
-        if lsd.pixel_aspect_ratio != 0 {
+        // PixelAspectRatio - convert from raw value to actual ratio
+        // If raw value is 0, aspect ratio is not given, otherwise: (value + 15) / 64
+        // ExifTool rounds to nearest integer
+        if lsd.pixel_aspect_ratio == 0 {
             metadata.insert(
                 "PixelAspectRatio".to_string(),
-                TagValue::Integer(lsd.pixel_aspect_ratio as i64),
+                TagValue::Integer(1), // Default 1:1
+            );
+        } else {
+            let ratio = ((lsd.pixel_aspect_ratio as f64 + 15.0) / 64.0).round() as i64;
+            metadata.insert(
+                "PixelAspectRatio".to_string(),
+                TagValue::Integer(ratio),
             );
         }
 
