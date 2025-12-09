@@ -90,6 +90,12 @@ const XMP_TAG: u16 = 0x02BC; // Tag 700: XMP metadata (ApplicationNotes)
 const IPTC_TAG: u16 = 0x83BB; // Tag 33723: IPTC-NAA metadata
 const PHOTOSHOP_TAG: u16 = 0x8649; // Tag 34377: Photoshop IRB metadata
 
+// GeoTiff tag IDs
+const GEOTIFF_DIRECTORY_TAG: u16 = 0x87AF; // Tag 34735: GeoKeyDirectoryTag
+const GEOTIFF_DOUBLE_PARAMS_TAG: u16 = 0x87B0; // Tag 34736: GeoDoubleParamsTag
+const GEOTIFF_ASCII_PARAMS_TAG: u16 = 0x87B1; // Tag 34737: GeoAsciiParamsTag
+const MODEL_TRANSFORMATION_TAG: u16 = 0x85D8; // Tag 34264: ModelTransformation
+
 // Tag IDs for camera detection
 const MAKE: u16 = 0x010F; // Camera manufacturer (e.g., "Canon", "Nikon")
 
@@ -528,6 +534,63 @@ pub fn parse_tiff_file(reader: &dyn FileReader) -> Result<IfdEntries> {
                     );
                 }
                 _ => {}
+            }
+        }
+
+        // Process GeoTiff tags if present
+        // GeoTiff uses three tags together: directory, double params, and ASCII params
+        let geotiff_directory: Option<&[u8]> = tags
+            .iter()
+            .find(|(id, _, _, _)| *id == GEOTIFF_DIRECTORY_TAG)
+            .map(|(_, _, _, v)| v.as_ref());
+
+        let geotiff_double_params: Option<&[u8]> = tags
+            .iter()
+            .find(|(id, _, _, _)| *id == GEOTIFF_DOUBLE_PARAMS_TAG)
+            .map(|(_, _, _, v)| v.as_ref());
+
+        let geotiff_ascii_params: Option<&str> = tags
+            .iter()
+            .find(|(id, _, _, _)| *id == GEOTIFF_ASCII_PARAMS_TAG)
+            .and_then(|(_, _, _, v)| std::str::from_utf8(v.as_ref()).ok());
+
+        let model_transformation: Option<&[u8]> = tags
+            .iter()
+            .find(|(id, _, _, _)| *id == MODEL_TRANSFORMATION_TAG)
+            .map(|(_, _, _, v)| v.as_ref());
+
+        if let Some(directory) = geotiff_directory {
+            use crate::parsers::tiff::geotiff_parser::parse_geotiff_keys;
+
+            let is_little_endian = byte_order == ByteOrder::LittleEndian;
+            let geotiff_tags =
+                parse_geotiff_keys(directory, geotiff_double_params, geotiff_ascii_params, is_little_endian);
+
+            // Convert GeoTiff tags to IfdEntries format
+            for (key, val) in geotiff_tags {
+                let synthetic_value = format!("{}: {}", key, val);
+                all_tags.push((
+                    GEOTIFF_DIRECTORY_TAG,
+                    7, // Type UNDEFINED
+                    synthetic_value.len() as u32,
+                    std::borrow::Cow::Owned(synthetic_value.into_bytes()),
+                ));
+            }
+        }
+
+        // Process ModelTransformation if present
+        if let Some(transform_data) = model_transformation {
+            use crate::parsers::tiff::geotiff_parser::parse_model_transformation;
+
+            let is_little_endian = byte_order == ByteOrder::LittleEndian;
+            if let Some(transform_value) = parse_model_transformation(transform_data, is_little_endian) {
+                let synthetic_value = format!("EXIF:ModelTransform: {}", transform_value);
+                all_tags.push((
+                    MODEL_TRANSFORMATION_TAG,
+                    7, // Type UNDEFINED
+                    synthetic_value.len() as u32,
+                    std::borrow::Cow::Owned(synthetic_value.into_bytes()),
+                ));
             }
         }
 

@@ -1,9 +1,10 @@
 //! TIFF metadata parsing helpers
 //!
 //! This module contains helper functions for parsing TIFF IFD structures,
-//! processing tags, and handling sub-IFDs (EXIF, GPS) and MakerNotes.
+//! processing tags, and handling sub-IFDs (EXIF, GPS), MakerNotes, and GeoTiff.
 
 use super::{FileReader, MetadataMap, TagValue};
+use crate::parsers::tiff::geotiff_parser;
 use crate::core::operations_helpers::read_u32;
 use crate::core::tag_conversion::raw_bytes_to_tag_value;
 use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
@@ -219,6 +220,12 @@ fn process_tiff_ifd_tags<'a>(
     let mut gps_ifd_offset = None;
     let mut makernote_data: Option<&[u8]> = None;
 
+    // GeoTiff tag data collectors
+    let mut geotiff_directory: Option<&[u8]> = None;
+    let mut geotiff_double_params: Option<&[u8]> = None;
+    let mut geotiff_ascii_params: Option<&str> = None;
+    let mut model_transformation: Option<&[u8]> = None;
+
     // Convert tags to metadata
     for (tag_id, field_type, value_count, raw_bytes) in tags {
         // Convert Cow<[u8]> to &[u8] for processing
@@ -236,6 +243,31 @@ fn process_tiff_ifd_tags<'a>(
             let offset = read_u32(bytes, byte_order);
             gps_ifd_offset = Some(offset as u64);
             continue; // Don't add the pointer tag to metadata
+        }
+
+        // Check for GeoTiff tags
+        // Tag 34735 (0x87AF): GeoKeyDirectoryTag - the main GeoTiff key directory
+        if *tag_id == geotiff_parser::GEOTIFF_DIRECTORY_TAG {
+            geotiff_directory = Some(bytes);
+            continue; // Don't add raw directory tag - we'll parse it into named keys
+        }
+        // Tag 34736 (0x87B0): GeoDoubleParamsTag - double precision values
+        if *tag_id == geotiff_parser::GEOTIFF_DOUBLE_PARAMS_TAG {
+            geotiff_double_params = Some(bytes);
+            continue; // Don't add raw params tag - used by directory parser
+        }
+        // Tag 34737 (0x87B1): GeoAsciiParamsTag - ASCII string values
+        if *tag_id == geotiff_parser::GEOTIFF_ASCII_PARAMS_TAG {
+            // Convert bytes to string for ASCII params
+            if let Ok(s) = std::str::from_utf8(bytes) {
+                geotiff_ascii_params = Some(s);
+            }
+            continue; // Don't add raw params tag - used by directory parser
+        }
+        // Tag 34264 (0x85D8): ModelTransformation - 4x4 transformation matrix
+        if *tag_id == geotiff_parser::MODEL_TRANSFORMATION_TAG {
+            model_transformation = Some(bytes);
+            continue; // Don't add raw tag - we'll output parsed EXIF:ModelTransform
         }
 
         // Check for MakerNote tag (0x927C)
@@ -341,6 +373,29 @@ fn process_tiff_ifd_tags<'a>(
         let tag_value =
             raw_bytes_to_tag_value(bytes, *field_type, *value_count, *tag_id, byte_order);
         metadata.insert(tag_name, tag_value);
+    }
+
+    // Parse GeoTiff keys if directory tag is present
+    let is_little_endian = byte_order == ByteOrder::LittleEndian;
+    if let Some(directory) = geotiff_directory {
+        let geotiff_tags = geotiff_parser::parse_geotiff_keys(
+            directory,
+            geotiff_double_params,
+            geotiff_ascii_params,
+            is_little_endian,
+        );
+        for (tag_name, value) in geotiff_tags {
+            metadata.insert(tag_name, TagValue::String(value));
+        }
+    }
+
+    // Parse ModelTransformation if present (outputs as EXIF:ModelTransform)
+    if let Some(transform_data) = model_transformation {
+        if let Some(formatted) =
+            geotiff_parser::parse_model_transformation(transform_data, is_little_endian)
+        {
+            metadata.insert("EXIF:ModelTransform".to_string(), TagValue::String(formatted));
+        }
     }
 
     (exif_ifd_offset, gps_ifd_offset, makernote_data)
