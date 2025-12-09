@@ -38,6 +38,7 @@
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
+use crate::parsers::xmp::parse_xmp;
 
 /// RIFF signature
 const RIFF_SIGNATURE: &[u8] = b"RIFF";
@@ -154,6 +155,37 @@ fn parse_avi_chunks(
                         }
                         _ => {
                             // Skip other LIST types (movi, etc.)
+                        }
+                    }
+                }
+            }
+            b"_PMX" => {
+                // XMP metadata chunk (stored as "_PMX" in RIFF)
+                if chunk_size > 0 {
+                    if let Ok(xmp_data) = reader.read(offset, chunk_size as usize) {
+                        if let Ok(xmp_str) = std::str::from_utf8(&xmp_data) {
+                            if let Ok(xmp_tuples) = parse_xmp(xmp_str.as_bytes()) {
+                                for (key, value) in xmp_tuples {
+                                    metadata.insert(key, TagValue::new_string(value));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            b"IDIT" => {
+                // Date/time original chunk
+                if chunk_size > 0 {
+                    if let Ok(date_data) = reader.read(offset, chunk_size as usize) {
+                        // IDIT format is typically "Day Mon DD HH:MM:SS YYYY\n"
+                        // or "YYYY:MM:DD HH:MM:SS" or similar
+                        let date_str =
+                            String::from_utf8_lossy(&date_data).trim().replace('\0', "");
+                        if !date_str.is_empty() {
+                            metadata.insert(
+                                "RIFF:DateTimeOriginal".to_string(),
+                                TagValue::String(date_str),
+                            );
                         }
                     }
                 }
