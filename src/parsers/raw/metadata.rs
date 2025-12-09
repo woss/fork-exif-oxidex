@@ -748,8 +748,11 @@ fn parse_cr3(_data: &[u8], format: RawFormat) -> Result<MetadataMap> {
 
 /// Parse Sigma X3F format
 ///
-/// X3F files use Sigma's proprietary FOVb format.
-/// This function is a stub for future implementation.
+/// X3F files use Sigma's proprietary FOVb format with:
+/// - FOVb header at offset 0 (version, dimensions, white balance)
+/// - Directory section (SECd) near end of file
+/// - Property sections (SECp) with name/value pairs in UTF-16LE
+/// - Image sections (SECi) that can contain embedded EXIF/TIFF
 ///
 /// # Arguments
 ///
@@ -758,25 +761,333 @@ fn parse_cr3(_data: &[u8], format: RawFormat) -> Result<MetadataMap> {
 ///
 /// # Returns
 ///
-/// Minimal metadata with file type information.
-/// Full X3F parsing to be implemented in future iteration.
-///
-/// # TODO
-///
-/// - Implement FOVb format parser
-/// - Extract Sigma-specific metadata
-/// - Parse X3F image sections
-fn parse_sigma_x3f(_data: &[u8], format: RawFormat) -> Result<MetadataMap> {
+/// Metadata extracted from X3F file including header info, properties, and EXIF data.
+fn parse_sigma_x3f(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
     let mut metadata = MetadataMap::new();
     metadata.insert(
         "File:FileType".to_string(),
         TagValue::new_string(format!("{:?}", format)),
     );
 
-    // TODO: Implement X3F specific parsing
-    // X3F uses FOVb signature and proprietary structure
+    // Verify FOVb signature
+    if data.len() < 40 || &data[0..4] != b"FOVb" {
+        return Ok(metadata);
+    }
+
+    // Parse X3F header (little-endian)
+    let version = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
+    let version_major = (version >> 16) & 0xFFFF;
+    let version_minor = version & 0xFFFF;
+    metadata.insert(
+        "SigmaRaw:FileVersion".to_string(),
+        TagValue::new_string(format!("{}.{}", version_major, version_minor)),
+    );
+
+    // Unique identifier (16 bytes at offset 8)
+    // Skip for now - it's binary data
+
+    // Mark bits at offset 24
+    let _mark_bits = u32::from_le_bytes([data[24], data[25], data[26], data[27]]);
+
+    // Image dimensions at offset 28-35
+    let columns = u32::from_le_bytes([data[28], data[29], data[30], data[31]]);
+    let rows = u32::from_le_bytes([data[32], data[33], data[34], data[35]]);
+
+    if columns > 0 && rows > 0 {
+        metadata.insert(
+            "EXIF:ImageWidth".to_string(),
+            TagValue::new_string(columns.to_string()),
+        );
+        metadata.insert(
+            "EXIF:ImageHeight".to_string(),
+            TagValue::new_string(rows.to_string()),
+        );
+    }
+
+    // Rotation at offset 36
+    let rotation = u32::from_le_bytes([data[36], data[37], data[38], data[39]]);
+    if rotation > 0 {
+        metadata.insert(
+            "SigmaRaw:Rotation".to_string(),
+            TagValue::new_string(format!("{}", rotation)),
+        );
+    }
+
+    // White balance string (32 bytes at offset 40) - introduced in v2.1
+    if version >= 0x00020001 && data.len() >= 72 {
+        let wb_bytes = &data[40..72];
+        if let Some(end) = wb_bytes.iter().position(|&b| b == 0) {
+            if end > 0 {
+                if let Ok(wb) = std::str::from_utf8(&wb_bytes[..end]) {
+                    metadata.insert(
+                        "SigmaRaw:WhiteBalance".to_string(),
+                        TagValue::new_string(wb.to_string()),
+                    );
+                }
+            }
+        }
+    }
+
+    // Color mode string (32 bytes at offset 72) - introduced in v2.3
+    if version >= 0x00020003 && data.len() >= 104 {
+        let cm_bytes = &data[72..104];
+        if let Some(end) = cm_bytes.iter().position(|&b| b == 0) {
+            if end > 0 {
+                if let Ok(cm) = std::str::from_utf8(&cm_bytes[..end]) {
+                    metadata.insert(
+                        "SigmaRaw:ColorMode".to_string(),
+                        TagValue::new_string(cm.to_string()),
+                    );
+                }
+            }
+        }
+    }
+
+    // Find directory section - it's near the end of the file
+    // The directory offset is stored at (file_size - 4)
+    if data.len() < 12 {
+        return Ok(metadata);
+    }
+
+    let dir_offset_pos = data.len() - 4;
+    let dir_offset = u32::from_le_bytes([
+        data[dir_offset_pos],
+        data[dir_offset_pos + 1],
+        data[dir_offset_pos + 2],
+        data[dir_offset_pos + 3],
+    ]) as usize;
+
+    if dir_offset >= data.len() || dir_offset + 12 > data.len() {
+        return Ok(metadata);
+    }
+
+    // Parse directory section header
+    let dir_section = &data[dir_offset..];
+    if dir_section.len() < 12 || &dir_section[0..4] != b"SECd" {
+        return Ok(metadata);
+    }
+
+    let _dir_version = u32::from_le_bytes([dir_section[4], dir_section[5], dir_section[6], dir_section[7]]);
+    let num_entries = u32::from_le_bytes([dir_section[8], dir_section[9], dir_section[10], dir_section[11]]) as usize;
+
+    // Parse directory entries (each entry is 12 bytes: offset(4) + size(4) + type(4))
+    let mut offset = 12;
+    for _ in 0..num_entries {
+        if offset + 12 > dir_section.len() {
+            break;
+        }
+
+        let entry_offset = u32::from_le_bytes([
+            dir_section[offset],
+            dir_section[offset + 1],
+            dir_section[offset + 2],
+            dir_section[offset + 3],
+        ]) as usize;
+        let entry_size = u32::from_le_bytes([
+            dir_section[offset + 4],
+            dir_section[offset + 5],
+            dir_section[offset + 6],
+            dir_section[offset + 7],
+        ]) as usize;
+        let entry_type = &dir_section[offset + 8..offset + 12];
+
+        offset += 12;
+
+        if entry_offset >= data.len() || entry_offset + entry_size > data.len() {
+            continue;
+        }
+
+        let entry_data = &data[entry_offset..entry_offset + entry_size];
+
+        match entry_type {
+            b"SECp" | b"PROP" => {
+                // Property section - contains name/value pairs in UTF-16LE
+                parse_x3f_properties(entry_data, &mut metadata);
+            }
+            b"SECi" | b"IMA0" | b"IMA1" | b"IMA2" => {
+                // Image section - may contain embedded EXIF data
+                parse_x3f_image_section(entry_data, &mut metadata, format);
+            }
+            b"CAMF" => {
+                // Camera settings - complex format, skip for now
+            }
+            _ => {
+                // Unknown section type
+            }
+        }
+    }
 
     Ok(metadata)
+}
+
+/// Parse X3F property section (SECp)
+///
+/// Properties are stored as UTF-16LE name/value pairs.
+fn parse_x3f_properties(data: &[u8], metadata: &mut MetadataMap) {
+    if data.len() < 24 {
+        return;
+    }
+
+    // Property section header:
+    // 0-3: "SECp"
+    // 4-7: version
+    // 8-11: num_properties
+    // 12-15: character format (0 = UTF-16)
+    // 16-19: reserved
+    // 20-23: total_length
+
+    if &data[0..4] != b"SECp" {
+        return;
+    }
+
+    let num_properties = u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
+    let _char_format = u32::from_le_bytes([data[12], data[13], data[14], data[15]]);
+
+    // Property table starts at offset 24
+    // Each entry is 8 bytes: name_offset(4) + value_offset(4)
+    let table_start = 24;
+    let table_size = num_properties * 8;
+
+    if table_start + table_size > data.len() {
+        return;
+    }
+
+    // Data block follows the property table
+    let data_start = table_start + table_size;
+    let data_block = if data_start < data.len() {
+        &data[data_start..]
+    } else {
+        return;
+    };
+
+    for i in 0..num_properties {
+        let entry_offset = table_start + i * 8;
+        if entry_offset + 8 > data.len() {
+            break;
+        }
+
+        let name_offset = u32::from_le_bytes([
+            data[entry_offset],
+            data[entry_offset + 1],
+            data[entry_offset + 2],
+            data[entry_offset + 3],
+        ]) as usize * 2; // Multiply by 2 for UTF-16
+
+        let value_offset = u32::from_le_bytes([
+            data[entry_offset + 4],
+            data[entry_offset + 5],
+            data[entry_offset + 6],
+            data[entry_offset + 7],
+        ]) as usize * 2;
+
+        // Read name (UTF-16LE null-terminated)
+        let name = read_utf16le_string(data_block, name_offset);
+        let value = read_utf16le_string(data_block, value_offset);
+
+        if !name.is_empty() && !value.is_empty() {
+            // Map property names to ExifTool-compatible tag names
+            let tag_name = map_x3f_property_name(&name);
+            metadata.insert(tag_name, TagValue::new_string(value));
+        }
+    }
+}
+
+/// Read a null-terminated UTF-16LE string from a byte buffer
+fn read_utf16le_string(data: &[u8], offset: usize) -> String {
+    if offset >= data.len() {
+        return String::new();
+    }
+
+    let mut chars = Vec::new();
+    let mut pos = offset;
+
+    while pos + 1 < data.len() {
+        let code_unit = u16::from_le_bytes([data[pos], data[pos + 1]]);
+        if code_unit == 0 {
+            break;
+        }
+        chars.push(code_unit);
+        pos += 2;
+    }
+
+    String::from_utf16_lossy(&chars)
+}
+
+/// Map X3F property names to ExifTool-compatible tag names
+fn map_x3f_property_name(name: &str) -> String {
+    match name {
+        "CAMMANUF" => "EXIF:Make".to_string(),
+        "CAMMODEL" => "EXIF:Model".to_string(),
+        "CAMSERIAL" => "MakerNotes:SerialNumber".to_string(),
+        "FIRMWARE" => "MakerNotes:Firmware".to_string(),
+        "EXPTIME" => "SigmaRaw:ExposureTime".to_string(),
+        "APERTURE" => "SigmaRaw:FNumber".to_string(),
+        "FLENGTH" => "SigmaRaw:FocalLength".to_string(),
+        "FLEQ35MM" => "SigmaRaw:FocalLengthIn35mmFormat".to_string(),
+        "ISO" => "SigmaRaw:ISO".to_string(),
+        "WB" | "WBAL" => "SigmaRaw:WhiteBalance".to_string(),
+        "EXPCOMP" => "SigmaRaw:ExposureCompensation".to_string(),
+        "EXPMODE" => "SigmaRaw:ExposureProgram".to_string(),
+        "FLASHM" => "SigmaRaw:FlashMode".to_string(),
+        "DRIVEMODE" => "SigmaRaw:DriveMode".to_string(),
+        "COLORMODE" => "SigmaRaw:ColorMode".to_string(),
+        "SHARPNESS" => "SigmaRaw:Sharpness".to_string(),
+        "CONTRAST" => "SigmaRaw:Contrast".to_string(),
+        "SATURATION" => "SigmaRaw:Saturation".to_string(),
+        "TIME" => "SigmaRaw:DateTimeOriginal".to_string(),
+        "LENSARANGE" => "MakerNotes:LensApertureRange".to_string(),
+        "LENSFRANGE" => "MakerNotes:LensFocalRange".to_string(),
+        _ => format!("SigmaRaw:{}", name),
+    }
+}
+
+/// Parse X3F image section for embedded EXIF data
+fn parse_x3f_image_section(data: &[u8], metadata: &mut MetadataMap, format: RawFormat) {
+    if data.len() < 28 {
+        return;
+    }
+
+    // Image section header:
+    // 0-3: Section type ("SECi", "IMA0", etc.)
+    // 4-7: Version
+    // 8-11: Image type (1=RAW, 2=thumbnail, 3=preview JPEG)
+    // 12-15: Image format
+    // 16-19: Columns
+    // 20-23: Rows
+    // 24-27: Row stride
+
+    let image_type = u32::from_le_bytes([data[8], data[9], data[10], data[11]]);
+    let _image_format = u32::from_le_bytes([data[12], data[13], data[14], data[15]]);
+    let columns = u32::from_le_bytes([data[16], data[17], data[18], data[19]]);
+    let rows = u32::from_le_bytes([data[20], data[21], data[22], data[23]]);
+
+    // Store preview image dimensions for type 2/3
+    if (image_type == 2 || image_type == 3) && columns > 0 && rows > 0 {
+        metadata.insert(
+            "MakerNotes:PreviewImageSize".to_string(),
+            TagValue::new_string(format!("{}x{}", columns, rows)),
+        );
+    }
+
+    // For RAW type (1), look for embedded TIFF/EXIF data
+    if image_type == 1 {
+        // Check for TIFF header after image section header
+        let header_size = 28;
+        if data.len() > header_size + 8 {
+            let potential_tiff = &data[header_size..];
+            if (potential_tiff.starts_with(b"II\x2a\x00") || potential_tiff.starts_with(b"MM\x00\x2a"))
+                && potential_tiff.len() > 8
+            {
+                if let Ok(tiff_metadata) = parse_tiff_based_raw(potential_tiff, format) {
+                    for (key, value) in tiff_metadata {
+                        if !metadata.contains_key(&key) {
+                            metadata.insert(key, value);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Parse Minolta MRW format
