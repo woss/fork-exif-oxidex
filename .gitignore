@@ -128,3 +128,4 @@ build.log
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+comparison.json
