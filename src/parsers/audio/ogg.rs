@@ -148,6 +148,51 @@ impl FormatParser for OggParser {
     }
 }
 
+/// Maps Vorbis comment field names to ExifTool-compatible tag names
+fn map_vorbis_field_name(field_name: &str) -> String {
+    // Normalize field name to uppercase for matching
+    let upper = field_name.to_uppercase();
+
+    match upper.as_str() {
+        // Core Vorbis tags
+        "TITLE" => "Vorbis:Title".to_string(),
+        "ARTIST" => "Vorbis:Artist".to_string(),
+        "ALBUM" => "Vorbis:Album".to_string(),
+        "TRACKNUMBER" => "Vorbis:TrackNumber".to_string(),
+        "DATE" => "Vorbis:Date".to_string(),
+        "GENRE" => "Vorbis:Genre".to_string(),
+        "COMMENT" => "Vorbis:Comment".to_string(),
+        "DESCRIPTION" => "Vorbis:Description".to_string(),
+        "COPYRIGHT" => "Vorbis:Copyright".to_string(),
+        "LICENSE" => "Vorbis:License".to_string(),
+        "ORGANIZATION" => "Vorbis:Organization".to_string(),
+        "PERFORMER" => "Vorbis:Performer".to_string(),
+        "COMPOSER" => "Vorbis:Composer".to_string(),
+        "CONDUCTOR" => "Vorbis:Conductor".to_string(),
+        "ISRC" => "Vorbis:ISRC".to_string(),
+        "LYRICS" => "Vorbis:Lyrics".to_string(),
+        "ALBUMARTIST" => "Vorbis:AlbumArtist".to_string(),
+        "DISCNUMBER" => "Vorbis:DiscNumber".to_string(),
+        "TOTALTRACKS" => "Vorbis:TotalTracks".to_string(),
+        "TOTALDISCS" => "Vorbis:TotalDiscs".to_string(),
+        "ENCODER" => "Vorbis:Encoder".to_string(),
+        "ENCODEDBY" | "ENCODED_BY" => "Vorbis:EncodedBy".to_string(),
+        "CONTACT" => "Vorbis:Contact".to_string(),
+        "LOCATION" => "Vorbis:Location".to_string(),
+        "VERSION" => "Vorbis:Version".to_string(),
+        // ReplayGain tags
+        "REPLAYGAIN_TRACK_GAIN" => "Vorbis:ReplayGainTrackGain".to_string(),
+        "REPLAYGAIN_TRACK_PEAK" => "Vorbis:ReplayGainTrackPeak".to_string(),
+        "REPLAYGAIN_ALBUM_GAIN" => "Vorbis:ReplayGainAlbumGain".to_string(),
+        "REPLAYGAIN_ALBUM_PEAK" => "Vorbis:ReplayGainAlbumPeak".to_string(),
+        // Cover art
+        "COVERART" => "Vorbis:CoverArt".to_string(),
+        "COVERARTMIME" => "Vorbis:CoverArtMIMEType".to_string(),
+        // Unknown - use raw name with Vorbis prefix
+        _ => format!("Vorbis:{}", field_name),
+    }
+}
+
 /// Parse Vorbis comment data
 fn parse_vorbis_comments(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     let mut offset = 0;
@@ -161,9 +206,17 @@ fn parse_vorbis_comments(data: &[u8], metadata: &mut MetadataMap) -> Result<()> 
     let vendor_length = reader.u32_at(offset).unwrap_or(0) as usize;
     offset += 4;
 
-    // Skip vendor string
+    // Read and store vendor string
     if offset + vendor_length > data.len() {
         return Err(ExifToolError::parse_error("Invalid vendor string length"));
+    }
+    let vendor_bytes = &data[offset..offset + vendor_length];
+    let (vendor_str, _, _) = UTF_8.decode(vendor_bytes);
+    if !vendor_str.is_empty() {
+        metadata.insert(
+            "Vorbis:Vendor".to_string(),
+            TagValue::new_string(vendor_str.to_string()),
+        );
     }
     offset += vendor_length;
 
@@ -198,8 +251,8 @@ fn parse_vorbis_comments(data: &[u8], metadata: &mut MetadataMap) -> Result<()> 
             let field_name = &comment_str[..eq_pos];
             let field_value = &comment_str[eq_pos + 1..];
 
-            // Map to Vorbis: prefix
-            let tag_name = format!("Vorbis:{}", field_name.to_uppercase());
+            // Map to ExifTool-compatible tag name
+            let tag_name = map_vorbis_field_name(field_name);
             metadata.insert(tag_name, TagValue::new_string(field_value.to_string()));
         }
 
