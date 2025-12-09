@@ -148,6 +148,10 @@ fn parse_avi_chunks(
                                 metadata,
                             )?;
                         }
+                        b"odml" => {
+                            // OpenDML extended header - contains real frame count
+                            parse_odml_list(reader, offset + 4, offset + chunk_size, metadata)?;
+                        }
                         _ => {
                             // Skip other LIST types (movi, etc.)
                         }
@@ -197,7 +201,7 @@ fn parse_hdrl_list(
         if chunk_id == b"avih" && chunk_size >= 56 {
             parse_avih_chunk(reader, offset, metadata)?;
         }
-        // Parse strl LIST (stream list)
+        // Parse strl LIST (stream list) or odml LIST (OpenDML extended header)
         else if chunk_id == b"LIST" && chunk_size >= 4 {
             let list_type = reader.read(offset, 4)?;
             if list_type == b"strl" {
@@ -209,6 +213,9 @@ fn parse_hdrl_list(
                     stream_count,
                     metadata,
                 )?;
+            } else if list_type == b"odml" {
+                // OpenDML extended header LIST - contains dmlh with real frame count
+                parse_odml_list(reader, offset + 4, offset + chunk_size, metadata)?;
             }
         }
 
@@ -231,6 +238,17 @@ fn parse_avih_chunk(
     let avih_data = reader.read(offset, 56)?;
     let r = EndianReader::little_endian(avih_data);
 
+    // AVIMAINHEADER structure:
+    // Offset 0:  dwMicroSecPerFrame
+    // Offset 4:  dwMaxBytesPerSec
+    // Offset 8:  dwPaddingGranularity
+    // Offset 12: dwFlags
+    // Offset 16: dwTotalFrames
+    // Offset 20: dwInitialFrames
+    // Offset 24: dwStreams
+    // Offset 28: dwSuggestedBufferSize
+    // Offset 32: dwWidth
+    // Offset 36: dwHeight
     let microsec_per_frame = r.u32_at(0).unwrap_or(0);
     let max_bytes_per_sec = r.u32_at(4).unwrap_or(0);
     let total_frames = r.u32_at(16).unwrap_or(0);
@@ -248,11 +266,9 @@ fn parse_avih_chunk(
         );
     }
 
-    // TotalFrameCount - ExifTool tag name
-    metadata.insert(
-        "RIFF:TotalFrameCount".to_string(),
-        TagValue::new_integer(total_frames as i64),
-    );
+    // Note: ExifTool only outputs TotalFrameCount from dmlh (OpenDML extended header),
+    // not from avih. We follow the same behavior for compatibility.
+    // TotalFrameCount is set in parse_odml_list() if dmlh chunk is present.
     metadata.insert(
         "RIFF:ImageWidth".to_string(),
         TagValue::new_integer(width as i64),
@@ -286,6 +302,56 @@ fn parse_avih_chunk(
             "RIFF:Duration".to_string(),
             TagValue::new_string(format!("{:.2}", duration_secs)),
         );
+    }
+
+    Ok(())
+}
+
+/// Parse odml LIST (OpenDML extended header)
+/// Contains dmlh chunk with real TotalFrameCount for extended AVI files
+fn parse_odml_list(
+    reader: &dyn FileReader,
+    start_offset: u64,
+    end_offset: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    let mut offset = start_offset;
+
+    while offset + 8 < end_offset {
+        // Read chunk header
+        let chunk_header = reader.read(offset, 8)?;
+
+        let r = EndianReader::little_endian(chunk_header);
+        let chunk_id = &chunk_header[0..4];
+        let chunk_size = r.u32_at(4).unwrap_or(0) as u64;
+
+        offset += 8;
+
+        if offset + chunk_size > end_offset {
+            break;
+        }
+
+        // Parse dmlh (OpenDML Extended AVI Header)
+        // Structure: typedef struct { DWORD dwTotalFrames; } ODMLExtendedAVIHeader;
+        if chunk_id == b"dmlh" && chunk_size >= 4 {
+            let dmlh_data = reader.read(offset, 4)?;
+            let dmlh_reader = EndianReader::little_endian(dmlh_data);
+            let total_frames = dmlh_reader.u32_at(0).unwrap_or(0);
+
+            // Override the TotalFrameCount from avih with the real value from dmlh
+            if total_frames > 0 {
+                metadata.insert(
+                    "RIFF:TotalFrameCount".to_string(),
+                    TagValue::new_integer(total_frames as i64),
+                );
+            }
+        }
+
+        // Move to next chunk
+        offset += chunk_size;
+        if chunk_size % 2 == 1 {
+            offset += 1;
+        }
     }
 
     Ok(())
