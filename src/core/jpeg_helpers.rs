@@ -316,9 +316,10 @@ pub fn process_icc_segments(segments: &[Segment], metadata: &mut MetadataMap) {
                 let icc_data = &segment.data[14..];
                 match crate::parsers::icc::parse_icc_profile_data(icc_data) {
                     Ok(icc_tags) => {
-                        // Add all ICC tags to metadata with "Profile:" prefix
+                        // Add all ICC tags to metadata with "ICC_Profile:" prefix
+                        // to match ExifTool's family naming
                         for (tag_name, value) in icc_tags {
-                            metadata.insert(format!("Profile:{}", tag_name), value);
+                            metadata.insert(format!("ICC_Profile:{}", tag_name), value);
                         }
                     }
                     Err(e) => {

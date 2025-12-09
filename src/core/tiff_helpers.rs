@@ -283,9 +283,10 @@ fn process_tiff_ifd_tags<'a>(
             // Parse ICC profile data
             match crate::parsers::icc::parse_icc_profile_data(bytes) {
                 Ok(icc_tags) => {
-                    // Add all ICC tags to metadata with "Profile:" prefix
+                    // Add all ICC tags to metadata with "ICC_Profile:" prefix
+                    // to match ExifTool's family naming
                     for (tag_name, value) in icc_tags {
-                        metadata.insert(format!("Profile:{}", tag_name), value);
+                        metadata.insert(format!("ICC_Profile:{}", tag_name), value);
                     }
                 }
                 Err(e) => {
