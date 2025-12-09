@@ -1026,4 +1026,83 @@ mod tests {
             "Expected &amp; to be decoded to ampersand"
         );
     }
+
+    #[test]
+    fn test_rdf_seq_collection() {
+        // Test the structure causing PSD issues - dc:creator with rdf:Seq inside
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/">
+              <rdf:Description>
+                <dc:creator>
+                  <rdf:Seq>
+                    <rdf:li>Phil Harvey</rdf:li>
+                  </rdf:Seq>
+                </dc:creator>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+        eprintln!("Result: {:?}", result);
+
+        // Should extract "Phil Harvey" from the rdf:Seq/rdf:li structure
+        let creator = result
+            .iter()
+            .find(|(name, _)| name.ends_with("Creator") || name.ends_with("creator"))
+            .map(|(n, v)| (n.as_str(), v.as_str()));
+
+        assert!(
+            creator.is_some(),
+            "Expected to find Creator tag. Results: {:?}",
+            result
+        );
+        let (name, value) = creator.unwrap();
+        assert!(
+            !value.contains("rdf:"),
+            "Value should not contain raw RDF XML. Got: {}: {}",
+            name,
+            value
+        );
+        assert_eq!(value, "Phil Harvey", "Expected extracted value");
+    }
+
+    #[test]
+    fn test_rdf_alt_collection() {
+        // Test rdf:Alt for dc:title with xml:lang attribute
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/">
+              <rdf:Description>
+                <dc:title>
+                  <rdf:Alt>
+                    <rdf:li xml:lang="x-default">Test Picture</rdf:li>
+                  </rdf:Alt>
+                </dc:title>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+        eprintln!("Result: {:?}", result);
+
+        let title = result
+            .iter()
+            .find(|(name, _)| name.ends_with("Title") || name.ends_with("title"))
+            .map(|(n, v)| (n.as_str(), v.as_str()));
+
+        assert!(
+            title.is_some(),
+            "Expected to find Title tag. Results: {:?}",
+            result
+        );
+        let (name, value) = title.unwrap();
+        assert!(
+            !value.contains("rdf:"),
+            "Value should not contain raw RDF XML. Got: {}: {}",
+            name,
+            value
+        );
+        assert_eq!(value, "Test Picture", "Expected extracted value");
+    }
 }
