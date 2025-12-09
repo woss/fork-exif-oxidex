@@ -280,6 +280,9 @@ pub enum FileFormat {
     /// XMP Sidecar (.xmp)
     XMP,
 
+    /// EPS (Encapsulated PostScript) (.eps, .epsf, .ps)
+    EPS,
+
     /// Unknown or unsupported format
     Unknown,
 }
@@ -373,6 +376,7 @@ impl FileFormat {
             FileFormat::X509 => "X.509",
             FileFormat::ICC => "ICC",
             FileFormat::XMP => "XMP",
+            FileFormat::EPS => "EPS",
             FileFormat::Unknown => "Unknown",
         }
     }
@@ -468,6 +472,7 @@ impl FileFormat {
             FileFormat::X509 => &["crt", "cer", "pem", "der"],
             FileFormat::ICC => &["icc", "icm"],
             FileFormat::XMP => &["xmp"],
+            FileFormat::EPS => &["eps", "epsf", "ps"],
             FileFormat::Unknown => &[],
         }
     }

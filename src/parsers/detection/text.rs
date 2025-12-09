@@ -1,7 +1,7 @@
 //! Text-based format detection
 //!
 //! Handles detection of text-based 3D and interchange formats including
-//! DXF, OBJ, GLTF, and STL.
+//! DXF, OBJ, GLTF, STL, and EPS.
 
 use crate::core::FileFormat;
 
@@ -12,6 +12,7 @@ use crate::core::FileFormat;
 /// - OBJ: Wavefront 3D object
 /// - GLTF: GL Transmission Format (JSON)
 /// - STL: Stereolithography (ASCII variant)
+/// - EPS: Encapsulated PostScript
 ///
 /// # Arguments
 ///
@@ -21,6 +22,22 @@ use crate::core::FileFormat;
 ///
 /// `Some(FileFormat)` if text format detected, `None` otherwise
 pub fn detect_text_formats(data: &[u8]) -> Option<FileFormat> {
+    // EPS detection first (can be shorter than 100 bytes)
+    // ASCII EPS: %!PS-Adobe
+    if data.starts_with(b"%!PS-Adobe") {
+        return Some(FileFormat::EPS);
+    }
+
+    // Binary EPS (DOS EPS): 0xC5D0D3C6 magic
+    if data.len() >= 4
+        && data[0] == 0xC5
+        && data[1] == 0xD0
+        && data[2] == 0xD3
+        && data[3] == 0xC6
+    {
+        return Some(FileFormat::EPS);
+    }
+
     if data.len() < 100 {
         return None;
     }
