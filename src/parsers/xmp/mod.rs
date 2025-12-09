@@ -36,8 +36,32 @@ pub mod namespace_mapping;
 pub mod namespace_resolver;
 pub mod rdf_parser;
 
+use crate::core::{FileReader, MetadataMap, TagValue};
+use crate::error::Result;
+
 // Re-export main parsing function for convenience
 pub use history_parser::{parse_xmp_history, XmpHistoryEntry};
 pub use namespace_mapping::namespace_to_family;
 pub use namespace_resolver::NamespaceResolver;
 pub use rdf_parser::parse_xmp;
+
+/// Parses a standalone XMP sidecar file.
+///
+/// This function reads an XMP sidecar file (.xmp) and extracts all metadata.
+pub fn parse_xmp_file(reader: &dyn FileReader) -> Result<MetadataMap> {
+    let mut metadata = MetadataMap::new();
+
+    // Read the entire XMP file
+    let size = reader.size() as usize;
+    let xmp_data = reader.read(0, size)?;
+
+    // Parse the XMP data
+    let xmp_tags = parse_xmp(&xmp_data)?;
+
+    // Add all XMP tags to metadata
+    for (key, value) in xmp_tags {
+        metadata.insert(key, TagValue::new_string(value));
+    }
+
+    Ok(metadata)
+}
