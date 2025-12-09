@@ -123,6 +123,19 @@ fn parse_id3v2(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Result<u3
         )),
     );
 
+    // Add ID3Version tag (format: "ID3 v2.X" where X is the major version)
+    metadata.insert(
+        "ID3Version".to_string(),
+        TagValue::new_string(format!("ID3 v2.{}", id3v2_header.version)),
+    );
+
+    // Calculate ID3TagSize: synchsafe integer size + 10 bytes for header
+    let id3_tag_size = id3v2_header.size + 10;
+    metadata.insert(
+        "ID3TagSize".to_string(),
+        TagValue::new_integer(id3_tag_size as i64),
+    );
+
     // Read frames
     let frames_size = id3v2_header.size as usize;
     if frames_size > 0 {
@@ -403,6 +416,19 @@ fn parse_id3v1(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     if data.len() < 128 || &data[0..3] != ID3V1_SIGNATURE {
         return Err(ExifToolError::parse_error("Invalid ID3v1 tag"));
     }
+
+    // Add ID3Version tag for ID3v1 detection
+    // ID3v1 doesn't have a version field, but we detect it by the TAG signature
+    metadata.insert(
+        "ID3Version".to_string(),
+        TagValue::new_string("ID3 v1".to_string()),
+    );
+
+    // ID3v1 tag size is always 128 bytes
+    metadata.insert(
+        "ID3TagSize".to_string(),
+        TagValue::new_integer(128),
+    );
 
     // Extract fields (all ISO-8859-1 encoded)
     let title = decode_latin1(&data[3..33]);

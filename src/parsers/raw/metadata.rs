@@ -25,7 +25,7 @@
 use crate::core::{FileReader, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::EndianReader;
-use crate::parsers::raw::RawFormat;
+use crate::parsers::raw::{RawFormat, raf_parser};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::tag_db::lookup_tag_name;
 
@@ -1484,6 +1484,20 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                                                     tag_name,
                                                     TagValue::new_string(tag_value),
                                                 );
+                                            }
+                                        }
+
+                                        // Also use RAF-specific MakerNote parser to extract additional camera metadata
+                                        if let Ok(raf_tags) = raf_parser::parse_raf_makernote(mn_data, byte_order)
+                                        {
+                                            for (tag_name, tag_value) in raf_tags {
+                                                // Only add if not already present from dispatcher
+                                                if !metadata.contains_key(&tag_name) {
+                                                    metadata.insert(
+                                                        tag_name,
+                                                        TagValue::new_string(tag_value),
+                                                    );
+                                                }
                                             }
                                         }
                                     }

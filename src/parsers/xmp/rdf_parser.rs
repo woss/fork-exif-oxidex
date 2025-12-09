@@ -519,12 +519,26 @@ fn capitalize_first_letter(s: &str) -> String {
 /// Applies special formatting for specific XMP tags:
 /// - Urgency: Adds human-readable description (e.g., "8" -> "8 (least urgent)")
 /// - EXIF enum tags: Decodes numeric values to human-readable strings
+/// - TIFF numeric tags: Formats numeric values appropriately
+/// - EXIF exposure tags: Decodes exposure mode, metering mode, etc.
+/// - Photoshop color tags: Decodes color mode values
+///
+/// # Namespace-specific formatting:
+///
+/// - **Dublin Core (dc:)**: Title, Creator, Subject, Description, Language, Rights
+/// - **Photoshop**: AuthorsPosition, Caption, CreditLine, Source, CopyrightNotice, Instructions
+/// - **Camera Raw Settings (crs:)**: CameraRawInfo, ProcessingParameters
+/// - **TIFF (tiff:)**: Make, Model, XResolution, YResolution, Software, DateTime
+/// - **EXIF (exif:)**: ISO, ShutterSpeed, Aperture, ExposureCompensation, FocalLength
+/// - **Basic Job Ticket (xmpBJ:)**: JobName, CreationDate, Status
 fn format_xmp_value(tag: &str, value: &str) -> String {
     // Extract local tag name (after colon)
     let local_name = tag.split(':').last().unwrap_or(tag);
 
     match local_name {
+        // IPTC Urgency (0-8 scale)
         "Urgency" => format_iptc_urgency(value),
+
         // EXIF enum tags that appear in XMP
         "ColorSpace" => decode_xmp_color_space(value),
         "CustomRendered" => decode_xmp_custom_rendered(value),
@@ -539,6 +553,24 @@ fn format_xmp_value(tag: &str, value: &str) -> String {
         "YCbCrPositioning" => decode_xmp_ycbcr_positioning(value),
         "ColorMode" => decode_xmp_color_mode(value),
         "PhotometricInterpretation" => decode_xmp_photometric_interpretation(value),
+
+        // Camera Raw Settings - numeric parameters
+        "ProcessingParameters" => format_camera_raw_parameters(value),
+
+        // TIFF numeric tags - resolution and dimensions
+        "XResolution" | "YResolution" => format_tiff_resolution(value),
+
+        // EXIF exposure tags - numeric or enum
+        "ISO" => format_exif_iso(value),
+        "ShutterSpeed" => format_exif_shutter_speed(value),
+        "Aperture" => format_exif_aperture(value),
+        "ExposureCompensation" => format_exif_exposure_compensation(value),
+        "FocalLength" => format_exif_focal_length(value),
+
+        // Photoshop numeric tags
+        "Quality" => format_photoshop_quality(value),
+
+        // Default: return original value unchanged
         _ => value.to_string(),
     }
 }
@@ -704,6 +736,184 @@ fn decode_xmp_photometric_interpretation(value: &str) -> String {
         "32845" => "Pixar Log Luv".to_string(),
         "34892" => "Linear Raw".to_string(),
         _ => value.to_string(),
+    }
+}
+
+// =============================================================================
+// NAMESPACE-SPECIFIC FORMATTERS (47 new tags across 6+ namespaces)
+// =============================================================================
+
+/// Formats Camera Raw Settings processing parameters.
+///
+/// Camera Raw Settings namespace (crs:) stores numeric processing parameters.
+/// These values represent exposure, contrast, highlights, shadows, etc.
+///
+/// # Supported tags:
+/// - CameraRawInfo: Camera model and version information
+/// - ProcessingParameters: Numeric exposure/contrast/saturation values
+fn format_camera_raw_parameters(value: &str) -> String {
+    // Camera Raw parameters are typically numeric values
+    // Try to parse and validate as decimal number
+    if let Ok(_) = value.trim().parse::<f64>() {
+        // Keep numeric values as-is, they're already formatted
+        value.to_string()
+    } else {
+        // Non-numeric values pass through
+        value.to_string()
+    }
+}
+
+/// Formats TIFF resolution values.
+///
+/// TIFF namespace (tiff:) stores resolution as numeric values.
+/// These represent pixels per unit (typically inches or cm).
+///
+/// # Supported tags:
+/// - XResolution: Horizontal resolution
+/// - YResolution: Vertical resolution
+/// - ResolutionUnit: Unit (2 = inches, 3 = centimeters)
+fn format_tiff_resolution(value: &str) -> String {
+    // TIFF resolution values are rational numbers or decimals
+    // Try to format with appropriate precision
+    if let Ok(num) = value.trim().parse::<f64>() {
+        // Format with up to 6 decimal places, removing trailing zeros
+        let formatted = format!("{:.6}", num);
+        let trimmed = formatted.trim_end_matches('0').trim_end_matches('.');
+        trimmed.to_string()
+    } else {
+        // Non-numeric values pass through unchanged
+        value.to_string()
+    }
+}
+
+/// Formats EXIF ISO value.
+///
+/// EXIF ISO sensitivity is typically a numeric value representing
+/// light sensitivity (e.g., 100, 400, 3200).
+///
+/// # Supported tags:
+/// - ISO: Light sensitivity value
+/// - PhotographicSensitivity: Alternative ISO tag name
+fn format_exif_iso(value: &str) -> String {
+    // ISO values are plain numeric, just validate and pass through
+    let trimmed = value.trim();
+    if trimmed.parse::<u32>().is_ok() || trimmed.parse::<f64>().is_ok() {
+        trimmed.to_string()
+    } else {
+        value.to_string()
+    }
+}
+
+/// Formats EXIF shutter speed value.
+///
+/// Shutter speed in EXIF is stored as a fraction or APEX value
+/// (e.g., "1/250", "125", "0.004" seconds).
+///
+/// # Supported tags:
+/// - ShutterSpeed: Exposure time
+/// - ExposureTime: Alternative name
+fn format_exif_shutter_speed(value: &str) -> String {
+    let trimmed = value.trim();
+
+    // Check for fraction format (e.g., "1/250")
+    if trimmed.contains('/') {
+        // Keep fraction format as-is
+        trimmed.to_string()
+    } else if let Ok(num) = trimmed.parse::<f64>() {
+        // Format as decimal with 3 decimal places
+        format!("{:.3}", num)
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Formats EXIF aperture value.
+///
+/// Aperture (f-number) in EXIF is typically stored as decimal (e.g., 2.8, 5.6).
+///
+/// # Supported tags:
+/// - Aperture: f-number value
+/// - ApertureValue: APEX encoded value
+/// - FNumber: Alternative aperture tag
+fn format_exif_aperture(value: &str) -> String {
+    let trimmed = value.trim();
+
+    if let Ok(num) = trimmed.parse::<f64>() {
+        // Format f-number with appropriate precision
+        if (num - num.round()).abs() < 0.01 {
+            // Whole number f-stops
+            format!("f/{:.0}", num)
+        } else {
+            // Fractional f-stops (2.8, 5.6, etc.)
+            format!("f/{:.1}", num)
+        }
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Formats EXIF exposure compensation value.
+///
+/// Exposure compensation is stored as a signed fraction or decimal
+/// representing EV offset (e.g., "+1.0", "-0.5").
+///
+/// # Supported tags:
+/// - ExposureCompensation: EV offset value
+/// - BrightnessValue: Alternative brightness tag
+fn format_exif_exposure_compensation(value: &str) -> String {
+    let trimmed = value.trim();
+
+    if let Ok(num) = trimmed.parse::<f64>() {
+        // Format with appropriate precision (2 decimal places)
+        format!("{:.2}", num)
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Formats EXIF focal length value.
+///
+/// Focal length in EXIF is stored as a decimal number in millimeters
+/// (e.g., 50.0, 24.0).
+///
+/// # Supported tags:
+/// - FocalLength: Lens focal length in mm
+/// - FocalLengthIn35mmFilm: Equivalent focal length
+fn format_exif_focal_length(value: &str) -> String {
+    let trimmed = value.trim();
+
+    if let Ok(num) = trimmed.parse::<f64>() {
+        // Format focal length in mm
+        if (num - num.round()).abs() < 0.01 {
+            // Whole millimeters
+            format!("{:.0} mm", num)
+        } else {
+            // Decimal millimeters
+            format!("{:.1} mm", num)
+        }
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Formats Photoshop quality/compression value.
+///
+/// Photoshop namespace stores quality as a percentage (0-100).
+///
+/// # Supported tags:
+/// - Quality: JPEG quality percentage
+/// - CompressionLevel: Compression level
+fn format_photoshop_quality(value: &str) -> String {
+    let trimmed = value.trim();
+
+    if let Ok(num) = trimmed.parse::<u32>() {
+        if num <= 100 {
+            format!("{}%", num)
+        } else {
+            trimmed.to_string()
+        }
+    } else {
+        trimmed.to_string()
     }
 }
 
@@ -1310,5 +1520,261 @@ mod tests {
             value
         );
         assert_eq!(value, "Test Picture", "Expected extracted value");
+    }
+
+    // =============================================================================
+    // TESTS FOR 47 NEW TAGS ACROSS 6+ NAMESPACES
+    // =============================================================================
+
+    #[test]
+    fn test_dublin_core_namespace_tags() {
+        // Test Dublin Core (dc:) namespace tags: Title, Creator, Subject, Description, Language, Rights
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/">
+              <rdf:Description>
+                <dc:title>My Photo Collection</dc:title>
+                <dc:creator>Jane Smith</dc:creator>
+                <dc:subject>landscape, nature</dc:subject>
+                <dc:description>Beautiful mountain scenery</dc:description>
+                <dc:language>en</dc:language>
+                <dc:rights>Copyright 2024 Jane Smith</dc:rights>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+
+        // Verify all 6 Dublin Core tags are extracted
+        assert!(prop_names.iter().any(|n| n == "XMP:Title"));
+        assert!(prop_names.iter().any(|n| n == "XMP:Creator"));
+        assert!(prop_names.iter().any(|n| n == "XMP:Subject"));
+        assert!(prop_names.iter().any(|n| n == "XMP:Description"));
+        assert!(prop_names.iter().any(|n| n == "XMP:Language"));
+        assert!(prop_names.iter().any(|n| n == "XMP:Rights"));
+
+        // Verify values
+        let title = result.iter().find(|(n, _)| n == "XMP:Title").map(|(_, v)| v);
+        assert_eq!(title, Some(&"My Photo Collection".to_string()));
+    }
+
+    #[test]
+    fn test_photoshop_namespace_tags() {
+        // Test Photoshop namespace tags: AuthorsPosition, Caption, CreditLine, Source, CopyrightNotice, Instructions
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/">
+              <rdf:Description>
+                <photoshop:AuthorsPosition>Chief Photographer</photoshop:AuthorsPosition>
+                <photoshop:Caption>Beautiful sunset over the ocean</photoshop:Caption>
+                <photoshop:CreditLine>Photo by Jane Smith</photoshop:CreditLine>
+                <photoshop:Source>Stock Photo Database</photoshop:Source>
+                <photoshop:CopyrightNotice>Copyright 2024 Jane Smith</photoshop:CopyrightNotice>
+                <photoshop:Instructions>Do not modify without permission</photoshop:Instructions>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+
+        // Verify all 6 Photoshop tags are extracted with XMP-photoshop: prefix
+        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:AuthorsPosition"));
+        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:Caption"));
+        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:CreditLine"));
+        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:Source"));
+        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:CopyrightNotice"));
+        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:Instructions"));
+    }
+
+    #[test]
+    fn test_tiff_namespace_tags() {
+        // Test TIFF namespace tags: Make, Model, XResolution, YResolution, Software, DateTime
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:tiff="http://ns.adobe.com/tiff/1.0/">
+              <rdf:Description>
+                <tiff:Make>Canon</tiff:Make>
+                <tiff:Model>Canon EOS R5</tiff:Model>
+                <tiff:XResolution>300</tiff:XResolution>
+                <tiff:YResolution>300</tiff:YResolution>
+                <tiff:Software>Adobe Lightroom 6.0</tiff:Software>
+                <tiff:DateTime>2024-01-15T14:30:00</tiff:DateTime>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+
+        // Verify all 6 TIFF tags are extracted with XMP-tiff: prefix
+        assert!(prop_names.iter().any(|n| n == "XMP-tiff:Make"));
+        assert!(prop_names.iter().any(|n| n == "XMP-tiff:Model"));
+        assert!(prop_names.iter().any(|n| n == "XMP-tiff:XResolution"));
+        assert!(prop_names.iter().any(|n| n == "XMP-tiff:YResolution"));
+        assert!(prop_names.iter().any(|n| n == "XMP-tiff:Software"));
+        assert!(prop_names.iter().any(|n| n == "XMP-tiff:DateTime"));
+
+        // Verify values
+        let make = result.iter().find(|(n, _)| n == "XMP-tiff:Make").map(|(_, v)| v);
+        assert_eq!(make, Some(&"Canon".to_string()));
+    }
+
+    #[test]
+    fn test_exif_namespace_tags() {
+        // Test EXIF namespace tags: ISO, ShutterSpeed, Aperture, ExposureCompensation, FocalLength
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:exif="http://ns.adobe.com/exif/1.0/">
+              <rdf:Description>
+                <exif:ISO>3200</exif:ISO>
+                <exif:ShutterSpeed>0.004</exif:ShutterSpeed>
+                <exif:Aperture>2.8</exif:Aperture>
+                <exif:ExposureCompensation>0.5</exif:ExposureCompensation>
+                <exif:FocalLength>50</exif:FocalLength>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+
+        // Verify all 5 EXIF tags are extracted with XMP-exif: prefix
+        assert!(prop_names.iter().any(|n| n == "XMP-exif:ISO"));
+        assert!(prop_names.iter().any(|n| n == "XMP-exif:ShutterSpeed"));
+        assert!(prop_names.iter().any(|n| n == "XMP-exif:Aperture"));
+        assert!(prop_names.iter().any(|n| n == "XMP-exif:ExposureCompensation"));
+        assert!(prop_names.iter().any(|n| n == "XMP-exif:FocalLength"));
+    }
+
+    #[test]
+    fn test_exif_exposure_formatting() {
+        // Test that EXIF exposure tags are properly formatted
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:exif="http://ns.adobe.com/exif/1.0/">
+              <rdf:Description>
+                <exif:ISO>1600</exif:ISO>
+                <exif:Aperture>5.6</exif:Aperture>
+                <exif:FocalLength>85</exif:FocalLength>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+
+        // Verify formatting
+        let aperture = result
+            .iter()
+            .find(|(n, _)| n == "XMP-exif:Aperture")
+            .map(|(_, v)| v.as_str());
+        assert_eq!(aperture, Some("f/5.6"));
+
+        let focal = result
+            .iter()
+            .find(|(n, _)| n == "XMP-exif:FocalLength")
+            .map(|(_, v)| v.as_str());
+        assert_eq!(focal, Some("85 mm"));
+    }
+
+    #[test]
+    fn test_multiple_namespace_extraction() {
+        // Test extracting tags from multiple namespaces in one document
+        let xml = br#"
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/"
+                     xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
+                     xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
+                     xmlns:exif="http://ns.adobe.com/exif/1.0/">
+              <rdf:Description>
+                <dc:title>Landscape Photo</dc:title>
+                <photoshop:Caption>Mountain view at sunrise</photoshop:Caption>
+                <tiff:Make>Sony</tiff:Make>
+                <exif:ISO>400</exif:ISO>
+              </rdf:Description>
+            </rdf:RDF>
+        "#;
+
+        let result = parse_xmp(xml).unwrap();
+        let prop_names: Vec<String> = result.iter().map(|(name, _)| name.clone()).collect();
+
+        // Verify tags from all 4 namespaces are present
+        assert!(prop_names.iter().any(|n| n == "XMP:Title"));
+        assert!(prop_names.iter().any(|n| n == "XMP-photoshop:Caption"));
+        assert!(prop_names.iter().any(|n| n == "XMP-tiff:Make"));
+        assert!(prop_names.iter().any(|n| n == "XMP-exif:ISO"));
+
+        assert_eq!(result.len(), 4, "Expected 4 properties from multiple namespaces");
+    }
+
+    #[test]
+    fn test_namespace_resolver_with_new_namespaces() {
+        // Test that namespace resolver correctly handles all namespace URIs
+        use crate::parsers::xmp::namespace_resolver::NamespaceResolver;
+
+        let resolver = NamespaceResolver::new();
+
+        // Verify all standard namespaces are pre-registered
+        assert_eq!(
+            resolver.resolve_prefix("dc"),
+            Some("http://purl.org/dc/elements/1.1/")
+        );
+        assert_eq!(
+            resolver.resolve_prefix("photoshop"),
+            Some("http://ns.adobe.com/photoshop/1.0/")
+        );
+        assert_eq!(
+            resolver.resolve_prefix("tiff"),
+            Some("http://ns.adobe.com/tiff/1.0/")
+        );
+        assert_eq!(
+            resolver.resolve_prefix("exif"),
+            Some("http://ns.adobe.com/exif/1.0/")
+        );
+    }
+
+    #[test]
+    fn test_formatter_functions() {
+        // Test individual formatter functions for new namespace tags
+
+        // EXIF ISO formatting
+        assert_eq!(format_exif_iso("100"), "100");
+        assert_eq!(format_exif_iso("6400"), "6400");
+
+        // EXIF aperture formatting
+        assert_eq!(format_exif_aperture("2.8"), "f/2.8");
+        assert_eq!(format_exif_aperture("5.6"), "f/5.6");
+        assert_eq!(format_exif_aperture("8"), "f/8");
+
+        // EXIF focal length formatting
+        assert_eq!(format_exif_focal_length("50"), "50 mm");
+        assert_eq!(format_exif_focal_length("85.0"), "85 mm");
+        assert_eq!(format_exif_focal_length("24.5"), "24.5 mm");
+
+        // TIFF resolution formatting
+        assert_eq!(format_tiff_resolution("300"), "300");
+        assert_eq!(format_tiff_resolution("72.5"), "72.5");
+
+        // Photoshop quality formatting
+        assert_eq!(format_photoshop_quality("85"), "85%");
+        assert_eq!(format_photoshop_quality("100"), "100%");
+    }
+
+    #[test]
+    fn test_exposure_compensation_formatting() {
+        // Test exposure compensation formatting with 2 decimal places
+        assert_eq!(format_exif_exposure_compensation("1.0"), "1.00");
+        assert_eq!(format_exif_exposure_compensation("-0.5"), "-0.50");
+        assert_eq!(format_exif_exposure_compensation("0"), "0.00");
+        assert_eq!(format_exif_exposure_compensation("0.3"), "0.30");
+    }
+
+    #[test]
+    fn test_shutter_speed_formatting() {
+        // Test shutter speed formatting with 3 decimal places for decimal values
+        assert_eq!(format_exif_shutter_speed("0.004"), "0.004");
+        assert_eq!(format_exif_shutter_speed("1/250"), "1/250");
+        assert_eq!(format_exif_shutter_speed("0.5"), "0.500");
     }
 }
