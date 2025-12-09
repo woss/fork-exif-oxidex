@@ -629,11 +629,20 @@ fn extract_track_header(
         TagValue::Integer(track_id as i64),
     );
 
-    // Track duration - ExifTool formats this as "X.XX s" using timescale
-    // For now we output raw units; formatting with timescale happens at display time
+    // Track duration - ExifTool formats this as "X.XX s" using movie timescale
+    // Get movie timescale from previously extracted metadata
+    let duration_str = if let Some(timescale_value) = metadata.get("QuickTime:TimeScale")
+        && let Some(timescale) = timescale_value.as_integer()
+        && timescale > 0
+    {
+        let duration_sec = duration as f64 / timescale as f64;
+        format!("{:.2} s", duration_sec)
+    } else {
+        format!("{} units", duration)
+    };
     metadata.insert(
         format!("QuickTime:TrackDuration{}", track_suffix),
-        TagValue::String(format!("{} units", duration)),
+        TagValue::String(duration_str),
     );
 
     // Track layer (2 bytes at version-dependent offset)
@@ -1652,21 +1661,9 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
                     b"ldes" => Some("QuickTime:LongDescription"),
                     _ => None,
                 };
-                if let Some(qt_tag_name) = qt_tag {
-                    metadata.insert(qt_tag_name.to_string(), value.clone());
-                }
-
-                metadata.insert(tag_name.into_owned(), value.clone());
-
-                if add_year_tag
-                    && let TagValue::String(ref text) = value
-                    && text.len() >= 4
-                {
-                    let year = text.chars().take(4).collect::<String>();
-                    metadata.insert("ItemList:Year".to_string(), TagValue::new_string(year));
-                }
-
                 // Handle TrackNumber and DiscNumber formatted as "X of Y"
+                // This must be done FIRST, before inserting raw value, so formatted value takes precedence
+                let mut formatted_track_or_disc = false;
                 if (atom_bytes == b"trkn" || atom_bytes == b"disk")
                     && let TagValue::Binary(ref data) = value
                     && data.len() >= 6
@@ -1685,6 +1682,23 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
                         "QuickTime:DiskNumber"
                     };
                     metadata.insert(tag.to_string(), TagValue::new_string(formatted));
+                    formatted_track_or_disc = true;
+                }
+
+                // For trkn/disk, don't insert the raw binary ItemList value - only the formatted QuickTime value
+                if !formatted_track_or_disc {
+                    if let Some(qt_tag_name) = qt_tag {
+                        metadata.insert(qt_tag_name.to_string(), value.clone());
+                    }
+                    metadata.insert(tag_name.into_owned(), value.clone());
+                }
+
+                if add_year_tag
+                    && let TagValue::String(ref text) = value
+                    && text.len() >= 4
+                {
+                    let year = text.chars().take(4).collect::<String>();
+                    metadata.insert("ItemList:Year".to_string(), TagValue::new_string(year));
                 }
             }
         }
@@ -1873,6 +1887,10 @@ fn extract_itunes_data_value(data: &[u8]) -> Option<TagValue> {
                 4 => vr.i32_at(0).map(|v| TagValue::Integer(v as i64)),
                 _ => None,
             }
+        }
+        0 => {
+            // Implicit data type (binary) - used for TrackNumber, DiscNumber, etc.
+            Some(TagValue::Binary(value_data.to_vec()))
         }
         13 | 14 => {
             // JPEG or PNG image data

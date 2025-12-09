@@ -134,6 +134,20 @@ impl OxiDexExtractor {
     fn format_value(&self, key: &str, name: &str, value: &TagValue) -> String {
         match value {
             TagValue::String(s) => {
+                // ColorMap is a large array of color values stored as space-separated string
+                // ExifTool shows it as "(Binary data N bytes, use -b option to extract)"
+                if name == "ColorMap" {
+                    // Count entries to estimate byte size (each value is 2 bytes for SHORT)
+                    let entry_count = s.split_whitespace().count();
+                    if entry_count > 10 {
+                        let byte_size = entry_count * 2;
+                        return format!(
+                            "(Binary data {} bytes, use -b option to extract)",
+                            byte_size
+                        );
+                    }
+                }
+
                 // Try to format dates in EXIF style
                 if (key.contains("Date") || key.contains("Time"))
                     && (s.contains('T') || s.contains('-'))
@@ -292,6 +306,17 @@ impl OxiDexExtractor {
             }
             TagValue::Struct(_) => "[Structured data]".to_string(),
             TagValue::Array(arr) => {
+                // ColorMap and similar large numeric arrays are shown as binary data by ExifTool
+                // ColorMap is 256 entries × 3 colors × 2 bytes = 1536 bytes
+                if name == "ColorMap" {
+                    // Calculate the size: each value is 2 bytes (SHORT)
+                    let byte_size = arr.len() * 2;
+                    return format!(
+                        "(Binary data {} bytes, use -b option to extract)",
+                        byte_size
+                    );
+                }
+
                 // Format array elements
                 let parts: Vec<String> = arr
                     .iter()
