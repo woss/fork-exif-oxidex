@@ -329,9 +329,15 @@ fn parse_info(
                         if let Ok(value) = read_float(reader, data_offset, elem_size as usize) {
                             // Duration is in timecode scale units
                             let duration_secs = (value * timecode_scale as f64) / 1_000_000_000.0;
+                            // Format as H:MM:SS like ExifTool (round to nearest second)
+                            let total_secs = duration_secs.round() as u64;
+                            let hours = total_secs / 3600;
+                            let mins = (total_secs % 3600) / 60;
+                            let secs = total_secs % 60;
+                            let formatted = format!("{}:{:02}:{:02}", hours, mins, secs);
                             metadata.insert(
                                 "Matroska:Duration".to_string(),
-                                TagValue::new_string(format!("{:.3}", duration_secs)),
+                                TagValue::new_string(formatted),
                             );
                         }
                     }
@@ -339,9 +345,11 @@ fn parse_info(
                         if let Ok(value) = read_sint(reader, data_offset, elem_size as usize) {
                             // DateUTC is nanoseconds since 2001-01-01T00:00:00 UTC
                             let timestamp = 978307200i64 + (value / 1_000_000_000);
+                            // Format as "YYYY:MM:DD HH:MM:SSZ" like ExifTool
+                            let formatted = format_unix_timestamp_utc(timestamp);
                             metadata.insert(
                                 "Matroska:DateTimeOriginal".to_string(),
-                                TagValue::new_integer(timestamp),
+                                TagValue::new_string(formatted),
                             );
                         }
                     }
@@ -1328,6 +1336,37 @@ fn read_string(reader: &dyn FileReader, offset: u64, size: usize) -> Result<Stri
     er.str_at(0, size)
         .map(|s| s.to_string())
         .ok_or_else(|| ExifToolError::parse_error("Invalid UTF-8 string"))
+}
+
+/// Format Unix timestamp as ExifTool-compatible datetime string.
+///
+/// ExifTool uses format "YYYY:MM:DD HH:MM:SSZ" (colons between date parts, Z suffix)
+fn format_unix_timestamp_utc(timestamp: i64) -> String {
+    // Days since Unix epoch
+    let days = timestamp / 86400;
+    let time_of_day = (timestamp % 86400) as u32;
+
+    // Time components
+    let hour = time_of_day / 3600;
+    let minute = (time_of_day % 3600) / 60;
+    let second = time_of_day % 60;
+
+    // Convert days to date using Howard Hinnant's algorithm
+    let z = days + 719468; // Days since 0000-03-01
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = (z - era * 146097) as u32; // Day of era [0, 146096]
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365; // Year of era [0, 399]
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100); // Day of year [0, 365]
+    let mp = (5 * doy + 2) / 153; // Month prime [0, 11]
+    let d = doy - (153 * mp + 2) / 5 + 1; // Day [1, 31]
+    let m = if mp < 10 { mp + 3 } else { mp - 9 }; // Month [1, 12]
+    let y = if m <= 2 { y + 1 } else { y };
+
+    format!(
+        "{:04}:{:02}:{:02} {:02}:{:02}:{:02}Z",
+        y, m, d, hour, minute, second
+    )
 }
 
 /// Convenience function to parse MKV metadata from a reader.

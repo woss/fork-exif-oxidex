@@ -400,9 +400,21 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
             // Map to ExifTool-compatible tag name
             let (family, tag_name) = map_vorbis_field_name(field_name);
             let full_tag = format!("{}:{}", family, tag_name);
+
+            // Format ReplayGain Peak values to match ExifTool (strip trailing zeros)
+            let formatted_value = if field_name.to_uppercase().contains("_PEAK") {
+                if let Ok(val) = field_value.parse::<f64>() {
+                    format_peak_value(val)
+                } else {
+                    field_value.to_string()
+                }
+            } else {
+                field_value.to_string()
+            };
+
             metadata.insert(
                 full_tag,
-                crate::core::TagValue::new_string(field_value.to_string()),
+                crate::core::TagValue::new_string(formatted_value),
             );
         }
 
@@ -410,6 +422,21 @@ fn parse_vorbis_comment_block(data: &[u8], metadata: &mut MetadataMap) -> Result
     }
 
     Ok(())
+}
+
+/// Format ReplayGain peak value to match ExifTool output
+///
+/// ExifTool strips trailing zeros from peak values, so "0.00000000" becomes "0.0"
+fn format_peak_value(val: f64) -> String {
+    // Format with enough precision
+    let s = format!("{:.8}", val);
+    // Strip trailing zeros after decimal point, but keep at least one digit after decimal
+    let trimmed = s.trim_end_matches('0');
+    if trimmed.ends_with('.') {
+        format!("{}0", trimmed)
+    } else {
+        trimmed.to_string()
+    }
 }
 
 /// Parses PICTURE block
