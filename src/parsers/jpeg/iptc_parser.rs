@@ -3,7 +3,10 @@
 //! This module handles parsing of IPTC data in JPEG APP13 segments.
 //! IPTC data is stored in Adobe Photoshop Image Resource Blocks (8BIM).
 
-use crate::core::value_formatter::{format_iptc_date, format_iptc_time, format_iptc_urgency};
+use crate::core::value_formatter::{
+    format_iptc_coded_charset, format_iptc_date, format_iptc_record_version, format_iptc_time,
+    format_iptc_urgency,
+};
 use crate::error::Result;
 use crate::parsers::jpeg::segment_parser::Segment;
 use nom::{
@@ -322,42 +325,55 @@ pub fn extract_iptc_from_segments(segments: &[Segment]) -> Result<Vec<(String, S
                                         record.record_number,
                                         record.dataset_number,
                                     );
-                                    let mut value = decode_iptc_string(&record.data);
 
-                                    // Apply formatting for specific dataset types
-                                    if record.record_number == 2 {
+                                    // Some fields need raw byte handling instead of string decoding
+                                    let value = if record.record_number == 1 {
                                         match record.dataset_number {
+                                            0 => {
+                                                // EnvelopeRecordVersion: binary u16
+                                                format_iptc_record_version(&record.data)
+                                            }
+                                            70 => {
+                                                // DateSent: YYYYMMDD -> YYYY:MM:DD
+                                                format_iptc_date(&decode_iptc_string(&record.data))
+                                            }
+                                            80 => {
+                                                // TimeSent: HHMMSS±HHMM -> HH:MM:SS±HH:MM
+                                                format_iptc_time(&decode_iptc_string(&record.data))
+                                            }
+                                            90 => {
+                                                // CodedCharacterSet: ISO 2022 escape sequence
+                                                format_iptc_coded_charset(&record.data)
+                                            }
+                                            _ => decode_iptc_string(&record.data),
+                                        }
+                                    } else if record.record_number == 2 {
+                                        match record.dataset_number {
+                                            0 => {
+                                                // ApplicationRecordVersion: binary u16
+                                                format_iptc_record_version(&record.data)
+                                            }
                                             10 => {
                                                 // Urgency: add description to match ExifTool
-                                                value = format_iptc_urgency(&value);
+                                                format_iptc_urgency(&decode_iptc_string(&record.data))
                                             }
                                             30 | 37 | 47 | 55 | 62 | 70 => {
                                                 // Date fields: YYYYMMDD -> YYYY:MM:DD
                                                 // 30=ReleaseDate, 37=ExpirationDate, 47=ReferenceDate
                                                 // 55=DateCreated, 62=DigitalCreationDate, 70=DateSent
-                                                value = format_iptc_date(&value);
+                                                format_iptc_date(&decode_iptc_string(&record.data))
                                             }
                                             35 | 38 | 60 | 63 => {
                                                 // Time fields: HHMMSS±HHMM -> HH:MM:SS±HH:MM
                                                 // 35=ReleaseTime, 38=ExpirationTime, 60=TimeCreated
                                                 // 63=DigitalCreationTime
-                                                value = format_iptc_time(&value);
+                                                format_iptc_time(&decode_iptc_string(&record.data))
                                             }
-                                            _ => {}
+                                            _ => decode_iptc_string(&record.data),
                                         }
-                                    } else if record.record_number == 1 {
-                                        match record.dataset_number {
-                                            70 => {
-                                                // DateSent: YYYYMMDD -> YYYY:MM:DD
-                                                value = format_iptc_date(&value);
-                                            }
-                                            80 => {
-                                                // TimeSent: HHMMSS±HHMM -> HH:MM:SS±HH:MM
-                                                value = format_iptc_time(&value);
-                                            }
-                                            _ => {}
-                                        }
-                                    }
+                                    } else {
+                                        decode_iptc_string(&record.data)
+                                    };
 
                                     all_iptc_tags.push((tag_name, value));
                                 }
