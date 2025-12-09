@@ -67,19 +67,14 @@ impl SVGParser {
         None
     }
 
-    /// Parses dimension value, stripping units like "px", "em", "%"
+    /// Parses dimension value, preserving units like "px", "em", "in", "%"
+    /// ExifTool keeps units intact, so we should too
     fn parse_dimension(value: &str) -> Option<String> {
         let trimmed = value.trim();
-        // Try to extract numeric part
-        let numeric: String = trimmed
-            .chars()
-            .take_while(|c| c.is_numeric() || *c == '.')
-            .collect();
-
-        if !numeric.is_empty() {
-            Some(numeric)
-        } else {
+        if !trimmed.is_empty() {
             Some(trimmed.to_string())
+        } else {
+            None
         }
     }
 
@@ -96,6 +91,70 @@ impl SVGParser {
     /// Checks if SVG contains animation elements
     fn is_animated(text: &str) -> bool {
         text.contains("<animate") || text.contains("<animateTransform")
+    }
+
+    /// Extracts dc:creator content, handling RDF bags/sequences
+    /// Handles formats like:
+    /// - Simple: <dc:creator>Name</dc:creator>
+    /// - RDF Bag: <dc:creator><rdf:Bag><rdf:li>Name1</rdf:li><rdf:li>Name2</rdf:li></rdf:Bag></dc:creator>
+    /// - RDF Seq: <dc:creator><rdf:Seq><rdf:li>Name</rdf:li></rdf:Seq></dc:creator>
+    fn extract_dc_creator(text: &str) -> Option<String> {
+        // First try to find dc:creator element
+        let start_tag = "<dc:creator>";
+        let end_tag = "</dc:creator>";
+
+        let start = text.find(start_tag)?;
+        let content_start = start + start_tag.len();
+        let end = text[content_start..].find(end_tag)? + content_start;
+        let content = &text[content_start..end];
+
+        // Try to extract rdf:li elements (handles both Bag and Seq)
+        let li_values: Vec<String> = Self::extract_all_rdf_li(content);
+
+        if !li_values.is_empty() {
+            // ExifTool formats multiple creators as ["name1","name2"]
+            if li_values.len() == 1 {
+                Some(li_values[0].clone())
+            } else {
+                Some(format!(
+                    "[{}]",
+                    li_values
+                        .iter()
+                        .map(|s| format!("\"{}\"", s))
+                        .collect::<Vec<_>>()
+                        .join(",")
+                ))
+            }
+        } else {
+            // Simple content without RDF structure
+            let trimmed = content.trim();
+            if !trimmed.is_empty() && !trimmed.starts_with('<') {
+                Some(trimmed.to_string())
+            } else {
+                None
+            }
+        }
+    }
+
+    /// Extract all rdf:li values from content
+    fn extract_all_rdf_li(content: &str) -> Vec<String> {
+        let mut values = Vec::new();
+        let mut pos = 0;
+
+        while let Some(start) = content[pos..].find("<rdf:li>") {
+            let value_start = pos + start + 8; // len of "<rdf:li>"
+            if let Some(end) = content[value_start..].find("</rdf:li>") {
+                let value = content[value_start..value_start + end].trim();
+                if !value.is_empty() {
+                    values.push(value.to_string());
+                }
+                pos = value_start + end + 10; // len of "</rdf:li>"
+            } else {
+                break;
+            }
+        }
+
+        values
     }
 }
 
@@ -151,14 +210,14 @@ impl FormatParser for SVGParser {
                 }
             }
 
-            // Extract xmlns (namespace)
+            // Extract xmlns (namespace) - ExifTool calls this "Xmlns"
             if let Some(xmlns) = Self::extract_attribute(svg_tag, "xmlns") {
-                metadata.insert("SVG:Namespace".to_string(), TagValue::String(xmlns));
+                metadata.insert("SVG:Xmlns".to_string(), TagValue::String(xmlns));
             }
 
-            // Extract version
+            // Extract version - ExifTool calls this "SVGVersion"
             if let Some(version) = Self::extract_attribute(svg_tag, "version") {
-                metadata.insert("SVG:Version".to_string(), TagValue::String(version));
+                metadata.insert("SVG:SVGVersion".to_string(), TagValue::String(version));
             }
         }
 
@@ -177,7 +236,7 @@ impl FormatParser for SVGParser {
             if let Some(dc_title) = Self::extract_element_content(text, "dc:title") {
                 metadata.insert("XMP:Title".to_string(), TagValue::String(dc_title));
             }
-            if let Some(dc_creator) = Self::extract_element_content(text, "dc:creator") {
+            if let Some(dc_creator) = Self::extract_dc_creator(text) {
                 metadata.insert("XMP:Creator".to_string(), TagValue::String(dc_creator));
             }
             if let Some(dc_desc) = Self::extract_element_content(text, "dc:description") {
@@ -239,11 +298,11 @@ mod tests {
             Some("A test description")
         );
         assert_eq!(
-            metadata.get("SVG:Namespace").unwrap().as_string(),
+            metadata.get("SVG:Xmlns").unwrap().as_string(),
             Some("http://www.w3.org/2000/svg")
         );
         assert_eq!(
-            metadata.get("SVG:Version").unwrap().as_string(),
+            metadata.get("SVG:SVGVersion").unwrap().as_string(),
             Some("1.1")
         );
     }
@@ -275,10 +334,14 @@ mod tests {
         let parser = SVGParser;
         let metadata = parser.parse(&reader).unwrap();
 
-        assert_eq!(metadata.get("ImageWidth").unwrap().as_string(), Some("300"));
+        // Units should be preserved to match ExifTool behavior
+        assert_eq!(
+            metadata.get("ImageWidth").unwrap().as_string(),
+            Some("300px")
+        );
         assert_eq!(
             metadata.get("ImageHeight").unwrap().as_string(),
-            Some("200")
+            Some("200em")
         );
     }
 
@@ -325,6 +388,30 @@ mod tests {
         assert_eq!(
             metadata.get("XMP:Description").unwrap().as_string(),
             Some("DC Description")
+        );
+    }
+
+    #[test]
+    fn test_svg_dublin_core_rdf_bag() {
+        // Test RDF Bag structure for multiple creators
+        let svg_data = r#"<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <metadata>
+    <dc:creator>
+      <rdf:Bag>
+        <rdf:li>Irving Bird</rdf:li>
+        <rdf:li>Mary Lambert</rdf:li>
+      </rdf:Bag>
+    </dc:creator>
+  </metadata>
+</svg>"#;
+
+        let reader = BufferedReader::from_bytes(svg_data.as_bytes());
+        let parser = SVGParser;
+        let metadata = parser.parse(&reader).unwrap();
+
+        assert_eq!(
+            metadata.get("XMP:Creator").unwrap().as_string(),
+            Some("[\"Irving Bird\",\"Mary Lambert\"]")
         );
     }
 
