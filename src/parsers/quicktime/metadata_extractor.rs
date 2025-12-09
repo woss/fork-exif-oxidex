@@ -1058,6 +1058,12 @@ fn extract_sample_description(
                     );
                 }
 
+                // Extract HEVC configuration from hvcC box if present (for hvc1/hev1 codecs)
+                // Video sample entry structure ends at byte 86, extensions follow
+                if entry_data.len() > 86 {
+                    extract_hevc_configuration(&entry_data[86..], metadata, &track_suffix);
+                }
+
                 // Horizontal and vertical resolution (fixed-point 16.16 at offsets 36 and 40)
                 if let Some(xres_fixed) = entry_reader.u32_at(36) {
                     let xres = (xres_fixed >> 16) as i64;
@@ -1124,6 +1130,200 @@ fn extract_sample_description(
     }
 
     Ok(())
+}
+
+/// Extract HEVC configuration (hvcC box) from video sample entry extension data
+///
+/// The hvcC box contains HEVC decoder configuration record with profile, level,
+/// and constraint information. It's found in hvc1/hev1 sample entries.
+///
+/// HEVCDecoderConfigurationRecord structure:
+/// - configurationVersion (1 byte)
+/// - general_profile_space (2 bits) + general_tier_flag (1 bit) + general_profile_idc (5 bits)
+/// - general_profile_compatibility_flags (4 bytes)
+/// - general_constraint_indicator_flags (6 bytes)
+/// - general_level_idc (1 byte)
+/// - min_spatial_segmentation_idc (4 bits reserved + 12 bits value)
+/// - parallelismType (6 bits reserved + 2 bits value)
+/// - chromaFormat (6 bits reserved + 2 bits value)
+/// - bitDepthLumaMinus8 (5 bits reserved + 3 bits value)
+/// - bitDepthChromaMinus8 (5 bits reserved + 3 bits value)
+/// - avgFrameRate (2 bytes)
+/// - constantFrameRate (2 bits) + numTemporalLayers (3 bits) + temporalIdNested (1 bit) + lengthSizeMinusOne (2 bits)
+fn extract_hevc_configuration(data: &[u8], metadata: &mut MetadataMap, _track_suffix: &str) {
+    // Look for hvcC box in the extension data
+    // Box format: 4 bytes size + 4 bytes type ("hvcC")
+    let mut offset = 0;
+    while offset + 8 <= data.len() {
+        let box_size = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
+        if box_size < 8 || offset + box_size > data.len() {
+            break;
+        }
+
+        let box_type = &data[offset + 4..offset + 8];
+        if box_type == b"hvcC" {
+            // Found hvcC box, parse the configuration record
+            let hvcc_data = &data[offset + 8..offset + box_size];
+            if hvcc_data.len() >= 23 {
+                // configurationVersion (1 byte)
+                let config_version = hvcc_data[0];
+                metadata.insert(
+                    "QuickTime:HEVCConfigurationVersion".to_string(),
+                    TagValue::Integer(config_version as i64),
+                );
+
+                // general_profile_space (2 bits) + general_tier_flag (1 bit) + general_profile_idc (5 bits)
+                let profile_byte = hvcc_data[1];
+                let profile_space = (profile_byte >> 6) & 0x03;
+                let tier_flag = (profile_byte >> 5) & 0x01;
+                let profile_idc = profile_byte & 0x1F;
+
+                let profile_space_str = match profile_space {
+                    0 => "Conforming",
+                    1 => "Reserved 1",
+                    2 => "Reserved 2",
+                    3 => "Reserved 3",
+                    _ => "Unknown",
+                };
+                metadata.insert(
+                    "QuickTime:GeneralProfileSpace".to_string(),
+                    TagValue::String(profile_space_str.to_string()),
+                );
+
+                let tier_str = if tier_flag == 0 { "Main Tier" } else { "High Tier" };
+                metadata.insert(
+                    "QuickTime:GeneralTierFlag".to_string(),
+                    TagValue::String(tier_str.to_string()),
+                );
+
+                let profile_name = match profile_idc {
+                    1 => "Main",
+                    2 => "Main 10",
+                    3 => "Main Still Picture",
+                    4 => "Format Range Extensions",
+                    5 => "High Throughput",
+                    6 => "Multiview Main",
+                    7 => "Scalable Main",
+                    8 => "3D Main",
+                    9 => "Screen-Extended Main",
+                    10 => "Scalable Format Range Extensions",
+                    11 => "High Throughput Screen-Extended",
+                    _ => "Unknown",
+                };
+                metadata.insert(
+                    "QuickTime:GeneralProfileIDC".to_string(),
+                    TagValue::String(profile_name.to_string()),
+                );
+
+                // general_profile_compatibility_flags (4 bytes)
+                let compat_flags = u32::from_be_bytes([hvcc_data[2], hvcc_data[3], hvcc_data[4], hvcc_data[5]]);
+                let mut compat_profiles = Vec::new();
+                if compat_flags & (1 << 31) != 0 { compat_profiles.push("Main"); }
+                if compat_flags & (1 << 30) != 0 { compat_profiles.push("Main 10"); }
+                if compat_flags & (1 << 29) != 0 { compat_profiles.push("Main Still Picture"); }
+                if !compat_profiles.is_empty() {
+                    metadata.insert(
+                        "QuickTime:GenProfileCompatibilityFlags".to_string(),
+                        TagValue::String(compat_profiles.join(", ")),
+                    );
+                }
+
+                // general_constraint_indicator_flags (6 bytes at offset 6-11)
+                let constraint_bytes: Vec<String> = hvcc_data[6..12].iter().map(|b| format!("{}", b)).collect();
+                metadata.insert(
+                    "QuickTime:ConstraintIndicatorFlags".to_string(),
+                    TagValue::String(constraint_bytes.join(" ")),
+                );
+
+                // general_level_idc (1 byte at offset 12)
+                let level_idc = hvcc_data[12];
+                let level = level_idc as f64 / 30.0;
+                metadata.insert(
+                    "QuickTime:GeneralLevelIDC".to_string(),
+                    TagValue::String(format!("{} (level {:.1})", level_idc, level)),
+                );
+
+                // min_spatial_segmentation_idc (4 bits reserved + 12 bits value at offset 13-14)
+                let min_spatial = u16::from_be_bytes([hvcc_data[13], hvcc_data[14]]) & 0x0FFF;
+                metadata.insert(
+                    "QuickTime:MinSpatialSegmentationIDC".to_string(),
+                    TagValue::Integer(min_spatial as i64),
+                );
+
+                // parallelismType (6 bits reserved + 2 bits value at offset 15)
+                let parallelism = hvcc_data[15] & 0x03;
+                metadata.insert(
+                    "QuickTime:ParallelismType".to_string(),
+                    TagValue::Integer(parallelism as i64),
+                );
+
+                // chromaFormat (6 bits reserved + 2 bits value at offset 16)
+                let chroma_format = hvcc_data[16] & 0x03;
+                let chroma_str = match chroma_format {
+                    0 => "Monochrome",
+                    1 => "4:2:0",
+                    2 => "4:2:2",
+                    3 => "4:4:4",
+                    _ => "Unknown",
+                };
+                metadata.insert(
+                    "QuickTime:ChromaFormat".to_string(),
+                    TagValue::String(chroma_str.to_string()),
+                );
+
+                // bitDepthLumaMinus8 (5 bits reserved + 3 bits value at offset 17)
+                let bit_depth_luma = (hvcc_data[17] & 0x07) + 8;
+                metadata.insert(
+                    "QuickTime:BitDepthLuma".to_string(),
+                    TagValue::Integer(bit_depth_luma as i64),
+                );
+
+                // bitDepthChromaMinus8 (5 bits reserved + 3 bits value at offset 18)
+                let bit_depth_chroma = (hvcc_data[18] & 0x07) + 8;
+                metadata.insert(
+                    "QuickTime:BitDepthChroma".to_string(),
+                    TagValue::Integer(bit_depth_chroma as i64),
+                );
+
+                // avgFrameRate (2 bytes at offset 19-20)
+                let avg_frame_rate = u16::from_be_bytes([hvcc_data[19], hvcc_data[20]]);
+                metadata.insert(
+                    "QuickTime:AverageFrameRate".to_string(),
+                    TagValue::Integer(avg_frame_rate as i64),
+                );
+
+                // Byte at offset 21: constantFrameRate (2 bits) + numTemporalLayers (3 bits) + temporalIdNested (1 bit) + lengthSizeMinusOne (2 bits)
+                let flags_byte = hvcc_data[21];
+                let constant_frame_rate = (flags_byte >> 6) & 0x03;
+                let num_temporal_layers = (flags_byte >> 3) & 0x07;
+                let temporal_id_nested = (flags_byte >> 2) & 0x01;
+
+                let cfr_str = match constant_frame_rate {
+                    0 => "Unknown",
+                    1 => "Constant",
+                    2 => "Variable",
+                    _ => "Reserved",
+                };
+                metadata.insert(
+                    "QuickTime:ConstantFrameRate".to_string(),
+                    TagValue::String(cfr_str.to_string()),
+                );
+
+                metadata.insert(
+                    "QuickTime:NumTemporalLayers".to_string(),
+                    TagValue::Integer(num_temporal_layers as i64),
+                );
+
+                metadata.insert(
+                    "QuickTime:TemporalIDNested".to_string(),
+                    TagValue::String(if temporal_id_nested == 1 { "Yes" } else { "No" }.to_string()),
+                );
+            }
+            return;
+        }
+
+        offset += box_size;
+    }
 }
 
 /// Extract video frame rate from stts (sample-to-time table) atom
@@ -2215,8 +2415,14 @@ fn extract_heif_metadata(
     // Parse iloc to build item locations
     let item_locations = parse_iloc_locations(&children);
 
-    // Extract image dimensions from ispe atoms
+    // Extract image dimensions from ispe atoms (in iprp->ipco)
     extract_ispe_dimensions(&children, metadata);
+
+    // Extract primary item reference from pitm atom
+    extract_primary_item_reference(&children, metadata);
+
+    // Extract HEVC configuration from iprp->ipco container
+    extract_heif_hevc_config(&children, metadata);
 
     // Extract EXIF data from mdat if we found an Exif item
     if let Some(id) = exif_item_id
@@ -2360,7 +2566,221 @@ fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
                     "HEIF:ImageHeight".to_string(),
                     TagValue::Integer(height as i64),
                 );
+                // Also add ImageSpatialExtent in ExifTool format
+                metadata.insert(
+                    "QuickTime:ImageSpatialExtent".to_string(),
+                    TagValue::String(format!("{}x{}", width, height)),
+                );
             }
+        }
+    }
+}
+
+/// Extract primary item reference from pitm atom
+fn extract_primary_item_reference(children: &[Atom], metadata: &mut MetadataMap) {
+    if let Some(pitm) = children.iter().find(|a| a.atom_type.matches("pitm")) {
+        if pitm.data.len() >= 6 {
+            let version = pitm.data[0];
+            let item_id = if version == 0 {
+                u16::from_be_bytes([pitm.data[4], pitm.data[5]]) as u32
+            } else if pitm.data.len() >= 8 {
+                u32::from_be_bytes([pitm.data[4], pitm.data[5], pitm.data[6], pitm.data[7]])
+            } else {
+                return;
+            };
+            metadata.insert(
+                "QuickTime:PrimaryItemReference".to_string(),
+                TagValue::Integer(item_id as i64),
+            );
+        }
+    }
+}
+
+/// Extract HEVC configuration from HEIF item properties (iprp -> ipco -> hvcC)
+fn extract_heif_hevc_config(children: &[Atom], metadata: &mut MetadataMap) {
+    // Find iprp (item properties) atom
+    let Some(iprp) = children.iter().find(|a| a.atom_type.matches("iprp")) else {
+        return;
+    };
+
+    // Parse children of iprp
+    let iprp_children = match super::atom_parser::parse_atoms(iprp.data) {
+        Ok((_, atoms)) => atoms,
+        Err(_) => return,
+    };
+
+    // Find ipco (item property container) atom
+    let Some(ipco) = iprp_children.iter().find(|a| a.atom_type.matches("ipco")) else {
+        return;
+    };
+
+    // Parse children of ipco - this contains the actual properties
+    let ipco_children = match super::atom_parser::parse_atoms(ipco.data) {
+        Ok((_, atoms)) => atoms,
+        Err(_) => return,
+    };
+
+    // Look for hvcC atom in ipco children
+    for atom in &ipco_children {
+        if atom.atom_type.matches("hvcC") && atom.data.len() >= 23 {
+            // Parse HEVC configuration directly from the atom data
+            let hvcc_data = atom.data;
+
+            // configurationVersion (1 byte)
+            let config_version = hvcc_data[0];
+            metadata.insert(
+                "QuickTime:HEVCConfigurationVersion".to_string(),
+                TagValue::Integer(config_version as i64),
+            );
+
+            // general_profile_space (2 bits) + general_tier_flag (1 bit) + general_profile_idc (5 bits)
+            let profile_byte = hvcc_data[1];
+            let profile_space = (profile_byte >> 6) & 0x03;
+            let tier_flag = (profile_byte >> 5) & 0x01;
+            let profile_idc = profile_byte & 0x1F;
+
+            let profile_space_str = match profile_space {
+                0 => "Conforming",
+                1 => "Reserved 1",
+                2 => "Reserved 2",
+                3 => "Reserved 3",
+                _ => "Unknown",
+            };
+            metadata.insert(
+                "QuickTime:GeneralProfileSpace".to_string(),
+                TagValue::String(profile_space_str.to_string()),
+            );
+
+            let tier_str = if tier_flag == 0 { "Main Tier" } else { "High Tier" };
+            metadata.insert(
+                "QuickTime:GeneralTierFlag".to_string(),
+                TagValue::String(tier_str.to_string()),
+            );
+
+            let profile_name = match profile_idc {
+                1 => "Main",
+                2 => "Main 10",
+                3 => "Main Still Picture",
+                4 => "Format Range Extensions",
+                5 => "High Throughput",
+                6 => "Multiview Main",
+                7 => "Scalable Main",
+                8 => "3D Main",
+                9 => "Screen-Extended Main",
+                10 => "Scalable Format Range Extensions",
+                11 => "High Throughput Screen-Extended",
+                _ => "Unknown",
+            };
+            metadata.insert(
+                "QuickTime:GeneralProfileIDC".to_string(),
+                TagValue::String(profile_name.to_string()),
+            );
+
+            // general_profile_compatibility_flags (4 bytes)
+            let compat_flags = u32::from_be_bytes([hvcc_data[2], hvcc_data[3], hvcc_data[4], hvcc_data[5]]);
+            let mut compat_profiles = Vec::new();
+            if compat_flags & (1 << 31) != 0 { compat_profiles.push("Main"); }
+            if compat_flags & (1 << 30) != 0 { compat_profiles.push("Main 10"); }
+            if compat_flags & (1 << 29) != 0 { compat_profiles.push("Main Still Picture"); }
+            if !compat_profiles.is_empty() {
+                metadata.insert(
+                    "QuickTime:GenProfileCompatibilityFlags".to_string(),
+                    TagValue::String(compat_profiles.join(", ")),
+                );
+            }
+
+            // general_constraint_indicator_flags (6 bytes at offset 6-11)
+            let constraint_bytes: Vec<String> = hvcc_data[6..12].iter().map(|b| format!("{}", b)).collect();
+            metadata.insert(
+                "QuickTime:ConstraintIndicatorFlags".to_string(),
+                TagValue::String(constraint_bytes.join(" ")),
+            );
+
+            // general_level_idc (1 byte at offset 12)
+            let level_idc = hvcc_data[12];
+            let level = level_idc as f64 / 30.0;
+            metadata.insert(
+                "QuickTime:GeneralLevelIDC".to_string(),
+                TagValue::String(format!("{} (level {:.1})", level_idc, level)),
+            );
+
+            // min_spatial_segmentation_idc (4 bits reserved + 12 bits value at offset 13-14)
+            let min_spatial = u16::from_be_bytes([hvcc_data[13], hvcc_data[14]]) & 0x0FFF;
+            metadata.insert(
+                "QuickTime:MinSpatialSegmentationIDC".to_string(),
+                TagValue::Integer(min_spatial as i64),
+            );
+
+            // parallelismType (6 bits reserved + 2 bits value at offset 15)
+            let parallelism = hvcc_data[15] & 0x03;
+            metadata.insert(
+                "QuickTime:ParallelismType".to_string(),
+                TagValue::Integer(parallelism as i64),
+            );
+
+            // chromaFormat (6 bits reserved + 2 bits value at offset 16)
+            let chroma_format = hvcc_data[16] & 0x03;
+            let chroma_str = match chroma_format {
+                0 => "Monochrome",
+                1 => "4:2:0",
+                2 => "4:2:2",
+                3 => "4:4:4",
+                _ => "Unknown",
+            };
+            metadata.insert(
+                "QuickTime:ChromaFormat".to_string(),
+                TagValue::String(chroma_str.to_string()),
+            );
+
+            // bitDepthLumaMinus8 (5 bits reserved + 3 bits value at offset 17)
+            let bit_depth_luma = (hvcc_data[17] & 0x07) + 8;
+            metadata.insert(
+                "QuickTime:BitDepthLuma".to_string(),
+                TagValue::Integer(bit_depth_luma as i64),
+            );
+
+            // bitDepthChromaMinus8 (5 bits reserved + 3 bits value at offset 18)
+            let bit_depth_chroma = (hvcc_data[18] & 0x07) + 8;
+            metadata.insert(
+                "QuickTime:BitDepthChroma".to_string(),
+                TagValue::Integer(bit_depth_chroma as i64),
+            );
+
+            // avgFrameRate (2 bytes at offset 19-20)
+            let avg_frame_rate = u16::from_be_bytes([hvcc_data[19], hvcc_data[20]]);
+            metadata.insert(
+                "QuickTime:AverageFrameRate".to_string(),
+                TagValue::Integer(avg_frame_rate as i64),
+            );
+
+            // Byte at offset 21: constantFrameRate (2 bits) + numTemporalLayers (3 bits) + temporalIdNested (1 bit) + lengthSizeMinusOne (2 bits)
+            let flags_byte = hvcc_data[21];
+            let constant_frame_rate = (flags_byte >> 6) & 0x03;
+            let num_temporal_layers = (flags_byte >> 3) & 0x07;
+            let temporal_id_nested = (flags_byte >> 2) & 0x01;
+
+            let cfr_str = match constant_frame_rate {
+                0 => "Unknown",
+                1 => "Constant",
+                2 => "Variable",
+                _ => "Reserved",
+            };
+            metadata.insert(
+                "QuickTime:ConstantFrameRate".to_string(),
+                TagValue::String(cfr_str.to_string()),
+            );
+
+            metadata.insert(
+                "QuickTime:NumTemporalLayers".to_string(),
+                TagValue::Integer(num_temporal_layers as i64),
+            );
+
+            metadata.insert(
+                "QuickTime:TemporalIDNested".to_string(),
+                TagValue::String(if temporal_id_nested == 1 { "Yes" } else { "No" }.to_string()),
+            );
+
+            return;
         }
     }
 }
