@@ -652,9 +652,10 @@ impl MakerNoteParser for FujifilmParser {
                     let value = entry.value_offset as i32;
                     let tag_name = fujifilm_tag_to_name(entry.tag_id);
                     // Fujifilm uses scale: 0=normal, +values=more, -values=less
+                    // Match ExifTool format: just the description for 0, numeric for others
                     let description = match value {
                         v if v < 0 => format!("{} (Soft)", v),
-                        0 => "0 (Normal)".to_string(),
+                        0 => "Normal".to_string(),
                         v => format!("{} (Hard)", v),
                     };
                     tags.insert(tag_name, description);
