@@ -90,7 +90,7 @@ pub fn parse_icc_file(reader: &dyn FileReader) -> Result<MetadataMap> {
     let icc_data = reader.read(0, size)?;
 
     // Parse the ICC profile
-    let icc_metadata = parse_icc_profile(&icc_data)?;
+    let icc_metadata = parse_icc_profile(icc_data)?;
 
     // Add ICC_Profile: prefix to all tags (to match ExifTool's family naming)
     for (key, value) in icc_metadata {

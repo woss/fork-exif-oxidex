@@ -56,7 +56,7 @@ pub fn parse_xmp_file(reader: &dyn FileReader) -> Result<MetadataMap> {
     let xmp_data = reader.read(0, size)?;
 
     // Parse the XMP data
-    let xmp_tags = parse_xmp(&xmp_data)?;
+    let xmp_tags = parse_xmp(xmp_data)?;
 
     // Add all XMP tags to metadata
     for (key, value) in xmp_tags {
