@@ -781,8 +781,15 @@ fn parse_sigma_x3f(_data: &[u8], format: RawFormat) -> Result<MetadataMap> {
 
 /// Parse Minolta MRW format
 ///
-/// MRW files use Minolta's proprietary MRM format.
-/// This function is a stub for future implementation.
+/// MRW files use Minolta's proprietary MRM format which consists of:
+/// - 4-byte signature: `\x00MRM`
+/// - 4-byte file size (big-endian)
+/// - Series of tagged blocks, each with:
+///   - 4-byte tag name (e.g., "PRD" for preview, "TTW" for TIFF)
+///   - 4-byte block size (big-endian)
+///   - Block data
+///
+/// The TTW block contains TIFF/EXIF data that can be parsed with standard TIFF parser.
 ///
 /// # Arguments
 ///
@@ -791,23 +798,125 @@ fn parse_sigma_x3f(_data: &[u8], format: RawFormat) -> Result<MetadataMap> {
 ///
 /// # Returns
 ///
-/// Minimal metadata with file type information.
-/// Full MRW parsing to be implemented in future iteration.
-///
-/// # TODO
-///
-/// - Implement MRM format parser
-/// - Extract Minolta-specific metadata
-/// - Parse MRW image data
-fn parse_minolta_mrw(_data: &[u8], format: RawFormat) -> Result<MetadataMap> {
+/// Metadata extracted from MRW file including EXIF from TTW block.
+fn parse_minolta_mrw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
     let mut metadata = MetadataMap::new();
     metadata.insert(
         "File:FileType".to_string(),
         TagValue::new_string(format!("{:?}", format)),
     );
 
-    // TODO: Implement MRW specific parsing
-    // MRW uses "\x00MRM" signature
+    // Verify MRM signature
+    if data.len() < 8 || &data[0..4] != b"\x00MRM" {
+        return Ok(metadata);
+    }
+
+    // Read file size (big-endian)
+    let _file_size = u32::from_be_bytes([data[4], data[5], data[6], data[7]]) as usize;
+
+    // Parse MRW blocks starting at offset 8
+    let mut offset = 8usize;
+
+    while offset + 8 <= data.len() {
+        // Read block tag (4 bytes) and size (4 bytes big-endian)
+        let block_tag = &data[offset..offset + 4];
+        let block_size =
+            u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+
+        offset += 8;
+
+        if offset + block_size > data.len() {
+            break;
+        }
+
+        let block_data = &data[offset..offset + block_size];
+
+        match block_tag {
+            b"\x00TTW" => {
+                // TTW block contains TIFF/EXIF data
+                // Parse it as a TIFF structure
+                if block_data.len() >= 8 {
+                    // TIFF data should start with byte order marker
+                    if let Ok(tiff_metadata) = parse_tiff_based_raw(block_data, format) {
+                        for (key, value) in tiff_metadata {
+                            metadata.insert(key, value);
+                        }
+                    }
+                }
+            }
+            b"\x00PRD" => {
+                // PRD block contains image dimensions and sensor info
+                if block_data.len() >= 8 {
+                    let reader = crate::io::EndianReader::big_endian(block_data);
+                    // PRD structure:
+                    // - 2 bytes: version?
+                    // - 2 bytes: sensor width
+                    // - 2 bytes: sensor height
+                    // - 2 bytes: image width
+                    // - 2 bytes: image height
+                    // etc.
+                    if let (Some(_version), Some(sensor_w), Some(sensor_h)) =
+                        (reader.u16_at(0), reader.u16_at(2), reader.u16_at(4))
+                    {
+                        metadata.insert(
+                            "MakerNotes:SensorWidth".to_string(),
+                            TagValue::Integer(sensor_w as i64),
+                        );
+                        metadata.insert(
+                            "MakerNotes:SensorHeight".to_string(),
+                            TagValue::Integer(sensor_h as i64),
+                        );
+                    }
+                    if let (Some(img_w), Some(img_h)) =
+                        (reader.u16_at(6), reader.u16_at(8))
+                    {
+                        metadata.insert(
+                            "EXIF:ImageWidth".to_string(),
+                            TagValue::Integer(img_w as i64),
+                        );
+                        metadata.insert(
+                            "EXIF:ImageHeight".to_string(),
+                            TagValue::Integer(img_h as i64),
+                        );
+                    }
+                }
+            }
+            b"\x00WBG" => {
+                // WBG block contains white balance info
+                if block_data.len() >= 8 {
+                    let reader = crate::io::EndianReader::big_endian(block_data);
+                    // WBG structure varies but typically contains R/G/B multipliers
+                    if let (Some(r), Some(g), Some(b)) =
+                        (reader.u16_at(0), reader.u16_at(2), reader.u16_at(4))
+                    {
+                        // Values are typically scaled, convert to ratio
+                        let g_val = g as f64;
+                        if g_val > 0.0 {
+                            let r_ratio = r as f64 / g_val;
+                            let b_ratio = b as f64 / g_val;
+                            metadata.insert(
+                                "MakerNotes:ColorBalanceRed".to_string(),
+                                TagValue::Float(r_ratio),
+                            );
+                            metadata.insert(
+                                "MakerNotes:ColorBalanceGreen".to_string(),
+                                TagValue::Float(1.0),
+                            );
+                            metadata.insert(
+                                "MakerNotes:ColorBalanceBlue".to_string(),
+                                TagValue::Float(b_ratio),
+                            );
+                        }
+                    }
+                }
+            }
+            _ => {
+                // Unknown block - skip
+            }
+        }
+
+        offset += block_size;
+    }
 
     Ok(metadata)
 }
