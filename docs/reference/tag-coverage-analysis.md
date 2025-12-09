@@ -62,7 +62,7 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | Video files | ✅ 84% | QuickTime, Matroska, RIFF |
 | Audio files | ✅ 100% | ID3, FLAC, Vorbis, AAC |
 | PDF documents | ✅ 75% | Info dict, XMP |
-| Office docs | ⚠️ 60% | OOXML, iWork |
+| Office docs | ✅ 75% | OOXML, iWork |
 | Executables | ✅ 80% | PE, ELF, Mach-O |
 
 ---
@@ -94,6 +94,8 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | SPECIALIZED | 90% | ✅ Good |
 | TTF | 90% | ✅ Good |
 | OTF | 90% | ✅ Good |
+| DOCX | 75% | ✅ Good |
+| XLSX | 75% | ✅ Good |
 | ELF | 75% | ✅ Good |
 | MKV | 75% | ✅ Good |
 | AVI | 75% | ✅ Good |
@@ -105,8 +107,6 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | IPTC | 60% | ✅ Good |
 | XMP | 60% | ✅ Good |
 | TEXT | 60% | ✅ Good |
-| DOCX | 60% | ✅ Good |
-| XLSX | 60% | ✅ Good |
 
 ### ⚠️ Partial Coverage (10-50%)
 
