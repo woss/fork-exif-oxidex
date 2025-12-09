@@ -229,6 +229,9 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
         // Parse picture frames (PIC/APIC)
         let is_picture_frame = frame_id == "PIC" || frame_id == "APIC";
 
+        // Parse relative volume adjustment frames (RVA2/RVAD/RVA)
+        let is_rva_frame = frame_id == "RVA2" || frame_id == "RVAD" || frame_id == "RVA";
+
         if is_text_frame
             && let Ok(text) = parse_text_frame(frame_data)
         {
@@ -245,6 +248,8 @@ fn parse_id3v2_frames(data: &[u8], version: u8, metadata: &mut MetadataMap) -> R
             metadata.insert("ID3:Lyrics".to_string(), TagValue::new_string(text));
         } else if is_picture_frame {
             let _ = parse_picture_frame(frame_data, version, metadata);
+        } else if is_rva_frame {
+            let _ = parse_rva_frame(frame_data, &frame_id, metadata);
         }
     }
 
@@ -671,6 +676,122 @@ fn get_mpeg_sample_rate(version: f64, index: u8) -> u32 {
     } else {
         V25_RATES[idx]
     }
+}
+
+/// Parse RVA2/RVAD/RVA (relative volume adjustment) frame
+fn parse_rva_frame(data: &[u8], frame_id: &str, metadata: &mut MetadataMap) -> Result<()> {
+    if data.is_empty() {
+        return Ok(());
+    }
+
+    if frame_id == "RVA2" {
+        // ID3v2.4 RVA2 format:
+        // - Identification string (null-terminated)
+        // - Channel type (1 byte): 0=Other, 1=Master, 2=Front right, 3=Front left, etc.
+        // - Volume adjustment (2 bytes, signed big-endian, 1/512 dB)
+        // - Bits representing peak (1 byte)
+        // - Peak volume (variable bytes)
+
+        // Find end of identification string
+        let null_pos = data.iter().position(|&b| b == 0).unwrap_or(data.len());
+        if null_pos + 4 > data.len() {
+            return Ok(());
+        }
+
+        let mut pos = null_pos + 1; // Skip identification + null
+        let mut adjustments = Vec::new();
+
+        while pos + 3 <= data.len() {
+            let channel_type = data[pos];
+            let volume_adj =
+                i16::from_be_bytes([data[pos + 1], data[pos + 2]]) as f64 / 512.0;
+            pos += 3;
+
+            // Skip peak volume (bits_peak byte + peak data)
+            if pos < data.len() {
+                let bits_peak = data[pos];
+                pos += 1;
+                let peak_bytes = (bits_peak as usize + 7) / 8;
+                pos += peak_bytes;
+            }
+
+            // Convert dB to percentage: percentage = 100 * (10^(dB/20) - 1)
+            let percent = 100.0 * (10f64.powf(volume_adj / 20.0) - 1.0);
+            let channel_name = match channel_type {
+                0 => "Other",
+                1 => "Master",
+                2 => "Right",
+                3 => "Left",
+                4 => "Right Back",
+                5 => "Left Back",
+                6 => "Center",
+                7 => "Bass",
+                _ => continue,
+            };
+            adjustments.push((percent, channel_name));
+        }
+
+        if !adjustments.is_empty() {
+            let formatted: Vec<String> = adjustments
+                .iter()
+                .map(|(pct, ch)| format!("{:+.1}% {}", pct, ch))
+                .collect();
+            metadata.insert(
+                "ID3:RelativeVolumeAdjustment".to_string(),
+                TagValue::new_string(formatted.join(", ")),
+            );
+        }
+    } else {
+        // RVAD (ID3v2.3) / RVA (ID3v2.2) format:
+        // - Flags byte (increment/decrement bits for each channel)
+        // - Peak volume bits (1 byte)
+        // - Volume adjustment per channel (big-endian, size = peak bits / 8 rounded up)
+
+        if data.len() < 2 {
+            return Ok(());
+        }
+
+        let flags = data[0];
+        let peak_bits = data[1] as usize;
+        let bytes_per_value = (peak_bits + 7) / 8;
+
+        if bytes_per_value == 0 || data.len() < 2 + bytes_per_value * 2 {
+            return Ok(());
+        }
+
+        let mut pos = 2;
+
+        // Right volume adjustment
+        let right_raw = read_bytes_as_value(&data[pos..], bytes_per_value);
+        let right_sign = if (flags & 0x02) != 0 { 1.0 } else { -1.0 };
+        pos += bytes_per_value;
+
+        // Left volume adjustment
+        let left_raw = read_bytes_as_value(&data[pos..], bytes_per_value);
+        let left_sign = if (flags & 0x01) != 0 { 1.0 } else { -1.0 };
+
+        // Calculate percentage from 16-bit value (assuming 16-bit max)
+        let max_val = (1u64 << peak_bits) as f64;
+        let right_pct = right_sign * (right_raw as f64 / max_val) * 100.0;
+        let left_pct = left_sign * (left_raw as f64 / max_val) * 100.0;
+
+        let formatted = format!("{:+.1}% Right, {:+.1}% Left", right_pct, left_pct);
+        metadata.insert(
+            "ID3:RelativeVolumeAdjustment".to_string(),
+            TagValue::new_string(formatted),
+        );
+    }
+
+    Ok(())
+}
+
+/// Read N bytes as a big-endian unsigned value
+fn read_bytes_as_value(data: &[u8], num_bytes: usize) -> u64 {
+    let mut value = 0u64;
+    for i in 0..num_bytes.min(data.len()) {
+        value = (value << 8) | (data[i] as u64);
+    }
+    value
 }
 
 /// Parse APIC/PIC (picture) frame

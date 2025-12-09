@@ -212,9 +212,11 @@ fn parse_file_properties(
         TagValue::new_integer(data_packets as i64),
     );
 
-    // Play duration (8 bytes - 100-nanosecond units)
+    // Play duration (8 bytes - 100-nanosecond units) at offset 40
     let play_duration = r.u64_at(40).unwrap_or(0);
-    // Preroll (8 bytes - milliseconds)
+    // Send duration (8 bytes - 100-nanosecond units) at offset 48
+    let send_duration = r.u64_at(48).unwrap_or(0);
+    // Preroll (8 bytes - milliseconds) at offset 56
     let preroll = r.u64_at(56).unwrap_or(0);
     metadata.insert(
         "ASF:Preroll".to_string(),
@@ -226,9 +228,11 @@ fn parse_file_properties(
         let duration_secs = (play_duration as f64) / 10_000_000.0;
         let duration_str = format_duration(duration_secs);
         metadata.insert("ASF:Duration".to_string(), TagValue::new_string(duration_str));
+    }
 
-        // Send duration - also from play_duration without preroll subtraction
-        let send_duration_secs = (play_duration as f64) / 10_000_000.0;
+    // Send duration - separate field from play_duration
+    if send_duration > 0 {
+        let send_duration_secs = (send_duration as f64) / 10_000_000.0;
         let send_duration_str = format_duration(send_duration_secs);
         metadata.insert(
             "ASF:SendDuration".to_string(),
@@ -326,11 +330,17 @@ fn parse_stream_properties(
         0x50, 0xCD, 0xC3, 0xBF, 0x8F, 0x61, 0xCF, 0x11, 0x8B, 0xB2, 0x00, 0xAA, 0x00, 0xB4, 0xE2,
         0x20,
     ];
+    // No Error Correction GUID: 20FB5700-5B55-11CF-A8FD-00805F5C442B
+    const NO_ERROR_CORRECTION_GUID: [u8; 16] = [
+        0x00, 0x57, 0xFB, 0x20, 0x55, 0x5B, 0xCF, 0x11, 0xA8, 0xFD, 0x00, 0x80, 0x5F, 0x5C, 0x44,
+        0x2B,
+    ];
     let error_correction = if error_correction_guid
         == [
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00,
         ]
+        || error_correction_guid == NO_ERROR_CORRECTION_GUID
     {
         "No Error Correction"
     } else if error_correction_guid == AUDIO_SPREAD_GUID {
@@ -606,6 +616,12 @@ fn parse_codec_list(
     size: u64,
     metadata: &mut MetadataMap,
 ) -> Result<()> {
+    // Codec List Object structure:
+    // 16 bytes: Object GUID
+    // 8 bytes: Object Size
+    // 16 bytes: Reserved GUID
+    // 4 bytes: Codec Entries Count
+    // Variable: Codec Entries (starting at offset 44)
     if size < 44 {
         return Ok(());
     }
@@ -613,12 +629,13 @@ fn parse_codec_list(
     let header = reader.read(offset + 40, 4)?;
     let codec_count = EndianReader::little_endian(&header).u32_at(0).unwrap_or(0);
 
-    let mut pos = 44u64;
+    let mut pos = offset + 44; // Start at codec entries (relative to object start)
+    let end_pos = offset + size;
     let mut audio_idx = 0;
     let mut video_idx = 0;
 
     for _ in 0..codec_count {
-        if pos + 2 > offset + size {
+        if pos + 2 > end_pos {
             break;
         }
 
@@ -628,7 +645,7 @@ fn parse_codec_list(
         pos += 2;
 
         // Codec name length (2 bytes)
-        if pos + 2 > offset + size {
+        if pos + 2 > end_pos {
             break;
         }
         let name_len_data = reader.read(pos, 2)?;
@@ -639,7 +656,7 @@ fn parse_codec_list(
         pos += 2;
 
         // Codec name (UTF-16)
-        let codec_name = if name_len > 0 && pos + name_len as u64 <= offset + size {
+        let codec_name = if name_len > 0 && pos + name_len as u64 <= end_pos {
             let name_data = reader.read(pos, name_len)?;
             pos += name_len as u64;
             read_utf16_string(&name_data)
@@ -648,7 +665,7 @@ fn parse_codec_list(
         };
 
         // Codec description length (2 bytes)
-        if pos + 2 > offset + size {
+        if pos + 2 > end_pos {
             break;
         }
         let desc_len_data = reader.read(pos, 2)?;
@@ -659,7 +676,7 @@ fn parse_codec_list(
         pos += 2;
 
         // Codec description (UTF-16)
-        let codec_desc = if desc_len > 0 && pos + desc_len as u64 <= offset + size {
+        let codec_desc = if desc_len > 0 && pos + desc_len as u64 <= end_pos {
             let desc_data = reader.read(pos, desc_len)?;
             pos += desc_len as u64;
             read_utf16_string(&desc_data)
@@ -668,7 +685,7 @@ fn parse_codec_list(
         };
 
         // Codec information length (2 bytes)
-        if pos + 2 > offset + size {
+        if pos + 2 > end_pos {
             break;
         }
         let info_len_data = reader.read(pos, 2)?;
@@ -678,7 +695,7 @@ fn parse_codec_list(
         pos += 2;
 
         // Codec information (binary - contains FourCC or GUID)
-        let codec_id = if info_len > 0 && pos + info_len as u64 <= offset + size {
+        let codec_id = if info_len > 0 && pos + info_len as u64 <= end_pos {
             let info_data = reader.read(pos, info_len)?;
             pos += info_len as u64;
             // Try to read as FourCC or format as hex
