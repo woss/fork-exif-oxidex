@@ -69,6 +69,16 @@ const CODEC_LIST_GUID: [u8; 16] = [
     0x40, 0x52, 0xD1, 0x86, 0x1D, 0x31, 0xD0, 0x11, 0xA3, 0xA4, 0x00, 0xA0, 0xC9, 0x03, 0x48, 0xF6,
 ];
 
+// Metadata Library Object GUID: 44231C94-9498-49D1-A141-1D134E457054
+const METADATA_LIBRARY_GUID: [u8; 16] = [
+    0x94, 0x1C, 0x23, 0x44, 0x98, 0x94, 0xD1, 0x49, 0xA1, 0x41, 0x1D, 0x13, 0x4E, 0x45, 0x70, 0x54,
+];
+
+// Metadata Object GUID: C5F8CBEA-5BAF-4877-8467-AA8C44FA4CCA
+const METADATA_GUID: [u8; 16] = [
+    0xEA, 0xCB, 0xF8, 0xC5, 0xAF, 0x5B, 0x77, 0x48, 0x84, 0x67, 0xAA, 0x8C, 0x44, 0xFA, 0x4C, 0xCA,
+];
+
 // Stream Type GUIDs
 const AUDIO_MEDIA_GUID: [u8; 16] = [
     0x40, 0x9E, 0x69, 0xF8, 0x4D, 0x5B, 0xCF, 0x11, 0xA8, 0xFD, 0x00, 0x80, 0x5F, 0x5C, 0x44, 0x2B,
@@ -136,6 +146,8 @@ impl FormatParser for AsfParser {
                 parse_extended_content(reader, offset, obj_size, &mut metadata)?;
             } else if obj_guid == CODEC_LIST_GUID {
                 parse_codec_list(reader, offset, obj_size, &mut metadata)?;
+            } else if obj_guid == HEADER_EXTENSION_GUID {
+                parse_header_extension(reader, offset, obj_size, &mut metadata)?;
             }
 
             offset += obj_size;
@@ -787,6 +799,222 @@ fn parse_codec_list(
             }
             _ => {}
         }
+    }
+
+    Ok(())
+}
+
+/// Parse Header Extension Object
+/// Contains nested objects including Metadata and Metadata Library
+fn parse_header_extension(
+    reader: &dyn FileReader,
+    offset: u64,
+    size: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    // Header Extension Object structure:
+    // - 24 bytes: object header (GUID + size)
+    // - 16 bytes: reserved field 1 (GUID)
+    // - 2 bytes: reserved field 2
+    // - 4 bytes: header extension data size
+    // - N bytes: nested objects
+    if size < 46 {
+        return Ok(());
+    }
+
+    let header = reader.read(offset + 24, 22)?;
+    let r = EndianReader::little_endian(&header);
+    let data_size = r.u32_at(18).unwrap_or(0) as u64;
+
+    let mut pos = offset + 46;
+    let end_pos = (offset + 46 + data_size).min(offset + size);
+
+    // Parse nested objects
+    while pos + 24 <= end_pos {
+        let obj_header = reader.read(pos, 24)?;
+        let obj_guid = &obj_header[0..16];
+        let obj_r = EndianReader::little_endian(&obj_header);
+        let obj_size = obj_r.u64_at(16).unwrap_or(0);
+
+        if obj_size < 24 || pos + obj_size > end_pos {
+            break;
+        }
+
+        if obj_guid == METADATA_LIBRARY_GUID || obj_guid == METADATA_GUID {
+            parse_metadata_object(reader, pos, obj_size, metadata)?;
+        }
+
+        pos += obj_size;
+    }
+
+    Ok(())
+}
+
+/// Parse Metadata or Metadata Library Object
+/// These have a different structure than Extended Content Description:
+/// - 2 bytes: description record count
+/// - For each record:
+///   - 2 bytes: language list index (or reserved)
+///   - 2 bytes: stream number
+///   - 2 bytes: name length
+///   - 2 bytes: data type
+///   - 4 bytes: data length
+///   - N bytes: name (UTF-16)
+///   - N bytes: data
+fn parse_metadata_object(
+    reader: &dyn FileReader,
+    offset: u64,
+    size: u64,
+    metadata: &mut MetadataMap,
+) -> Result<()> {
+    if size < 26 {
+        return Ok(());
+    }
+
+    let header = reader.read(offset + 24, 2)?;
+    let record_count = EndianReader::little_endian(&header)
+        .u16_at(0)
+        .unwrap_or(0);
+
+    let mut pos = offset + 26;
+    let end_pos = offset + size;
+
+    for _ in 0..record_count {
+        if pos + 12 > end_pos {
+            break;
+        }
+
+        // Read record header
+        let rec_header = reader.read(pos, 12)?;
+        let rec_r = EndianReader::little_endian(&rec_header);
+        // let language_idx = rec_r.u16_at(0).unwrap_or(0);
+        // let stream_num = rec_r.u16_at(2).unwrap_or(0);
+        let name_len = rec_r.u16_at(4).unwrap_or(0) as usize;
+        let data_type = rec_r.u16_at(6).unwrap_or(0);
+        let data_len = rec_r.u32_at(8).unwrap_or(0) as usize;
+        pos += 12;
+
+        if pos + name_len as u64 + data_len as u64 > end_pos {
+            break;
+        }
+
+        // Read name
+        let name_data = reader.read(pos, name_len)?;
+        let name = read_utf16_string(&name_data);
+        pos += name_len as u64;
+
+        // Read value
+        let value_data = reader.read(pos, data_len)?;
+        pos += data_len as u64;
+
+        // Map WM/ names to ASF: tags
+        let tag_name = map_wm_tag(&name);
+        if tag_name.is_empty() {
+            continue;
+        }
+
+        // For IsVBR, don't overwrite if already set from Extended Content
+        // Extended Content's value is more reliable than Metadata Library
+        if tag_name == "ASF:IsVBR" && metadata.contains_key(&tag_name) {
+            continue;
+        }
+
+        // Parse value based on type
+        let value = match data_type {
+            0 => {
+                // Unicode string
+                TagValue::new_string(read_utf16_string(&value_data))
+            }
+            1 => {
+                // Byte array - could be GUID or binary data
+                if value_data.len() == 16 {
+                    // GUID - format as string
+                    TagValue::new_string(format_guid(&value_data))
+                } else {
+                    // Binary data
+                    TagValue::new_string(format!(
+                        "(Binary data {} bytes)",
+                        value_data.len()
+                    ))
+                }
+            }
+            2 => {
+                // BOOL - should output "true" or "false"
+                let v = if value_data.len() >= 4 {
+                    u32::from_le_bytes([
+                        value_data[0],
+                        value_data[1],
+                        value_data[2],
+                        value_data[3],
+                    ]) != 0
+                } else if value_data.len() >= 2 {
+                    u16::from_le_bytes([value_data[0], value_data[1]]) != 0
+                } else {
+                    continue;
+                };
+                TagValue::new_string(if v { "true" } else { "false" })
+            }
+            4 => {
+                // QWORD (8 bytes)
+                if value_data.len() >= 8 {
+                    let v = u64::from_le_bytes([
+                        value_data[0],
+                        value_data[1],
+                        value_data[2],
+                        value_data[3],
+                        value_data[4],
+                        value_data[5],
+                        value_data[6],
+                        value_data[7],
+                    ]);
+                    TagValue::Integer(v as i64)
+                } else if value_data.len() >= 4 {
+                    let v = u32::from_le_bytes([
+                        value_data[0],
+                        value_data[1],
+                        value_data[2],
+                        value_data[3],
+                    ]);
+                    TagValue::Integer(v as i64)
+                } else {
+                    continue;
+                }
+            }
+            3 => {
+                // DWORD
+                if value_data.len() >= 4 {
+                    let v = u32::from_le_bytes([
+                        value_data[0],
+                        value_data[1],
+                        value_data[2],
+                        value_data[3],
+                    ]);
+                    TagValue::Integer(v as i64)
+                } else {
+                    continue;
+                }
+            }
+            5 => {
+                // WORD
+                if value_data.len() >= 2 {
+                    let v = u16::from_le_bytes([value_data[0], value_data[1]]);
+                    TagValue::Integer(v as i64)
+                } else {
+                    continue;
+                }
+            }
+            6 => {
+                // GUID
+                if value_data.len() >= 16 {
+                    TagValue::new_string(format_guid(&value_data))
+                } else {
+                    continue;
+                }
+            }
+            _ => continue,
+        };
+
+        metadata.insert(tag_name, value);
     }
 
     Ok(())
