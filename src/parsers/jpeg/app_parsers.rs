@@ -458,6 +458,218 @@ pub fn parse_sof_segment(
     Ok(())
 }
 
+/// Parse APP8 (SPIFF) segment
+///
+/// APP8 segments (marker 0xFFE8) contain SPIFF (Still Picture Interchange File Format) metadata.
+/// SPIFF is used primarily by lossless JPEG implementations and includes compression and
+/// color space information.
+pub fn parse_spiff_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
+    if data.len() < 6 {
+        return Err("APP8 SPIFF segment too short".to_string());
+    }
+
+    // Check SPIFF identifier (6 bytes: "SPIFF\0")
+    if &data[0..6] != b"SPIFF\0" {
+        return Err("Invalid SPIFF identifier".to_string());
+    }
+
+    // SPIFF structure after identifier:
+    // Byte 6: SPIFF version major
+    // Byte 7: SPIFF version minor
+    // Byte 8: Profile ID
+    // Byte 9: Components
+    // Bytes 10-13: Height (big-endian u32)
+    // Bytes 14-17: Width (big-endian u32)
+
+    if data.len() >= 8 {
+        let version_major = data[6];
+        let version_minor = data[7];
+        metadata.insert(
+            "APP8:SPIFFVersion".to_string(),
+            TagValue::String(format!("{}.{}", version_major, version_minor)),
+        );
+    }
+
+    if data.len() >= 9 {
+        let profile_id = data[8];
+        let profile_name = match profile_id {
+            0 => "Baseline",
+            1 => "Progressive",
+            2 => "Lossless",
+            _ => "Unknown",
+        };
+        metadata.insert(
+            "APP8:SPIFFProfile".to_string(),
+            TagValue::String(profile_name.to_string()),
+        );
+    }
+
+    if data.len() >= 10 {
+        let components = data[9];
+        metadata.insert(
+            "APP8:SPIFFComponents".to_string(),
+            TagValue::Integer(components as i64),
+        );
+    }
+
+    if data.len() >= 18 {
+        let reader = EndianReader::big_endian(data);
+        let height = reader.u32_at(10).unwrap_or(0);
+        let width = reader.u32_at(14).unwrap_or(0);
+        metadata.insert(
+            "APP8:SPIFFHeight".to_string(),
+            TagValue::Integer(height as i64),
+        );
+        metadata.insert(
+            "APP8:SPIFFWidth".to_string(),
+            TagValue::Integer(width as i64),
+        );
+    }
+
+    Ok(())
+}
+
+/// Parse APP10 (ActivePhoto) segment
+///
+/// APP10 segments (marker 0xFFEA) contain Apple ActivePhoto metadata for Live Photos
+/// and other dynamic content. The segment contains XML or binary metadata describing
+/// motion and interaction capabilities.
+pub fn parse_activephoto_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
+    if data.is_empty() {
+        return Err("APP10 ActivePhoto segment is empty".to_string());
+    }
+
+    // Check for known identifier patterns
+    if data.len() >= 20 && &data[0..7] == b"ActiveP" {
+        // Apple ActivePhoto marker (may be followed by version/type data)
+        metadata.insert(
+            "APP10:Format".to_string(),
+            TagValue::String("ActivePhoto".to_string()),
+        );
+
+        // Try to extract version if present
+        if data.len() >= 10 {
+            let version = data[7];
+            metadata.insert(
+                "APP10:Version".to_string(),
+                TagValue::Integer(version as i64),
+            );
+        }
+    } else {
+        // Generic APP10 data
+        metadata.insert(
+            "APP10:DataSize".to_string(),
+            TagValue::Integer(data.len() as i64),
+        );
+    }
+
+    // Try to parse as text if possible
+    if let Ok(text) = std::str::from_utf8(data) {
+        if text.len() < 200 {
+            // Only include as text if reasonably short
+            metadata.insert(
+                "APP10:Data".to_string(),
+                TagValue::String(text.to_string()),
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse APP11 (JPEG-HDR) segment
+///
+/// APP11 segments (marker 0xFFEB) contain HDR (High Dynamic Range) metadata.
+/// This includes tone mapping information and exposure data for HDR images.
+/// Note: More detailed HDR parsing is available in app_segments/app11_jpeg_hdr.rs
+pub fn parse_jpeg_hdr_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
+    if data.is_empty() {
+        return Err("APP11 JPEG-HDR segment is empty".to_string());
+    }
+
+    // Check for HDR_RI identifier (HDR Rendering Intent)
+    if data.len() >= 6 && &data[0..6] == b"HDR_RI" {
+        metadata.insert(
+            "APP11:Format".to_string(),
+            TagValue::String("HDR_RI".to_string()),
+        );
+
+        if data.len() >= 7 {
+            let rendering_intent = data[6];
+            let intent_name = match rendering_intent {
+                0 => "Perceptual",
+                1 => "Relative Colorimetric",
+                2 => "Saturation",
+                3 => "Absolute Colorimetric",
+                _ => "Unknown",
+            };
+            metadata.insert(
+                "APP11:RenderingIntent".to_string(),
+                TagValue::String(intent_name.to_string()),
+            );
+        }
+    } else {
+        // Generic HDR data or other JPEG-HDR variant
+        metadata.insert(
+            "APP11:DataSize".to_string(),
+            TagValue::Integer(data.len() as i64),
+        );
+    }
+
+    // Delegate to specialized HDR parser if available and data looks valid
+    let _ = crate::parsers::jpeg::app_segments::parse_app11_jpeg_hdr(data);
+
+    Ok(())
+}
+
+/// Parse APP15 (JPEG-LS) segment
+///
+/// APP15 segments (marker 0xFFEF) contain metadata for JPEG-LS (lossless JPEG)
+/// compression. JPEG-LS is defined in ITU-T T.87 and provides better compression
+/// than Huffman-based lossless JPEG.
+pub fn parse_jpeg_ls_segment(data: &[u8], metadata: &mut MetadataMap) -> Result<(), String> {
+    if data.is_empty() {
+        return Err("APP15 JPEG-LS segment is empty".to_string());
+    }
+
+    // Check for JPEGLS identifier (if present)
+    if data.len() >= 6 && &data[0..6] == b"JPEGLS" {
+        metadata.insert(
+            "APP15:Format".to_string(),
+            TagValue::String("JPEG-LS".to_string()),
+        );
+    }
+
+    // JPEG-LS specific parsing
+    // Byte 0-1: Application-specific data (typically SOF or parameter markers)
+    if data.len() >= 2 {
+        let marker_byte1 = data[0];
+        let marker_byte2 = data[1];
+
+        // Check for common JPEG-LS markers
+        if marker_byte1 == 0xFF {
+            let marker_type = match marker_byte2 {
+                0xF7 => "SOF-LS (Start of Frame for JPEG-LS)",
+                0xF8 => "LSE (JPEG-LS Parameters Extension)",
+                0xF9 => "RES (Reserved)",
+                _ => "Unknown marker",
+            };
+            metadata.insert(
+                "APP15:MarkerType".to_string(),
+                TagValue::String(marker_type.to_string()),
+            );
+        }
+    }
+
+    // Record data size for diagnostic purposes
+    metadata.insert(
+        "APP15:DataSize".to_string(),
+        TagValue::Integer(data.len() as i64),
+    );
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -578,5 +790,142 @@ mod tests {
             Some("YCbCr4:2:0 (2 2)")
         );
         assert_eq!(metadata.get_string("JPEG:ComponentID_1"), Some("Y"));
+    }
+
+    #[test]
+    fn test_parse_spiff_segment() {
+        let mut data = Vec::new();
+        data.extend_from_slice(b"SPIFF\0");
+        data.push(1); // Version major
+        data.push(0); // Version minor
+        data.push(0); // Profile: Baseline
+        data.push(3); // Components: 3
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_spiff_segment(&data, &mut metadata);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            metadata.get_string("APP8:SPIFFVersion"),
+            Some("1.0"),
+            "Should parse SPIFF version"
+        );
+        assert_eq!(
+            metadata.get_string("APP8:SPIFFProfile"),
+            Some("Baseline"),
+            "Should identify Baseline profile"
+        );
+        assert_eq!(
+            metadata.get_integer("APP8:SPIFFComponents"),
+            Some(3),
+            "Should parse components"
+        );
+    }
+
+    #[test]
+    fn test_parse_spiff_with_dimensions() {
+        let mut data = Vec::new();
+        data.extend_from_slice(b"SPIFF\0");
+        data.push(1); // Version major
+        data.push(0); // Version minor
+        data.push(1); // Profile: Progressive
+        data.push(3); // Components
+        // Height: 2048 (0x00000800 big-endian)
+        data.extend_from_slice(&[0x00, 0x00, 0x08, 0x00]);
+        // Width: 1536 (0x00000600 big-endian)
+        data.extend_from_slice(&[0x00, 0x00, 0x06, 0x00]);
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_spiff_segment(&data, &mut metadata);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            metadata.get_integer("APP8:SPIFFHeight"),
+            Some(2048),
+            "Should parse height"
+        );
+        assert_eq!(
+            metadata.get_integer("APP8:SPIFFWidth"),
+            Some(1536),
+            "Should parse width"
+        );
+    }
+
+    #[test]
+    fn test_parse_activephoto_segment() {
+        let data = b"ActivePhoto metadata here";
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_activephoto_segment(data, &mut metadata);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            metadata.get_string("APP10:Format"),
+            Some("ActivePhoto"),
+            "Should identify ActivePhoto format"
+        );
+    }
+
+    #[test]
+    fn test_parse_activephoto_empty() {
+        let data = b"";
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_activephoto_segment(data, &mut metadata);
+
+        assert!(result.is_err(), "Should error on empty segment");
+    }
+
+    #[test]
+    fn test_parse_jpeg_hdr_segment() {
+        let data = b"HDR_RI\x01";
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_jpeg_hdr_segment(data, &mut metadata);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            metadata.get_string("APP11:Format"),
+            Some("HDR_RI"),
+            "Should identify HDR_RI format"
+        );
+        assert_eq!(
+            metadata.get_string("APP11:RenderingIntent"),
+            Some("Relative Colorimetric"),
+            "Should parse rendering intent"
+        );
+    }
+
+    #[test]
+    fn test_parse_jpeg_ls_segment() {
+        let data = b"JPEGLS metadata";
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_jpeg_ls_segment(data, &mut metadata);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            metadata.get_string("APP15:Format"),
+            Some("JPEG-LS"),
+            "Should identify JPEG-LS format"
+        );
+    }
+
+    #[test]
+    fn test_parse_jpeg_ls_with_marker() {
+        let mut data = Vec::new();
+        data.push(0xFF);
+        data.push(0xF7); // SOF-LS marker
+        data.extend_from_slice(b"remaining data");
+
+        let mut metadata = MetadataMap::new();
+        let result = parse_jpeg_ls_segment(&data, &mut metadata);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            metadata.get_string("APP15:MarkerType"),
+            Some("SOF-LS (Start of Frame for JPEG-LS)"),
+            "Should parse marker type"
+        );
     }
 }
