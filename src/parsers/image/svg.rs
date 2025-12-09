@@ -4,6 +4,7 @@
 
 use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
+use crate::parsers::xmp::parse_xmp;
 
 /// Maximum bytes to read from SVG file for parsing (SVG headers are at the start)
 const MAX_READ_SIZE: usize = 65536; // 64KB
@@ -156,6 +157,110 @@ impl SVGParser {
 
         values
     }
+
+    /// Extract embedded XMP metadata from SVG
+    /// SVG can contain XMP in <x:xmpmeta> or <rdf:RDF> elements
+    fn extract_xmp(text: &str, metadata: &mut MetadataMap) {
+        // Look for x:xmpmeta element
+        if let Some(start) = text.find("<x:xmpmeta") {
+            if let Some(end) = text[start..].find("</x:xmpmeta>") {
+                let xmp_data = &text[start..start + end + 12];
+                if let Ok(xmp_tuples) = parse_xmp(xmp_data.as_bytes()) {
+                    for (key, value) in xmp_tuples {
+                        metadata.insert(key, TagValue::new_string(value));
+                    }
+                }
+            }
+        }
+        // Also look for standalone rdf:RDF inside metadata element
+        else if let Some(meta_start) = text.find("<metadata") {
+            if let Some(meta_end) = text[meta_start..].find("</metadata>") {
+                let meta_content = &text[meta_start..meta_start + meta_end + 11];
+                if let Some(rdf_start) = meta_content.find("<rdf:RDF") {
+                    if let Some(rdf_end) = meta_content[rdf_start..].find("</rdf:RDF>") {
+                        let rdf_data = &meta_content[rdf_start..rdf_start + rdf_end + 10];
+                        // Wrap in xmpmeta for parser
+                        let wrapped = format!("<x:xmpmeta>{}</x:xmpmeta>", rdf_data);
+                        if let Ok(xmp_tuples) = parse_xmp(wrapped.as_bytes()) {
+                            for (key, value) in xmp_tuples {
+                                metadata.insert(key, TagValue::new_string(value));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Extract Dublin Core elements that map to XMP tags
+    fn extract_dublin_core(text: &str, metadata: &mut MetadataMap) {
+        // dc:date -> XMP:Date
+        if let Some(dc_date) = Self::extract_element_content(text, "dc:date") {
+            metadata.insert("XMP:Date".to_string(), TagValue::new_string(dc_date));
+        }
+
+        // dc:format -> XMP:Format
+        if let Some(dc_format) = Self::extract_element_content(text, "dc:format") {
+            metadata.insert("XMP:Format".to_string(), TagValue::new_string(dc_format));
+        }
+
+        // dc:language -> XMP:Language
+        if let Some(dc_lang) = Self::extract_element_content(text, "dc:language") {
+            metadata.insert("XMP:Language".to_string(), TagValue::new_string(dc_lang));
+        }
+
+        // dc:publisher -> XMP:Publisher
+        if let Some(dc_pub) = Self::extract_element_content(text, "dc:publisher") {
+            metadata.insert("XMP:Publisher".to_string(), TagValue::new_string(dc_pub));
+        }
+
+        // rdf:about -> XMP:About
+        if let Some(about) = Self::extract_attribute(text, "rdf:about") {
+            metadata.insert("XMP:About".to_string(), TagValue::new_string(about));
+        }
+    }
+
+    /// Extract SVG-specific description metadata
+    fn extract_svg_desc_metadata(text: &str, metadata: &mut MetadataMap) {
+        // Look for desc elements with specific structure
+        // <desc role="xxxTitle">content</desc>
+        let mut pos = 0;
+        while let Some(desc_start) = text[pos..].find("<desc") {
+            let desc_abs_start = pos + desc_start;
+
+            // Find end of opening tag
+            if let Some(tag_end) = text[desc_abs_start..].find('>') {
+                let tag_content = &text[desc_abs_start..desc_abs_start + tag_end + 1];
+
+                // Look for closing tag
+                if let Some(close) = text[desc_abs_start + tag_end..].find("</desc>") {
+                    let content =
+                        &text[desc_abs_start + tag_end + 1..desc_abs_start + tag_end + close];
+
+                    // Extract role attribute
+                    if let Some(role) = Self::extract_attribute(tag_content, "role") {
+                        let tag_name = format!("SVG:Desc{}", capitalize_first(&role));
+                        metadata.insert(tag_name, TagValue::new_string(content.trim().to_string()));
+                    }
+
+                    pos = desc_abs_start + tag_end + close + 7;
+                } else {
+                    pos = desc_abs_start + 1;
+                }
+            } else {
+                break;
+            }
+        }
+    }
+}
+
+/// Capitalize first letter of string
+fn capitalize_first(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
 }
 
 impl FormatParser for SVGParser {
@@ -231,6 +336,9 @@ impl FormatParser for SVGParser {
             metadata.insert("Description".to_string(), TagValue::String(desc));
         }
 
+        // Extract embedded XMP metadata first
+        Self::extract_xmp(text, &mut metadata);
+
         // Extract Dublin Core metadata if present
         if text.contains("dc:") {
             if let Some(dc_title) = Self::extract_element_content(text, "dc:title") {
@@ -242,7 +350,13 @@ impl FormatParser for SVGParser {
             if let Some(dc_desc) = Self::extract_element_content(text, "dc:description") {
                 metadata.insert("XMP:Description".to_string(), TagValue::String(dc_desc));
             }
+
+            // Extract additional Dublin Core elements
+            Self::extract_dublin_core(text, &mut metadata);
         }
+
+        // Extract SVG-specific desc metadata with roles
+        Self::extract_svg_desc_metadata(text, &mut metadata);
 
         // Check if animated
         if Self::is_animated(text) {
