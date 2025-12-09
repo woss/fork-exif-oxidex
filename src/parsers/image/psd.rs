@@ -13,6 +13,10 @@ use crate::core::{FileFormat, FileReader, FormatParser, MetadataMap, TagValue};
 use crate::error::{ExifToolError, Result};
 use crate::io::buffered_reader::BufferedReader;
 use crate::io::{ByteOrder as EndianByteOrder, EndianReader};
+use crate::parsers::icc::parse_icc_profile_data;
+use crate::parsers::jpeg::iptc_parser::{
+    dataset_to_tag_name, decode_iptc_string, parse_all_iptc_records,
+};
 use crate::parsers::tiff::ifd_parser::{ByteOrder, parse_ifd};
 use crate::parsers::xmp::rdf_parser::parse_xmp;
 use crate::tag_db::lookup_tag_name;
@@ -211,6 +215,15 @@ impl PSDParser {
                         "HasICCProfile".to_string(),
                         TagValue::String("Yes".to_string()),
                     );
+                    // Parse ICC profile data
+                    if let Ok(icc_tags) = parse_icc_profile_data(resource_data) {
+                        for (key, value) in icc_tags {
+                            metadata.insert(format!("ICC_Profile:{}", key), value);
+                        }
+                    }
+                }
+                IPTC_NAA_RECORD => {
+                    Self::parse_iptc_data(resource_data, metadata);
                 }
                 _ => {}
             }
@@ -336,6 +349,36 @@ impl PSDParser {
         if let Ok(xmp_tags) = parse_xmp(xmp.as_bytes()) {
             for (tag_name, value) in xmp_tags {
                 metadata.insert(tag_name, TagValue::String(value));
+            }
+        }
+    }
+
+    /// Parse IPTC data from image resource block
+    fn parse_iptc_data(data: &[u8], metadata: &mut MetadataMap) {
+        if let Ok(records) = parse_all_iptc_records(data) {
+            for record in records {
+                // Only process Application Record (record 2)
+                if record.record_number == 2 {
+                    let tag_name = dataset_to_tag_name(record.record_number, record.dataset_number);
+                    let value = decode_iptc_string(&record.data);
+
+                    // Use IPTC: prefix for tag names
+                    let full_name = if tag_name.starts_with("IPTC:") {
+                        tag_name
+                    } else {
+                        format!("IPTC:{}", tag_name)
+                    };
+                    metadata.insert(full_name, TagValue::String(value));
+                } else if record.record_number == 1 {
+                    // Record 1 is the envelope record - parse version
+                    if record.dataset_number == 0 && record.data.len() >= 2 {
+                        let version = u16::from_be_bytes([record.data[0], record.data[1]]);
+                        metadata.insert(
+                            "IPTC:ApplicationRecordVersion".to_string(),
+                            TagValue::Integer(version as i64),
+                        );
+                    }
+                }
             }
         }
     }
