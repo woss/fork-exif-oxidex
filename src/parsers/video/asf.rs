@@ -602,6 +602,13 @@ fn parse_extended_content(
                     metadata.insert(tag_name, TagValue::new_integer(val as i64));
                 }
             }
+            6 => {
+                // GUID (16 bytes)
+                if value_data.len() >= 16 {
+                    let guid = format_guid(&value_data[0..16]);
+                    metadata.insert(tag_name, TagValue::new_string(guid));
+                }
+            }
             _ => {}
         }
     }
@@ -694,22 +701,34 @@ fn parse_codec_list(
             .unwrap_or(0) as usize;
         pos += 2;
 
-        // Codec information (binary - contains FourCC or GUID)
-        let codec_id = if info_len > 0 && pos + info_len as u64 <= end_pos {
+        // Codec information (binary - contains FourCC or format tag)
+        let (codec_id, raw_format_tag) = if info_len > 0 && pos + info_len as u64 <= end_pos {
             let info_data = reader.read(pos, info_len)?;
             pos += info_len as u64;
-            // Try to read as FourCC or format as hex
+            // For video: 4-byte FourCC
+            // For audio: 2-byte format tag (little-endian)
             if info_data.len() >= 4 {
-                String::from_utf8_lossy(&info_data[0..4]).to_string()
+                (
+                    String::from_utf8_lossy(&info_data[0..4]).to_string(),
+                    None,
+                )
+            } else if info_data.len() >= 2 {
+                // Audio format tag - little-endian 16-bit
+                let format_tag = u16::from_le_bytes([info_data[0], info_data[1]]);
+                (map_audio_format_tag(format_tag), Some(format_tag))
             } else {
-                info_data
-                    .iter()
-                    .map(|b| format!("{:02X}", b))
-                    .collect::<String>()
+                (
+                    info_data
+                        .iter()
+                        .map(|b| format!("{:02X}", b))
+                        .collect::<String>(),
+                    None,
+                )
             }
         } else {
-            String::new()
+            (String::new(), None)
         };
+        let _ = raw_format_tag; // May be used for future tag-specific handling
 
         // Store codec info based on type
         match codec_type {
@@ -720,19 +739,13 @@ fn parse_codec_list(
                         "ASF:VideoCodecName".to_string(),
                         TagValue::new_string(codec_name),
                     );
-                }
-                if !codec_desc.is_empty() {
+                    // Always output description when we have a codec (ExifTool does this)
                     metadata.insert(
                         "ASF:VideoCodecDescription".to_string(),
                         TagValue::new_string(codec_desc),
                     );
                 }
-                if !codec_id.is_empty() {
-                    metadata.insert(
-                        "ASF:VideoCodecID".to_string(),
-                        TagValue::new_string(codec_id),
-                    );
-                }
+                // Don't output VideoCodecID - ExifTool doesn't
                 video_idx += 1;
             }
             0x0002 => {
@@ -882,13 +895,45 @@ fn map_wm_tag(name: &str) -> String {
         "WMADRCAverageReference" => "ASF:WMADRCAverageReference".to_string(),
         "WMADRCPeakReference" => "ASF:WMADRCPeakReference".to_string(),
         _ => {
-            // Unknown WM/ tag - include as-is
+            // Unknown tag - include as ASF: tag if it has WM/ prefix
+            // or if it's a known ASF-specific tag pattern
             if name.starts_with("WM/") {
+                format!("ASF:{}", clean_name)
+            } else if clean_name.starts_with("MediaClass")
+                || clean_name.starts_with("WMADRC")
+                || clean_name.starts_with("ASF")
+            {
                 format!("ASF:{}", clean_name)
             } else {
                 String::new()
             }
         }
+    }
+}
+
+/// Map audio format tag to codec name (from RIFF audioEncoding table)
+fn map_audio_format_tag(tag: u16) -> String {
+    match tag {
+        0x0001 => "Microsoft PCM".to_string(),
+        0x0002 => "Microsoft ADPCM".to_string(),
+        0x0003 => "IEEE Float".to_string(),
+        0x0006 => "ITU G.711 A-law".to_string(),
+        0x0007 => "ITU G.711 mu-law".to_string(),
+        0x0010 => "OKI ADPCM".to_string(),
+        0x0011 => "Intel DVI/IMA ADPCM".to_string(),
+        0x0012 => "Videologic MediaSpace ADPCM".to_string(),
+        0x0020 => "Yamaha ADPCM".to_string(),
+        0x0055 => "MPEG Layer 3".to_string(),
+        0x0160 => "Microsoft Audio1".to_string(),
+        0x0161 => "Windows Media Audio V2 V7 V8 V9 / DivX audio (WMA) / Alex AC3 Audio".to_string(),
+        0x0162 => "Windows Media Audio Professional V9".to_string(),
+        0x0163 => "Windows Media Audio Lossless V9".to_string(),
+        0x0164 => "WMA Pro over S/PDIF".to_string(),
+        0x0200 => "Creative Labs ADPCM".to_string(),
+        0x2000 => "AC3".to_string(),
+        0x2001 => "DTS".to_string(),
+        0xFFFE => "Extensible Wave Format".to_string(),
+        _ => format!("Unknown (0x{:04X})", tag),
     }
 }
 
