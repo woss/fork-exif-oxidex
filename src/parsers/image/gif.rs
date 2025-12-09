@@ -105,6 +105,7 @@ impl GIFParser {
         let mut first_gce: Option<GraphicControlExtension> = None;
         let mut has_transparency = false;
         let mut transparent_color: Option<u8> = None;
+        let mut icc_profile: Option<Vec<u8>> = None;
 
         while pos < reader.size() {
             let byte = match reader.read(pos, 1) {
@@ -135,6 +136,19 @@ impl GIFParser {
                                     // Check for NETSCAPE2.0 animation extension
                                     if &app_data[0..8] == b"NETSCAPE" {
                                         is_animated = true;
+                                    }
+                                    // Check for ICC profile extension: ICCRGBG1012
+                                    // Application identifier: "ICCRGBG1" (8 bytes)
+                                    // Authentication code: "012" (3 bytes)
+                                    else if &app_data[0..8] == b"ICCRGBG1" && &app_data[8..11] == b"012" {
+                                        // Collect ICC profile data from sub-blocks
+                                        pos += size;
+                                        let (new_pos, profile_data) = Self::read_sub_blocks(reader, pos)?;
+                                        if !profile_data.is_empty() {
+                                            icc_profile = Some(profile_data);
+                                        }
+                                        pos = new_pos;
+                                        continue; // Skip the normal sub-block skip
                                     }
                                 }
                                 pos += size;
@@ -218,6 +232,7 @@ impl GIFParser {
             disposal_method: first_gce.as_ref().map(|gce| gce.disposal_method),
             has_transparency,
             transparent_color,
+            icc_profile,
         })
     }
 
@@ -281,6 +296,24 @@ impl GIFParser {
         Ok(pos)
     }
 
+    /// Reads sub-blocks and collects their data
+    fn read_sub_blocks(reader: &dyn FileReader, mut pos: u64) -> Result<(u64, Vec<u8>)> {
+        let mut data = Vec::new();
+        while pos < reader.size() {
+            let block_size = reader.read(pos, 1)?[0];
+            pos += 1;
+            if block_size == 0 {
+                break;
+            }
+            if pos + (block_size as u64) <= reader.size() {
+                let block_data = reader.read(pos, block_size as usize)?;
+                data.extend_from_slice(block_data);
+            }
+            pos += block_size as u64;
+        }
+        Ok((pos, data))
+    }
+
     /// Reads comment blocks and appends to comment string
     fn read_comment_blocks(
         reader: &dyn FileReader,
@@ -330,6 +363,7 @@ struct BlockScanResult {
     disposal_method: Option<u8>,
     has_transparency: bool,
     transparent_color: Option<u8>,
+    icc_profile: Option<Vec<u8>>,
 }
 
 /// Graphic Control Extension data
@@ -476,6 +510,22 @@ impl FormatParser for GIFParser {
                     "TransparentColorIndex".to_string(),
                     TagValue::Integer(color as i64),
                 );
+            }
+        }
+
+        // Parse ICC profile if present
+        if let Some(icc_data) = scan_result.icc_profile {
+            if icc_data.len() >= 128 {
+                match crate::parsers::icc::parse_icc_profile_data(&icc_data) {
+                    Ok(icc_tags) => {
+                        for (tag_name, value) in icc_tags {
+                            metadata.insert(format!("ICC_Profile:{}", tag_name), value);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Warning: Failed to parse ICC profile in GIF: {}", e);
+                    }
+                }
             }
         }
 
