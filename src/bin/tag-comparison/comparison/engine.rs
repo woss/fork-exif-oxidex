@@ -30,11 +30,23 @@ fn normalize_family_for_comparison(family: &str) -> &str {
     }
 }
 
+/// Normalize a tag name for comparison
+fn normalize_tag_name(name: &str) -> &str {
+    match name {
+        // ICC profile tag names (ExifTool uses TRC, OxiDex uses ToneReproductionCurve)
+        "BlueToneReproductionCurve" => "BlueTRC",
+        "GreenToneReproductionCurve" => "GreenTRC",
+        "RedToneReproductionCurve" => "RedTRC",
+        _ => name,
+    }
+}
+
 /// Normalize a tag key (family:name) for comparison
 fn normalize_key_for_comparison(key: &str) -> String {
     if let Some((family, name)) = key.split_once(':') {
         let norm_family = normalize_family_for_comparison(family);
-        format!("{}:{}", norm_family, name)
+        let norm_name = normalize_tag_name(name);
+        format!("{}:{}", norm_family, norm_name)
     } else {
         key.to_string()
     }
