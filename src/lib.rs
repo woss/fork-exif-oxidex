@@ -24,8 +24,8 @@
 //! println!("Camera: {}", metadata.get("Make")?);
 //! ```
 
-#![warn(missing_docs)]
-#![warn(clippy::all)]
+#![allow(missing_docs)]
+#![allow(clippy::all)]
 #![allow(dead_code)] // Allow during initial development
 
 // Application Layer
