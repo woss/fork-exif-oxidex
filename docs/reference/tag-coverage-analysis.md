@@ -97,6 +97,7 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | RIFF | 90% | ✅ Good |
 | TTF | 90% | ✅ Good |
 | OTF | 90% | ✅ Good |
+| TEXT | 75% | ✅ Good |
 | DOCX | 75% | ✅ Good |
 | XLSX | 75% | ✅ Good |
 | ELF | 75% | ✅ Good |
@@ -106,7 +107,6 @@ MakerNote parsers for 39+ camera manufacturers are **fully implemented and conne
 | PNG | 60% | ✅ Good |
 | IPTC | 60% | ✅ Good |
 | XMP | 60% | ✅ Good |
-| TEXT | 60% | ✅ Good |
 | DNG | 60% | ✅ Good |
 | CR2 | 60% | ✅ Good |
 | NEF | 60% | ✅ Good |
