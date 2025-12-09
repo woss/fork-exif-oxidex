@@ -447,13 +447,21 @@ impl OxiDexExtractor {
                 "ItemList" | "UserData" => "QuickTime",
                 // WebP tags map to RIFF family in ExifTool
                 "WebP" => "RIFF",
+                // EXR tags map to OpenEXR family in ExifTool
+                "EXR" => "OpenEXR",
                 // Keep other families unchanged
                 _ => family,
             };
             format!("{}:{}", normalized_family, name)
         } else if let Some(fmt) = format {
             // No family prefix - use format as family (e.g., GIF:GIFVersion)
-            format!("{}:{}", fmt.to_uppercase(), tag_key)
+            // Apply family normalization to format-based families
+            let format_family = fmt.to_uppercase();
+            let normalized_family = match format_family.as_str() {
+                "EXR" => "OpenEXR",
+                other => other,
+            };
+            format!("{}:{}", normalized_family, tag_key)
         } else {
             tag_key.to_string()
         }
