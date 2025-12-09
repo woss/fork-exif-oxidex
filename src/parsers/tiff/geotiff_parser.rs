@@ -131,13 +131,13 @@ pub fn parse_model_transformation(data: &[u8], is_little_endian: bool) -> Option
             .map(|v| {
                 // Format with appropriate precision to match ExifTool output
                 // For integers (like 0.0, 1.0), show without decimals
-                // For others, use 13 significant digits (ExifTool's default)
                 if v.fract() == 0.0 && v.abs() < 1e15 {
                     format!("{:.0}", v)
                 } else {
-                    // Use up to 13 decimal places, trimming trailing zeros
-                    let formatted = format!("{:.13}", v);
-                    formatted.trim_end_matches('0').trim_end_matches('.').to_string()
+                    // Use Rust's default float formatting which typically uses
+                    // the minimum digits needed to represent the value uniquely.
+                    // This usually matches ExifTool's Perl output better.
+                    format!("{}", v)
                 }
             })
             .collect::<Vec<_>>()
