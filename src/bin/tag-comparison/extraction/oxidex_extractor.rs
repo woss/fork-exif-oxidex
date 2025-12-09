@@ -564,6 +564,46 @@ impl OxiDexExtractor {
         }
     }
 
+    /// Normalize QuickTime track suffix tags for ExifTool comparison
+    /// ExifTool outputs audio track tags (from track 2) without suffix,
+    /// while OxiDex uses _2 suffix to distinguish tracks.
+    /// This function maps _2 suffix audio tags to non-suffix versions when needed.
+    fn normalize_quicktime_track_tags(tag_map: &mut HashMap<String, String>) {
+        // Audio-specific tags that ExifTool shows from the audio track without suffix
+        let audio_tags = [
+            "AudioBitsPerSample",
+            "AudioChannels",
+            "AudioFormat",
+            "AudioSampleRate",
+            "Balance",
+            "HandlerClass",
+        ];
+
+        // For audio tags, if _2 version exists and non-suffix doesn't exist or is empty, copy it
+        for tag in &audio_tags {
+            let key_with_suffix = format!("QuickTime:{}_2", tag);
+            let key_without_suffix = format!("QuickTime:{}", tag);
+            if let Some(suffix_value) = tag_map.get(&key_with_suffix).cloned() {
+                // Copy if non-suffix doesn't exist OR non-suffix is empty but suffix has value
+                let should_copy = match tag_map.get(&key_without_suffix) {
+                    None => true,
+                    Some(existing) => existing.trim().is_empty() && !suffix_value.trim().is_empty(),
+                };
+                if should_copy {
+                    tag_map.insert(key_without_suffix, suffix_value);
+                }
+            }
+        }
+
+        // Special handling for MediaTimeScale: ExifTool uses audio track value
+        // If MediaTimeScale_2 exists, use its value for MediaTimeScale
+        let media_timescale_2 = "QuickTime:MediaTimeScale_2";
+        let media_timescale = "QuickTime:MediaTimeScale";
+        if let Some(audio_timescale) = tag_map.get(media_timescale_2).cloned() {
+            tag_map.insert(media_timescale.to_string(), audio_timescale);
+        }
+    }
+
     /// Apply comparison-specific normalization for ExifTool compatibility reports
     /// This normalizes families for the comparison tool documentation output
     /// Check if a tag family should be skipped (pseudo-tags, not actual metadata)
@@ -702,6 +742,10 @@ impl OxiDexExtractor {
 
         // Add composite tags
         self.add_composite_tags(&mut tag_map);
+
+        // Handle QuickTime track suffix normalization for ExifTool comparison
+        // ExifTool outputs audio track tags without suffix, OxiDex uses _2 suffix
+        Self::normalize_quicktime_track_tags(&mut tag_map);
 
         // Convert to Vec<TagInfo>
         let mut tags: Vec<TagInfo> = tag_map

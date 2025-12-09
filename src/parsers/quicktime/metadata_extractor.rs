@@ -83,9 +83,27 @@ fn extract_track_metadata(
         let _ = extract_video_media_header(&vmhd, metadata, index);
     }
 
+    // Check if this is an audio track (has smhd)
+    let is_audio_track = minf.find_child("smhd").is_some();
+
     // Extract sound media header (smhd) - optional, contains Balance
     if let Some(smhd) = minf.find_child("smhd") {
         let _ = extract_sound_media_header(&smhd, metadata, index);
+    }
+
+    // Extract handler reference from dinf (data information) container - contains HandlerClass
+    // ExifTool only extracts HandlerClass for audio tracks
+    if is_audio_track {
+        if let Some(dinf) = minf.find_child("dinf")
+            && let Some(dref) = dinf.find_child("dref")
+        {
+            let _ = extract_data_handler_info(dref.data, metadata, index);
+        }
+
+        // Also check for hdlr directly in minf (some formats use this)
+        if let Some(hdlr) = minf.find_child("hdlr") {
+            let _ = extract_track_handler_metadata(&hdlr, metadata, index);
+        }
     }
 
     // Sample table - required for sample descriptions
@@ -856,6 +874,7 @@ fn extract_sample_description(
                 );
 
                 // Determine if this is an audio or video codec
+                // Note: format_trimmed has trailing spaces removed, so "raw " becomes "raw"
                 let is_audio_codec = matches!(
                     format_trimmed,
                     "mp4a"
@@ -863,7 +882,8 @@ fn extract_sample_description(
                         | "twos"
                         | "alaw"
                         | "ulaw"
-                        | "raw "
+                        | "raw"   // Raw PCM (trimmed from "raw ")
+                        | "raw "  // Raw PCM (untrimmed)
                         | "lpcm"
                         | "ac-3"
                         | "ec-3"
@@ -915,6 +935,33 @@ fn extract_sample_description(
                 // Check if this looks like a video sample description
                 // Video sample descriptions have width/height at specific offsets
                 let entry_reader = EndianReader::big_endian(entry_data);
+
+                // VendorID (4 bytes at offset 20) - camera manufacturer
+                // Video sample entry structure:
+                // size(4) + format(4) + reserved(6) + data_ref_index(2) + version(2) + revision(2) = 20
+                if let Some(vendor_bytes) = entry_reader.bytes_at(20, 4) {
+                    if let Ok(vendor_str) = std::str::from_utf8(vendor_bytes) {
+                        let vendor_trimmed = vendor_str.trim_matches(|c: char| c == '\0' || c.is_whitespace());
+                        if !vendor_trimmed.is_empty() {
+                            // Map common vendor codes to readable names
+                            let vendor_name = match vendor_trimmed {
+                                "pent" => "Pentax",
+                                "niko" => "Nikon",
+                                "cano" => "Canon",
+                                "sony" => "Sony",
+                                "fuji" => "Fujifilm",
+                                "pana" => "Panasonic",
+                                "olym" => "Olympus",
+                                "appl" => "Apple",
+                                _ => vendor_trimmed,
+                            };
+                            metadata.insert(
+                                format!("QuickTime:VendorID{}", track_suffix),
+                                TagValue::String(vendor_name.to_string()),
+                            );
+                        }
+                    }
+                }
 
                 // Width (2 bytes at offset 32)
                 if let Some(width) = entry_reader.u16_at(32)
@@ -1011,11 +1058,11 @@ fn extract_sample_description(
                 // Sample rate (fixed-point 16.16 at offset 32)
                 if let Some(sample_rate_fixed) = entry_reader.u32_at(32) {
                     let sample_rate = (sample_rate_fixed >> 16) as f64;
-                    if (8000.0..=192000.0).contains(&sample_rate) {
-                        // Sanity check
+                    // Allow sample rates from 1000 to 192000 Hz (some old cameras use lower rates)
+                    if (1000.0..=192000.0).contains(&sample_rate) {
                         metadata.insert(
                             format!("QuickTime:AudioSampleRate{}", track_suffix),
-                            TagValue::String(format!("{:.0} Hz", sample_rate)),
+                            TagValue::Integer(sample_rate as i64),
                         );
                     }
                 }
@@ -1092,13 +1139,124 @@ fn extract_video_frame_rate(
     Ok(())
 }
 
-/// Extract handler metadata from hdlr atom
+/// Extract data handler information from dref atom in minf→dinf→dref
+/// The dref contains data references that can specify data handlers
+fn extract_data_handler_info(
+    data: &[u8],
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    // dref structure:
+    // 0-3: version/flags
+    // 4-7: number of entries
+    // 8+: data reference entries (each entry has atom header + content)
+
+    if data.len() < 8 {
+        return Ok(());
+    }
+
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    let reader = EndianReader::big_endian(data);
+
+    // Check entry count
+    let entry_count = reader.u32_at(4).unwrap_or(0) as usize;
+    if entry_count == 0 {
+        return Ok(());
+    }
+
+    // Parse first entry to get handler class
+    if data.len() >= 20 {
+        // First entry atom header starts at offset 8
+        // The entry has: size (4) + type (4) + version/flags (4) + data
+        // Entry type often tells us the handler class:
+        // - "alis" = Data Handler (alias)
+        // - "url " = URL Data Handler
+        // - "dhlr" = Data Handler
+        let entry_type = &data[12..16];
+        if let Ok(type_str) = std::str::from_utf8(entry_type) {
+            let handler_class = match type_str.trim() {
+                "alis" | "dhlr" => "Data Handler",
+                "url " => "URL Data Handler",
+                "rsrc" => "Resource Data Handler",
+                _ => return Ok(()), // Unknown type, don't output
+            };
+            metadata.insert(
+                format!("QuickTime:HandlerClass{}", track_suffix),
+                TagValue::String(handler_class.to_string()),
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Extract track-level handler metadata from hdlr atom in track
+fn extract_track_handler_metadata(
+    hdlr: &Atom,
+    metadata: &mut MetadataMap,
+    track_index: usize,
+) -> Result<(), String> {
+    if hdlr.data.len() < 12 {
+        return Ok(());
+    }
+
+    let track_suffix = if track_index > 0 {
+        format!("_{}", track_index + 1)
+    } else {
+        String::new()
+    };
+
+    // Component type / handler class (4 bytes at offset 4)
+    let component_type = &hdlr.data[4..8];
+    if let Ok(component_str) = std::str::from_utf8(component_type) {
+        let component_desc = match component_str {
+            "mhlr" => "Media Handler",
+            "dhlr" => "Data Handler",
+            _ => component_str.trim(),
+        };
+        if !component_desc.is_empty() {
+            metadata.insert(
+                format!("QuickTime:HandlerClass{}", track_suffix),
+                TagValue::String(component_desc.to_string()),
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Extract handler metadata from hdlr atom (movie-level, without track suffix)
 fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(), String> {
     if hdlr.data.len() < 24 {
         return Ok(());
     }
 
-    // Skip version/flags (4 bytes) and pre-defined (4 bytes)
+    // Component type / handler class (4 bytes at offset 4)
+    // "mhlr" = Media Handler, "dhlr" = Data Handler
+    // Note: Movie-level metadata handler may have empty component type - don't output HandlerClass in that case
+    let component_type = &hdlr.data[4..8];
+    if let Ok(component_str) = std::str::from_utf8(component_type) {
+        // Trim null bytes and whitespace
+        let component_trimmed = component_str.trim_matches(|c: char| c == '\0' || c.is_whitespace());
+        if !component_trimmed.is_empty() {
+            let component_desc = match component_trimmed {
+                "mhlr" => "Media Handler",
+                "dhlr" => "Data Handler",
+                _ => component_trimmed,
+            };
+            metadata.insert(
+                "QuickTime:HandlerClass".to_string(),
+                TagValue::String(component_desc.to_string()),
+            );
+        }
+    }
+
+    // Handler type / component subtype (4 bytes at offset 8)
     let handler_type = &hdlr.data[8..12];
     if let Ok(handler_str) = std::str::from_utf8(handler_type) {
         let handler_desc = match handler_str {
@@ -1301,6 +1459,8 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                     b"\xa9wrt" => Some("Composer"),
                     b"\xa9lyr" => Some("Lyrics"),
                     b"\xa9grp" => Some("Grouping"),
+                    b"\xa9fmt" => Some("Format"),       // Camera format description
+                    b"\xa9inf" => Some("Information"),  // Camera information
                     _ => None,
                 };
 
