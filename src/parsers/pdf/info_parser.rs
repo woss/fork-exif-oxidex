@@ -758,11 +758,10 @@ fn parse_hex_string(input: &[u8]) -> IResult<&[u8], String> {
 /// Decodes a hex string, trying UTF-16BE with BOM first, then Latin-1
 fn decode_hex_string(hex_clean: &str) -> String {
     // Try UTF-16BE with BOM (FEFF prefix)
-    if hex_clean.len() >= 4 && hex_clean.starts_with("FEFF") {
-        if let Some(decoded) = decode_utf16be_hex(&hex_clean[4..]) {
+    if hex_clean.len() >= 4 && hex_clean.starts_with("FEFF")
+        && let Some(decoded) = decode_utf16be_hex(&hex_clean[4..]) {
             return decoded;
         }
-    }
 
     // Fall back to Latin-1/ASCII
     decode_latin1_hex(hex_clean)

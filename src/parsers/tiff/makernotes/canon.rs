@@ -1984,23 +1984,20 @@ fn parse_canon_makernote_impl(
                 // AFInfo is a SHORT array
                 if let Some(array) = extract_canon_i16_array(entry, ifd_data, byte_order) {
                     // Number of AF points
-                    if let Some(&num_points) = array.get(AF_INFO_NUM_AF_POINTS) {
-                        if num_points > 0 {
+                    if let Some(&num_points) = array.get(AF_INFO_NUM_AF_POINTS)
+                        && num_points > 0 {
                             tags.insert("Canon:NumAFPoints".to_string(), num_points.to_string());
                         }
-                    }
 
                     // AF area dimensions
-                    if let Some(&width) = array.get(AF_INFO_IMAGE_WIDTH) {
-                        if width > 0 {
+                    if let Some(&width) = array.get(AF_INFO_IMAGE_WIDTH)
+                        && width > 0 {
                             tags.insert("Canon:AFImageWidth".to_string(), width.to_string());
                         }
-                    }
-                    if let Some(&height) = array.get(AF_INFO_IMAGE_HEIGHT) {
-                        if height > 0 {
+                    if let Some(&height) = array.get(AF_INFO_IMAGE_HEIGHT)
+                        && height > 0 {
                             tags.insert("Canon:AFImageHeight".to_string(), height.to_string());
                         }
-                    }
 
                     // AF points in focus (bitmask)
                     if let Some(&points_in_focus) = array.get(AF_INFO_POINTS_IN_FOCUS) {

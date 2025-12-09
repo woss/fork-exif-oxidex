@@ -23,14 +23,13 @@ pub fn detect_casio_cam(data: &[u8], reader: &dyn FileReader) -> Option<FileForm
     }
 
     // Check for JPEG at offset 70
-    if let Ok(header_check) = reader.read(70, 3) {
-        if header_check.starts_with(&[0xFF, 0xD8, 0xFF]) {
+    if let Ok(header_check) = reader.read(70, 3)
+        && header_check.starts_with(&[0xFF, 0xD8, 0xFF]) {
             // Verify "MM" marker at offset 2
             if data.len() >= 4 && data[2] == 0x4D && data[3] == 0x4D {
                 return Some(FileFormat::CasioCAM);
             }
         }
-    }
 
     None
 }

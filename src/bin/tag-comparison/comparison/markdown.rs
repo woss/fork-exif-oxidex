@@ -94,8 +94,8 @@ fn generate_index(
     if let Ok(entries) = std::fs::read_dir(output_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().is_some_and(|e| e == "md") {
-                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+            if path.extension().is_some_and(|e| e == "md")
+                && let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
                     // Skip index, baseline, and already-listed formats
                     if stem != "index"
                         && !stem.contains("baseline")
@@ -104,7 +104,6 @@ fn generate_index(
                         other_formats.push(stem.to_string());
                     }
                 }
-            }
         }
     }
 

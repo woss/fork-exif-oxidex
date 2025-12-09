@@ -77,9 +77,9 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Step 2: Parse program headers
     if header.e_phnum > 0 && header.e_phoff > 0 && header.e_phnum <= MAX_PROGRAM_HEADERS {
         let ph_size = header.e_phentsize as u64 * header.e_phnum as u64;
-        if header.e_phoff + ph_size <= reader.size() {
-            if let Ok(ph_data) = reader.read(header.e_phoff, ph_size as usize) {
-                if let Ok((_, phdrs)) = parse_program_headers(
+        if header.e_phoff + ph_size <= reader.size()
+            && let Ok(ph_data) = reader.read(header.e_phoff, ph_size as usize)
+                && let Ok((_, phdrs)) = parse_program_headers(
                     ph_data,
                     header.e_phnum,
                     header.is_64bit,
@@ -87,8 +87,6 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 ) {
                     elf_info.program_headers = phdrs;
                 }
-            }
-        }
     }
 
     // Extract program header metadata
@@ -107,9 +105,9 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Step 3: Parse section headers
     if header.e_shnum > 0 && header.e_shoff > 0 && header.e_shnum <= MAX_SECTION_HEADERS {
         let sh_size = header.e_shentsize as u64 * header.e_shnum as u64;
-        if header.e_shoff + sh_size <= reader.size() {
-            if let Ok(sh_data) = reader.read(header.e_shoff, sh_size as usize) {
-                if let Ok((_, shdrs)) = parse_section_headers(
+        if header.e_shoff + sh_size <= reader.size()
+            && let Ok(sh_data) = reader.read(header.e_shoff, sh_size as usize)
+                && let Ok((_, shdrs)) = parse_section_headers(
                     sh_data,
                     header.e_shnum,
                     header.is_64bit,
@@ -122,17 +120,14 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                         && (header.e_shstrndx as usize) < elf_info.section_headers.len()
                     {
                         let shstrtab = &elf_info.section_headers[header.e_shstrndx as usize];
-                        if shstrtab.sh_offset + shstrtab.sh_size <= reader.size() {
-                            if let Ok(strtab_data) =
+                        if shstrtab.sh_offset + shstrtab.sh_size <= reader.size()
+                            && let Ok(strtab_data) =
                                 reader.read(shstrtab.sh_offset, shstrtab.sh_size as usize)
                             {
                                 resolve_section_names(&mut elf_info.section_headers, strtab_data);
                             }
-                        }
                     }
                 }
-            }
-        }
     }
 
     // Extract section metadata
@@ -144,22 +139,19 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         if phdr.p_type == pt_type::PT_INTERP
             && phdr.p_filesz > 0
             && phdr.p_offset + phdr.p_filesz <= reader.size()
-        {
-            if let Ok(interp_data) = reader.read(phdr.p_offset, phdr.p_filesz as usize) {
+            && let Ok(interp_data) = reader.read(phdr.p_offset, phdr.p_filesz as usize) {
                 let interp = String::from_utf8_lossy(interp_data)
                     .trim_end_matches('\0')
                     .to_string();
                 elf_info.dynamic_info.interpreter = Some(interp);
             }
-        }
     }
 
     // Parse .dynamic section
     if let Some(dynamic_section) =
         find_section_by_type(&elf_info.section_headers, sh_type::SHT_DYNAMIC)
-    {
-        if dynamic_section.sh_offset + dynamic_section.sh_size <= reader.size() {
-            if let Ok(dyn_data) =
+        && dynamic_section.sh_offset + dynamic_section.sh_size <= reader.size()
+            && let Ok(dyn_data) =
                 reader.read(dynamic_section.sh_offset, dynamic_section.sh_size as usize)
             {
                 let entries =
@@ -170,19 +162,14 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     // Try to find .dynstr section by matching address
                     if let Some(dynstr_section) =
                         find_section_by_addr(&elf_info.section_headers, strtab_addr)
-                    {
-                        if dynstr_section.sh_offset + strsz <= reader.size() {
-                            if let Ok(dynstr_data) =
+                        && dynstr_section.sh_offset + strsz <= reader.size()
+                            && let Ok(dynstr_data) =
                                 reader.read(dynstr_section.sh_offset, strsz as usize)
                             {
                                 elf_info.dynamic_info = extract_dynamic_info(&entries, dynstr_data);
                             }
-                        }
-                    }
                 }
             }
-        }
-    }
 
     // Extract dynamic info metadata
     extract_dynamic_metadata(&elf_info.dynamic_info, &mut metadata);
@@ -191,9 +178,8 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     // Parse .dynsym (dynamic symbols)
     if let Some(dynsym_section) =
         find_section_by_type(&elf_info.section_headers, sh_type::SHT_DYNSYM)
-    {
-        if dynsym_section.sh_offset + dynsym_section.sh_size <= reader.size() {
-            if let Ok(sym_data) =
+        && dynsym_section.sh_offset + dynsym_section.sh_size <= reader.size()
+            && let Ok(sym_data) =
                 reader.read(dynsym_section.sh_offset, dynsym_section.sh_size as usize)
             {
                 let mut symbols =
@@ -203,13 +189,12 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 // sh_link points to the string table section
                 if (dynsym_section.sh_link as usize) < elf_info.section_headers.len() {
                     let strtab = &elf_info.section_headers[dynsym_section.sh_link as usize];
-                    if strtab.sh_offset + strtab.sh_size <= reader.size() {
-                        if let Ok(strtab_data) =
+                    if strtab.sh_offset + strtab.sh_size <= reader.size()
+                        && let Ok(strtab_data) =
                             reader.read(strtab.sh_offset, strtab.sh_size as usize)
                         {
                             resolve_symbol_names(&mut symbols, strtab_data);
                         }
-                    }
                 }
 
                 // Detect security features
@@ -223,23 +208,18 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 elf_info.symbol_info.exported_functions = sym_info.exported_functions;
                 elf_info.symbol_info.imported_functions = sym_info.imported_functions;
             }
-        }
-    }
 
     // Parse .symtab (full symbol table) if present
     if let Some(symtab_section) =
         find_section_by_type(&elf_info.section_headers, sh_type::SHT_SYMTAB)
-    {
-        if symtab_section.sh_offset + symtab_section.sh_size <= reader.size() {
-            if let Ok(sym_data) =
+        && symtab_section.sh_offset + symtab_section.sh_size <= reader.size()
+            && let Ok(sym_data) =
                 reader.read(symtab_section.sh_offset, symtab_section.sh_size as usize)
             {
                 let symbols =
                     parse_symbol_table(sym_data, header.is_64bit, header.is_little_endian);
                 elf_info.symbol_info.symbol_count = symbols.len();
             }
-        }
-    }
 
     // Extract symbol metadata
     extract_symbol_metadata(&elf_info.symbol_info, &mut metadata);
@@ -250,12 +230,10 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         if phdr.p_type == pt_type::PT_NOTE
             && phdr.p_filesz > 0
             && phdr.p_offset + phdr.p_filesz <= reader.size()
-        {
-            if let Ok(note_data) = reader.read(phdr.p_offset, phdr.p_filesz as usize) {
+            && let Ok(note_data) = reader.read(phdr.p_offset, phdr.p_filesz as usize) {
                 let notes = parse_notes(note_data, header.is_little_endian);
                 elf_info.notes.extend(notes);
             }
-        }
     }
 
     // Also check SHT_NOTE sections
@@ -263,8 +241,7 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         if section.sh_type == sh_type::SHT_NOTE
             && section.sh_size > 0
             && section.sh_offset + section.sh_size <= reader.size()
-        {
-            if let Ok(note_data) = reader.read(section.sh_offset, section.sh_size as usize) {
+            && let Ok(note_data) = reader.read(section.sh_offset, section.sh_size as usize) {
                 let notes = parse_notes(note_data, header.is_little_endian);
                 // Avoid duplicates by checking if we already have this type
                 for note in notes {
@@ -277,7 +254,6 @@ pub fn extract_elf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     }
                 }
             }
-        }
     }
 
     // Extract build ID
@@ -591,7 +567,7 @@ fn extract_note_metadata(
     metadata: &mut MetadataMap,
 ) {
     // Build ID
-    if let Some(ref id) = build_id {
+    if let Some(id) = build_id {
         metadata.insert("ELF:BuildID".to_string(), TagValue::String(id.clone()));
     }
 

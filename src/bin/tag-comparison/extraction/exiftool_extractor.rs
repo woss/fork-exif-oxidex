@@ -253,10 +253,10 @@ impl ExifToolExtractor {
     /// Parse ExifTool JSON output into TagInfo (for single-file output)
     fn parse_exiftool_json(&self, json: &serde_json::Value) -> Vec<TagInfo> {
         // ExifTool returns an array of objects, one per file
-        if let Some(array) = json.as_array() {
-            if let Some(file_data) = array.first() {
-                return self.parse_single_file_json(file_data);
-            }
+        if let Some(array) = json.as_array()
+            && let Some(file_data) = array.first()
+        {
+            return self.parse_single_file_json(file_data);
         }
 
         Vec::new()

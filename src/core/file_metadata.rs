@@ -94,14 +94,13 @@ pub fn extract_file_metadata(path: &Path) -> Result<MetadataMap> {
     let file_metadata = fs::metadata(path)?; // From trait converts io::Error to ExifToolError::IoError
 
     // File name (basename without directory)
-    if let Some(filename) = path.file_name() {
-        if let Some(filename_str) = filename.to_str() {
+    if let Some(filename) = path.file_name()
+        && let Some(filename_str) = filename.to_str() {
             metadata.insert(
                 "File:FileName".to_string(),
                 TagValue::new_string(filename_str.to_string()),
             );
         }
-    }
 
     // Directory (parent directory path)
     if let Some(parent) = path.parent() {
@@ -182,8 +181,8 @@ pub fn extract_file_metadata(path: &Path) -> Result<MetadataMap> {
     }
 
     // File type and extension based on path
-    if let Some(extension) = path.extension() {
-        if let Some(ext_str) = extension.to_str() {
+    if let Some(extension) = path.extension()
+        && let Some(ext_str) = extension.to_str() {
             let ext_lower = ext_str.to_lowercase();
 
             // File type extension
@@ -206,7 +205,6 @@ pub fn extract_file_metadata(path: &Path) -> Result<MetadataMap> {
                 TagValue::new_string(mime_type.to_string()),
             );
         }
-    }
 
     Ok(metadata)
 }
@@ -303,8 +301,8 @@ fn get_timezone_offset() -> String {
     #[cfg(unix)]
     {
         use std::process::Command;
-        if let Ok(output) = Command::new("date").arg("+%z").output() {
-            if let Ok(tz_str) = String::from_utf8(output.stdout) {
+        if let Ok(output) = Command::new("date").arg("+%z").output()
+            && let Ok(tz_str) = String::from_utf8(output.stdout) {
                 let trimmed = tz_str.trim();
                 if trimmed.len() >= 5 {
                     // Format is +HHMM or -HHMM, convert to +HH:MM or -HH:MM
@@ -314,7 +312,6 @@ fn get_timezone_offset() -> String {
                     return format!("{}{}:{}", sign, hours, mins);
                 }
             }
-        }
     }
 
     // Default to +00:00 if we can't determine timezone

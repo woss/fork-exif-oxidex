@@ -22,7 +22,7 @@ use super::context::{ExifToolContext, ExifToolHandle};
 ///
 /// # Thread Safety
 /// This function is thread-safe. Each call returns an independent handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_create() -> *mut ExifToolHandle {
     // Catch any panics during allocation
     let result = catch_unwind(|| {
@@ -50,7 +50,7 @@ pub extern "C" fn exiftool_create() -> *mut ExifToolHandle {
 ///
 /// # Thread Safety
 /// Not thread-safe. Do not call concurrently with other operations on the same handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_destroy(handle: *mut ExifToolHandle) {
     if handle.is_null() {
         return;

@@ -195,12 +195,11 @@ impl DylibCategory {
 /// - "/System/Library/Frameworks/Foundation.framework/Foundation" -> "Foundation"
 pub fn extract_library_name(path: &str) -> String {
     // Handle framework paths
-    if path.contains(".framework/") {
-        if let Some(pos) = path.rfind(".framework/") {
+    if path.contains(".framework/")
+        && let Some(pos) = path.rfind(".framework/") {
             let framework_name = &path[pos + 11..]; // Skip ".framework/"
             return framework_name.to_string();
         }
-    }
 
     // Handle regular library paths
     if let Some(pos) = path.rfind('/') {

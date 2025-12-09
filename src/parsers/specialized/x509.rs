@@ -370,11 +370,9 @@ impl X509Parser {
                                 let seq_data = &set_data[set_offset..set_offset + inner_len];
                                 if let Some((oid, value)) =
                                     Self::parse_attribute_type_value(seq_data)
-                                {
-                                    if let Some(name) = Self::oid_to_name(&oid) {
+                                    && let Some(name) = Self::oid_to_name(&oid) {
                                         result.insert(name.to_string(), value);
                                     }
-                                }
                             }
 
                             set_offset += inner_len;
@@ -468,22 +466,20 @@ impl X509Parser {
         // Parse isCA BOOLEAN (optional)
         if offset < seq_end && data[offset] == 0x01 {
             offset += 1;
-            if let Some(bool_len) = Self::parse_asn1_length(data, &mut offset) {
-                if offset + bool_len <= seq_end && bool_len > 0 {
+            if let Some(bool_len) = Self::parse_asn1_length(data, &mut offset)
+                && offset + bool_len <= seq_end && bool_len > 0 {
                     is_ca = Some(data[offset] != 0);
                     offset += bool_len;
                 }
-            }
         }
 
         // Parse pathLenConstraint INTEGER (optional)
         if offset < seq_end && data[offset] == ASN1_INTEGER {
             offset += 1;
-            if let Some(int_len) = Self::parse_asn1_length(data, &mut offset) {
-                if offset + int_len <= seq_end && int_len > 0 {
+            if let Some(int_len) = Self::parse_asn1_length(data, &mut offset)
+                && offset + int_len <= seq_end && int_len > 0 {
                     path_len = Some(data[offset] as u32);
                 }
-            }
         }
 
         (is_ca, path_len)
@@ -572,17 +568,15 @@ impl X509Parser {
         let mut version = 1;
         if offset < tbs_end && der[offset] == ASN1_CONTEXT_0 {
             offset += 1;
-            if let Some(_ver_len) = Self::parse_asn1_length(der, &mut offset) {
-                if offset < tbs_end && der[offset] == ASN1_INTEGER {
+            if let Some(_ver_len) = Self::parse_asn1_length(der, &mut offset)
+                && offset < tbs_end && der[offset] == ASN1_INTEGER {
                     offset += 1;
-                    if let Some(int_len) = Self::parse_asn1_length(der, &mut offset) {
-                        if offset + int_len <= tbs_end && int_len > 0 {
+                    if let Some(int_len) = Self::parse_asn1_length(der, &mut offset)
+                        && offset + int_len <= tbs_end && int_len > 0 {
                             version = der[offset] as u32 + 1;
                             offset += int_len;
                         }
-                    }
                 }
-            }
         }
         metadata.insert(
             "X509:Version".to_string(),
@@ -592,8 +586,8 @@ impl X509Parser {
         // Parse serial number
         if offset < tbs_end && der[offset] == ASN1_INTEGER {
             offset += 1;
-            if let Some(serial_len) = Self::parse_asn1_length(der, &mut offset) {
-                if offset + serial_len <= tbs_end {
+            if let Some(serial_len) = Self::parse_asn1_length(der, &mut offset)
+                && offset + serial_len <= tbs_end {
                     let serial_bytes = &der[offset..offset + serial_len];
                     let serial_hex = hex::encode(serial_bytes);
                     metadata.insert(
@@ -602,7 +596,6 @@ impl X509Parser {
                     );
                     offset += serial_len;
                 }
-            }
         }
 
         // Parse signature algorithm
@@ -612,9 +605,9 @@ impl X509Parser {
                 let sig_end = offset + sig_len;
                 if sig_end <= tbs_end && offset < sig_end && der[offset] == ASN1_OID {
                     offset += 1;
-                    if let Some(oid_len) = Self::parse_asn1_length(der, &mut offset) {
-                        if offset + oid_len <= sig_end {
-                            if let Some(oid) = Self::parse_oid(&der[offset..offset + oid_len]) {
+                    if let Some(oid_len) = Self::parse_asn1_length(der, &mut offset)
+                        && offset + oid_len <= sig_end
+                            && let Some(oid) = Self::parse_oid(&der[offset..offset + oid_len]) {
                                 metadata.insert(
                                     "X509:SignatureAlgorithm".to_string(),
                                     TagValue::String(
@@ -622,8 +615,6 @@ impl X509Parser {
                                     ),
                                 );
                             }
-                        }
-                    }
                 }
                 offset = sig_end;
             }
@@ -632,8 +623,8 @@ impl X509Parser {
         // Parse issuer
         if offset < tbs_end && der[offset] == ASN1_SEQUENCE {
             offset += 1;
-            if let Some(issuer_len) = Self::parse_asn1_length(der, &mut offset) {
-                if offset + issuer_len <= tbs_end {
+            if let Some(issuer_len) = Self::parse_asn1_length(der, &mut offset)
+                && offset + issuer_len <= tbs_end {
                     let issuer = Self::parse_distinguished_name(&der[offset..offset + issuer_len]);
                     if let Some(cn) = issuer.get("CN") {
                         metadata.insert("X509:IssuerCN".to_string(), TagValue::String(cn.clone()));
@@ -646,7 +637,6 @@ impl X509Parser {
                     }
                     offset += issuer_len;
                 }
-            }
         }
 
         // Parse validity
@@ -659,8 +649,8 @@ impl X509Parser {
                     if offset < validity_end {
                         let time_tag = der[offset];
                         offset += 1;
-                        if let Some(time_len) = Self::parse_asn1_length(der, &mut offset) {
-                            if offset + time_len <= validity_end {
+                        if let Some(time_len) = Self::parse_asn1_length(der, &mut offset)
+                            && offset + time_len <= validity_end {
                                 if let Some(not_before) =
                                     Self::parse_asn1_time(time_tag, &der[offset..offset + time_len])
                                 {
@@ -671,14 +661,13 @@ impl X509Parser {
                                 }
                                 offset += time_len;
                             }
-                        }
                     }
                     // NotAfter
                     if offset < validity_end {
                         let time_tag = der[offset];
                         offset += 1;
-                        if let Some(time_len) = Self::parse_asn1_length(der, &mut offset) {
-                            if offset + time_len <= validity_end {
+                        if let Some(time_len) = Self::parse_asn1_length(der, &mut offset)
+                            && offset + time_len <= validity_end {
                                 if let Some(not_after) =
                                     Self::parse_asn1_time(time_tag, &der[offset..offset + time_len])
                                 {
@@ -697,7 +686,6 @@ impl X509Parser {
                                 }
                                 offset += time_len;
                             }
-                        }
                     }
                 }
             }
@@ -706,8 +694,8 @@ impl X509Parser {
         // Parse subject
         if offset < tbs_end && der[offset] == ASN1_SEQUENCE {
             offset += 1;
-            if let Some(subject_len) = Self::parse_asn1_length(der, &mut offset) {
-                if offset + subject_len <= tbs_end {
+            if let Some(subject_len) = Self::parse_asn1_length(der, &mut offset)
+                && offset + subject_len <= tbs_end {
                     let subject =
                         Self::parse_distinguished_name(&der[offset..offset + subject_len]);
                     if let Some(cn) = subject.get("CN") {
@@ -736,7 +724,6 @@ impl X509Parser {
                     }
                     offset += subject_len;
                 }
-            }
         }
 
         // Parse subject public key info
@@ -753,9 +740,9 @@ impl X509Parser {
                             if algo_end <= spki_end && offset < algo_end && der[offset] == ASN1_OID
                             {
                                 offset += 1;
-                                if let Some(oid_len) = Self::parse_asn1_length(der, &mut offset) {
-                                    if offset + oid_len <= algo_end {
-                                        if let Some(oid) =
+                                if let Some(oid_len) = Self::parse_asn1_length(der, &mut offset)
+                                    && offset + oid_len <= algo_end
+                                        && let Some(oid) =
                                             Self::parse_oid(&der[offset..offset + oid_len])
                                         {
                                             metadata.insert(
@@ -766,8 +753,6 @@ impl X509Parser {
                                                 ),
                                             );
                                         }
-                                    }
-                                }
                             }
                             offset = algo_end;
                         }

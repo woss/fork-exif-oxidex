@@ -505,11 +505,10 @@ impl PanasonicParser {
             0x0033 | 0x0065 | 0x0066 |
             // Location-related strings
             0x0067 | 0x0069 | 0x006B | 0x006D | 0x006F | 0x0080 => {
-                if let Some(value) = extract_string_value(entry, data, ifd_offset) {
-                    if let Some(tag_name) = registry.get_tag_name(tag_id) {
+                if let Some(value) = extract_string_value(entry, data, ifd_offset)
+                    && let Some(tag_name) = registry.get_tag_name(tag_id) {
                         tags.insert(format!("Panasonic:{}", tag_name), value);
                     }
-                }
                 return;
             }
             _ => {}

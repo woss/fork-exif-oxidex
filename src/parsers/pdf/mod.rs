@@ -141,8 +141,8 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     let first_line = &header_data[..first_line_end];
 
     // The first line should be ASCII: %PDF-X.Y
-    if let Ok(header_str) = std::str::from_utf8(first_line) {
-        if let Some(version_str) = header_str.strip_prefix("%PDF-") {
+    if let Ok(header_str) = std::str::from_utf8(first_line)
+        && let Some(version_str) = header_str.strip_prefix("%PDF-") {
             let version = version_str.trim();
             // Store as string to preserve exact version format (e.g., "1.3", "1.4", "2.0")
             metadata.insert(
@@ -150,7 +150,6 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 crate::core::TagValue::new_string(version.to_string()),
             );
         }
-    }
 
     // Check for linearization (optimize for web display)
     // Linearized PDFs have a linearization dictionary in the first object

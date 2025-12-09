@@ -101,14 +101,13 @@ pub fn parse_exports(
         // Count forwarded exports (RVA points within export section)
         for i in 0..directory.number_of_functions {
             let offset = (i * 4) as usize;
-            if let Some(function_rva) = eat_reader.u32_at(offset) {
-                if function_rva > 0
+            if let Some(function_rva) = eat_reader.u32_at(offset)
+                && function_rva > 0
                     && function_rva >= export_section_start
                     && function_rva < export_section_end
                 {
                     forwarded_count += 1;
                 }
-            }
         }
     }
 
@@ -125,13 +124,11 @@ pub fn parse_exports(
         // Read name RVAs and resolve to strings
         for i in 0..names_to_read {
             let offset = (i * 4) as usize;
-            if let Some(name_rva) = name_table_reader.u32_at(offset) {
-                if let Some(name_file_offset) = rva_to_file_offset(name_rva, sections) {
-                    if let Ok(name) = read_string_at_offset(reader, name_file_offset) {
+            if let Some(name_rva) = name_table_reader.u32_at(offset)
+                && let Some(name_file_offset) = rva_to_file_offset(name_rva, sections)
+                    && let Ok(name) = read_string_at_offset(reader, name_file_offset) {
                         function_names.push(name);
                     }
-                }
-            }
         }
     }
 

@@ -129,8 +129,8 @@ fn parse_opf_metadata(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                 }
             }
             Ok(Event::Text(e)) if in_metadata => {
-                if let Ok(text) = e.xml_content() {
-                    if !text.is_empty() && !current_element.is_empty() {
+                if let Ok(text) = e.xml_content()
+                    && !text.is_empty() && !current_element.is_empty() {
                         let tag_name = match current_element.as_str() {
                             "title" => "EPUB:Title",
                             "creator" => "EPUB:Creator",
@@ -149,7 +149,6 @@ fn parse_opf_metadata(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                         metadata
                             .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
                     }
-                }
             }
             Ok(Event::Eof) => break,
             Err(e) => {

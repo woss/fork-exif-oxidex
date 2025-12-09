@@ -698,11 +698,10 @@ impl TagRegistry {
         prefix: &str,
         tags: &mut HashMap<String, String>,
     ) {
-        if let Some(def) = self.tags.get(&tag_id) {
-            if let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
+        if let Some(def) = self.tags.get(&tag_id)
+            && let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
                 schema.process_i16_array(array, prefix, tags);
             }
-        }
     }
 
     /// Decode and insert a u16 array tag using its schema
@@ -736,11 +735,10 @@ impl TagRegistry {
         prefix: &str,
         tags: &mut HashMap<String, String>,
     ) {
-        if let Some(def) = self.tags.get(&tag_id) {
-            if let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
+        if let Some(def) = self.tags.get(&tag_id)
+            && let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
                 schema.process_u16_array(array, prefix, tags);
             }
-        }
     }
 
     /// Decode and insert an i32 array tag using its schema
@@ -766,11 +764,10 @@ impl TagRegistry {
         prefix: &str,
         tags: &mut HashMap<String, String>,
     ) {
-        if let Some(def) = self.tags.get(&tag_id) {
-            if let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
+        if let Some(def) = self.tags.get(&tag_id)
+            && let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
                 schema.process_i32_array(array, prefix, tags);
             }
-        }
     }
 
     /// Decode and insert a u32 array tag using its schema
@@ -796,11 +793,10 @@ impl TagRegistry {
         prefix: &str,
         tags: &mut HashMap<String, String>,
     ) {
-        if let Some(def) = self.tags.get(&tag_id) {
-            if let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
+        if let Some(def) = self.tags.get(&tag_id)
+            && let Some(TagDecoder::ArraySchema(schema)) = def.decoder {
                 schema.process_u32_array(array, prefix, tags);
             }
-        }
     }
 
     /// Returns the number of registered tags

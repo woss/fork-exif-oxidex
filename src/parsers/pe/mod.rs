@@ -73,11 +73,10 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     if pe_offset > 0x80 {
         // Read data between DOS stub and PE header for Rich Header parsing
         let rich_region_size = (pe_offset - 0x80) as usize + 128;
-        if let Ok(rich_data) = reader.read(0, 0x80 + rich_region_size) {
-            if let Some(rich_header) = parse_rich_header(rich_data, 0x80, pe_offset as usize) {
+        if let Ok(rich_data) = reader.read(0, 0x80 + rich_region_size)
+            && let Some(rich_header) = parse_rich_header(rich_data, 0x80, pe_offset as usize) {
                 extract_rich_header_metadata(&rich_header, &mut metadata);
             }
-        }
         // Note: If Rich Header parsing fails, we silently continue (not all PE files have it)
     }
 
@@ -138,8 +137,8 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         })?;
 
     // Step 6: Find .rsrc section
-    if let Some(_resource_dir_rva) = resource_dir_rva {
-        if let Some(rsrc_section) = sections.iter().find(|s| s.name_str() == ".rsrc") {
+    if let Some(_resource_dir_rva) = resource_dir_rva
+        && let Some(rsrc_section) = sections.iter().find(|s| s.name_str() == ".rsrc") {
             // Step 7: Read resource section data
             let rsrc_file_offset = rsrc_section.pointer_to_raw_data as u64;
             let rsrc_size = rsrc_section.size_of_raw_data as usize;
@@ -165,12 +164,11 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                 }
             }
         }
-    }
 
     // Step 11: Parse debug directory if present (data directory index 6)
-    if let Some(ref nt_header) = nt_header_opt {
-        if let Some(&(debug_rva, debug_size)) = nt_header.data_directories.get(6) {
-            if debug_rva > 0 && debug_size > 0 {
+    if let Some(ref nt_header) = nt_header_opt
+        && let Some(&(debug_rva, debug_size)) = nt_header.data_directories.get(6)
+            && debug_rva > 0 && debug_size > 0 {
                 // Find section containing debug directory
                 if let Some(debug_section) = sections.iter().find(|s| {
                     debug_rva >= s.virtual_address && debug_rva < s.virtual_address + s.virtual_size
@@ -211,25 +209,21 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     }
                 }
             }
-        }
-    }
 
     // Step 12: Parse export directory if present (data directory index 0)
-    if let Some(ref nt_header) = nt_header_opt {
-        if let Some(&(export_rva, export_size)) = nt_header.data_directories.first() {
-            if export_rva > 0 && export_size > 0 {
+    if let Some(ref nt_header) = nt_header_opt
+        && let Some(&(export_rva, export_size)) = nt_header.data_directories.first()
+            && export_rva > 0 && export_size > 0 {
                 // Parse exports (pass sections for RVA resolution)
                 if let Ok(export_info) = parse_exports(reader, export_rva, export_size, &sections) {
                     extract_export_metadata(&export_info, &mut metadata);
                 }
             }
-        }
-    }
 
     // Step 13: Parse import directory if present (data directory index 1)
-    if let Some(ref nt_header) = nt_header_opt {
-        if let Some(&(import_rva, import_size)) = nt_header.data_directories.get(1) {
-            if import_rva > 0 {
+    if let Some(ref nt_header) = nt_header_opt
+        && let Some(&(import_rva, import_size)) = nt_header.data_directories.get(1)
+            && import_rva > 0 {
                 // Find section containing import directory
                 if let Some(import_section) = sections.iter().find(|s| {
                     import_rva >= s.virtual_address
@@ -285,14 +279,12 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     }
                 }
             }
-        }
-    }
 
     // Step 14: Parse digital signature if present (data directory index 4 - Security)
     // NOTE: This is a FILE offset, not an RVA (unlike other data directories)
-    if let Some(ref nt_header) = nt_header_opt {
-        if let Some(&(cert_offset, cert_size)) = nt_header.data_directories.get(4) {
-            if cert_offset > 0 && cert_size > 0 {
+    if let Some(ref nt_header) = nt_header_opt
+        && let Some(&(cert_offset, cert_size)) = nt_header.data_directories.get(4)
+            && cert_offset > 0 && cert_size > 0 {
                 // Read certificate data from file offset
                 if let Ok(cert_data) = reader.read(cert_offset as u64, cert_size as usize) {
                     // Parse WIN_CERTIFICATE structure
@@ -304,13 +296,11 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     }
                 }
             }
-        }
-    }
 
     // Step 15: Parse .NET CLR header if present (data directory index 14)
-    if let Some(ref nt_header) = nt_header_opt {
-        if let Some(&(clr_rva, clr_size)) = nt_header.data_directories.get(14) {
-            if clr_rva > 0 && clr_size > 0 {
+    if let Some(ref nt_header) = nt_header_opt
+        && let Some(&(clr_rva, clr_size)) = nt_header.data_directories.get(14)
+            && clr_rva > 0 && clr_size > 0 {
                 // Find section containing CLR header
                 if let Some(clr_section) = sections.iter().find(|s| {
                     clr_rva >= s.virtual_address && clr_rva < s.virtual_address + s.virtual_size
@@ -319,8 +309,8 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                         + (clr_rva - clr_section.virtual_address) as u64;
 
                     // Read CLR header (72 bytes)
-                    if let Ok(clr_data) = reader.read(clr_offset, 72) {
-                        if let Ok((_, clr_header)) = parse_clr_header(clr_data) {
+                    if let Ok(clr_data) = reader.read(clr_offset, 72)
+                        && let Ok((_, clr_header)) = parse_clr_header(clr_data) {
                             // Parse .NET metadata if present
                             let (metadata_rva, metadata_size) = clr_header.metadata;
                             if metadata_rva > 0 && metadata_size > 0 {
@@ -338,21 +328,16 @@ pub fn parse_pe_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                                         std::cmp::min(metadata_size as usize, 65536);
                                     if let Ok(metadata_data) =
                                         reader.read(metadata_offset, metadata_read_size)
-                                    {
-                                        if let Some(dotnet_info) =
+                                        && let Some(dotnet_info) =
                                             parse_dotnet_metadata(metadata_data, &clr_header)
                                         {
                                             extract_dotnet_metadata(&dotnet_info, &mut metadata);
                                         }
-                                    }
                                 }
                             }
                         }
-                    }
                 }
             }
-        }
-    }
 
     Ok(metadata)
 }

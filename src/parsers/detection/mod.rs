@@ -170,11 +170,10 @@ pub fn detect_format(reader: &dyn FileReader) -> io::Result<FileFormat> {
     // Phase 3: Check formats with special detection logic
 
     // OGG/Opus (already checked in table, but need variant detection)
-    if magic_bytes.starts_with(b"OggS") {
-        if let Some(format) = detect_ogg_variant(magic_bytes) {
+    if magic_bytes.starts_with(b"OggS")
+        && let Some(format) = detect_ogg_variant(magic_bytes) {
             return Ok(format);
         }
-    }
 
     // MP3 (MPEG sync pattern, not in simple table due to bit masking)
     if is_mp3_sync(magic_bytes) {

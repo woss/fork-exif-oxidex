@@ -220,15 +220,12 @@ impl TTFParser {
                     _ => 3,
                 });
 
-            if let Some(rec) = record {
-                if let Ok(Some(value)) =
+            if let Some(rec) = record
+                && let Ok(Some(value)) =
                     Self::extract_name_string(reader, table, rec, string_offset)
-                {
-                    if !value.is_empty() {
+                    && !value.is_empty() {
                         metadata.insert(key.to_string(), TagValue::String(value));
                     }
-                }
-            }
         }
 
         Ok(metadata)
@@ -292,22 +289,20 @@ impl TTFParser {
         if offset + 28 <= reader.size() {
             let created_data = reader.read(offset + 20, 8)?;
             let created_r = EndianReader::big_endian(created_data);
-            if let Some(created) = created_r.i64_at(0) {
-                if let Some(created_str) = Self::mac_timestamp_to_iso(created) {
+            if let Some(created) = created_r.i64_at(0)
+                && let Some(created_str) = Self::mac_timestamp_to_iso(created) {
                     metadata.insert("FontCreated".to_string(), TagValue::String(created_str));
                 }
-            }
         }
 
         // Read modified timestamp (offset 28, 8 bytes)
         if offset + 36 <= reader.size() {
             let modified_data = reader.read(offset + 28, 8)?;
             let modified_r = EndianReader::big_endian(modified_data);
-            if let Some(modified) = modified_r.i64_at(0) {
-                if let Some(modified_str) = Self::mac_timestamp_to_iso(modified) {
+            if let Some(modified) = modified_r.i64_at(0)
+                && let Some(modified_str) = Self::mac_timestamp_to_iso(modified) {
                     metadata.insert("FontModified".to_string(), TagValue::String(modified_str));
                 }
-            }
         }
 
         Ok(metadata)

@@ -364,14 +364,13 @@ fn parse_fff_with_index(data: &[u8], metadata: &mut MetadataMap) -> Result<(), S
     let reader = EndianReader::little_endian(data);
 
     // Extract CreatorSoftware from FFF header (typically at offset 0x08, 16 bytes)
-    if let Some(creator) = try_read_string(data, 0x08, 16) {
-        if !creator.is_empty() {
+    if let Some(creator) = try_read_string(data, 0x08, 16)
+        && !creator.is_empty() {
             metadata.insert(
                 "FLIR:CreatorSoftware".to_string(),
                 TagValue::String(creator),
             );
         }
-    }
 
     // FFF header is typically 64 bytes
     // Record index follows the header
@@ -487,45 +486,41 @@ fn parse_flir_legacy_format(data: &[u8], metadata: &mut MetadataMap) -> Result<(
 
     // Search for camera model string in common locations
     for offset in [0x00, 0x08, 0x10, 0x20, 0xD4, 0x00D4].iter() {
-        if let Some(model) = try_read_string(data, *offset, 32) {
-            if is_valid_camera_model(&model) {
+        if let Some(model) = try_read_string(data, *offset, 32)
+            && is_valid_camera_model(&model) {
                 metadata.insert("FLIR:CameraModel".to_string(), TagValue::String(model));
                 break;
             }
-        }
     }
 
     // Try to extract numeric parameters from fixed offsets
     // These offsets are based on common FLIR data layouts
 
     // Check for emissivity (should be between 0.0 and 1.0)
-    if let Some(emissivity) = reader.f32_at(0x20) {
-        if (0.0..=1.0).contains(&emissivity) && emissivity > 0.0 {
+    if let Some(emissivity) = reader.f32_at(0x20)
+        && (0.0..=1.0).contains(&emissivity) && emissivity > 0.0 {
             metadata.insert(
                 "FLIR:Emissivity".to_string(),
                 TagValue::Float(emissivity as f64),
             );
         }
-    }
 
     // Try to read dimensions
-    if let Some(width) = reader.u16_at(0x02) {
-        if (16..=4096).contains(&width) {
+    if let Some(width) = reader.u16_at(0x02)
+        && (16..=4096).contains(&width) {
             metadata.insert(
                 "FLIR:RawThermalImageWidth".to_string(),
                 TagValue::Integer(width as i64),
             );
         }
-    }
 
-    if let Some(height) = reader.u16_at(0x04) {
-        if (16..=4096).contains(&height) {
+    if let Some(height) = reader.u16_at(0x04)
+        && (16..=4096).contains(&height) {
             metadata.insert(
                 "FLIR:RawThermalImageHeight".to_string(),
                 TagValue::Integer(height as i64),
             );
         }
-    }
 
     Ok(())
 }
@@ -554,23 +549,21 @@ fn parse_raw_data_record(data: &[u8], metadata: &mut MetadataMap) {
     }
 
     // Parse image dimensions
-    if let Some(width) = reader.u16_at(raw_data_offsets::WIDTH) {
-        if width > 0 && width <= 4096 {
+    if let Some(width) = reader.u16_at(raw_data_offsets::WIDTH)
+        && width > 0 && width <= 4096 {
             metadata.insert(
                 "FLIR:RawThermalImageWidth".to_string(),
                 TagValue::Integer(width as i64),
             );
         }
-    }
 
-    if let Some(height) = reader.u16_at(raw_data_offsets::HEIGHT) {
-        if height > 0 && height <= 4096 {
+    if let Some(height) = reader.u16_at(raw_data_offsets::HEIGHT)
+        && height > 0 && height <= 4096 {
             metadata.insert(
                 "FLIR:RawThermalImageHeight".to_string(),
                 TagValue::Integer(height as i64),
             );
         }
-    }
 
     // Parse image type
     if let Some(image_type) = reader.u16_at(raw_data_offsets::IMAGE_TYPE) {
@@ -616,23 +609,21 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
 
     // === Emissivity and Environmental Parameters ===
 
-    if let Some(emissivity) = reader.f32_at(camera_info_offsets::EMISSIVITY) {
-        if (0.0..=1.0).contains(&emissivity) {
+    if let Some(emissivity) = reader.f32_at(camera_info_offsets::EMISSIVITY)
+        && (0.0..=1.0).contains(&emissivity) {
             metadata.insert(
                 "FLIR:Emissivity".to_string(),
                 TagValue::Float(emissivity as f64),
             );
         }
-    }
 
-    if let Some(distance) = reader.f32_at(camera_info_offsets::OBJECT_DISTANCE) {
-        if distance > 0.0 && distance < 10000.0 {
+    if let Some(distance) = reader.f32_at(camera_info_offsets::OBJECT_DISTANCE)
+        && distance > 0.0 && distance < 10000.0 {
             metadata.insert(
                 "FLIR:ObjectDistance".to_string(),
                 TagValue::Float(distance as f64),
             );
         }
-    }
 
     // Temperature values (stored in Kelvin in the file)
     insert_temperature(
@@ -655,24 +646,22 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
     );
 
     // IR window transmission
-    if let Some(transmission) = reader.f32_at(camera_info_offsets::IR_WINDOW_TRANSMISSION) {
-        if (0.0..=1.0).contains(&transmission) {
+    if let Some(transmission) = reader.f32_at(camera_info_offsets::IR_WINDOW_TRANSMISSION)
+        && (0.0..=1.0).contains(&transmission) {
             metadata.insert(
                 "FLIR:IRWindowTransmission".to_string(),
                 TagValue::Float(transmission as f64),
             );
         }
-    }
 
     // Relative humidity
-    if let Some(humidity) = reader.f32_at(camera_info_offsets::RELATIVE_HUMIDITY) {
-        if (0.0..=100.0).contains(&humidity) {
+    if let Some(humidity) = reader.f32_at(camera_info_offsets::RELATIVE_HUMIDITY)
+        && (0.0..=100.0).contains(&humidity) {
             metadata.insert(
                 "FLIR:RelativeHumidity".to_string(),
                 TagValue::Float(humidity as f64),
             );
         }
-    }
 
     // === Planck Constants for Radiometric Calculation ===
     // These are essential for converting raw thermal values to temperature
@@ -796,111 +785,98 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
 
     // === Camera Identification ===
 
-    if let Some(model) = try_read_string(data, camera_info_offsets::CAMERA_MODEL, 32) {
-        if !model.is_empty() {
+    if let Some(model) = try_read_string(data, camera_info_offsets::CAMERA_MODEL, 32)
+        && !model.is_empty() {
             metadata.insert("FLIR:CameraModel".to_string(), TagValue::String(model));
         }
-    }
 
-    if let Some(part_num) = try_read_string(data, camera_info_offsets::CAMERA_PART_NUMBER, 32) {
-        if !part_num.is_empty() {
+    if let Some(part_num) = try_read_string(data, camera_info_offsets::CAMERA_PART_NUMBER, 32)
+        && !part_num.is_empty() {
             metadata.insert(
                 "FLIR:CameraPartNumber".to_string(),
                 TagValue::String(part_num),
             );
         }
-    }
 
-    if let Some(serial) = try_read_string(data, camera_info_offsets::CAMERA_SERIAL_NUMBER, 16) {
-        if !serial.is_empty() {
+    if let Some(serial) = try_read_string(data, camera_info_offsets::CAMERA_SERIAL_NUMBER, 16)
+        && !serial.is_empty() {
             metadata.insert(
                 "FLIR:CameraSerialNumber".to_string(),
                 TagValue::String(serial),
             );
         }
-    }
 
-    if let Some(software) = try_read_string(data, camera_info_offsets::CAMERA_SOFTWARE, 16) {
-        if !software.is_empty() {
+    if let Some(software) = try_read_string(data, camera_info_offsets::CAMERA_SOFTWARE, 16)
+        && !software.is_empty() {
             metadata.insert(
                 "FLIR:CameraSoftware".to_string(),
                 TagValue::String(software),
             );
         }
-    }
 
     // === Lens Information ===
 
-    if let Some(lens_model) = try_read_string(data, camera_info_offsets::LENS_MODEL, 32) {
-        if !lens_model.is_empty() {
+    if let Some(lens_model) = try_read_string(data, camera_info_offsets::LENS_MODEL, 32)
+        && !lens_model.is_empty() {
             metadata.insert("FLIR:LensModel".to_string(), TagValue::String(lens_model));
         }
-    }
 
-    if let Some(lens_part) = try_read_string(data, camera_info_offsets::LENS_PART_NUMBER, 16) {
-        if !lens_part.is_empty() {
+    if let Some(lens_part) = try_read_string(data, camera_info_offsets::LENS_PART_NUMBER, 16)
+        && !lens_part.is_empty() {
             metadata.insert(
                 "FLIR:LensPartNumber".to_string(),
                 TagValue::String(lens_part),
             );
         }
-    }
 
-    if let Some(lens_serial) = try_read_string(data, camera_info_offsets::LENS_SERIAL_NUMBER, 16) {
-        if !lens_serial.is_empty() {
+    if let Some(lens_serial) = try_read_string(data, camera_info_offsets::LENS_SERIAL_NUMBER, 16)
+        && !lens_serial.is_empty() {
             metadata.insert(
                 "FLIR:LensSerialNumber".to_string(),
                 TagValue::String(lens_serial),
             );
         }
-    }
 
-    if let Some(fov) = reader.f32_at(camera_info_offsets::FIELD_OF_VIEW) {
-        if fov > 0.0 && fov < 180.0 {
+    if let Some(fov) = reader.f32_at(camera_info_offsets::FIELD_OF_VIEW)
+        && fov > 0.0 && fov < 180.0 {
             metadata.insert("FLIR:FieldOfView".to_string(), TagValue::Float(fov as f64));
         }
-    }
 
     // Peak spectral sensitivity (wavelength in micrometers)
-    if let Some(wavelength) = reader.f32_at(camera_info_offsets::PEAK_SPECTRAL_SENSITIVITY) {
-        if wavelength > 0.0 && wavelength < 100.0 {
+    if let Some(wavelength) = reader.f32_at(camera_info_offsets::PEAK_SPECTRAL_SENSITIVITY)
+        && wavelength > 0.0 && wavelength < 100.0 {
             metadata.insert(
                 "FLIR:PeakSpectralSensitivity".to_string(),
                 TagValue::Float(wavelength as f64),
             );
         }
-    }
 
     // === Filter Information ===
 
-    if let Some(filter_model) = try_read_string(data, camera_info_offsets::FILTER_MODEL, 16) {
-        if !filter_model.is_empty() {
+    if let Some(filter_model) = try_read_string(data, camera_info_offsets::FILTER_MODEL, 16)
+        && !filter_model.is_empty() {
             metadata.insert(
                 "FLIR:FilterModel".to_string(),
                 TagValue::String(filter_model),
             );
         }
-    }
 
-    if let Some(filter_part) = try_read_string(data, camera_info_offsets::FILTER_PART_NUMBER, 32) {
-        if !filter_part.is_empty() {
+    if let Some(filter_part) = try_read_string(data, camera_info_offsets::FILTER_PART_NUMBER, 32)
+        && !filter_part.is_empty() {
             metadata.insert(
                 "FLIR:FilterPartNumber".to_string(),
                 TagValue::String(filter_part),
             );
         }
-    }
 
     if let Some(filter_serial) =
         try_read_string(data, camera_info_offsets::FILTER_SERIAL_NUMBER, 32)
-    {
-        if !filter_serial.is_empty() {
+        && !filter_serial.is_empty() {
             metadata.insert(
                 "FLIR:FilterSerialNumber".to_string(),
                 TagValue::String(filter_serial),
             );
         }
-    }
 
     // === Raw Value Statistics ===
 
@@ -935,11 +911,10 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
     // === Timing and Focus ===
 
     // Try to parse DateTimeOriginal
-    if data.len() > camera_info_offsets::DATE_TIME_ORIGINAL + 8 {
-        if let Some(dt) = parse_flir_datetime(data, camera_info_offsets::DATE_TIME_ORIGINAL) {
+    if data.len() > camera_info_offsets::DATE_TIME_ORIGINAL + 8
+        && let Some(dt) = parse_flir_datetime(data, camera_info_offsets::DATE_TIME_ORIGINAL) {
             metadata.insert("FLIR:DateTimeOriginal".to_string(), TagValue::String(dt));
         }
-    }
 
     if let Some(focus_steps) = reader.i16_at(camera_info_offsets::FOCUS_STEP_COUNT) {
         metadata.insert(
@@ -948,23 +923,21 @@ fn parse_camera_info_record(data: &[u8], metadata: &mut MetadataMap) {
         );
     }
 
-    if let Some(focus_dist) = reader.f32_at(camera_info_offsets::FOCUS_DISTANCE) {
-        if focus_dist > 0.0 && focus_dist < 10000.0 {
+    if let Some(focus_dist) = reader.f32_at(camera_info_offsets::FOCUS_DISTANCE)
+        && focus_dist > 0.0 && focus_dist < 10000.0 {
             metadata.insert(
                 "FLIR:FocusDistance".to_string(),
                 TagValue::Float(focus_dist as f64),
             );
         }
-    }
 
-    if let Some(frame_rate) = reader.u16_at(camera_info_offsets::FRAME_RATE) {
-        if frame_rate > 0 && frame_rate <= 1000 {
+    if let Some(frame_rate) = reader.u16_at(camera_info_offsets::FRAME_RATE)
+        && frame_rate > 0 && frame_rate <= 1000 {
             metadata.insert(
                 "FLIR:FrameRate".to_string(),
                 TagValue::Integer(frame_rate as i64),
             );
         }
-    }
 }
 
 /// Parse PaletteInfo record containing color palette configuration.
@@ -975,14 +948,13 @@ fn parse_palette_info_record(data: &[u8], metadata: &mut MetadataMap) {
     let reader = EndianReader::little_endian(data);
 
     // Number of colors in palette
-    if let Some(colors) = reader.u8_at(palette_info_offsets::PALETTE_COLORS) {
-        if colors > 0 {
+    if let Some(colors) = reader.u8_at(palette_info_offsets::PALETTE_COLORS)
+        && colors > 0 {
             metadata.insert(
                 "FLIR:PaletteColors".to_string(),
                 TagValue::Integer(colors as i64),
             );
         }
-    }
 
     // Special colors (RGB triplets)
     insert_rgb_color(
@@ -1051,20 +1023,18 @@ fn parse_palette_info_record(data: &[u8], metadata: &mut MetadataMap) {
     }
 
     // Palette file name and name
-    if let Some(filename) = try_read_string(data, palette_info_offsets::PALETTE_FILE_NAME, 32) {
-        if !filename.is_empty() {
+    if let Some(filename) = try_read_string(data, palette_info_offsets::PALETTE_FILE_NAME, 32)
+        && !filename.is_empty() {
             metadata.insert(
                 "FLIR:PaletteFileName".to_string(),
                 TagValue::String(filename),
             );
         }
-    }
 
-    if let Some(name) = try_read_string(data, palette_info_offsets::PALETTE_NAME, 32) {
-        if !name.is_empty() {
+    if let Some(name) = try_read_string(data, palette_info_offsets::PALETTE_NAME, 32)
+        && !name.is_empty() {
             metadata.insert("FLIR:PaletteName".to_string(), TagValue::String(name));
         }
-    }
 
     // Note palette data presence but don't extract full binary
     if data.len() > palette_info_offsets::PALETTE {
@@ -1177,8 +1147,8 @@ fn parse_flir_datetime(data: &[u8], offset: usize) -> Option<String> {
     let reader = EndianReader::little_endian(data);
 
     // FLIR typically stores time as seconds since 1970 (f64)
-    if let Some(timestamp) = reader.f64_at(offset) {
-        if timestamp > 0.0 && timestamp < 4_000_000_000.0 {
+    if let Some(timestamp) = reader.f64_at(offset)
+        && timestamp > 0.0 && timestamp < 4_000_000_000.0 {
             // Valid Unix timestamp range (before ~2096)
             let secs = timestamp as i64;
 
@@ -1203,7 +1173,6 @@ fn parse_flir_datetime(data: &[u8], offset: usize) -> Option<String> {
                 year, month, day, hours, minutes, seconds
             ));
         }
-    }
 
     None
 }

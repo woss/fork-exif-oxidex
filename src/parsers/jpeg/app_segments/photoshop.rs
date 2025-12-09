@@ -346,11 +346,10 @@ pub fn parse_photoshop_irb(data: &[u8]) -> Result<MetadataMap> {
                         }
                     }
                     RES_CAPTION => {
-                        if let Ok(caption) = parse_caption(block.data) {
-                            if !caption.is_empty() {
+                        if let Ok(caption) = parse_caption(block.data)
+                            && !caption.is_empty() {
                                 metadata.insert("Photoshop:Caption", TagValue::String(caption));
                             }
-                        }
                     }
                     RES_GLOBAL_ANGLE => {
                         if let Ok(angle) = parse_global_angle(block.data) {

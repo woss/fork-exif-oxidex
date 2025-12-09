@@ -254,8 +254,8 @@ impl MakerNoteParser for LytroParser {
                     }
                 }
                 _ => {
-                    if let Some(array) = extract_i16_array(&entry, parse_data, byte_order) {
-                        if let Some(&val) = array.first() {
+                    if let Some(array) = extract_i16_array(&entry, parse_data, byte_order)
+                        && let Some(&val) = array.first() {
                             let (tag_name, formatted_value) = match tag {
                                 LYTRO_MICROLENS_PITCH => {
                                     ("MicrolensPitch", format_microlens_pitch(val))
@@ -300,7 +300,6 @@ impl MakerNoteParser for LytroParser {
                             };
                             tags.insert(format!("Lytro:{}", tag_name), formatted_value);
                         }
-                    }
                 }
             }
             offset += 12;

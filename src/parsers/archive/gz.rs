@@ -116,20 +116,18 @@ impl GZParser {
         }
 
         // FNAME: Original filename
-        if flags & FNAME != 0 {
-            if let Some(filename) = Self::read_null_terminated_string(reader, offset)? {
+        if flags & FNAME != 0
+            && let Some(filename) = Self::read_null_terminated_string(reader, offset)? {
                 metadata.insert("OriginalFileName".to_string(), TagValue::String(filename.0));
                 offset = filename.1;
             }
-        }
 
         // FCOMMENT: Comment
-        if flags & FCOMMENT != 0 {
-            if let Some(comment) = Self::read_null_terminated_string(reader, offset)? {
+        if flags & FCOMMENT != 0
+            && let Some(comment) = Self::read_null_terminated_string(reader, offset)? {
                 metadata.insert("Comment".to_string(), TagValue::String(comment.0));
                 offset = comment.1;
             }
-        }
 
         // FHCRC: Header CRC
         if flags & FHCRC != 0 {

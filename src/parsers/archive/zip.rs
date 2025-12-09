@@ -95,14 +95,13 @@ impl FormatParser for ZipParser {
 
         // Archive comment
         let comment = archive.comment();
-        if !comment.is_empty() {
-            if let Ok(comment_str) = std::str::from_utf8(comment) {
+        if !comment.is_empty()
+            && let Ok(comment_str) = std::str::from_utf8(comment) {
                 metadata.insert(
                     "ZIP:Comment".to_string(),
                     TagValue::new_string(comment_str.to_string()),
                 );
             }
-        }
 
         // Forensic summary tracking
         let mut total_compressed_size: u64 = 0;

@@ -36,13 +36,11 @@ pub fn detect_pe_format(data: &[u8], reader: &dyn FileReader) -> Option<FileForm
     let e_lfanew = header.u32_at(0x3C).unwrap_or(0) as u64;
 
     // Verify PE signature at e_lfanew offset
-    if e_lfanew < reader.size() && e_lfanew + 4 <= reader.size() {
-        if let Ok(pe_sig) = reader.read(e_lfanew, 4) {
-            if pe_sig == [0x50, 0x45, 0x00, 0x00] {
+    if e_lfanew < reader.size() && e_lfanew + 4 <= reader.size()
+        && let Ok(pe_sig) = reader.read(e_lfanew, 4)
+            && pe_sig == [0x50, 0x45, 0x00, 0x00] {
                 return Some(FileFormat::PE);
             }
-        }
-    }
 
     None
 }

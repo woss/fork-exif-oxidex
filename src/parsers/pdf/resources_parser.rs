@@ -131,11 +131,10 @@ pub fn parse_resources_metadata(reader: &dyn FileReader) -> Result<MetadataMap> 
             image_count += 1;
 
             // Extract metadata from first image only
-            if first_image_metadata.is_none() {
-                if let Ok(metadata) = extract_image_metadata(xobject_data) {
+            if first_image_metadata.is_none()
+                && let Ok(metadata) = extract_image_metadata(xobject_data) {
                     first_image_metadata = Some(metadata);
                 }
-            }
         }
     }
 

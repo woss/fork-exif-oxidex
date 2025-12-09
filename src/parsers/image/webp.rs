@@ -350,8 +350,8 @@ fn parse_webp_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     }
 
     // Parse ExifIFD
-    if let Some(offset) = exif_ifd_offset {
-        if let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+    if let Some(offset) = exif_ifd_offset
+        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
                 let tag_name = lookup_tag_name(tag_id, "ExifIFD");
                 let tag_value =
@@ -359,11 +359,10 @@ fn parse_webp_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
                 metadata.insert(tag_name, tag_value);
             }
         }
-    }
 
     // Parse GPS IFD
-    if let Some(offset) = gps_ifd_offset {
-        if let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+    if let Some(offset) = gps_ifd_offset
+        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
                 let tag_name = lookup_tag_name(tag_id, "GPS");
                 let tag_value =
@@ -371,7 +370,6 @@ fn parse_webp_exif(exif_data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
                 metadata.insert(tag_name, tag_value);
             }
         }
-    }
 
     Ok(())
 }
@@ -442,11 +440,10 @@ fn raw_bytes_to_tag_value(
                 return TagValue::Integer(value as i64);
             }
             ExifType::Rational if bytes.len() >= 8 => {
-                if let Some((num, den)) = reader.rational_at(0) {
-                    if den != 0 {
+                if let Some((num, den)) = reader.rational_at(0)
+                    && den != 0 {
                         return TagValue::Float(num as f64 / den as f64);
                     }
-                }
             }
             ExifType::Undefined => {
                 if bytes
@@ -462,11 +459,10 @@ fn raw_bytes_to_tag_value(
                 return TagValue::Binary(bytes.to_vec());
             }
             ExifType::SRational if bytes.len() >= 8 => {
-                if let Some((num, den)) = reader.srational_at(0) {
-                    if den != 0 {
+                if let Some((num, den)) = reader.srational_at(0)
+                    && den != 0 {
                         return TagValue::Float(num as f64 / den as f64);
                     }
-                }
             }
             _ => {}
         }

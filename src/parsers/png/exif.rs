@@ -108,8 +108,8 @@ pub fn parse_and_insert_exif_tags(exif_data: &[u8], metadata: &mut MetadataMap) 
     }
 
     // Parse EXIF Sub-IFD if present
-    if let Some(offset) = exif_ifd_offset {
-        if let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+    if let Some(offset) = exif_ifd_offset
+        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
                 let base_tag_name = lookup_tag_name(tag_id, "ExifIFD");
                 let tag_value =
@@ -132,11 +132,10 @@ pub fn parse_and_insert_exif_tags(exif_data: &[u8], metadata: &mut MetadataMap) 
                 }
             }
         }
-    }
 
     // Parse GPS Sub-IFD if present
-    if let Some(offset) = gps_ifd_offset {
-        if let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+    if let Some(offset) = gps_ifd_offset
+        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
                 // GPS tags keep their "GPS:" prefix even in PNG eXIf chunks
                 let tag_name = lookup_tag_name(tag_id, "GPS");
@@ -145,7 +144,6 @@ pub fn parse_and_insert_exif_tags(exif_data: &[u8], metadata: &mut MetadataMap) 
                 metadata.insert(tag_name, tag_value);
             }
         }
-    }
 
     Ok(())
 }

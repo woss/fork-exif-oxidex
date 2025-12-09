@@ -274,14 +274,13 @@ fn extract_signature_fields(sig_data: &[u8], metadata: &mut MetadataMap) {
     }
 
     // Extract signing date and format it
-    if let Ok(date_str) = extract_string_field(sig_data, "/M") {
-        if let Some(formatted_date) = format_pdf_date(&date_str) {
+    if let Ok(date_str) = extract_string_field(sig_data, "/M")
+        && let Some(formatted_date) = format_pdf_date(&date_str) {
             metadata.insert(
                 "PDF:SigningDate".to_string(),
                 TagValue::new_string(formatted_date),
             );
         }
-    }
 }
 
 /// Extracts a string value for a given dictionary key

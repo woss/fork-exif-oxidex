@@ -199,8 +199,8 @@ fn parse_core_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                 current_element = String::from_utf8_lossy(e.local_name().as_ref()).to_string();
             }
             Ok(Event::Text(e)) => {
-                if let Ok(text) = e.xml_content() {
-                    if !text.is_empty() {
+                if let Ok(text) = e.xml_content()
+                    && !text.is_empty() {
                         let tag_name = match current_element.as_str() {
                             "title" => "OOXML:Title",
                             "creator" => "OOXML:Creator",
@@ -222,7 +222,6 @@ fn parse_core_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                         metadata
                             .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
                     }
-                }
             }
             Ok(Event::Eof) => break,
             Err(e) => {
@@ -253,8 +252,8 @@ fn parse_app_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                 current_element = String::from_utf8_lossy(e.local_name().as_ref()).to_string();
             }
             Ok(Event::Text(e)) => {
-                if let Ok(text) = e.xml_content() {
-                    if !text.is_empty() {
+                if let Ok(text) = e.xml_content()
+                    && !text.is_empty() {
                         let tag_name = match current_element.as_str() {
                             "Application" => "OOXML:Application",
                             "Pages" => "OOXML:Pages",
@@ -295,7 +294,6 @@ fn parse_app_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> {
                         metadata
                             .insert(tag_name.to_string(), TagValue::new_string(text.to_string()));
                     }
-                }
             }
             Ok(Event::Eof) => break,
             Err(_) => break,
@@ -340,12 +338,11 @@ fn parse_custom_properties(xml: &str, metadata: &mut MetadataMap) -> Result<()> 
                 }
             }
             Ok(Event::Text(e)) => {
-                if in_value && !current_property_name.is_empty() {
-                    if let Ok(text) = e.xml_content() {
+                if in_value && !current_property_name.is_empty()
+                    && let Ok(text) = e.xml_content() {
                         let tag_name = format!("OOXML:Custom:{}", current_property_name);
                         metadata.insert(tag_name, TagValue::new_string(text.to_string()));
                     }
-                }
             }
             Ok(Event::End(e)) => {
                 let element_name = String::from_utf8_lossy(e.local_name().as_ref()).to_string();

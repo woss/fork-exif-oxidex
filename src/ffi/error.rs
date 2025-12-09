@@ -94,7 +94,7 @@ pub fn error_to_code(err: &ExifToolError) -> c_int {
 ///
 /// # Thread Safety
 /// Thread-safe. Each thread has its own error message.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_get_last_error() -> *const c_char {
     // This function must never panic
     let result = catch_unwind(|| {

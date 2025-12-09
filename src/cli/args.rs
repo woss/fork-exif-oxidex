@@ -581,36 +581,32 @@ fn extract_arg_from_error(error_msg: &str) -> Option<String> {
     // This occurs when lexopt parses "-EXIF:Artist=value" as "-E" with unexpected value
     if error_msg.contains("unexpected argument for option") {
         // Extract the option part (e.g., '-E')
-        if let Some(start) = error_msg.find('\'') {
-            if let Some(end) = error_msg[start + 1..].find('\'') {
+        if let Some(start) = error_msg.find('\'')
+            && let Some(end) = error_msg[start + 1..].find('\'') {
                 let option = &error_msg[start + 1..start + 1 + end];
 
                 // Extract the value part (after the colon and space, between quotes)
-                if let Some(value_start) = error_msg.find(": \"") {
-                    if let Some(value_end) = error_msg[value_start + 3..].find('"') {
+                if let Some(value_start) = error_msg.find(": \"")
+                    && let Some(value_end) = error_msg[value_start + 3..].find('"') {
                         let value = &error_msg[value_start + 3..value_start + 3 + value_end];
                         // Reconstruct the full argument by combining option and value
                         // e.g., '-E' + 'XIF:Artist=value' = '-EXIF:Artist=value'
                         return Some(format!("{}{}", option, value));
                     }
-                }
             }
-        }
     }
 
     // Try to find quoted text in the error message
-    if let Some(start) = error_msg.find('\'') {
-        if let Some(end) = error_msg[start + 1..].find('\'') {
+    if let Some(start) = error_msg.find('\'')
+        && let Some(end) = error_msg[start + 1..].find('\'') {
             return Some(error_msg[start + 1..start + 1 + end].to_string());
         }
-    }
 
     // Try double quotes as fallback
-    if let Some(start) = error_msg.find('"') {
-        if let Some(end) = error_msg[start + 1..].find('"') {
+    if let Some(start) = error_msg.find('"')
+        && let Some(end) = error_msg[start + 1..].find('"') {
             return Some(error_msg[start + 1..start + 1 + end].to_string());
         }
-    }
 
     None
 }

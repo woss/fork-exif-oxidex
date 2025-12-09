@@ -151,19 +151,18 @@ impl NintendoParser {
         // Handle string tags (Model, SystemVersion, GameTitle)
         match tag_id {
             0x0001 | 0x0002 | 0x0107 => {
-                if let Some(s) = extract_string(entry, data, byte_order) {
-                    if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
+                if let Some(s) = extract_string(entry, data, byte_order)
+                    && let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
                         tags.insert(format!("Nintendo:{}", name), s);
                     }
-                }
                 return;
             }
             _ => {}
         }
 
         // Handle i16 array tags
-        if let Some(array) = extract_i16_array(entry, data, byte_order) {
-            if let Some(&value) = array.first() {
+        if let Some(array) = extract_i16_array(entry, data, byte_order)
+            && let Some(&value) = array.first() {
                 let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
                     Some(name) => name,
                     None => return,
@@ -187,7 +186,6 @@ impl NintendoParser {
 
                 tags.insert(format!("Nintendo:{}", tag_name), formatted_value);
             }
-        }
     }
 }
 

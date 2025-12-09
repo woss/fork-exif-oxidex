@@ -494,15 +494,14 @@ impl MakerNoteParser for GoProParser {
                 }
             } else {
                 // Try to extract as i16 array - most GoPro tags use this type
-                if let Some(array) = extract_i16_array(entry, parse_data, byte_order) {
-                    if let Some(&val) = array.first() {
+                if let Some(array) = extract_i16_array(entry, parse_data, byte_order)
+                    && let Some(&val) = array.first() {
                         // Registry lookup: get tag name and decode value in one step
                         if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
                             let formatted_value = registry.decode_i16(entry.tag_id, val);
                             tags.insert(format!("GoPro:{}", tag_name), formatted_value);
                         }
                     }
-                }
             }
         })?;
 

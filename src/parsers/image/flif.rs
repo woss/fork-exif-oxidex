@@ -191,14 +191,13 @@ fn parse_flif_metadata_chunks(
                 );
             }
             b"eXmp" => {
-                if let Ok(xmp_data) = reader.read(offset, chunk_size as usize) {
-                    if let Ok(xmp_str) = std::str::from_utf8(xmp_data) {
+                if let Ok(xmp_data) = reader.read(offset, chunk_size as usize)
+                    && let Ok(xmp_str) = std::str::from_utf8(xmp_data) {
                         metadata.insert(
                             "XMP:RawXMP".to_string(),
                             TagValue::String(xmp_str.to_string()),
                         );
                     }
-                }
             }
             _ => {}
         }

@@ -155,8 +155,8 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
     for idx in &super_blob.index {
         if idx.blob_type == 0 {
             // CSSLOT_CODEDIRECTORY
-            if (idx.offset as usize) < data.len() {
-                if let Ok((_, cd)) = parse_code_directory(&data[idx.offset as usize..]) {
+            if (idx.offset as usize) < data.len()
+                && let Ok((_, cd)) = parse_code_directory(&data[idx.offset as usize..]) {
                     info.identifier = if cd.identifier.is_empty() {
                         None
                     } else {
@@ -167,7 +167,6 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
                     info.cd_version = cd.version;
                     info.n_code_slots = cd.n_code_slots;
                 }
-            }
         }
 
         // Check for entitlements
@@ -176,11 +175,10 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
             info.has_entitlements = true;
 
             // Try to extract entitlement keys
-            if (idx.offset as usize) < data.len() {
-                if let Some(keys) = extract_entitlement_keys(&data[idx.offset as usize..]) {
+            if (idx.offset as usize) < data.len()
+                && let Some(keys) = extract_entitlement_keys(&data[idx.offset as usize..]) {
                     info.entitlement_keys = keys;
                 }
-            }
         }
 
         // Check for CMS signature
@@ -189,11 +187,10 @@ pub fn parse_code_signature_info(data: &[u8]) -> Option<CodeSignatureInfo> {
             info.has_cms_signature = true;
 
             // Try to extract signer name from CMS signature
-            if (idx.offset as usize) < data.len() {
-                if let Some(signer) = extract_signer_from_cms(&data[idx.offset as usize..]) {
+            if (idx.offset as usize) < data.len()
+                && let Some(signer) = extract_signer_from_cms(&data[idx.offset as usize..]) {
                     info.signer_name = Some(signer);
                 }
-            }
         }
     }
 

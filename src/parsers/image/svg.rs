@@ -126,29 +126,26 @@ impl FormatParser for SVGParser {
             let svg_tag = &text[svg_start..svg_end];
 
             // Extract width and height
-            if let Some(width) = Self::extract_attribute(svg_tag, "width") {
-                if let Some(parsed) = Self::parse_dimension(&width) {
+            if let Some(width) = Self::extract_attribute(svg_tag, "width")
+                && let Some(parsed) = Self::parse_dimension(&width) {
                     metadata.insert("ImageWidth".to_string(), TagValue::String(parsed));
                 }
-            }
 
-            if let Some(height) = Self::extract_attribute(svg_tag, "height") {
-                if let Some(parsed) = Self::parse_dimension(&height) {
+            if let Some(height) = Self::extract_attribute(svg_tag, "height")
+                && let Some(parsed) = Self::parse_dimension(&height) {
                     metadata.insert("ImageHeight".to_string(), TagValue::String(parsed));
                 }
-            }
 
             // Extract viewBox for dimensions if width/height not present
             if let Some(viewbox) = Self::extract_attribute(svg_tag, "viewBox") {
                 metadata.insert("SVG:ViewBox".to_string(), TagValue::String(viewbox.clone()));
 
                 // If no width/height, try to extract from viewBox
-                if !metadata.contains_key("ImageWidth") {
-                    if let Some((vb_width, vb_height)) = Self::parse_viewbox(&viewbox) {
+                if !metadata.contains_key("ImageWidth")
+                    && let Some((vb_width, vb_height)) = Self::parse_viewbox(&viewbox) {
                         metadata.insert("ImageWidth".to_string(), TagValue::String(vb_width));
                         metadata.insert("ImageHeight".to_string(), TagValue::String(vb_height));
                     }
-                }
             }
 
             // Extract xmlns (namespace)

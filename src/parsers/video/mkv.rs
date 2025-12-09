@@ -879,14 +879,13 @@ fn parse_chapter_display(
             Ok((elem_id, elem_size, hdr_size)) => {
                 let data_offset = offset + hdr_size;
 
-                if elem_id == CHAP_STRING {
-                    if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
+                if elem_id == CHAP_STRING
+                    && let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
                         metadata.insert(
                             format!("{}Title", chapter_prefix),
                             TagValue::new_string(value),
                         );
                     }
-                }
 
                 offset = data_offset + elem_size;
             }

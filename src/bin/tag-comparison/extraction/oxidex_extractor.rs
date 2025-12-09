@@ -231,18 +231,16 @@ impl OxiDexExtractor {
                 }
 
                 // FlashpixVersion - 4 ASCII bytes representing version (e.g., "0100")
-                if name == "FlashpixVersion" && bytes.len() == 4 {
-                    if let Ok(s) = std::str::from_utf8(bytes) {
+                if name == "FlashpixVersion" && bytes.len() == 4
+                    && let Ok(s) = std::str::from_utf8(bytes) {
                         return s.to_string();
                     }
-                }
 
                 // ExifVersion - 4 ASCII bytes representing version (e.g., "0232")
-                if name == "ExifVersion" && bytes.len() == 4 {
-                    if let Ok(s) = std::str::from_utf8(bytes) {
+                if name == "ExifVersion" && bytes.len() == 4
+                    && let Ok(s) = std::str::from_utf8(bytes) {
                         return s.to_string();
                     }
-                }
 
                 // UserComment - starts with 8-byte encoding identifier followed by data
                 // Encoding prefixes: "ASCII\0\0\0", "UNICODE\0", "JIS\0\0\0\0\0", etc.
@@ -367,12 +365,11 @@ impl OxiDexExtractor {
             tag_map
                 .get("EXIF:ImageHeight")
                 .or(tag_map.get("File:ImageHeight")),
-        ) {
-            if let (Ok(width), Ok(height)) = (w.parse::<f64>(), h.parse::<f64>()) {
+        )
+            && let (Ok(width), Ok(height)) = (w.parse::<f64>(), h.parse::<f64>()) {
                 let mp = (width * height) / 1_000_000.0;
                 tag_map.insert("Composite:Megapixels".to_string(), format!("{:.3}", mp));
             }
-        }
 
         // Aperture - copy from FNumber
         if let Some(f) = tag_map.get("EXIF:FNumber") {
@@ -450,11 +447,10 @@ impl OxiDexExtractor {
 
         for (key, value) in metadata.iter() {
             // Check if original family should be skipped (pseudo-tags)
-            if let Some((original_family, _)) = key.split_once(':') {
-                if Self::should_skip_family(original_family) {
+            if let Some((original_family, _)) = key.split_once(':')
+                && Self::should_skip_family(original_family) {
                     continue;
                 }
-            }
 
             // Normalize the tag family (core library normalization + comparison-specific)
             let normalized_key = Self::normalize_for_comparison(&normalize_tag_family(key), format);

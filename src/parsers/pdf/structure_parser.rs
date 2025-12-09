@@ -106,14 +106,13 @@ pub fn parse_structure_metadata(reader: &dyn FileReader) -> Result<MetadataMap> 
 
     // Count annotations in the document
     // This searches for /Annots arrays in page objects
-    if let Ok(annot_count) = count_annotations(reader, &context) {
-        if annot_count > 0 {
+    if let Ok(annot_count) = count_annotations(reader, &context)
+        && annot_count > 0 {
             metadata.insert(
                 "PDF:AnnotationCount".to_string(),
                 TagValue::new_integer(annot_count as i64),
             );
         }
-    }
 
     Ok(metadata)
 }
@@ -198,19 +197,18 @@ fn check_has_acroform(root_data: &[u8]) -> bool {
 /// Looks for /XFA key within the AcroForm dictionary.
 fn check_has_xfa(root_data: &[u8], reader: &dyn FileReader, context: &PdfContext) -> bool {
     // First, try to check in the Root data directly
-    if let Ok(acroform_data) = extract_dict_after_key(root_data, b"/AcroForm") {
-        if acroform_data
+    if let Ok(acroform_data) = extract_dict_after_key(root_data, b"/AcroForm")
+        && acroform_data
             .windows(b"/XFA".len())
             .any(|window| window == b"/XFA")
         {
             return true;
         }
-    }
 
     // If /AcroForm is a reference, follow it
-    if let Ok(acroform_ref) = find_acroform_reference(root_data) {
-        if let Ok(offset) = context.get_object_offset(acroform_ref.object_num, "AcroForm") {
-            if let Ok(acroform_obj_data) = reader.read(
+    if let Ok(acroform_ref) = find_acroform_reference(root_data)
+        && let Ok(offset) = context.get_object_offset(acroform_ref.object_num, "AcroForm")
+            && let Ok(acroform_obj_data) = reader.read(
                 offset,
                 std::cmp::min(4096, reader.size().saturating_sub(offset) as usize),
             ) {
@@ -218,8 +216,6 @@ fn check_has_xfa(root_data: &[u8], reader: &dyn FileReader, context: &PdfContext
                     .windows(b"/XFA".len())
                     .any(|window| window == b"/XFA");
             }
-        }
-    }
 
     false
 }

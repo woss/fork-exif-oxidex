@@ -33,7 +33,7 @@ use super::error::{
 ///
 /// # Thread Safety
 /// Not thread-safe. Do not call concurrently on the same handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_set_tag_string(
     handle: *mut ExifToolHandle,
     tag_name: *const c_char,
@@ -102,7 +102,7 @@ pub extern "C" fn exiftool_set_tag_string(
 ///
 /// # Thread Safety
 /// Not thread-safe.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_set_tag_integer(
     handle: *mut ExifToolHandle,
     tag_name: *const c_char,
@@ -163,7 +163,7 @@ pub extern "C" fn exiftool_set_tag_integer(
 ///
 /// # Thread Safety
 /// Not thread-safe.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_set_tag_float(
     handle: *mut ExifToolHandle,
     tag_name: *const c_char,
@@ -228,7 +228,7 @@ pub extern "C" fn exiftool_set_tag_float(
 ///
 /// # Thread Safety
 /// Not thread-safe.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_remove_tag(
     handle: *mut ExifToolHandle,
     tag_name: *const c_char,
@@ -290,7 +290,7 @@ pub extern "C" fn exiftool_remove_tag(
 ///
 /// # Thread Safety
 /// Thread-safe for read-only access to handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_write_file(
     handle: *const ExifToolHandle,
     filepath: *const c_char,

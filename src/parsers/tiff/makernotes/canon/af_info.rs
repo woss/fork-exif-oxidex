@@ -170,25 +170,23 @@ pub fn parse_canon_af_info(data: &[u8], byte_order: bool) -> MetadataMap {
     let read_i16 = |index: usize| -> Option<i16> { reader.i16_at(index * 2) };
 
     // Parse NumAFPoints - total AF points on the camera
-    if let Some(num_points) = read_i16(AF_NUM_AF_POINTS) {
-        if num_points > 0 && num_points <= 1000 {
+    if let Some(num_points) = read_i16(AF_NUM_AF_POINTS)
+        && num_points > 0 && num_points <= 1000 {
             // Sanity check: no camera has >1000 AF points
             metadata.insert(
                 "Canon:NumAFPoints",
                 TagValue::new_integer(num_points as i64),
             );
         }
-    }
 
     // Parse ValidAFPoints - number of active/available AF points
-    if let Some(valid_points) = read_i16(AF_VALID_AF_POINTS) {
-        if (0..=1000).contains(&valid_points) {
+    if let Some(valid_points) = read_i16(AF_VALID_AF_POINTS)
+        && (0..=1000).contains(&valid_points) {
             metadata.insert(
                 "Canon:ValidAFPoints",
                 TagValue::new_integer(valid_points as i64),
             );
         }
-    }
 
     // Parse AFAreaMode - how AF points are selected
     if let Some(area_mode) = read_i16(AF_AREA_MODE) {

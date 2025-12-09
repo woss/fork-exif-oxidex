@@ -275,12 +275,11 @@ fn parse_mp_index_ifd(
 
     // Check for MP Attribute IFD offset (after IFD entries + next IFD pointer)
     let next_ifd_offset_pos = offset + 2 + (entry_count * 12);
-    if let Some(attr_ifd_offset) = reader.u32_at(next_ifd_offset_pos) {
-        if attr_ifd_offset > 0 {
+    if let Some(attr_ifd_offset) = reader.u32_at(next_ifd_offset_pos)
+        && attr_ifd_offset > 0 {
             // Parse MP Attribute IFD (IFD 1)
             parse_mp_attribute_ifd(reader, attr_ifd_offset as usize, metadata)?;
         }
-    }
 
     Ok(())
 }
@@ -312,12 +311,11 @@ fn parse_mpf_version(
     } else {
         // Value is at offset
         let offset = value_or_offset as usize;
-        if let Some(bytes) = reader.bytes_at(offset, value_count.min(4)) {
-            if let Ok(s) = std::str::from_utf8(bytes) {
+        if let Some(bytes) = reader.bytes_at(offset, value_count.min(4))
+            && let Ok(s) = std::str::from_utf8(bytes) {
                 // Return raw version string for ExifTool compatibility
                 return Ok(s.trim_end_matches('\0').to_string());
             }
-        }
     }
     Ok("Unknown".to_string())
 }

@@ -347,15 +347,14 @@ impl LNKParser {
                 if let Ok(bytes) = reader.read(
                     path_offset,
                     std::cmp::min(260, (reader.size() - path_offset) as usize),
-                ) {
-                    if let Some(null_pos) = bytes.iter().position(|&b| b == 0) {
+                )
+                    && let Some(null_pos) = bytes.iter().position(|&b| b == 0) {
                         let path_str = String::from_utf8_lossy(&bytes[..null_pos]);
                         metadata.insert(
                             "LocalBasePath".to_string(),
                             TagValue::String(path_str.to_string()),
                         );
                     }
-                }
             }
         }
 
@@ -585,13 +584,11 @@ impl FormatParser for LNKParser {
         let mut current_offset = LNK_HEADER_SIZE as u64;
 
         // Skip LinkTargetIDList if present
-        if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0 && current_offset + 2 <= reader.size() {
-            if let Ok(id_list_bytes) = reader.read(current_offset, 2) {
-                if let Some(id_list_size) = EndianReader::little_endian(id_list_bytes).u16_at(0) {
+        if link_flags & FLAG_HAS_LINK_TARGET_ID_LIST != 0 && current_offset + 2 <= reader.size()
+            && let Ok(id_list_bytes) = reader.read(current_offset, 2)
+                && let Some(id_list_size) = EndianReader::little_endian(id_list_bytes).u16_at(0) {
                     current_offset += 2 + id_list_size as u64;
                 }
-            }
-        }
 
         // Read LinkInfo if present
         if link_flags & FLAG_HAS_LINK_INFO != 0 {
@@ -602,8 +599,8 @@ impl FormatParser for LNKParser {
         let is_unicode = (link_flags & FLAG_IS_UNICODE) != 0;
 
         // Read String Data structures
-        if link_flags & FLAG_HAS_NAME != 0 {
-            if let Ok((name, bytes_read)) =
+        if link_flags & FLAG_HAS_NAME != 0
+            && let Ok((name, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
             {
                 if !name.is_empty() {
@@ -611,10 +608,9 @@ impl FormatParser for LNKParser {
                 }
                 current_offset += bytes_read as u64;
             }
-        }
 
-        if link_flags & FLAG_HAS_RELATIVE_PATH != 0 {
-            if let Ok((path, bytes_read)) =
+        if link_flags & FLAG_HAS_RELATIVE_PATH != 0
+            && let Ok((path, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
             {
                 if !path.is_empty() {
@@ -622,10 +618,9 @@ impl FormatParser for LNKParser {
                 }
                 current_offset += bytes_read as u64;
             }
-        }
 
-        if link_flags & FLAG_HAS_WORKING_DIR != 0 {
-            if let Ok((dir, bytes_read)) =
+        if link_flags & FLAG_HAS_WORKING_DIR != 0
+            && let Ok((dir, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
             {
                 if !dir.is_empty() {
@@ -633,10 +628,9 @@ impl FormatParser for LNKParser {
                 }
                 current_offset += bytes_read as u64;
             }
-        }
 
-        if link_flags & FLAG_HAS_ARGUMENTS != 0 {
-            if let Ok((args, bytes_read)) =
+        if link_flags & FLAG_HAS_ARGUMENTS != 0
+            && let Ok((args, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
             {
                 if !args.is_empty() {
@@ -644,10 +638,9 @@ impl FormatParser for LNKParser {
                 }
                 current_offset += bytes_read as u64;
             }
-        }
 
-        if link_flags & FLAG_HAS_ICON_LOCATION != 0 {
-            if let Ok((icon, bytes_read)) =
+        if link_flags & FLAG_HAS_ICON_LOCATION != 0
+            && let Ok((icon, bytes_read)) =
                 Self::read_string_data(reader, current_offset, is_unicode)
             {
                 if !icon.is_empty() {
@@ -655,7 +648,6 @@ impl FormatParser for LNKParser {
                 }
                 current_offset += bytes_read as u64;
             }
-        }
 
         // Read Extra Data Blocks (forensic tracking information)
         let _ = Self::read_extra_data_blocks(reader, current_offset, &mut metadata);

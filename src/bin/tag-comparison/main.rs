@@ -193,13 +193,11 @@ fn detect_formats(
                     {
                         scan_directory(&path, formats)?;
                     }
-                } else if path.is_file() {
-                    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                        if let Some(format) = extension_to_format(ext) {
+                } else if path.is_file()
+                    && let Some(ext) = path.extension().and_then(|e| e.to_str())
+                        && let Some(format) = extension_to_format(ext) {
                             formats.insert(format.to_string());
                         }
-                    }
-                }
             }
         }
         Ok(())

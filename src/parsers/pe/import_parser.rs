@@ -150,13 +150,11 @@ pub fn parse_dll_imports(
         } else {
             // Read import by name structure
             let name_rva = value as u32;
-            if let Some(name_offset) = rva_to_file_offset(name_rva, sections) {
-                if let Ok(name_data) = reader.read(name_offset, 256) {
-                    if let Ok((_, (hint, name))) = parse_import_by_name(name_data) {
+            if let Some(name_offset) = rva_to_file_offset(name_rva, sections)
+                && let Ok(name_data) = reader.read(name_offset, 256)
+                    && let Ok((_, (hint, name))) = parse_import_by_name(name_data) {
                         functions.push(ImportFunction::ByName { hint, name });
                     }
-                }
-            }
         }
     }
 

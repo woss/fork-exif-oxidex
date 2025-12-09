@@ -170,8 +170,8 @@ impl ParrotParser {
         }
 
         // Handle i16 array tags (flight metrics, gimbal angles, battery, etc.)
-        if let Some(array) = extract_i16_array(entry, data, byte_order) {
-            if let Some(&value) = array.first() {
+        if let Some(array) = extract_i16_array(entry, data, byte_order)
+            && let Some(&value) = array.first() {
                 // Apply tag-specific formatting
                 let formatted_value = match tag_id {
                     // Flight mode has a registry decoder
@@ -207,7 +207,6 @@ impl ParrotParser {
 
                 tags.insert(format!("Parrot:{}", tag_name), formatted_value);
             }
-        }
     }
 }
 

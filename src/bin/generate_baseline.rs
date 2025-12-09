@@ -343,11 +343,10 @@ fn find_test_images(dir: &Path) -> Result<Vec<PathBuf>, String> {
                 let path = entry.path();
                 if path.is_dir() {
                     visit_dirs(&path, images, extensions)?;
-                } else if let Some(ext) = path.extension() {
-                    if extensions.contains(&ext.to_str().unwrap_or("").to_lowercase().as_str()) {
+                } else if let Some(ext) = path.extension()
+                    && extensions.contains(&ext.to_str().unwrap_or("").to_lowercase().as_str()) {
                         images.push(path);
                     }
-                }
             }
         }
         Ok(())

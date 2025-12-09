@@ -408,26 +408,23 @@ pub fn parse_nikon_color_balance(data: &[u8], byte_order: bool) -> MetadataMap {
 /// - WB_RBLevelsAuto (4 bytes) - may not be present
 fn parse_type1_color_balance(data: &[u8], big_endian: bool, metadata: &mut MetadataMap) {
     // WB_RBLevels (current white balance)
-    if let Some((red, blue)) = extract_rb_levels(data, OFFSET_WB_RBLEVELS, big_endian) {
-        if is_valid_rb_level(red) && is_valid_rb_level(blue) {
+    if let Some((red, blue)) = extract_rb_levels(data, OFFSET_WB_RBLEVELS, big_endian)
+        && is_valid_rb_level(red) && is_valid_rb_level(blue) {
             metadata.insert(
                 "Nikon:WB_RBLevels",
                 TagValue::new_string(format_rb_levels(red, blue)),
             );
         }
-    }
 
     // WB_RBLevelsAuto (if data is long enough)
-    if data.len() >= OFFSET_WB_RBLEVELS_AUTO + RB_PAIR_SIZE {
-        if let Some((red, blue)) = extract_rb_levels(data, OFFSET_WB_RBLEVELS_AUTO, big_endian) {
-            if is_valid_rb_level(red) && is_valid_rb_level(blue) {
+    if data.len() >= OFFSET_WB_RBLEVELS_AUTO + RB_PAIR_SIZE
+        && let Some((red, blue)) = extract_rb_levels(data, OFFSET_WB_RBLEVELS_AUTO, big_endian)
+            && is_valid_rb_level(red) && is_valid_rb_level(blue) {
                 metadata.insert(
                     "Nikon:WB_RBLevelsAuto",
                     TagValue::new_string(format_rb_levels(red, blue)),
                 );
             }
-        }
-    }
 }
 
 /// Parses Type 2/Type 3 ColorBalance format (modern Nikon cameras).
@@ -455,37 +452,31 @@ fn parse_type2_color_balance(data: &[u8], big_endian: bool, metadata: &mut Metad
 
     // Parse each preset that fits within the data
     for (offset, tag_name) in presets {
-        if data.len() >= *offset + RB_PAIR_SIZE {
-            if let Some((red, blue)) = extract_rb_levels(data, *offset, big_endian) {
-                if is_valid_rb_level(red) && is_valid_rb_level(blue) {
+        if data.len() >= *offset + RB_PAIR_SIZE
+            && let Some((red, blue)) = extract_rb_levels(data, *offset, big_endian)
+                && is_valid_rb_level(red) && is_valid_rb_level(blue) {
                     metadata.insert(*tag_name, TagValue::new_string(format_rb_levels(red, blue)));
                 }
-            }
-        }
     }
 
     // Parse color temperature values if present
-    if data.len() >= OFFSET_COLOR_TEMPERATURE + 2 {
-        if let Some(temp) = read_u16(data, OFFSET_COLOR_TEMPERATURE, big_endian) {
-            if is_valid_color_temperature(temp) {
+    if data.len() >= OFFSET_COLOR_TEMPERATURE + 2
+        && let Some(temp) = read_u16(data, OFFSET_COLOR_TEMPERATURE, big_endian)
+            && is_valid_color_temperature(temp) {
                 metadata.insert(
                     "Nikon:ColorTemperature",
                     TagValue::new_integer(i64::from(temp)),
                 );
             }
-        }
-    }
 
-    if data.len() >= OFFSET_COLOR_TEMPERATURE_AUTO + 2 {
-        if let Some(temp) = read_u16(data, OFFSET_COLOR_TEMPERATURE_AUTO, big_endian) {
-            if is_valid_color_temperature(temp) {
+    if data.len() >= OFFSET_COLOR_TEMPERATURE_AUTO + 2
+        && let Some(temp) = read_u16(data, OFFSET_COLOR_TEMPERATURE_AUTO, big_endian)
+            && is_valid_color_temperature(temp) {
                 metadata.insert(
                     "Nikon:ColorTemperatureAuto",
                     TagValue::new_integer(i64::from(temp)),
                 );
             }
-        }
-    }
 }
 
 /// Parses ColorBalance data conservatively for unknown formats.
@@ -494,16 +485,14 @@ fn parse_type2_color_balance(data: &[u8], big_endian: bool, metadata: &mut Metad
 /// data when the format version is not recognized.
 fn parse_minimal_color_balance(data: &[u8], big_endian: bool, metadata: &mut MetadataMap) {
     // Only try to extract the primary WB_RBLevels
-    if data.len() >= WB_DATA_OFFSET + RB_PAIR_SIZE {
-        if let Some((red, blue)) = extract_rb_levels(data, WB_DATA_OFFSET, big_endian) {
-            if is_valid_rb_level(red) && is_valid_rb_level(blue) {
+    if data.len() >= WB_DATA_OFFSET + RB_PAIR_SIZE
+        && let Some((red, blue)) = extract_rb_levels(data, WB_DATA_OFFSET, big_endian)
+            && is_valid_rb_level(red) && is_valid_rb_level(blue) {
                 metadata.insert(
                     "Nikon:WB_RBLevels",
                     TagValue::new_string(format_rb_levels(red, blue)),
                 );
             }
-        }
-    }
 }
 
 // ============================================================================

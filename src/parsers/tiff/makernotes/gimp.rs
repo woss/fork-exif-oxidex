@@ -96,12 +96,11 @@ impl MakerNoteParser for GimpParser {
                     // Numeric tags - try as i16 array
                     if let Some(array) = super::shared::array_extractors::extract_i16_array(
                         entry, parse_data, byte_order,
-                    ) {
-                        if let Some(&val) = array.first() {
+                    )
+                        && let Some(&val) = array.first() {
                             let formatted_value = registry.decode_i16(entry.tag_id, val);
                             tags.insert(format!("GIMP:{}", tag_name), formatted_value);
                         }
-                    }
                 }
             }
         })?;

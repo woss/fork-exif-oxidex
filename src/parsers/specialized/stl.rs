@@ -130,13 +130,12 @@ impl STLParser {
                         lines.next().and_then(|l| l.trim().strip_prefix("vertex "))
                     {
                         let parts: Vec<&str> = coords.split_whitespace().collect();
-                        if parts.len() >= 3 {
-                            if let (Ok(x), Ok(y), Ok(z)) =
+                        if parts.len() >= 3
+                            && let (Ok(x), Ok(y), Ok(z)) =
                                 (parts[0].parse(), parts[1].parse(), parts[2].parse())
                             {
                                 bbox.update(x, y, z);
                             }
-                        }
                     }
                 }
             }

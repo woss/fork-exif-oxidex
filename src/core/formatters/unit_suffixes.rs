@@ -185,11 +185,10 @@ fn format_exposure_time_with_suffix(value: &str) -> String {
 
     // Try to parse as a numeric value to determine if >= 1 second
     // Handle both integer ("2") and decimal ("1.5") formats
-    if let Ok(numeric_value) = value.parse::<f64>() {
-        if numeric_value >= 1.0 {
+    if let Ok(numeric_value) = value.parse::<f64>()
+        && numeric_value >= 1.0 {
             return format!("{} s", value);
         }
-    }
 
     // Unable to parse or value < 1 second - return unchanged
     value.to_string()

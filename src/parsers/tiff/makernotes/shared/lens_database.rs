@@ -95,11 +95,10 @@ impl CombinedLensDb {
 impl LensDatabase for CombinedLensDb {
     fn lookup(&self, lens_id: u16) -> Option<&'static str> {
         // Try static database first
-        if let Some(db) = self.static_db {
-            if let Some(name) = db.lookup(lens_id) {
+        if let Some(db) = self.static_db
+            && let Some(name) = db.lookup(lens_id) {
                 return Some(name);
             }
-        }
 
         // Fall back to range database
         if let Some(db) = self.range_db {

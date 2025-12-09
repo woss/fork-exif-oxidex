@@ -271,8 +271,8 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                 }
 
                 // Parse EXIF Sub-IFD if present
-                if let Some(offset) = exif_ifd_offset {
-                    if let Ok(exif_tags) = parse_ifd(&reader, offset, byte_order) {
+                if let Some(offset) = exif_ifd_offset
+                    && let Ok(exif_tags) = parse_ifd(&reader, offset, byte_order) {
                         // Also check EXIF IFD for MakerNote and Make tags
                         let mut exif_makernote: Option<Vec<u8>> = None;
                         let mut exif_make: Option<String> = None;
@@ -311,7 +311,6 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                             camera_make = exif_make;
                         }
                     }
-                }
 
                 // Parse MakerNote if present and we have the camera make
                 if let (Some(make), Some(mn_data)) = (camera_make.as_ref(), makernote_data.as_ref())
@@ -335,8 +334,8 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                 }
 
                 // Parse GPS Sub-IFD if present
-                if let Some(offset) = gps_ifd_offset {
-                    if let Ok(gps_tags) = parse_ifd(&reader, offset, byte_order) {
+                if let Some(offset) = gps_ifd_offset
+                    && let Ok(gps_tags) = parse_ifd(&reader, offset, byte_order) {
                         for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
                             let tag_name = lookup_tag_name(tag_id, "GPS");
                             let tag_value = raw_bytes_to_simple_tag_value(
@@ -348,7 +347,6 @@ fn parse_tiff_based_raw(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                             metadata.insert(tag_name, tag_value);
                         }
                     }
-                }
 
                 // Parse SubIFD(s) if present - crucial for RAW formats
                 // SubIFDs contain RAW image data, compression info, and RAW-specific tags
@@ -475,15 +473,14 @@ fn extract_dng_tags(metadata: &mut MetadataMap) {
     // For example, parsing the DNGVersion bytes into a readable format
     // DNGVersion is stored as 4 bytes: major.minor.tertiary.quaternary
     // Example: [1, 4, 0, 0] = version 1.4.0.0
-    if let Some(TagValue::Binary(bytes)) = metadata.get("IFD0:DNGVersion") {
-        if bytes.len() >= 4 {
+    if let Some(TagValue::Binary(bytes)) = metadata.get("IFD0:DNGVersion")
+        && bytes.len() >= 4 {
             let version_str = format!("{}.{}.{}.{}", bytes[0], bytes[1], bytes[2], bytes[3]);
             metadata.insert(
                 "DNG:VersionString".to_string(),
                 TagValue::new_string(version_str),
             );
         }
-    }
 
     // Mark critical DNG tags for easier identification
     // This helps downstream applications know which color calibration data is available
@@ -567,8 +564,8 @@ fn extract_cr2_tags(metadata: &mut MetadataMap) {
         );
 
         // Extract RAW image dimensions if available
-        if let Some(width) = metadata.get("SubIFD0:ImageWidth") {
-            if let Some(height) = metadata.get("SubIFD0:ImageHeight") {
+        if let Some(width) = metadata.get("SubIFD0:ImageWidth")
+            && let Some(height) = metadata.get("SubIFD0:ImageHeight") {
                 let width_val = match width {
                     TagValue::Integer(i) => i.to_string(),
                     TagValue::String(s) => s.clone(),
@@ -584,7 +581,6 @@ fn extract_cr2_tags(metadata: &mut MetadataMap) {
                     TagValue::new_string(format!("{}x{}", width_val, height_val)),
                 );
             }
-        }
     }
 
     // Check for JPEG preview in IFD1
@@ -679,8 +675,8 @@ fn extract_nef_tags(metadata: &mut MetadataMap) {
         );
 
         // Extract RAW image dimensions
-        if let Some(width) = metadata.get("SubIFD0:ImageWidth") {
-            if let Some(height) = metadata.get("SubIFD0:ImageHeight") {
+        if let Some(width) = metadata.get("SubIFD0:ImageWidth")
+            && let Some(height) = metadata.get("SubIFD0:ImageHeight") {
                 let width_val = match width {
                     TagValue::Integer(i) => i.to_string(),
                     TagValue::String(s) => s.clone(),
@@ -696,7 +692,6 @@ fn extract_nef_tags(metadata: &mut MetadataMap) {
                     TagValue::new_string(format!("{}x{}", width_val, height_val)),
                 );
             }
-        }
     }
 
     // Check for bit depth
@@ -990,8 +985,8 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                                 }
 
                                 // Parse EXIF Sub-IFD if present
-                                if let Some(offset) = exif_ifd_offset {
-                                    if let Ok(exif_tags) =
+                                if let Some(offset) = exif_ifd_offset
+                                    && let Ok(exif_tags) =
                                         parse_ifd(&exif_reader, offset, byte_order)
                                     {
                                         for (tag_id, field_type, value_count, raw_bytes) in
@@ -1007,7 +1002,6 @@ fn parse_fujifilm_raf(data: &[u8], format: RawFormat) -> Result<MetadataMap> {
                                             metadata.insert(tag_name, tag_value);
                                         }
                                     }
-                                }
                             }
                         }
                     }

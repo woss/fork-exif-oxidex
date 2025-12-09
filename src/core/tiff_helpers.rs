@@ -385,12 +385,11 @@ fn parse_interop_subifd(
 
             // Apply special formatting for InteropIndex
             // ExifTool formats this as "R98 - DCF basic file (sRGB)" etc.
-            if tag_id == INTEROP_INDEX {
-                if let Some(raw_index) = tag_value.as_string() {
+            if tag_id == INTEROP_INDEX
+                && let Some(raw_index) = tag_value.as_string() {
                     let formatted = format_interop_index(raw_index);
                     tag_value = TagValue::String(formatted);
                 }
-            }
 
             metadata.insert(tag_name, tag_value);
         }

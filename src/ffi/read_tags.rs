@@ -38,7 +38,7 @@ use super::error::{
 ///
 /// # Thread Safety
 /// Not thread-safe. Do not call concurrently on the same handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_read_file(
     handle: *mut ExifToolHandle,
     filepath: *const c_char,
@@ -104,7 +104,7 @@ pub extern "C" fn exiftool_read_file(
 ///
 /// # Thread Safety
 /// Thread-safe for read-only access.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_get_tag_count(handle: *const ExifToolHandle) -> usize {
     let result = catch_unwind(AssertUnwindSafe(|| unsafe {
         if handle.is_null() {
@@ -139,7 +139,7 @@ pub extern "C" fn exiftool_get_tag_count(handle: *const ExifToolHandle) -> usize
 ///
 /// # Thread Safety
 /// Thread-safe for read-only access.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_get_tag_name_at(
     handle: *const ExifToolHandle,
     index: usize,
@@ -188,7 +188,7 @@ pub extern "C" fn exiftool_get_tag_name_at(
 ///
 /// # Thread Safety
 /// Thread-safe for read-only access.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_has_tag(
     handle: *const ExifToolHandle,
     tag_name: *const c_char,
@@ -239,7 +239,7 @@ pub extern "C" fn exiftool_has_tag(
 ///
 /// # Thread Safety
 /// Thread-safe for read-only access.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_get_tag_string(
     handle: *const ExifToolHandle,
     tag_name: *const c_char,
@@ -294,7 +294,7 @@ pub extern "C" fn exiftool_get_tag_string(
 ///
 /// # Thread Safety
 /// Thread-safe for read-only access.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_get_tag_integer(
     handle: *const ExifToolHandle,
     tag_name: *const c_char,
@@ -368,7 +368,7 @@ pub extern "C" fn exiftool_get_tag_integer(
 ///
 /// # Thread Safety
 /// Thread-safe for read-only access.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn exiftool_get_tag_float(
     handle: *const ExifToolHandle,
     tag_name: *const c_char,

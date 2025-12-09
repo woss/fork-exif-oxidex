@@ -275,9 +275,9 @@ impl RARParser {
             }
 
             // Try to parse header
-            if let Ok((_, pos1)) = Self::read_rar5_u32(block_data, 0) {
-                if let Ok((header_size, pos2)) = Self::read_rar5_vint(block_data, pos1) {
-                    if let Ok((header_type, _)) = Self::read_rar5_vint(block_data, pos2) {
+            if let Ok((_, pos1)) = Self::read_rar5_u32(block_data, 0)
+                && let Ok((header_size, pos2)) = Self::read_rar5_vint(block_data, pos1)
+                    && let Ok((header_type, _)) = Self::read_rar5_vint(block_data, pos2) {
                         if header_type == RAR5_HEADER_FILE {
                             file_count += 1;
                         }
@@ -294,8 +294,6 @@ impl RARParser {
                         }
                         continue;
                     }
-                }
-            }
             break;
         }
 

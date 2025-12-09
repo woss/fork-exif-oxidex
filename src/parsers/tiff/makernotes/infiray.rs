@@ -163,17 +163,16 @@ impl InfiRayParser {
 
         // Handle string tags (Model, Serial, Firmware)
         if let 0x0001..=0x0003 = tag_id {
-            if let Some(s) = extract_string(entry, data) {
-                if let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
+            if let Some(s) = extract_string(entry, data)
+                && let Some(name) = TAG_REGISTRY.get_tag_name(tag_id) {
                     tags.insert(format!("InfiRay:{}", name), s);
                 }
-            }
             return;
         }
 
         // Handle i16 array tags
-        if let Some(array) = extract_i16_array(entry, data, byte_order) {
-            if let Some(&val) = array.first() {
+        if let Some(array) = extract_i16_array(entry, data, byte_order)
+            && let Some(&val) = array.first() {
                 let tag_name = match TAG_REGISTRY.get_tag_name(tag_id) {
                     Some(name) => name,
                     None => return,
@@ -203,7 +202,6 @@ impl InfiRayParser {
 
                 tags.insert(format!("InfiRay:{}", tag_name), formatted_value);
             }
-        }
     }
 }
 

@@ -79,7 +79,8 @@ pub unsafe fn handle_to_context<'a>(handle: *const ExifToolHandle) -> Option<&'a
     if handle.is_null() {
         None
     } else {
-        Some(&*(handle as *const ExifToolContext))
+        // SAFETY: Caller guarantees handle is a valid pointer from Box::into_raw()
+        Some(unsafe { &*(handle as *const ExifToolContext) })
     }
 }
 
@@ -95,6 +96,7 @@ pub unsafe fn handle_to_context_mut<'a>(
     if handle.is_null() {
         None
     } else {
-        Some(&mut *(handle as *mut ExifToolContext))
+        // SAFETY: Caller guarantees handle is a valid pointer from Box::into_raw()
+        Some(unsafe { &mut *(handle as *mut ExifToolContext) })
     }
 }

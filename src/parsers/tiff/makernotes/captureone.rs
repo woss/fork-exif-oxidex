@@ -184,14 +184,12 @@ impl CaptureOneParser {
         }
 
         // Handle numeric tags using registry for O(1) lookup and automatic decoding
-        if let Some(tag_name) = CAPTUREONE_TAGS.get_tag_name(tag) {
-            if let Some(array) = extract_i16_array(entry, data, byte_order) {
-                if let Some(&val) = array.first() {
+        if let Some(tag_name) = CAPTUREONE_TAGS.get_tag_name(tag)
+            && let Some(array) = extract_i16_array(entry, data, byte_order)
+                && let Some(&val) = array.first() {
                     let decoded = CAPTUREONE_TAGS.decode_i16(tag, val);
                     tags.insert(format!("CaptureOne:{}", tag_name), decoded);
                 }
-            }
-        }
     }
 }
 

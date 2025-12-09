@@ -542,11 +542,10 @@ fn handle_ascii_type(bytes: &[u8]) -> TagValue {
     let s = String::from_utf8_lossy(bytes);
     let s = s.trim_end_matches('\0');
     if !s.is_empty() {
-        if is_datetime_string(s) {
-            if let Ok(dt) = parse_exif_datetime(s) {
+        if is_datetime_string(s)
+            && let Ok(dt) = parse_exif_datetime(s) {
                 return TagValue::DateTime(dt);
             }
-        }
         return TagValue::new_string(s.to_string());
     }
     TagValue::new_string(String::new())
@@ -584,11 +583,10 @@ fn heuristic_bytes_to_tag_value(bytes: &[u8], byte_order: ByteOrder) -> TagValue
         let s = String::from_utf8_lossy(bytes);
         let s = s.trim_end_matches('\0');
         if !s.is_empty() {
-            if is_datetime_string(s) {
-                if let Ok(dt) = parse_exif_datetime(s) {
+            if is_datetime_string(s)
+                && let Ok(dt) = parse_exif_datetime(s) {
                     return TagValue::DateTime(dt);
                 }
-            }
             return TagValue::new_string(s.to_string());
         }
     }

@@ -541,9 +541,9 @@ fn detect_javascript(root_data: &[u8], reader: &dyn FileReader, context: &PdfCon
     // Check for /OpenAction with JavaScript
     if root_str.contains("/OpenAction") {
         // Try to follow the OpenAction reference if it exists
-        if let Ok(action_ref) = find_dict_reference(root_data, "/OpenAction") {
-            if let Ok(offset) = context.get_object_offset(action_ref.object_num, "OpenAction") {
-                if let Ok(action_data) = reader.read(
+        if let Ok(action_ref) = find_dict_reference(root_data, "/OpenAction")
+            && let Ok(offset) = context.get_object_offset(action_ref.object_num, "OpenAction")
+                && let Ok(action_data) = reader.read(
                     offset,
                     std::cmp::min(1024, reader.size().saturating_sub(offset) as usize),
                 ) {
@@ -552,8 +552,6 @@ fn detect_javascript(root_data: &[u8], reader: &dyn FileReader, context: &PdfCon
                         return true;
                     }
                 }
-            }
-        }
     }
 
     // Search for /JavaScript keyword anywhere in root data

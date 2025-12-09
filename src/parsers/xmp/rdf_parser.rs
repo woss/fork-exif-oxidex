@@ -138,8 +138,8 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
 
                 if is_rdf_description(&tag_name, &resolver) {
                     inside_description = false;
-                } else if let Some(ref prop) = current_property {
-                    if depth == property_depth {
+                } else if let Some(ref prop) = current_property
+                    && depth == property_depth {
                         // End of current property - extract tag name and value
                         if !current_value.trim().is_empty() {
                             let prefixed_name = format_tag_name(prop, &resolver);
@@ -148,17 +148,15 @@ pub fn parse_xmp(xml_bytes: &[u8]) -> Result<Vec<(String, String)>> {
                         current_property = None;
                         current_value.clear();
                     }
-                }
                 depth -= 1;
             }
 
             Ok(Event::Text(e)) => {
                 // Collect text content if we're inside a property
-                if current_property.is_some() {
-                    if let Ok(text) = e.xml_content() {
+                if current_property.is_some()
+                    && let Ok(text) = e.xml_content() {
                         current_value.push_str(&text);
                     }
-                }
             }
 
             Ok(Event::Empty(e)) => {
@@ -307,11 +305,10 @@ fn extract_description_attributes(
 fn is_rdf_description(tag_name: &str, resolver: &NamespaceResolver) -> bool {
     if let Some(prefix) = NamespaceResolver::extract_prefix(tag_name) {
         let local_name = NamespaceResolver::extract_local_name(tag_name);
-        if local_name == "Description" {
-            if let Some(uri) = resolver.resolve_prefix(prefix) {
+        if local_name == "Description"
+            && let Some(uri) = resolver.resolve_prefix(prefix) {
                 return uri == "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
             }
-        }
     }
     false
 }
@@ -326,15 +323,14 @@ fn is_simple_property(tag_name: &str, resolver: &NamespaceResolver) -> bool {
         let local_name = NamespaceResolver::extract_local_name(tag_name);
 
         // Check if it's an RDF namespace element
-        if let Some(uri) = resolver.resolve_prefix(prefix) {
-            if uri == "http://www.w3.org/1999/02/22-rdf-syntax-ns#" {
+        if let Some(uri) = resolver.resolve_prefix(prefix)
+            && uri == "http://www.w3.org/1999/02/22-rdf-syntax-ns#" {
                 // Skip RDF structural elements
                 return !matches!(
                     local_name,
                     "Bag" | "Seq" | "Alt" | "Description" | "RDF" | "li"
                 );
             }
-        }
 
         // It's a property in a non-RDF namespace (xmp, dc, exif, etc.)
         return true;

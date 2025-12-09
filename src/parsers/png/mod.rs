@@ -344,8 +344,8 @@ pub fn parse_png_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
             b"iCCP" => {
                 // Parse iCCP chunk (ICC profile)
                 // Structure: profile name (null-terminated) + compression method (1 byte) + compressed profile data
-                if let Some(null_pos) = chunk.data.iter().position(|&b| b == 0) {
-                    if null_pos + 2 <= chunk.data.len() {
+                if let Some(null_pos) = chunk.data.iter().position(|&b| b == 0)
+                    && null_pos + 2 <= chunk.data.len() {
                         let _profile_name = String::from_utf8_lossy(&chunk.data[..null_pos]);
                         let compression_method = chunk.data[null_pos + 1];
 
@@ -386,7 +386,6 @@ pub fn parse_png_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                             );
                         }
                     }
-                }
             }
 
             _ => {

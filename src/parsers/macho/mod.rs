@@ -146,11 +146,10 @@ impl MachOParser {
             let cs_offset = offset + cs_cmd.dataoff as u64;
             let cs_size = cs_cmd.datasize as usize;
 
-            if cs_offset + cs_size as u64 <= offset + size {
-                if let Ok(cs_data) = reader.read(cs_offset, cs_size) {
+            if cs_offset + cs_size as u64 <= offset + size
+                && let Ok(cs_data) = reader.read(cs_offset, cs_size) {
                     info.code_signature_info = parse_code_signature_info(cs_data);
                 }
-            }
         }
 
         Ok(info)

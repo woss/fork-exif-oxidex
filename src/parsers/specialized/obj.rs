@@ -93,14 +93,13 @@ impl FormatParser for OBJParser {
                 if let Some(lib) = trimmed.strip_prefix("mtllib ") {
                     material_library = Some(lib.trim().to_string());
                 }
-            } else if trimmed.starts_with("usemtl ") {
-                if let Some(mat) = trimmed.strip_prefix("usemtl ") {
+            } else if trimmed.starts_with("usemtl ")
+                && let Some(mat) = trimmed.strip_prefix("usemtl ") {
                     let mat = mat.trim().to_string();
                     if !mat.is_empty() && !materials.contains(&mat) {
                         materials.push(mat);
                     }
                 }
-            }
         }
 
         // Insert counts

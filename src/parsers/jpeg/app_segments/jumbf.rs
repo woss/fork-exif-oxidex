@@ -363,16 +363,14 @@ fn parse_jumbf_description(data: &[u8], metadata: &mut MetadataMap) -> Result<()
         // Parse label if present (bit 1 indicates label presence in some versions)
         if data.len() > 17 {
             // Label is UTF-8 null-terminated string after toggles
-            if let Some(null_pos) = data[17..].iter().position(|&b| b == 0) {
-                if let Ok(label) = std::str::from_utf8(&data[17..17 + null_pos]) {
-                    if !label.is_empty() {
+            if let Some(null_pos) = data[17..].iter().position(|&b| b == 0)
+                && let Ok(label) = std::str::from_utf8(&data[17..17 + null_pos])
+                    && !label.is_empty() {
                         metadata.insert(
                             "JUMBF:Label".to_string(),
                             TagValue::String(label.to_string()),
                         );
                     }
-                }
-            }
         }
     }
 
@@ -458,8 +456,8 @@ fn parse_c2pa_claim(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
     );
 
     // Try to parse as JSON if it looks like JSON
-    if data.starts_with(b"{") || data.starts_with(b"[") {
-        if let Ok(json_str) = std::str::from_utf8(data) {
+    if (data.starts_with(b"{") || data.starts_with(b"["))
+        && let Ok(json_str) = std::str::from_utf8(data) {
             // Look for common C2PA claim fields
             if json_str.contains("\"dc:title\"") {
                 metadata.insert(
@@ -486,7 +484,6 @@ fn parse_c2pa_claim(data: &[u8], metadata: &mut MetadataMap) -> Result<()> {
                 );
             }
         }
-    }
 
     Ok(())
 }

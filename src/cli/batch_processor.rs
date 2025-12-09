@@ -213,12 +213,11 @@ fn collect_files(path: &Path, recursive: bool) -> Result<Vec<PathBuf>> {
 ///
 /// `true` if the file has a supported image/media extension, `false` otherwise
 pub fn is_supported_file(path: &Path) -> bool {
-    if let Some(ext) = path.extension() {
-        if let Some(ext_str) = ext.to_str() {
+    if let Some(ext) = path.extension()
+        && let Some(ext_str) = ext.to_str() {
             let ext_lower = ext_str.to_lowercase();
             return SUPPORTED_EXTENSIONS.contains(&ext_lower.as_str());
         }
-    }
     false
 }
 
@@ -374,15 +373,14 @@ fn apply_modifications(
     }
 
     // Restore file times if requested
-    if let Some(metadata) = original_metadata {
-        if let Ok(mtime) = metadata.modified() {
+    if let Some(metadata) = original_metadata
+        && let Ok(mtime) = metadata.modified() {
             use std::fs::File;
             if let Err(_e) = File::open(path).and_then(|f| f.set_modified(mtime)) {
                 // Silently ignore errors - the write succeeded, only mtime restoration failed
                 // Errors are expected on some filesystems or when permissions are restricted
             }
         }
-    }
 
     Ok(())
 }

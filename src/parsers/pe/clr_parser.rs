@@ -238,8 +238,8 @@ fn parse_cli_metadata(
     }
 
     // Parse assembly information from metadata tables
-    if let Some(tables_off) = tables_offset {
-        if let Some((name, version, culture, token, framework)) =
+    if let Some(tables_off) = tables_offset
+        && let Some((name, version, culture, token, framework)) =
             parse_assembly_table(data, tables_off, tables_size)
         {
             return Some((
@@ -254,7 +254,6 @@ fn parse_cli_metadata(
                 framework,
             ));
         }
-    }
 
     // Fallback: extract basic info from version string
     Some((

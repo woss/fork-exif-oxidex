@@ -739,26 +739,24 @@ impl MakerNoteParser for FujifilmParser {
 
                 // Focus pixel coordinates (array)
                 FUJI_FOCUS_PIXEL => {
-                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
-                        if array.len() >= 2 {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
+                        && array.len() >= 2 {
                             tags.insert(
                                 "MakerNotes:FocusPixel".to_string(),
                                 format!("X:{} Y:{}", array[0], array[1]),
                             );
                         }
-                    }
                 }
 
                 // Face positions (array) - complex structure, basic extraction
                 FUJI_FACE_POSITIONS => {
-                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
-                        if !array.is_empty() {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
+                        && !array.is_empty() {
                             tags.insert(
                                 "MakerNotes:FacePositions".to_string(),
                                 format!("{} coordinates", array.len() / 4),
                             );
                         }
-                    }
                 }
 
                 // ===== NEW TAG HANDLING =====
@@ -859,14 +857,13 @@ impl MakerNoteParser for FujifilmParser {
                 }
 
                 FUJI_PIXEL_SHIFT_OFFSET_NEW => {
-                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
-                        if array.len() >= 2 {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
+                        && array.len() >= 2 {
                             tags.insert(
                                 "MakerNotes:PixelShiftOffset".to_string(),
                                 format!("X:{} Y:{}", array[0], array[1]),
                             );
                         }
-                    }
                 }
 
                 // Panorama tags
@@ -1008,26 +1005,24 @@ impl MakerNoteParser for FujifilmParser {
                 }
 
                 FUJI_FACE_ELEMENT_TYPES => {
-                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
-                        if !array.is_empty() {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
+                        && !array.is_empty() {
                             let types: Vec<String> = array.iter().map(|v| v.to_string()).collect();
                             tags.insert(
                                 "MakerNotes:FaceElementTypes".to_string(),
                                 types.join(", "),
                             );
                         }
-                    }
                 }
 
                 FUJI_FACE_ELEMENT_POSITIONS => {
-                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order) {
-                        if !array.is_empty() {
+                    if let Some(array) = extract_u16_array(&entry, data, fuji_byte_order)
+                        && !array.is_empty() {
                             tags.insert(
                                 "MakerNotes:FaceElementPositions".to_string(),
                                 format!("{} coordinates", array.len() / 4),
                             );
                         }
-                    }
                 }
 
                 // Other tags - skip unknown tags

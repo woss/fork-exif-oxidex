@@ -301,15 +301,14 @@ impl PCAPParser {
                 TagValue::String(Self::format_timestamp(last)),
             );
 
-            if let Some(first) = first_ts {
-                if last >= first {
+            if let Some(first) = first_ts
+                && last >= first {
                     let duration = last - first;
                     metadata.insert(
                         "PCAP:Duration".to_string(),
                         TagValue::String(Self::format_duration(duration)),
                     );
                 }
-            }
         }
 
         Ok(metadata)
@@ -415,8 +414,8 @@ impl PCAPParser {
                 PCAPNG_BLOCK_SHB => {
                     section_count += 1;
                     // Try to parse Section Header Block options
-                    if block_length > 28 && offset + block_length as u64 <= file_size {
-                        if let Ok(shb_data) = reader.read(offset, block_length as usize) {
+                    if block_length > 28 && offset + block_length as u64 <= file_size
+                        && let Ok(shb_data) = reader.read(offset, block_length as usize) {
                             // Parse options (starts at offset 24 in SHB)
                             let opts = Self::parse_pcapng_options(&shb_data[24..], little_endian);
                             if let Some(hw) = opts.get("hardware") {
@@ -429,13 +428,12 @@ impl PCAPParser {
                                 application = Some(app.clone());
                             }
                         }
-                    }
                 }
                 PCAPNG_BLOCK_IDB => {
                     interface_count += 1;
                     // Parse IDB options
-                    if block_length > 20 && offset + block_length as u64 <= file_size {
-                        if let Ok(idb_data) = reader.read(offset, block_length as usize) {
+                    if block_length > 20 && offset + block_length as u64 <= file_size
+                        && let Ok(idb_data) = reader.read(offset, block_length as usize) {
                             // IDB header: link_type (2) + reserved (2) + snaplen (4) = 8 bytes after block header
                             if idb_data.len() > 16 {
                                 let r = if little_endian {
@@ -475,15 +473,14 @@ impl PCAPParser {
                                 }
                             }
                         }
-                    }
                 }
                 PCAPNG_BLOCK_EPB | PCAPNG_BLOCK_SPB => {
                     packet_count += 1;
 
                     // Parse EPB timestamp for first and last packet
-                    if block_type == PCAPNG_BLOCK_EPB && block_length >= 32 {
-                        if let Ok(epb_data) = reader.read(offset, 32.min(block_length as usize)) {
-                            if epb_data.len() >= 20 {
+                    if block_type == PCAPNG_BLOCK_EPB && block_length >= 32
+                        && let Ok(epb_data) = reader.read(offset, 32.min(block_length as usize))
+                            && epb_data.len() >= 20 {
                                 let r = if little_endian {
                                     EndianReader::little_endian(epb_data)
                                 } else {
@@ -501,8 +498,6 @@ impl PCAPParser {
                                 }
                                 last_packet_ts = Some(timestamp_us);
                             }
-                        }
-                    }
                 }
                 PCAPNG_BLOCK_NRB => {
                     metadata.insert(
@@ -520,8 +515,8 @@ impl PCAPParser {
                 }
                 PCAPNG_BLOCK_ISB => {
                     // Interface Statistics Block
-                    if let Ok(isb_data) = reader.read(offset, block_length as usize) {
-                        if isb_data.len() >= 24 {
+                    if let Ok(isb_data) = reader.read(offset, block_length as usize)
+                        && isb_data.len() >= 24 {
                             let r = if little_endian {
                                 EndianReader::little_endian(isb_data)
                             } else {
@@ -539,7 +534,6 @@ impl PCAPParser {
                                 );
                             }
                         }
-                    }
                 }
                 _ => {}
             }
@@ -596,8 +590,8 @@ impl PCAPParser {
                 TagValue::String(Self::format_pcapng_timestamp(last_ts)),
             );
 
-            if let Some(first_ts) = first_packet_ts {
-                if last_ts >= first_ts {
+            if let Some(first_ts) = first_packet_ts
+                && last_ts >= first_ts {
                     let duration_us = last_ts - first_ts;
                     let duration_secs = duration_us / 1_000_000;
                     metadata.insert(
@@ -605,7 +599,6 @@ impl PCAPParser {
                         TagValue::String(Self::format_duration(duration_secs as u32)),
                     );
                 }
-            }
         }
 
         Ok(metadata)

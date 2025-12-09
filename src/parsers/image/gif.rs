@@ -128,14 +128,13 @@ impl GIFParser {
                                 let size = block_size[0] as u64;
                                 pos += 1;
 
-                                if size >= 11 && pos + 11 <= reader.size() {
-                                    if let Ok(app_data) = reader.read(pos, 11) {
+                                if size >= 11 && pos + 11 <= reader.size()
+                                    && let Ok(app_data) = reader.read(pos, 11) {
                                         // Check for NETSCAPE2.0 animation extension
                                         if &app_data[0..8] == b"NETSCAPE" {
                                             is_animated = true;
                                         }
                                     }
-                                }
                                 pos += size;
                             }
                             pos = Self::skip_sub_blocks(reader, pos)?;
@@ -292,16 +291,14 @@ impl GIFParser {
             if block_size == 0 {
                 break;
             }
-            if pos + (block_size as u64) <= reader.size() {
-                if let Ok(data) = reader.read(pos, block_size as usize) {
-                    if let Ok(text) = String::from_utf8(data.to_vec()) {
+            if pos + (block_size as u64) <= reader.size()
+                && let Ok(data) = reader.read(pos, block_size as usize)
+                    && let Ok(text) = String::from_utf8(data.to_vec()) {
                         if !comment.is_empty() {
                             comment.push(' ');
                         }
                         comment.push_str(&text);
                     }
-                }
-            }
             pos += block_size as u64;
         }
         Ok(pos)

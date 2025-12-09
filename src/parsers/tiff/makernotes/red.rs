@@ -313,8 +313,8 @@ fn format_red_value(tag_id: u16, entry: &IfdEntry, data: &[u8], byte_order: Byte
     }
 
     // For numeric tags, extract i16 array and format
-    if let Some(array) = extract_i16_array(entry, data, byte_order) {
-        if let Some(&val) = array.first() {
+    if let Some(array) = extract_i16_array(entry, data, byte_order)
+        && let Some(&val) = array.first() {
             return match tag_id {
                 0x0101 => DECODE_RESOLUTION.decode(val),        // Resolution
                 0x0102 => DECODE_REDCODE.decode(val),           // REDCODE
@@ -344,7 +344,6 @@ fn format_red_value(tag_id: u16, entry: &IfdEntry, data: &[u8], byte_order: Byte
                 _ => val.to_string(),
             };
         }
-    }
 
     String::new()
 }

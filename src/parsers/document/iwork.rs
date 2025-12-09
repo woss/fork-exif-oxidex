@@ -96,8 +96,8 @@ fn parse_iwork(
 /// Extract metadata from plist content (simple text-based extraction)
 fn extract_plist_metadata(content: &str, metadata: &mut MetadataMap) {
     // Look for author information
-    if let Some(author_start) = content.find("<key>Author</key>") {
-        if let Some(string_start) = content[author_start..].find("<string>") {
+    if let Some(author_start) = content.find("<key>Author</key>")
+        && let Some(string_start) = content[author_start..].find("<string>") {
             let value_start = author_start + string_start + 8;
             if let Some(string_end) = content[value_start..].find("</string>") {
                 let author = &content[value_start..value_start + string_end];
@@ -107,11 +107,10 @@ fn extract_plist_metadata(content: &str, metadata: &mut MetadataMap) {
                 );
             }
         }
-    }
 
     // Look for title
-    if let Some(title_start) = content.find("<key>Title</key>") {
-        if let Some(string_start) = content[title_start..].find("<string>") {
+    if let Some(title_start) = content.find("<key>Title</key>")
+        && let Some(string_start) = content[title_start..].find("<string>") {
             let value_start = title_start + string_start + 8;
             if let Some(string_end) = content[value_start..].find("</string>") {
                 let title = &content[value_start..value_start + string_end];
@@ -121,13 +120,12 @@ fn extract_plist_metadata(content: &str, metadata: &mut MetadataMap) {
                 );
             }
         }
-    }
 }
 
 /// Extract build version from buildVersionHistory.plist
 fn extract_build_version(content: &str, metadata: &mut MetadataMap) {
-    if let Some(version_start) = content.find("<key>BuildVersion</key>") {
-        if let Some(string_start) = content[version_start..].find("<string>") {
+    if let Some(version_start) = content.find("<key>BuildVersion</key>")
+        && let Some(string_start) = content[version_start..].find("<string>") {
             let value_start = version_start + string_start + 8;
             if let Some(string_end) = content[value_start..].find("</string>") {
                 let version = &content[value_start..value_start + string_end];
@@ -137,7 +135,6 @@ fn extract_build_version(content: &str, metadata: &mut MetadataMap) {
                 );
             }
         }
-    }
 }
 
 #[cfg(test)]

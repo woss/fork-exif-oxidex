@@ -276,12 +276,11 @@ impl DjiParser {
             }
 
             // Try i16 array extraction (most DJI tags)
-            if let Some(array) = extract_i16_array(entry, data, byte_order) {
-                if let Some(&value) = array.first() {
+            if let Some(array) = extract_i16_array(entry, data, byte_order)
+                && let Some(&value) = array.first() {
                     let decoded = DJI_TAGS.decode_i16(entry.tag_id, value);
                     tags.insert(format!("DJI:{}", tag_name), decoded);
                 }
-            }
         }
         // Unknown tags are silently skipped for forward compatibility
     }

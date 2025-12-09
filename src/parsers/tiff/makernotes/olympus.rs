@@ -478,11 +478,10 @@ impl MakerNoteParser for OlympusParser {
                         // String-type tags (ASCII)
                         if entry.field_type == 2 {
                             // ASCII field type
-                            if let Some(value) = extract_string_value(&entry, data, base_offset) {
-                                if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
+                            if let Some(value) = extract_string_value(&entry, data, base_offset)
+                                && let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
                                     tags.insert(format!("Olympus:{}", tag_name), value);
                                 }
-                            }
                         } else {
                             // Numeric tags that don't require special handling
                             let value = entry.value_offset as i32;
@@ -632,11 +631,10 @@ fn parse_sub_ifd(
         if registry.has_tag(entry.tag_id) {
             if entry.field_type == 2 {
                 // ASCII string
-                if let Some(value) = extract_string_value(&entry, data, base_offset) {
-                    if let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
+                if let Some(value) = extract_string_value(&entry, data, base_offset)
+                    && let Some(tag_name) = registry.get_tag_name(entry.tag_id) {
                         tags.insert(format!("Olympus:{}:{}", sub_ifd_name, tag_name), value);
                     }
-                }
             } else {
                 // Numeric value
                 let value = entry.value_offset as i32;

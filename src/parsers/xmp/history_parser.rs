@@ -326,13 +326,11 @@ fn capitalize(s: &str) -> String {
 /// Get attribute value from element
 fn get_attribute(element: &BytesStart, attr_name: &str) -> Option<String> {
     for attr in element.attributes().flatten() {
-        if let Ok(key) = std::str::from_utf8(attr.key.as_ref()) {
-            if key == attr_name {
-                if let Ok(value) = std::str::from_utf8(&attr.value) {
+        if let Ok(key) = std::str::from_utf8(attr.key.as_ref())
+            && key == attr_name
+                && let Ok(value) = std::str::from_utf8(&attr.value) {
                     return Some(value.to_string());
                 }
-            }
-        }
     }
     None
 }

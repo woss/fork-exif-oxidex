@@ -264,18 +264,15 @@ impl FormatParser for WOFFParser {
             let meta_offset = header.meta_offset as u64;
             let meta_length = header.meta_length as usize;
 
-            if reader.size() >= meta_offset + meta_length as u64 {
-                if let Ok(compressed) = reader.read(meta_offset, meta_length) {
-                    if let Ok(decompressed) = Self::decompress_zlib(compressed) {
-                        if let Ok(xml_str) = String::from_utf8(decompressed) {
+            if reader.size() >= meta_offset + meta_length as u64
+                && let Ok(compressed) = reader.read(meta_offset, meta_length)
+                    && let Ok(decompressed) = Self::decompress_zlib(compressed)
+                        && let Ok(xml_str) = String::from_utf8(decompressed) {
                             let xml_metadata = Self::parse_xml_metadata(&xml_str);
                             for (key, value) in xml_metadata {
                                 metadata.insert(key, TagValue::String(value));
                             }
                         }
-                    }
-                }
-            }
         }
 
         // Try to extract font names from name table
@@ -283,8 +280,8 @@ impl FormatParser for WOFFParser {
             let table_offset = name_table.offset as u64;
             let table_length = name_table.comp_length as usize;
 
-            if reader.size() >= table_offset + table_length as u64 {
-                if let Ok(compressed) = reader.read(table_offset, table_length) {
+            if reader.size() >= table_offset + table_length as u64
+                && let Ok(compressed) = reader.read(table_offset, table_length) {
                     // Try decompression if compressed
                     let name_data = if name_table.comp_length < name_table.orig_length {
                         Self::decompress_zlib(compressed).unwrap_or_else(|_| compressed.to_vec())
@@ -299,7 +296,6 @@ impl FormatParser for WOFFParser {
                         }
                     }
                 }
-            }
         }
 
         Ok(metadata)

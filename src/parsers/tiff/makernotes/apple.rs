@@ -664,8 +664,8 @@ impl AppleParser {
 
             // Focus distance range (min/max in meters)
             APPLE_FOCUS_DISTANCE_RANGE => {
-                if let Some(values) = extract_i16_array(entry, data, byte_order) {
-                    if values.len() >= 2 {
+                if let Some(values) = extract_i16_array(entry, data, byte_order)
+                    && values.len() >= 2 {
                         let near = (values[0] as f64) / 100.0;
                         let far = (values[1] as f64) / 100.0;
                         tags.insert(
@@ -673,13 +673,12 @@ impl AppleParser {
                             format!("{:.2} - {:.2} m", near, far),
                         );
                     }
-                }
             }
 
             // Acceleration vector (X, Y, Z)
             APPLE_ACCELERATION_VECTOR => {
-                if let Some(values) = extract_i16_array(entry, data, byte_order) {
-                    if values.len() >= 3 {
+                if let Some(values) = extract_i16_array(entry, data, byte_order)
+                    && values.len() >= 3 {
                         // Values are typically in fixed-point format
                         let x = (values[0] as f64) / 1000.0;
                         let y = (values[1] as f64) / 1000.0;
@@ -689,24 +688,22 @@ impl AppleParser {
                             format!("({:.3}, {:.3}, {:.3})", x, y, z),
                         );
                     }
-                }
             }
 
             // AE matrix (complex array)
             APPLE_AE_MATRIX => {
-                if let Some(values) = extract_i16_array(entry, data, byte_order) {
-                    if !values.is_empty() {
+                if let Some(values) = extract_i16_array(entry, data, byte_order)
+                    && !values.is_empty() {
                         // Format as array of values
                         let formatted: Vec<String> = values.iter().map(|v| v.to_string()).collect();
                         tags.insert("Apple:AEMatrix".to_string(), formatted.join(" "));
                     }
-                }
             }
 
             // Color correction matrix
             APPLE_COLOR_CORRECTION_MATRIX => {
-                if let Some(values) = extract_i16_array(entry, data, byte_order) {
-                    if !values.is_empty() {
+                if let Some(values) = extract_i16_array(entry, data, byte_order)
+                    && !values.is_empty() {
                         // 3x3 matrix stored as 9 values
                         let formatted: Vec<String> = values
                             .iter()
@@ -717,7 +714,6 @@ impl AppleParser {
                             formatted.join(" "),
                         );
                     }
-                }
             }
 
             // RunTime (complex plist structure, store as raw for now)

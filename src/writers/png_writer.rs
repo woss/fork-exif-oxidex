@@ -281,22 +281,20 @@ pub fn write_png_metadata(
 
     // Process tEXt chunks
     for (tag_name, tag_value) in modified_metadata.iter() {
-        if let Some(keyword) = tag_name.strip_prefix("PNG:tEXt:") {
-            if let Some(text) = tag_value.as_string() {
+        if let Some(keyword) = tag_name.strip_prefix("PNG:tEXt:")
+            && let Some(text) = tag_value.as_string() {
                 let data = serialize_text_chunk(keyword, text);
                 metadata_chunks.push((b"tEXt", data));
             }
-        }
     }
 
     // Process iTXt chunks
     for (tag_name, tag_value) in modified_metadata.iter() {
-        if let Some(keyword) = tag_name.strip_prefix("PNG:iTXt:") {
-            if let Some(text) = tag_value.as_string() {
+        if let Some(keyword) = tag_name.strip_prefix("PNG:iTXt:")
+            && let Some(text) = tag_value.as_string() {
                 let data = serialize_itxt_chunk(keyword, text);
                 metadata_chunks.push((b"iTXt", data));
             }
-        }
     }
 
     // Process eXIf chunk

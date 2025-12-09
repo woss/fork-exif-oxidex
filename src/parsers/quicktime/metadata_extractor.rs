@@ -268,11 +268,10 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
                     meta.data
                 };
 
-                if let Ok((_, atoms)) = super::atom_parser::parse_atoms(meta_data) {
-                    if let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr")) {
+                if let Ok((_, atoms)) = super::atom_parser::parse_atoms(meta_data)
+                    && let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr")) {
                         extract_handler_metadata(hdlr, &mut metadata)?;
                     }
-                }
             }
 
             // Also check for hdlr directly in udta
@@ -304,11 +303,10 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
             meta.data
         };
 
-        if let Ok((_, atoms)) = super::atom_parser::parse_atoms(meta_data) {
-            if let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr")) {
+        if let Ok((_, atoms)) = super::atom_parser::parse_atoms(meta_data)
+            && let Some(hdlr) = atoms.iter().find(|a| a.atom_type.matches("hdlr")) {
                 extract_handler_metadata(hdlr, &mut metadata)?;
             }
-        }
 
         // Extract HEIF-specific metadata (iinf, iloc, etc.) including EXIF data
         extract_heif_metadata(meta, root_atoms, &mut metadata)?;
@@ -325,8 +323,8 @@ pub fn extract_metadata(root_atoms: &[Atom]) -> Result<MetadataMap, String> {
 /// Extract file-level metadata from ftyp and mdat atoms
 fn extract_file_level_metadata(root_atoms: &[Atom], metadata: &mut MetadataMap) {
     // Extract file type information from ftyp atom
-    if let Some(ftyp) = root_atoms.iter().find(|a| a.atom_type.matches("ftyp")) {
-        if ftyp.data.len() >= 8 {
+    if let Some(ftyp) = root_atoms.iter().find(|a| a.atom_type.matches("ftyp"))
+        && ftyp.data.len() >= 8 {
             // Major brand (4 bytes)
             let brand_bytes = &ftyp.data[0..4];
             if let Ok(brand) = std::str::from_utf8(brand_bytes) {
@@ -381,7 +379,6 @@ fn extract_file_level_metadata(root_atoms: &[Atom], metadata: &mut MetadataMap) 
                 }
             }
         }
-    }
 
     // Extract media data offset and size from mdat atom
     // We need to track position in the original file
@@ -895,8 +892,8 @@ fn extract_sample_description(
                 let entry_reader = EndianReader::big_endian(entry_data);
 
                 // Width (2 bytes at offset 32)
-                if let Some(width) = entry_reader.u16_at(32) {
-                    if width > 0 && width < 10000 {
+                if let Some(width) = entry_reader.u16_at(32)
+                    && width > 0 && width < 10000 {
                         // Sanity check
                         // Output both ImageWidth (ExifTool convention) and legacy VideoWidth
                         metadata.insert(
@@ -908,11 +905,10 @@ fn extract_sample_description(
                             TagValue::Integer(width as i64),
                         );
                     }
-                }
 
                 // Height (2 bytes at offset 34)
-                if let Some(height) = entry_reader.u16_at(34) {
-                    if height > 0 && height < 10000 {
+                if let Some(height) = entry_reader.u16_at(34)
+                    && height > 0 && height < 10000 {
                         // Sanity check
                         // Output both ImageHeight (ExifTool convention) and legacy VideoHeight
                         metadata.insert(
@@ -924,7 +920,6 @@ fn extract_sample_description(
                             TagValue::Integer(height as i64),
                         );
                     }
-                }
 
                 // Bit depth (2 bytes at offset 82)
                 if let Some(depth) = entry_reader.u16_at(82) {
@@ -961,26 +956,24 @@ fn extract_sample_description(
                 let entry_reader = EndianReader::big_endian(entry_data);
 
                 // Channel count (2 bytes at offset 24)
-                if let Some(channels) = entry_reader.u16_at(24) {
-                    if channels > 0 && channels <= 32 {
+                if let Some(channels) = entry_reader.u16_at(24)
+                    && channels > 0 && channels <= 32 {
                         // Sanity check
                         metadata.insert(
                             format!("QuickTime:AudioChannels{}", track_suffix),
                             TagValue::Integer(channels as i64),
                         );
                     }
-                }
 
                 // Sample size (2 bytes at offset 26)
-                if let Some(sample_size) = entry_reader.u16_at(26) {
-                    if sample_size > 0 && sample_size <= 64 {
+                if let Some(sample_size) = entry_reader.u16_at(26)
+                    && sample_size > 0 && sample_size <= 64 {
                         // Sanity check
                         metadata.insert(
                             format!("QuickTime:AudioBitsPerSample{}", track_suffix),
                             TagValue::Integer(sample_size as i64),
                         );
                     }
-                }
 
                 // Sample rate (fixed-point 16.16 at offset 32)
                 if let Some(sample_rate_fixed) = entry_reader.u32_at(32) {
@@ -1047,9 +1040,9 @@ fn extract_video_frame_rate(
     };
 
     let timescale_key = format!("QuickTime:MediaTimeScale{}", track_suffix);
-    if let Some(timescale_value) = metadata.get(&timescale_key) {
-        if let Some(timescale) = timescale_value.as_integer() {
-            if timescale > 0 {
+    if let Some(timescale_value) = metadata.get(&timescale_key)
+        && let Some(timescale) = timescale_value.as_integer()
+            && timescale > 0 {
                 let frame_rate = timescale as f64 / sample_delta as f64;
                 // Only output if this looks like a reasonable frame rate (1-240 fps)
                 if (1.0..=240.0).contains(&frame_rate) {
@@ -1061,8 +1054,6 @@ fn extract_video_frame_rate(
                     );
                 }
             }
-        }
-    }
 
     Ok(())
 }
@@ -1122,8 +1113,8 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
         // Try Pascal string first (length prefix)
         if !name_data.is_empty() && name_data[0] > 0 && name_data[0] < 128 {
             let length = name_data[0] as usize;
-            if name_data.len() > length {
-                if let Ok(name) = std::str::from_utf8(&name_data[1..=length]) {
+            if name_data.len() > length
+                && let Ok(name) = std::str::from_utf8(&name_data[1..=length]) {
                     let trimmed = name.trim();
                     if !trimmed.is_empty() {
                         metadata.insert(
@@ -1132,12 +1123,11 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
                         );
                     }
                 }
-            }
         } else {
             // Try null-terminated string
-            if let Some(null_pos) = name_data.iter().position(|&b| b == 0) {
-                if null_pos > 0 {
-                    if let Ok(name) = std::str::from_utf8(&name_data[..null_pos]) {
+            if let Some(null_pos) = name_data.iter().position(|&b| b == 0)
+                && null_pos > 0
+                    && let Ok(name) = std::str::from_utf8(&name_data[..null_pos]) {
                         let trimmed = name.trim();
                         if !trimmed.is_empty() {
                             metadata.insert(
@@ -1146,8 +1136,6 @@ fn extract_handler_metadata(hdlr: &Atom, metadata: &mut MetadataMap) -> Result<(
                             );
                         }
                     }
-                }
-            }
         }
     }
 
@@ -1278,8 +1266,8 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                 };
 
                 // Handle GPS coordinates (©xyz atom)
-                if atom_bytes == b"\xa9xyz" {
-                    if let Some((lat, lon, alt)) = parse_iso6709(&value) {
+                if atom_bytes == b"\xa9xyz"
+                    && let Some((lat, lon, alt)) = parse_iso6709(&value) {
                         metadata.insert("QuickTime:GPSLatitude".to_string(), TagValue::Float(lat));
                         metadata.insert("QuickTime:GPSLongitude".to_string(), TagValue::Float(lon));
                         if let Some(altitude) = alt {
@@ -1293,7 +1281,6 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                             TagValue::new_string(value.clone()),
                         );
                     }
-                }
 
                 if let Some(suffix) = suffix {
                     metadata.insert(
@@ -1423,14 +1410,13 @@ fn extract_user_data_atoms(udta: &Atom, metadata: &mut MetadataMap) -> Result<()
                     // Beats per minute (tempo) - in udta directly
                     if atom.data.len() >= 4 {
                         let r = EndianReader::big_endian(atom.data);
-                        if let Some(bpm) = r.u16_at(2) {
-                            if bpm > 0 {
+                        if let Some(bpm) = r.u16_at(2)
+                            && bpm > 0 {
                                 metadata.insert(
                                     "QuickTime:BeatsPerMinute".to_string(),
                                     TagValue::Integer(bpm as i64),
                                 );
                             }
-                        }
                     }
                 }
                 "fmt " => {
@@ -1589,8 +1575,8 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
             let atom_bytes = item.atom_type.as_bytes();
 
             // Each item contains a data atom
-            if let Some(data_atom) = item.find_child("data") {
-                if let Some(value) = extract_itunes_data_value(data_atom.data) {
+            if let Some(data_atom) = item.find_child("data")
+                && let Some(value) = extract_itunes_data_value(data_atom.data) {
                     let mut add_year_tag = false;
                     let tag_name: Cow<'static, str> = match atom_bytes {
                         b"\xa9nam" => Cow::Borrowed("ItemList:Title"),
@@ -1655,22 +1641,20 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
 
                     metadata.insert(tag_name.into_owned(), value.clone());
 
-                    if add_year_tag {
-                        if let TagValue::String(ref text) = value {
-                            if text.len() >= 4 {
+                    if add_year_tag
+                        && let TagValue::String(ref text) = value
+                            && text.len() >= 4 {
                                 let year = text.chars().take(4).collect::<String>();
                                 metadata.insert(
                                     "ItemList:Year".to_string(),
                                     TagValue::new_string(year),
                                 );
                             }
-                        }
-                    }
 
                     // Handle TrackNumber and DiscNumber formatted as "X of Y"
-                    if atom_bytes == b"trkn" || atom_bytes == b"disk" {
-                        if let TagValue::Binary(ref data) = value {
-                            if data.len() >= 6 {
+                    if (atom_bytes == b"trkn" || atom_bytes == b"disk")
+                        && let TagValue::Binary(ref data) = value
+                            && data.len() >= 6 {
                                 let r = EndianReader::big_endian(data);
                                 let current = r.u16_at(2).unwrap_or(0);
                                 let total = r.u16_at(4).unwrap_or(0);
@@ -1686,10 +1670,7 @@ fn extract_itunes_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<()
                                 };
                                 metadata.insert(tag.to_string(), TagValue::new_string(formatted));
                             }
-                        }
-                    }
                 }
-            }
         }
     }
 
@@ -1720,8 +1701,8 @@ fn extract_mp4_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), S
                 .u32_at(0)
                 .unwrap_or(0);
 
-            if let Some(data_atom) = item.find_child("data") {
-                if let Some(value) = extract_itunes_data_value(data_atom.data) {
+            if let Some(data_atom) = item.find_child("data")
+                && let Some(value) = extract_itunes_data_value(data_atom.data) {
                     // Look up the key name
                     if let Some(key_name) = key_map.get(&key_index) {
                         // Map Apple-specific keys to standard tag names
@@ -1729,9 +1710,9 @@ fn extract_mp4_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), S
                         metadata.insert(tag_name, value.clone());
 
                         // Special handling for GPS coordinates
-                        if key_name == "com.apple.quicktime.location.ISO6709" {
-                            if let TagValue::String(ref gps_str) = value {
-                                if let Some((lat, lon, alt)) = parse_iso6709(gps_str) {
+                        if key_name == "com.apple.quicktime.location.ISO6709"
+                            && let TagValue::String(ref gps_str) = value
+                                && let Some((lat, lon, alt)) = parse_iso6709(gps_str) {
                                     metadata.insert(
                                         "QuickTime:GPSLatitude".to_string(),
                                         TagValue::Float(lat),
@@ -1747,15 +1728,12 @@ fn extract_mp4_metadata(meta: &Atom, metadata: &mut MetadataMap) -> Result<(), S
                                         );
                                     }
                                 }
-                            }
-                        }
                     } else {
                         // Fallback to using the atom type as the tag name
                         let tag_name = format!("MP4:{}", item.atom_type.as_str());
                         metadata.insert(tag_name, value);
                     }
                 }
-            }
         }
     }
 
@@ -1974,11 +1952,10 @@ fn extract_heif_metadata(
     extract_ispe_dimensions(&children, metadata);
 
     // Extract EXIF data from mdat if we found an Exif item
-    if let Some(id) = exif_item_id {
-        if let Some(&(offset, length)) = item_locations.get(&id) {
+    if let Some(id) = exif_item_id
+        && let Some(&(offset, length)) = item_locations.get(&id) {
             extract_exif_from_mdat(root_atoms, offset, length, metadata);
         }
-    }
 
     Ok(())
 }
@@ -2104,8 +2081,8 @@ fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
     for atom in children {
         if atom.atom_type.matches("ispe") && atom.data.len() >= 12 {
             let r = EndianReader::big_endian(atom.data);
-            if let (Some(width), Some(height)) = (r.u32_at(4), r.u32_at(8)) {
-                if !metadata.contains_key("HEIF:ImageWidth") {
+            if let (Some(width), Some(height)) = (r.u32_at(4), r.u32_at(8))
+                && !metadata.contains_key("HEIF:ImageWidth") {
                     metadata.insert(
                         "HEIF:ImageWidth".to_string(),
                         TagValue::Integer(width as i64),
@@ -2115,7 +2092,6 @@ fn extract_ispe_dimensions(children: &[Atom], metadata: &mut MetadataMap) {
                         TagValue::Integer(height as i64),
                     );
                 }
-            }
         }
     }
 }
@@ -2285,8 +2261,8 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
     }
 
     // Parse ExifIFD if present
-    if let Some(offset) = exif_ifd_offset {
-        if let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+    if let Some(offset) = exif_ifd_offset
+        && let Ok(exif_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in exif_tags {
                 let tag_name = lookup_tag_name(tag_id, "ExifIFD");
                 let tag_value =
@@ -2294,11 +2270,10 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
                 metadata.insert(tag_name, tag_value);
             }
         }
-    }
 
     // Parse GPS IFD if present
-    if let Some(offset) = gps_ifd_offset {
-        if let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
+    if let Some(offset) = gps_ifd_offset
+        && let Ok(gps_tags) = parse_ifd(&exif_reader, offset, byte_order) {
             for (tag_id, field_type, value_count, raw_bytes) in gps_tags {
                 let tag_name = lookup_tag_name(tag_id, "GPS");
                 let tag_value =
@@ -2306,7 +2281,6 @@ fn parse_heif_exif_data(tiff_data: &[u8], metadata: &mut MetadataMap) -> Result<
                 metadata.insert(tag_name, tag_value);
             }
         }
-    }
 
     Ok(())
 }

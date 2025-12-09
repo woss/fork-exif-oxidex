@@ -25,8 +25,8 @@ pub fn detect_zip_variant(reader: &dyn FileReader) -> FileFormat {
     use zip::ZipArchive;
 
     let size = reader.size() as usize;
-    if let Ok(all_data) = reader.read(0, size) {
-        if let Ok(mut archive) = ZipArchive::new(Cursor::new(all_data)) {
+    if let Ok(all_data) = reader.read(0, size)
+        && let Ok(mut archive) = ZipArchive::new(Cursor::new(all_data)) {
             // Check for specific marker files in priority order
 
             if archive.by_name("mimetype").is_ok() {
@@ -57,7 +57,6 @@ pub fn detect_zip_variant(reader: &dyn FileReader) -> FileFormat {
                 return FileFormat::Pages;
             }
         }
-    }
 
     FileFormat::ZIP
 }

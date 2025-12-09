@@ -796,17 +796,15 @@ fn parse_sony_makernote_impl(
 
             // Lens ID - lookup lens name from database
             SONY_LENS_ID => {
-                if let Some(value_str) = extract_integer_value(entry) {
-                    if let Ok(lens_id) = value_str.parse::<u16>() {
-                        if lens_id > 0 {
+                if let Some(value_str) = extract_integer_value(entry)
+                    && let Ok(lens_id) = value_str.parse::<u16>()
+                        && lens_id > 0 {
                             if let Some(lens_name) = lookup_lens_name(lens_id) {
                                 tags.insert("Sony:LensType".to_string(), lens_name);
                             } else {
                                 tags.insert("Sony:LensID".to_string(), lens_id.to_string());
                             }
                         }
-                    }
-                }
             }
 
             // Array-based tags - processed via registry schemas
@@ -851,12 +849,10 @@ fn parse_sony_makernote_impl(
                             let offset = entry.value_offset as usize;
                             if let (Some(num), Some(den)) =
                                 (reader.u32_at(offset), reader.u32_at(offset + 4))
-                            {
-                                if den != 0 {
+                                && den != 0 {
                                     let tag_name = sony_tag_to_name(entry.tag_id);
                                     tags.insert(tag_name, format!("{}/{}", num, den));
                                 }
-                            }
                         }
                     }
                     // UNDEFINED (arbitrary bytes) - skip binary data
@@ -883,12 +879,10 @@ fn parse_sony_makernote_impl(
                             let offset = entry.value_offset as usize;
                             if let (Some(num), Some(den)) =
                                 (reader.i32_at(offset), reader.i32_at(offset + 4))
-                            {
-                                if den != 0 {
+                                && den != 0 {
                                     let tag_name = sony_tag_to_name(entry.tag_id);
                                     tags.insert(tag_name, format!("{}/{}", num, den));
                                 }
-                            }
                         }
                     }
                     _ => continue, // Skip unknown field types

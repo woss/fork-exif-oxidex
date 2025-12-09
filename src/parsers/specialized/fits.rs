@@ -113,14 +113,12 @@ impl FITSParser {
 
                 if let Some((keyword, value, comment)) = Self::parse_record(chunk) {
                     // Store comment if present
-                    if keyword != "HISTORY" && keyword != "COMMENT" && keyword != "END" {
-                        if let Some(cmt) = comment {
-                            if !cmt.is_empty() {
+                    if keyword != "HISTORY" && keyword != "COMMENT" && keyword != "END"
+                        && let Some(cmt) = comment
+                            && !cmt.is_empty() {
                                 metadata
                                     .insert(format!("{}Comment", keyword), TagValue::String(cmt));
                             }
-                        }
-                    }
 
                     match keyword.as_str() {
                         "END" => {

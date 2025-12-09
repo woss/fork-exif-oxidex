@@ -98,12 +98,11 @@ impl MakerNoteParser for InDesignParser {
                     // Numeric tags
                     if let Some(array) = super::shared::array_extractors::extract_i16_array(
                         entry, parse_data, byte_order,
-                    ) {
-                        if let Some(&val) = array.first() {
+                    )
+                        && let Some(&val) = array.first() {
                             let formatted_value = registry.decode_i16(entry.tag_id, val);
                             tags.insert(format!("InDesign:{}", tag_name), formatted_value);
                         }
-                    }
                 }
             }
         })?;
