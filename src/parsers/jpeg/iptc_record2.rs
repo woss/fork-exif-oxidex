@@ -313,7 +313,10 @@ fn process_record2_dataset(dataset_number: u8, payload: &[u8], metadata: &mut Me
         DATASET_RECORD_VERSION => {
             // RecordVersion is a 2-byte binary integer
             if let Some(version) = parse_binary_u16(payload) {
-                metadata.insert("IPTC:ApplicationRecordVersion", TagValue::new_integer(version as i64));
+                metadata.insert(
+                    "IPTC:ApplicationRecordVersion",
+                    TagValue::new_integer(version as i64),
+                );
             }
         }
 
@@ -512,7 +515,10 @@ fn process_record2_dataset(dataset_number: u8, payload: &[u8], metadata: &mut Me
         DATASET_OBJECT_CYCLE => {
             if !payload.is_empty() {
                 let cycle_char = payload[0] as char;
-                metadata.insert("IPTC:ObjectCycle", TagValue::new_string(cycle_char.to_string()));
+                metadata.insert(
+                    "IPTC:ObjectCycle",
+                    TagValue::new_string(cycle_char.to_string()),
+                );
             }
         }
 
@@ -554,21 +560,30 @@ fn process_record2_dataset(dataset_number: u8, payload: &[u8], metadata: &mut Me
         DATASET_COUNTRY_PRIMARY_LOCATION_CODE => {
             let value = decode_iptc_string(payload);
             if !value.is_empty() {
-                metadata.insert("IPTC:Country-PrimaryLocationCode", TagValue::new_string(value));
+                metadata.insert(
+                    "IPTC:Country-PrimaryLocationCode",
+                    TagValue::new_string(value),
+                );
             }
         }
 
         DATASET_COUNTRY_PRIMARY_LOCATION_NAME => {
             let value = decode_iptc_string(payload);
             if !value.is_empty() {
-                metadata.insert("IPTC:Country-PrimaryLocationName", TagValue::new_string(value));
+                metadata.insert(
+                    "IPTC:Country-PrimaryLocationName",
+                    TagValue::new_string(value),
+                );
             }
         }
 
         DATASET_ORIGINAL_TRANSMISSION_REFERENCE => {
             let value = decode_iptc_string(payload);
             if !value.is_empty() {
-                metadata.insert("IPTC:OriginalTransmissionReference", TagValue::new_string(value));
+                metadata.insert(
+                    "IPTC:OriginalTransmissionReference",
+                    TagValue::new_string(value),
+                );
             }
         }
 
@@ -725,7 +740,11 @@ mod tests {
 
     #[test]
     fn test_parse_object_name() {
-        let data = make_iptc_dataset(APPLICATION_RECORD_NUMBER, DATASET_OBJECT_NAME, b"Test Caption");
+        let data = make_iptc_dataset(
+            APPLICATION_RECORD_NUMBER,
+            DATASET_OBJECT_NAME,
+            b"Test Caption",
+        );
         let metadata = parse_iptc_record2(&data);
         assert_eq!(metadata.get_string("IPTC:ObjectName"), Some("Test Caption"));
     }
@@ -739,11 +758,7 @@ mod tests {
 
     #[test]
     fn test_parse_date_created() {
-        let data = make_iptc_dataset(
-            APPLICATION_RECORD_NUMBER,
-            DATASET_DATE_CREATED,
-            b"20041225",
-        );
+        let data = make_iptc_dataset(APPLICATION_RECORD_NUMBER, DATASET_DATE_CREATED, b"20041225");
         let metadata = parse_iptc_record2(&data);
         assert!(metadata.get_string("IPTC:DateCreated").is_some());
     }
@@ -764,7 +779,11 @@ mod tests {
 
     #[test]
     fn test_parse_headline() {
-        let data = make_iptc_dataset(APPLICATION_RECORD_NUMBER, DATASET_HEADLINE, b"Breaking News");
+        let data = make_iptc_dataset(
+            APPLICATION_RECORD_NUMBER,
+            DATASET_HEADLINE,
+            b"Breaking News",
+        );
         let metadata = parse_iptc_record2(&data);
         assert_eq!(metadata.get_string("IPTC:Headline"), Some("Breaking News"));
     }
@@ -777,7 +796,10 @@ mod tests {
             b"A detailed caption",
         );
         let metadata = parse_iptc_record2(&data);
-        assert_eq!(metadata.get_string("IPTC:Caption-Abstract"), Some("A detailed caption"));
+        assert_eq!(
+            metadata.get_string("IPTC:Caption-Abstract"),
+            Some("A detailed caption")
+        );
     }
 
     #[test]
@@ -788,14 +810,24 @@ mod tests {
             b"Copyright 2024",
         );
         let metadata = parse_iptc_record2(&data);
-        assert_eq!(metadata.get_string("IPTC:CopyrightNotice"), Some("Copyright 2024"));
+        assert_eq!(
+            metadata.get_string("IPTC:CopyrightNotice"),
+            Some("Copyright 2024")
+        );
     }
 
     #[test]
     fn test_record_version() {
-        let data = make_iptc_dataset(APPLICATION_RECORD_NUMBER, DATASET_RECORD_VERSION, &[0x00, 0x02]);
+        let data = make_iptc_dataset(
+            APPLICATION_RECORD_NUMBER,
+            DATASET_RECORD_VERSION,
+            &[0x00, 0x02],
+        );
         let metadata = parse_iptc_record2(&data);
-        assert_eq!(metadata.get_integer("IPTC:ApplicationRecordVersion"), Some(2));
+        assert_eq!(
+            metadata.get_integer("IPTC:ApplicationRecordVersion"),
+            Some(2)
+        );
     }
 
     #[test]
