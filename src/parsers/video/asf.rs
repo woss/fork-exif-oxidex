@@ -879,6 +879,10 @@ fn parse_metadata_object(
     let mut pos = offset + 26;
     let end_pos = offset + size;
 
+    // Track if we've already written IsVBR from this Metadata Object.
+    // ExifTool uses the first stream's value and ignores others.
+    let mut isvbr_written_from_metadata = false;
+
     for _ in 0..record_count {
         if pos + 12 > end_pos {
             break;
@@ -913,9 +917,10 @@ fn parse_metadata_object(
             continue;
         }
 
-        // For IsVBR, don't overwrite if already set from Extended Content
-        // Extended Content's value is more reliable than Metadata Library
-        if tag_name == "ASF:IsVBR" && metadata.contains_key(&tag_name) {
+        // For IsVBR, ExifTool uses the first Metadata Object value (typically stream 1)
+        // and ignores subsequent stream values. Once we've written IsVBR from this
+        // Metadata Object, skip any further IsVBR entries.
+        if tag_name == "ASF:IsVBR" && isvbr_written_from_metadata {
             continue;
         }
 
@@ -1013,6 +1018,11 @@ fn parse_metadata_object(
             }
             _ => continue,
         };
+
+        // Track if we're writing IsVBR so we skip subsequent entries
+        if tag_name == "ASF:IsVBR" {
+            isvbr_written_from_metadata = true;
+        }
 
         metadata.insert(tag_name, value);
     }

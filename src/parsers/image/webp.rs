@@ -285,46 +285,47 @@ fn parse_webp_chunks(reader: &dyn FileReader, metadata: &mut MetadataMap) -> Res
                 //   F (Filtering): bits 3-2
                 //   P (Preprocessing): bits 5-4
                 //   Rsv (Reserved): bits 7-6
+                //
+                // Note: ExifTool's RIFF.pm has a bug - all three tags use Mask 0x03
+                // without BitShift, so they all extract the same bits 0-1 from the byte.
+                // We match ExifTool's buggy behavior for compatibility.
                 if chunk_size >= 1 {
                     let alph_data = reader.read(chunk_data_offset, 1)?;
                     let flags = alph_data[0];
 
-                    // Bits 1-0: Compression method
-                    let compression = flags & 0x03;
-                    let compression_str = match compression {
-                        0 => "None",
-                        1 => "Lossless",
+                    // All three use bits 0-1 to match ExifTool's bug
+                    let value = flags & 0x03;
+
+                    let preprocessing_str = match value {
+                        0 => "none",
+                        1 => "Level Reduction",
                         _ => "Unknown",
                     };
                     metadata.insert(
-                        "WebP:AlphaCompression".to_string(),
-                        TagValue::String(compression_str.to_string()),
+                        "RIFF:AlphaPreprocessing".to_string(),
+                        TagValue::String(preprocessing_str.to_string()),
                     );
 
-                    // Bits 3-2: Filtering method
-                    let filtering = (flags >> 2) & 0x03;
-                    let filtering_str = match filtering {
-                        0 => "None",
+                    let filtering_str = match value {
+                        0 => "none",
                         1 => "Horizontal",
                         2 => "Vertical",
                         3 => "Gradient",
                         _ => "Unknown",
                     };
                     metadata.insert(
-                        "WebP:AlphaFiltering".to_string(),
+                        "RIFF:AlphaFiltering".to_string(),
                         TagValue::String(filtering_str.to_string()),
                     );
 
-                    // Bits 5-4: Preprocessing
-                    let preprocessing = (flags >> 4) & 0x03;
-                    let preprocessing_str = match preprocessing {
-                        0 => "None",
-                        1 => "Level Reduction",
+                    let compression_str = match value {
+                        0 => "none",
+                        1 => "Lossless",
                         _ => "Unknown",
                     };
                     metadata.insert(
-                        "WebP:AlphaPreprocessing".to_string(),
-                        TagValue::String(preprocessing_str.to_string()),
+                        "RIFF:AlphaCompression".to_string(),
+                        TagValue::String(compression_str.to_string()),
                     );
                 }
             }
