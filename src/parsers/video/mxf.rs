@@ -892,7 +892,6 @@ impl FormatParser for MxfParser {
             // Limit value size for safety
             let value_len = length as usize;
             if value_len > 1_000_000 || offset + value_len > data.len() {
-                offset = data.len();
                 break;
             }
 

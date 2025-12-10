@@ -196,7 +196,7 @@ impl JXLParser {
                     // Format: major_brand (4) + minor_version (4) + compatible_brands (4 each)
                     if box_size >= 16 {
                         let ftyp_data = reader.read((offset + 8) as u64, box_size - 8)?;
-                        let ftyp_reader = EndianReader::big_endian(ftyp_data.clone());
+                        let ftyp_reader = EndianReader::big_endian(&*ftyp_data);
 
                         // Major brand (4 bytes)
                         if ftyp_data.len() >= 4 {
