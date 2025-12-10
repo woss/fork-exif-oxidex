@@ -1054,6 +1054,10 @@ fn map_x3f_property_name(name: &str) -> String {
 }
 
 /// Parse X3F image section for embedded EXIF data
+///
+/// X3F image sections (SECi) can contain embedded TIFF/EXIF data. This function
+/// searches for TIFF headers throughout the image section data to locate and parse
+/// any embedded metadata.
 fn parse_x3f_image_section(data: &[u8], metadata: &mut MetadataMap, format: RawFormat) {
     if data.len() < 28 {
         return;
@@ -1082,20 +1086,42 @@ fn parse_x3f_image_section(data: &[u8], metadata: &mut MetadataMap, format: RawF
     }
 
     // For RAW type (1), look for embedded TIFF/EXIF data
+    // TIFF can be embedded at various offsets, so we search for TIFF headers
     if image_type == 1 {
-        // Check for TIFF header after image section header
-        let header_size = 28;
-        if data.len() > header_size + 8 {
-            let potential_tiff = &data[header_size..];
-            if (potential_tiff.starts_with(b"II\x2a\x00")
-                || potential_tiff.starts_with(b"MM\x00\x2a"))
-                && potential_tiff.len() > 8
-            {
-                if let Ok(tiff_metadata) = parse_tiff_based_raw(potential_tiff, format) {
-                    for (key, value) in tiff_metadata {
-                        if !metadata.contains_key(&key) {
-                            metadata.insert(key, value);
+        // Search for TIFF headers (II or MM byte order markers) starting from offset 28
+        // We search up to offset min(data.len() - 8, 1024) to find TIFF headers
+        // Limit search to first 1KB to avoid scanning large image data
+        let search_limit = (data.len() - 8).min(1024);
+
+        for offset in 28..search_limit {
+            // Check for little-endian TIFF (II\x2a\x00) or big-endian (MM\x00\x2a)
+            if offset + 4 <= data.len() {
+                let marker = &data[offset..offset + 2];
+                let magic_bytes = &data[offset + 2..offset + 4];
+
+                let is_valid_tiff = match marker {
+                    b"II" => {
+                        // Little-endian: magic should be 0x2a (42) or 0x55 (for RW2-like variants)
+                        magic_bytes[0] == 0x2a || magic_bytes[0] == 0x55
+                    }
+                    b"MM" => {
+                        // Big-endian: magic should be 0x00 0x2a or 0x00 0x55
+                        magic_bytes[1] == 0x2a || magic_bytes[1] == 0x55
+                    }
+                    _ => false,
+                };
+
+                if is_valid_tiff && offset + 8 <= data.len() {
+                    let potential_tiff = &data[offset..];
+                    if let Ok(tiff_metadata) = parse_tiff_based_raw(potential_tiff, format) {
+                        // Successfully parsed TIFF data, merge into metadata
+                        for (key, value) in tiff_metadata {
+                            if !metadata.contains_key(&key) {
+                                metadata.insert(key, value);
+                            }
                         }
+                        // Found and parsed TIFF data, stop searching
+                        return;
                     }
                 }
             }

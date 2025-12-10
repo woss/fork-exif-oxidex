@@ -156,14 +156,19 @@ pub fn parse_tiff_header(reader: &dyn FileReader) -> Result<TiffHeader> {
     // Create EndianReader for parsing remaining header fields
     let endian_reader = EndianReader::new(header, byte_order.to_io_byte_order());
 
-    // Parse magic number (bytes 2-3) - should be 42
+    // Parse magic number (bytes 2-3)
+    // Standard TIFF uses 42 (0x002A), but some formats use variants:
+    // - 42 (0x002A): Standard TIFF, Canon CR2, Nikon NEF, Sony ARW, DNG, etc.
+    // - 0x55 (85): Panasonic RW2 format (variant TIFF)
+    // - 0x4F4F ("RO"): Olympus ORF format (uses "RO" marker instead of magic number)
     let magic = endian_reader
         .u16_at(2)
         .ok_or_else(|| ExifToolError::parse_error("Failed to read TIFF magic number"))?;
 
-    if magic != 42 {
+    // Accept both standard TIFF magic (42) and known variants
+    if magic != 42 && magic != 0x55 {
         return Err(ExifToolError::parse_error(format!(
-            "Invalid TIFF magic number: {} (expected 42)",
+            "Invalid TIFF magic number: {} (expected 42 or 0x55 for RW2)",
             magic
         )));
     }
@@ -894,6 +899,29 @@ mod tests {
         let result = parse_tiff_header(&reader);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_tiff_header_rw2_magic() {
+        // Panasonic RW2 uses magic number 0x55 (85) instead of 42
+        let mut data = vec![0u8; 8];
+        data[0] = 0x49;
+        data[1] = 0x49; // Little-endian
+        data[2] = 0x55; // Magic: 85 (0x55) - RW2 variant
+        data[3] = 0x00;
+        // First IFD offset: 8
+        data[4] = 0x08;
+        data[5] = 0x00;
+        data[6] = 0x00;
+        data[7] = 0x00;
+
+        let reader = TestReader::new(data);
+        let result = parse_tiff_header(&reader);
+
+        assert!(result.is_ok(), "RW2 magic (0x55) should be accepted");
+        let header = result.unwrap();
+        assert_eq!(header.byte_order, ByteOrder::LittleEndian);
+        assert_eq!(header.first_ifd_offset, 8);
     }
 
     #[test]
