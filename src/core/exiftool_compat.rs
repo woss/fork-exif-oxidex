@@ -62,9 +62,15 @@ use crate::core::formatters::gps_status::{
 };
 use crate::core::formatters::{
     decode_cfa_pattern, decode_gps_processing_method, decode_scene_type, decode_version_bytes,
-    format_exposure_program, format_gps_altitude_ref, format_gps_direction_ref, format_gps_lat_ref,
-    format_gps_lon_ref, format_gps_speed_ref, format_icc_value, format_integer_precision_values,
-    format_three_decimal_values, format_with_unit, is_icc_matrix_tag, is_integer_precision_tag,
+    format_color_space, format_components_configuration, format_compression, format_contrast,
+    format_custom_rendered, format_exposure_mode, format_exposure_program, format_file_source,
+    format_flash, format_gain_control, format_gps_altitude_ref, format_gps_direction_ref,
+    format_gps_lat_ref, format_gps_lon_ref, format_gps_speed_ref, format_icc_value,
+    format_integer_precision_values, format_interop_index, format_light_source,
+    format_metering_mode, format_orientation, format_resolution_unit, format_saturation,
+    format_scene_capture_type, format_sensing_method, format_sharpness,
+    format_subject_distance_range, format_three_decimal_values, format_white_balance,
+    format_with_unit, format_ycbcr_positioning, is_icc_matrix_tag, is_integer_precision_tag,
     is_three_decimal_tag,
 };
 use crate::core::{MetadataMap, TagValue};
@@ -336,7 +342,7 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
     // Non-zero values are returned as-is (pass through to default)
 
     // ---------------------------------------------------------------------
-    // Rule 9: Enum Tags (ExposureProgram)
+    // Rule 9: Enum Tags (ExposureProgram and other EXIF enum tags)
     // Convert integer enum values to human-readable strings
     // ---------------------------------------------------------------------
     if is_exposure_program(base_name)
@@ -346,6 +352,153 @@ pub fn format_tag_value(tag_name: &str, value: &TagValue) -> TagValue {
         // Safe to cast from i64 to u32 for the formatter
         let formatted = format_exposure_program(i as u32);
         return TagValue::String(formatted);
+    }
+
+    // ColorSpace enum (1=sRGB, 65535=Uncalibrated)
+    if base_name == "ColorSpace"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_color_space(i));
+    }
+
+    // MeteringMode enum (0-6, 255)
+    if base_name == "MeteringMode"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_metering_mode(i));
+    }
+
+    // LightSource enum (0-24, 255)
+    if base_name == "LightSource"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_light_source(i));
+    }
+
+    // Flash enum (complex bitfield)
+    if base_name == "Flash"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_flash(i));
+    }
+
+    // ExposureMode enum (0=Auto, 1=Manual, 2=Auto bracket)
+    if base_name == "ExposureMode"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_exposure_mode(i));
+    }
+
+    // WhiteBalance enum (0=Auto, 1=Manual)
+    if base_name == "WhiteBalance"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_white_balance(i));
+    }
+
+    // SceneCaptureType enum (0-3)
+    if base_name == "SceneCaptureType"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_scene_capture_type(i));
+    }
+
+    // Contrast enum (0=Normal, 1=Low, 2=High)
+    if base_name == "Contrast"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_contrast(i));
+    }
+
+    // Saturation enum (0=Normal, 1=Low, 2=High)
+    if base_name == "Saturation"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_saturation(i));
+    }
+
+    // Sharpness enum (0=Normal, 1=Soft, 2=Hard)
+    if base_name == "Sharpness"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_sharpness(i));
+    }
+
+    // GainControl enum (0-4)
+    if base_name == "GainControl"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_gain_control(i));
+    }
+
+    // FileSource enum (1-3)
+    if base_name == "FileSource"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_file_source(i));
+    }
+
+    // SensingMethod enum (1-8)
+    if base_name == "SensingMethod"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_sensing_method(i));
+    }
+
+    // Compression enum (1-65535)
+    if base_name == "Compression"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_compression(i));
+    }
+
+    // Orientation enum (1-8)
+    if base_name == "Orientation"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_orientation(i));
+    }
+
+    // ResolutionUnit enum (1-3)
+    if base_name == "ResolutionUnit"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_resolution_unit(i));
+    }
+
+    // YCbCrPositioning enum (1=Centered, 2=Co-sited)
+    if base_name == "YCbCrPositioning"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_ycbcr_positioning(i));
+    }
+
+    // CustomRendered enum (0-8)
+    if base_name == "CustomRendered"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_custom_rendered(i));
+    }
+
+    // SubjectDistanceRange enum (0-3)
+    if base_name == "SubjectDistanceRange"
+        && let Some(i) = value.as_integer()
+    {
+        return TagValue::String(format_subject_distance_range(i));
+    }
+
+    // InteropIndex (R98=sRGB, THM=thumbnail, R03=Adobe RGB)
+    if base_name == "InteropIndex"
+        && let Some(s) = value.as_string()
+    {
+        return TagValue::String(format_interop_index(s));
+    }
+
+    // ComponentsConfiguration binary data
+    if base_name == "ComponentsConfiguration"
+        && let TagValue::Binary(data) = value
+    {
+        return TagValue::String(format_components_configuration(data));
     }
 
     // ---------------------------------------------------------------------
