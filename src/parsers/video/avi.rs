@@ -126,7 +126,6 @@ fn convert_fourcc_to_codec_name(fourcc: &str, is_video: bool) -> String {
             // Video codecs
             "H264" | "AVC1" | "DAVC" => "H.264".to_string(),
             "H265" | "HEVC" => "H.265".to_string(),
-            "HEVC" => "H.265".to_string(),
             "AV01" => "AV1".to_string(),
             "VP80" => "VP8".to_string(),
             "VP90" => "VP9".to_string(),

@@ -225,7 +225,7 @@ fn parse_mvhd(reader: &dyn FileReader, offset: u64, metadata: &mut MetadataMap) 
 /// Parse trak (track) box
 fn parse_trak(
     reader: &dyn FileReader,
-    mut offset: u64,
+    offset: u64,
     end_offset: u64,
     metadata: &mut MetadataMap,
 ) -> Result<()> {
@@ -497,7 +497,7 @@ fn parse_stbl(
 fn parse_stsd(
     reader: &dyn FileReader,
     offset: u64,
-    end_offset: u64,
+    _end_offset: u64,
 ) -> Result<(u16, u16, u32, u16, String)> {
     // stsd structure:
     // Offset 0: version (1 byte) + flags (3 bytes)
@@ -517,7 +517,7 @@ fn parse_stsd(
     }
 
     // Parse first sample entry
-    let mut entry_offset = offset + 8;
+    let entry_offset = offset + 8;
 
     // Sample entry structure (first 6 bytes are reserved, then 2 bytes for data reference index)
     if entry_offset + 8 > reader.size() {
@@ -526,7 +526,7 @@ fn parse_stsd(
 
     let entry_header = reader.read(entry_offset, 8)?;
     let entry_er = EndianReader::big_endian(entry_header);
-    let entry_size = entry_er.u32_at(0).unwrap_or(0) as u64;
+    let _entry_size = entry_er.u32_at(0).unwrap_or(0) as u64;
     let codec_bytes = &entry_header[4..8];
 
     let codec_id = String::from_utf8_lossy(codec_bytes).to_string();
@@ -616,7 +616,7 @@ fn extract_frame_rate(reader: &dyn FileReader, mut offset: u64, end_offset: u64)
                             if entry_count > 0 {
                                 let entry_data = reader.read(stbl_offset + 16, 8)?;
                                 let entry_er = EndianReader::big_endian(entry_data);
-                                let sample_count = entry_er.u32_at(0).unwrap_or(0);
+                                let _sample_count = entry_er.u32_at(0).unwrap_or(0);
                                 let sample_delta = entry_er.u32_at(4).unwrap_or(1);
 
                                 if sample_delta > 0 {

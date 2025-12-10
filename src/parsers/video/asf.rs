@@ -668,7 +668,7 @@ fn parse_codec_list(
     let mut pos = offset + 44; // Start at codec entries (relative to object start)
     let end_pos = offset + size;
     let mut audio_idx = 0;
-    let mut video_idx = 0;
+    let mut _video_idx = 0;
 
     for _ in 0..codec_count {
         if pos + 2 > end_pos {
