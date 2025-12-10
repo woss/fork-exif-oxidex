@@ -52,19 +52,19 @@ use crate::io::EndianReader;
 const FTYP_SIGNATURE: &[u8] = b"ftyp";
 
 /// Common MP4 box types (4-byte big-endian codes)
-const BOX_MOOV: &[u8] = b"moov";  // Movie box
-const BOX_MVHD: &[u8] = b"mvhd";  // Movie header
-const BOX_TRAK: &[u8] = b"trak";  // Track box
-const BOX_TKHD: &[u8] = b"tkhd";  // Track header
-const BOX_MDIA: &[u8] = b"mdia";  // Media box
-const BOX_MDHD: &[u8] = b"mdhd";  // Media header
-const BOX_MINF: &[u8] = b"minf";  // Media information
-const BOX_SMHD: &[u8] = b"smhd";  // Sound media header
-const BOX_VMHD: &[u8] = b"vmhd";  // Video media header
-const BOX_STBL: &[u8] = b"stbl";  // Sample table
-const BOX_STSD: &[u8] = b"stsd";  // Sample description
-const BOX_STTS: &[u8] = b"stts";  // Decoding time to sample
-const BOX_ELST: &[u8] = b"elst";  // Edit list
+const BOX_MOOV: &[u8] = b"moov"; // Movie box
+const BOX_MVHD: &[u8] = b"mvhd"; // Movie header
+const BOX_TRAK: &[u8] = b"trak"; // Track box
+const BOX_TKHD: &[u8] = b"tkhd"; // Track header
+const BOX_MDIA: &[u8] = b"mdia"; // Media box
+const BOX_MDHD: &[u8] = b"mdhd"; // Media header
+const BOX_MINF: &[u8] = b"minf"; // Media information
+const BOX_SMHD: &[u8] = b"smhd"; // Sound media header
+const BOX_VMHD: &[u8] = b"vmhd"; // Video media header
+const BOX_STBL: &[u8] = b"stbl"; // Sample table
+const BOX_STSD: &[u8] = b"stsd"; // Sample description
+const BOX_STTS: &[u8] = b"stts"; // Decoding time to sample
+const BOX_ELST: &[u8] = b"elst"; // Edit list
 
 /// MP4 parser
 pub struct Mp4Parser;
@@ -127,7 +127,12 @@ fn parse_boxes(
         // Parse specific boxes
         match box_type {
             BOX_MOOV => {
-                parse_moov(reader, box_data_offset, box_data_offset + box_data_size, metadata)?;
+                parse_moov(
+                    reader,
+                    box_data_offset,
+                    box_data_offset + box_data_size,
+                    metadata,
+                )?;
             }
             _ => {
                 // Skip other boxes for now
@@ -154,11 +159,7 @@ fn parse_moov(
         let size = er.u32_at(0).unwrap_or(0) as u64;
         let box_type = &header[4..8];
 
-        let box_size = if size == 0 {
-            end_offset - offset
-        } else {
-            size
-        };
+        let box_size = if size == 0 { end_offset - offset } else { size };
 
         if box_size < 8 || offset + box_size > end_offset {
             break;
@@ -181,11 +182,7 @@ fn parse_moov(
 }
 
 /// Parse mvhd (movie header) box
-fn parse_mvhd(
-    reader: &dyn FileReader,
-    offset: u64,
-    metadata: &mut MetadataMap,
-) -> Result<()> {
+fn parse_mvhd(reader: &dyn FileReader, offset: u64, metadata: &mut MetadataMap) -> Result<()> {
     // mvhd structure (version 0):
     // Offset 0: version (1 byte) + flags (3 bytes)
     // Offset 4: creation time (4 bytes)
@@ -219,10 +216,7 @@ fn parse_mvhd(
         let secs = total_secs % 60;
         let formatted = format!("{}:{:02}:{:02}", hours, mins, secs);
 
-        metadata.insert(
-            "MP4:Duration".to_string(),
-            TagValue::new_string(formatted),
-        );
+        metadata.insert("MP4:Duration".to_string(), TagValue::new_string(formatted));
     }
 
     Ok(())
@@ -291,10 +285,7 @@ fn parse_trak(
         );
 
         if width > 0 {
-            metadata.insert(
-                "MP4:Width".to_string(),
-                TagValue::new_integer(width as i64),
-            );
+            metadata.insert("MP4:Width".to_string(), TagValue::new_integer(width as i64));
         }
 
         if height > 0 {
@@ -360,11 +351,7 @@ fn parse_mdia(
         let size = er.u32_at(0).unwrap_or(0) as u64;
         let box_type = &header[4..8];
 
-        let box_size = if size == 0 {
-            end_offset - offset
-        } else {
-            size
-        };
+        let box_size = if size == 0 { end_offset - offset } else { size };
 
         if box_size < 8 || offset + box_size > end_offset {
             break;
@@ -378,8 +365,7 @@ fn parse_mdia(
                 is_audio = is_a;
 
                 // Parse stbl for codec and dimensions
-                let (w, h, sr, ch, codec) =
-                    parse_minf(reader, offset + 8, offset + box_size)?;
+                let (w, h, sr, ch, codec) = parse_minf(reader, offset + 8, offset + box_size)?;
                 width = w;
                 height = h;
                 sample_rate = sr;
@@ -392,7 +378,15 @@ fn parse_mdia(
         offset += box_size;
     }
 
-    Ok((is_video, is_audio, width, height, sample_rate, channels, codec_id))
+    Ok((
+        is_video,
+        is_audio,
+        width,
+        height,
+        sample_rate,
+        channels,
+        codec_id,
+    ))
 }
 
 /// Check media type from minf (video or audio)
@@ -436,11 +430,7 @@ fn parse_minf(
         let size = er.u32_at(0).unwrap_or(0) as u64;
         let box_type = &header[4..8];
 
-        let box_size = if size == 0 {
-            end_offset - offset
-        } else {
-            size
-        };
+        let box_size = if size == 0 { end_offset - offset } else { size };
 
         if box_size < 8 || offset + box_size > end_offset {
             break;
@@ -448,8 +438,7 @@ fn parse_minf(
 
         if box_type == BOX_STBL {
             // Sample table - contains codec and dimensions
-            let (w, h, sr, ch, codec) =
-                parse_stbl(reader, offset + 8, offset + box_size)?;
+            let (w, h, sr, ch, codec) = parse_stbl(reader, offset + 8, offset + box_size)?;
             width = w;
             height = h;
             sample_rate = sr;
@@ -482,11 +471,7 @@ fn parse_stbl(
         let size = er.u32_at(0).unwrap_or(0) as u64;
         let box_type = &header[4..8];
 
-        let box_size = if size == 0 {
-            end_offset - offset
-        } else {
-            size
-        };
+        let box_size = if size == 0 { end_offset - offset } else { size };
 
         if box_size < 8 || offset + box_size > end_offset {
             break;
@@ -494,8 +479,7 @@ fn parse_stbl(
 
         if box_type == BOX_STSD {
             // Sample description - contains codec info
-            let (w, h, sr, ch, codec) =
-                parse_stsd(reader, offset + 8, offset + box_size)?;
+            let (w, h, sr, ch, codec) = parse_stsd(reader, offset + 8, offset + box_size)?;
             width = w;
             height = h;
             sample_rate = sr;
@@ -580,11 +564,7 @@ fn parse_stsd(
 }
 
 /// Extract frame rate from stts (decoding time to sample) box
-fn extract_frame_rate(
-    reader: &dyn FileReader,
-    mut offset: u64,
-    end_offset: u64,
-) -> Result<f64> {
+fn extract_frame_rate(reader: &dyn FileReader, mut offset: u64, end_offset: u64) -> Result<f64> {
     while offset + 8 <= end_offset {
         let header = reader.read(offset, 8)?;
         let er = EndianReader::big_endian(header);
@@ -592,11 +572,7 @@ fn extract_frame_rate(
         let size = er.u32_at(0).unwrap_or(0) as u64;
         let box_type = &header[4..8];
 
-        let box_size = if size == 0 {
-            end_offset - offset
-        } else {
-            size
-        };
+        let box_size = if size == 0 { end_offset - offset } else { size };
 
         if box_size < 8 || offset + box_size > end_offset {
             break;

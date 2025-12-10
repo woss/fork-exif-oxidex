@@ -138,18 +138,27 @@ impl FormatParser for ICSParser {
         // Count VEVENT entries (ICS:EventCount) - Worker 27 requirement
         let event_count = Self::count_component(text, "VEVENT");
         if event_count > 0 {
-            metadata.insert("ICS:EventCount".to_string(), TagValue::new_integer(event_count));
+            metadata.insert(
+                "ICS:EventCount".to_string(),
+                TagValue::new_integer(event_count),
+            );
         }
 
         // Count VTODO entries (ICS:TodoCount) - Worker 27 requirement
         let todo_count = Self::count_component(text, "VTODO");
         if todo_count > 0 {
-            metadata.insert("ICS:TodoCount".to_string(), TagValue::new_integer(todo_count));
+            metadata.insert(
+                "ICS:TodoCount".to_string(),
+                TagValue::new_integer(todo_count),
+            );
         }
 
         // Extract first date (ICS:FirstDate) - Worker 27 requirement
         if let Some(first_date) = Self::extract_first_date(text) {
-            metadata.insert("ICS:FirstDate".to_string(), TagValue::new_string(first_date));
+            metadata.insert(
+                "ICS:FirstDate".to_string(),
+                TagValue::new_string(first_date),
+            );
         }
 
         // Extract last date (ICS:LastDate) - Worker 27 requirement

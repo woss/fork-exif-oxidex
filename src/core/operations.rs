@@ -569,7 +569,10 @@ fn collect_tiff_format_tags(source: &MetadataMap) -> Vec<(String, TagValue)> {
         ("ImageLength", "TIFF:Height"),
         ("BitsPerSample", "TIFF:BitsPerSample"),
         ("Compression", "TIFF:Compression"),
-        ("PhotometricInterpretation", "TIFF:PhotometricInterpretation"),
+        (
+            "PhotometricInterpretation",
+            "TIFF:PhotometricInterpretation",
+        ),
         ("Orientation", "TIFF:Orientation"),
         ("XResolution", "TIFF:XResolution"),
         ("YResolution", "TIFF:YResolution"),

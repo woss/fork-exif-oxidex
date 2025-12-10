@@ -65,10 +65,7 @@ pub fn extract_coff_metadata(header: &CoffHeader, metadata: &mut MetadataMap) {
                 TagValue::String(timestamp_str.clone()),
             );
             // Add PE:Timestamp as string for ExifTool compatibility
-            metadata.insert(
-                "PE:Timestamp".to_string(),
-                TagValue::String(timestamp_str),
-            );
+            metadata.insert("PE:Timestamp".to_string(), TagValue::String(timestamp_str));
         }
     }
 

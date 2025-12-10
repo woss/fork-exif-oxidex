@@ -179,21 +179,36 @@ impl FormatParser for GLTFParser {
         // Extract asset information
         // Version is required in glTF asset, so try both locations
         if let Some(version) = Self::extract_json_string(&json_content, "version") {
-            metadata.insert("AssetVersion".to_string(), TagValue::String(version.clone()));
+            metadata.insert(
+                "AssetVersion".to_string(),
+                TagValue::String(version.clone()),
+            );
             // Add GLTF:Version for Worker 25 compatibility
             metadata.insert("GLTF:Version".to_string(), TagValue::new_string(version));
         }
 
         if let Some(generator) = Self::extract_json_string(&json_content, "generator") {
-            metadata.insert("AssetGenerator".to_string(), TagValue::String(generator.clone()));
+            metadata.insert(
+                "AssetGenerator".to_string(),
+                TagValue::String(generator.clone()),
+            );
             // Add GLTF:Generator for Worker 25 compatibility
-            metadata.insert("GLTF:Generator".to_string(), TagValue::new_string(generator));
+            metadata.insert(
+                "GLTF:Generator".to_string(),
+                TagValue::new_string(generator),
+            );
         }
 
         if let Some(copyright) = Self::extract_json_string(&json_content, "copyright") {
-            metadata.insert("AssetCopyright".to_string(), TagValue::String(copyright.clone()));
+            metadata.insert(
+                "AssetCopyright".to_string(),
+                TagValue::String(copyright.clone()),
+            );
             // Add GLTF:Copyright for Worker 25 compatibility
-            metadata.insert("GLTF:Copyright".to_string(), TagValue::new_string(copyright));
+            metadata.insert(
+                "GLTF:Copyright".to_string(),
+                TagValue::new_string(copyright),
+            );
         }
 
         // Count array elements for both old and new tag names

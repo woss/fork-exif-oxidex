@@ -598,7 +598,7 @@ fn parse_mpeg_audio_frame(
             // Extract channel count from channel mode for MP3:Channels
             let channel_count: i64 = match channel_mode {
                 0x00 | 0x01 | 0x02 => 2, // Stereo, Joint Stereo, Dual Channel = 2 channels
-                0x03 => 1,                 // Mono = 1 channel
+                0x03 => 1,               // Mono = 1 channel
                 _ => 2,
             };
             metadata.insert(

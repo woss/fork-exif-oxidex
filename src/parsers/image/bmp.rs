@@ -126,10 +126,7 @@ impl FormatParser for BMPParser {
         );
 
         // Add BMP: prefixed versions for format-specific tagging
-        metadata.insert(
-            "BMP:Width".to_string(),
-            TagValue::Integer(abs_width as i64),
-        );
+        metadata.insert("BMP:Width".to_string(), TagValue::Integer(abs_width as i64));
         metadata.insert(
             "BMP:Height".to_string(),
             TagValue::Integer(abs_height as i64),

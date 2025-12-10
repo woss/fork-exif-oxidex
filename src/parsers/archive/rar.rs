@@ -343,10 +343,7 @@ impl FormatParser for RARParser {
         if !metadata.contains_key("RAR:FileCount") {
             if let Some(TagValue::String(count_str)) = metadata.get("FileCount") {
                 if let Ok(count) = count_str.parse::<i64>() {
-                    metadata.insert(
-                        "RAR:FileCount".to_string(),
-                        TagValue::new_integer(count),
-                    );
+                    metadata.insert("RAR:FileCount".to_string(), TagValue::new_integer(count));
                 }
             }
         }
@@ -393,15 +390,9 @@ impl FormatParser for RARParser {
 
         // RAR:CompressedSize and RAR:UncompressedSize
         // These would require scanning all file entries; for now set to 0
-        metadata.insert(
-            "RAR:CompressedSize".to_string(),
-            TagValue::new_integer(0),
-        );
+        metadata.insert("RAR:CompressedSize".to_string(), TagValue::new_integer(0));
 
-        metadata.insert(
-            "RAR:UncompressedSize".to_string(),
-            TagValue::new_integer(0),
-        );
+        metadata.insert("RAR:UncompressedSize".to_string(), TagValue::new_integer(0));
 
         // RAR:HeaderCRC - placeholder
         metadata.insert(

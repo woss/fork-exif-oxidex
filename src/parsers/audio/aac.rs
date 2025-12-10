@@ -189,15 +189,15 @@ impl FormatParser for AacParser {
 
         // Channels: Convert channel_config to channel count
         let channel_count: i64 = match adts_info.channel_config {
-            0 => 0,  // AOT Specific config (not standard)
-            1 => 1,  // Mono
-            2 => 2,  // Stereo
-            3 => 3,  // Stereo + Center
-            4 => 4,  // Stereo + Center + LFE (5.0 would be 5)
-            5 => 5,  // Stereo + Center + LFE + Back
-            6 => 6,  // 5.1 surround
-            7 => 8,  // 7.1 surround
-            _ => 2,  // Default to stereo for unknown
+            0 => 0, // AOT Specific config (not standard)
+            1 => 1, // Mono
+            2 => 2, // Stereo
+            3 => 3, // Stereo + Center
+            4 => 4, // Stereo + Center + LFE (5.0 would be 5)
+            5 => 5, // Stereo + Center + LFE + Back
+            6 => 6, // 5.1 surround
+            7 => 8, // 7.1 surround
+            _ => 2, // Default to stereo for unknown
         };
         metadata.insert(
             "AAC:Channels".to_string(),
@@ -207,7 +207,8 @@ impl FormatParser for AacParser {
         // BitRate: Estimate from frame size and sample rate
         // AAC frames typically contain 1024 samples
         let samples_per_frame = 1024u64;
-        let bitrate_bps = (adts_info.frame_length as u64 * adts_info.sample_rate as u64 * 8) / samples_per_frame;
+        let bitrate_bps =
+            (adts_info.frame_length as u64 * adts_info.sample_rate as u64 * 8) / samples_per_frame;
         let bitrate_kbps = bitrate_bps / 1000;
         metadata.insert(
             "AAC:BitRate".to_string(),

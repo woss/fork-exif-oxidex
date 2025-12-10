@@ -216,10 +216,7 @@ impl FormatParser for TARParser {
         metadata.insert("TARFormat".to_string(), TagValue::String(version.clone()));
 
         // TAR:FileFormat tag (per Worker 2 specification)
-        metadata.insert(
-            "TAR:FileFormat".to_string(),
-            TagValue::new_string(version),
-        );
+        metadata.insert("TAR:FileFormat".to_string(), TagValue::new_string(version));
 
         // TAR:BlockSize - TAR uses 512-byte blocks
         metadata.insert(
@@ -255,7 +252,9 @@ impl FormatParser for TARParser {
             if header.mtime > 0 {
                 match earliest_mtime {
                     None => earliest_mtime = Some(header.mtime),
-                    Some(earliest) if header.mtime < earliest => earliest_mtime = Some(header.mtime),
+                    Some(earliest) if header.mtime < earliest => {
+                        earliest_mtime = Some(header.mtime)
+                    }
                     _ => {}
                 }
                 match latest_mtime {
@@ -327,13 +326,15 @@ impl FormatParser for TARParser {
         );
 
         // TAR:Permissions - extract from first file as representative
-        if let Some(_first_file) = headers.iter().find(|h| matches!(h.typeflag, TARTypeFlag::File))
+        if let Some(_first_file) = headers
+            .iter()
+            .find(|h| matches!(h.typeflag, TARTypeFlag::File))
         {
             // TAR headers store mode in octal format at offset 100-108
             // For now, we'll store as readable format
             metadata.insert(
                 "TAR:Permissions".to_string(),
-                TagValue::new_string("0644"),  // Default file permissions
+                TagValue::new_string("0644"), // Default file permissions
             );
         }
 

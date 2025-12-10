@@ -147,15 +147,9 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
         let version = version_str.trim();
         // Store as string to preserve exact version format (e.g., "1.3", "1.4", "2.0")
         let version_string = crate::core::TagValue::new_string(version.to_string());
-        metadata.insert(
-            "PDF:PDFVersion".to_string(),
-            version_string.clone(),
-        );
+        metadata.insert("PDF:PDFVersion".to_string(), version_string.clone());
         // Add PDF:Version as alias for ExifTool compatibility
-        metadata.insert(
-            "PDF:Version".to_string(),
-            version_string,
-        );
+        metadata.insert("PDF:Version".to_string(), version_string);
     }
 
     // Check for linearization (optimize for web display)

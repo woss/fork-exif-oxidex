@@ -371,10 +371,7 @@ fn parse_avih_chunk(
         TagValue::new_integer(width as i64),
     );
     // Add AVI:Width tag
-    metadata.insert(
-        "AVI:Width".to_string(),
-        TagValue::new_integer(width as i64),
-    );
+    metadata.insert("AVI:Width".to_string(), TagValue::new_integer(width as i64));
 
     metadata.insert(
         "RIFF:ImageHeight".to_string(),
@@ -416,10 +413,7 @@ fn parse_avih_chunk(
         let mins = total_secs / 60;
         let secs = total_secs % 60;
         let formatted = format!("{}:{:02}", mins, secs);
-        metadata.insert(
-            "AVI:Duration".to_string(),
-            TagValue::new_string(formatted),
-        );
+        metadata.insert("AVI:Duration".to_string(), TagValue::new_string(formatted));
     }
 
     Ok(())

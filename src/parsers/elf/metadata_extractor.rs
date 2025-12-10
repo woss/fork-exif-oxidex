@@ -287,10 +287,7 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
     );
 
     // Add ELF:DataEncoding as alias for Endianness (for ExifTool compatibility)
-    metadata.insert(
-        "ELF:DataEncoding".to_string(),
-        TagValue::String(endian_str),
-    );
+    metadata.insert("ELF:DataEncoding".to_string(), TagValue::String(endian_str));
 
     // OS/ABI
     metadata.insert(
@@ -312,10 +309,7 @@ fn extract_header_metadata(header: &ElfHeader, metadata: &mut MetadataMap) {
     );
 
     // Add ELF:Type as alias for ObjectType (for ExifTool compatibility)
-    metadata.insert(
-        "ELF:Type".to_string(),
-        TagValue::String(type_str),
-    );
+    metadata.insert("ELF:Type".to_string(), TagValue::String(type_str));
 
     // Machine architecture
     metadata.insert(

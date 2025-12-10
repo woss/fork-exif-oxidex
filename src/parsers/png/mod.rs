@@ -127,10 +127,7 @@ pub fn parse_png_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
                     parse_ihdr_chunk(&chunk.data)
                 {
                     // Width tag - support both naming conventions
-                    metadata.insert(
-                        "PNG:Width".to_string(),
-                        TagValue::new_integer(width as i64),
-                    );
+                    metadata.insert("PNG:Width".to_string(), TagValue::new_integer(width as i64));
                     metadata.insert(
                         "PNG:ImageWidth".to_string(),
                         TagValue::new_integer(width as i64),
@@ -471,7 +468,11 @@ mod tests {
         let metadata = result.unwrap();
         // Minimal PNG now extracts IHDR chunk metadata (9 tags - Width, Height, BitDepth, ColorType,
         // Compression, Filter, Interlace, and their duplicates ImageWidth, ImageHeight, plus HasTransparency)
-        assert!(metadata.len() >= 9, "Expected at least 9 IHDR tags, got {}", metadata.len());
+        assert!(
+            metadata.len() >= 9,
+            "Expected at least 9 IHDR tags, got {}",
+            metadata.len()
+        );
         // Verify IHDR tags are present (both new and old naming conventions)
         assert!(metadata.contains_key("PNG:Width"));
         assert!(metadata.contains_key("PNG:ImageWidth"));
@@ -509,7 +510,11 @@ mod tests {
         let metadata = result.unwrap();
         // 10 IHDR tags (Width, ImageWidth, Height, ImageHeight, BitDepth, ColorType,
         // Compression, Filter, Interlace, HasTransparency) + 1 tEXt tag = 11 total
-        assert!(metadata.len() >= 10, "Expected at least 10 IHDR tags + tEXt, got {}", metadata.len());
+        assert!(
+            metadata.len() >= 10,
+            "Expected at least 10 IHDR tags + tEXt, got {}",
+            metadata.len()
+        );
         assert_eq!(metadata.get_string("PNG:tEXt:Author"), Some("John Doe"));
     }
 
@@ -545,7 +550,11 @@ mod tests {
 
         let metadata = result.unwrap();
         // 10 IHDR tags + 1 iTXt tag = 11 total
-        assert!(metadata.len() >= 10, "Expected at least 10 IHDR tags + iTXt, got {}", metadata.len());
+        assert!(
+            metadata.len() >= 10,
+            "Expected at least 10 IHDR tags + iTXt, got {}",
+            metadata.len()
+        );
         assert_eq!(metadata.get_string("PNG:iTXt:Title"), Some("My PNG Image"));
     }
 
@@ -696,7 +705,11 @@ mod tests {
 
         let metadata = result.unwrap();
         // 10 IHDR tags + 1 gAMA tag = 11 total
-        assert!(metadata.len() >= 10, "Expected at least 10 IHDR tags + gAMA, got {}", metadata.len());
+        assert!(
+            metadata.len() >= 10,
+            "Expected at least 10 IHDR tags + gAMA, got {}",
+            metadata.len()
+        );
 
         // Check gamma value
         let gamma = metadata.get_float("PNG:Gamma");

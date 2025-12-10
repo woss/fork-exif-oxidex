@@ -101,9 +101,10 @@ impl FormatParser for WebmParser {
                 // Verify this is actually WebM (DocType should be "webm")
                 if let Some(TagValue::String(doc_type)) = metadata.get("WebM:DocType") {
                     if doc_type != "webm" {
-                        return Err(ExifToolError::parse_error(
-                            format!("Invalid WebM DocType: expected 'webm', found '{}'", doc_type)
-                        ));
+                        return Err(ExifToolError::parse_error(format!(
+                            "Invalid WebM DocType: expected 'webm', found '{}'",
+                            doc_type
+                        )));
                     }
                 } else {
                     return Err(ExifToolError::parse_error("Missing WebM DocType"));
@@ -148,10 +149,7 @@ fn parse_ebml_header(
 
                 if elem_id == EBML_DOC_TYPE {
                     if let Ok(value) = read_string(reader, data_offset, elem_size as usize) {
-                        metadata.insert(
-                            "WebM:DocType".to_string(),
-                            TagValue::new_string(value),
-                        );
+                        metadata.insert("WebM:DocType".to_string(), TagValue::new_string(value));
                     }
                 }
 
@@ -539,16 +537,27 @@ fn read_uint(reader: &dyn FileReader, offset: u64, size: usize) -> Result<u64> {
         1 => er.u8_at(0).map(|v| v as u64),
         2 => er.u16_at(0).map(|v| v as u64),
         3 => {
-            let b0 = er.u8_at(0).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 0"))? as u32;
-            let b1 = er.u8_at(1).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 1"))? as u32;
-            let b2 = er.u8_at(2).ok_or_else(|| ExifToolError::parse_error("Failed to read byte 2"))? as u32;
+            let b0 = er
+                .u8_at(0)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read byte 0"))?
+                as u32;
+            let b1 = er
+                .u8_at(1)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read byte 1"))?
+                as u32;
+            let b2 = er
+                .u8_at(2)
+                .ok_or_else(|| ExifToolError::parse_error("Failed to read byte 2"))?
+                as u32;
             Some(((b0 << 16) | (b1 << 8) | b2) as u64)
         }
         4 => er.u32_at(0).map(|v| v as u64),
         5..=7 => {
             let mut value = 0u64;
             for i in 0..size {
-                let byte = er.u8_at(i).ok_or_else(|| ExifToolError::parse_error("Failed to read byte"))?;
+                let byte = er
+                    .u8_at(i)
+                    .ok_or_else(|| ExifToolError::parse_error("Failed to read byte"))?;
                 value = (value << 8) | byte as u64;
             }
             Some(value)
@@ -587,7 +596,8 @@ fn read_string(reader: &dyn FileReader, offset: u64, size: usize) -> Result<Stri
         return Ok(String::new());
     }
     let bytes = reader.read(offset, size)?;
-    String::from_utf8(bytes.to_vec()).map_err(|e| ExifToolError::parse_error(format!("Invalid UTF-8: {}", e)))
+    String::from_utf8(bytes.to_vec())
+        .map_err(|e| ExifToolError::parse_error(format!("Invalid UTF-8: {}", e)))
 }
 
 /// Convenience function to parse WebM metadata from a reader.

@@ -117,10 +117,7 @@ impl EPSParser {
                     TagValue::String(value_str.clone()),
                 );
                 // Add EPS:Title as per Worker 24 requirements
-                metadata.insert(
-                    "EPS:Title".to_string(),
-                    TagValue::new_string(value_str),
-                );
+                metadata.insert("EPS:Title".to_string(), TagValue::new_string(value_str));
             } else if let Some(value) = line.strip_prefix("%%For:") {
                 let trimmed_value = value.trim().to_string();
                 metadata.insert(
@@ -128,10 +125,7 @@ impl EPSParser {
                     TagValue::String(trimmed_value.clone()),
                 );
                 // Add EPS:For as per Worker 24 requirements
-                metadata.insert(
-                    "EPS:For".to_string(),
-                    TagValue::new_string(trimmed_value),
-                );
+                metadata.insert("EPS:For".to_string(), TagValue::new_string(trimmed_value));
             } else if let Some(value) = line.strip_prefix("%%DocumentData:") {
                 metadata.insert(
                     "PostScript:DocumentData".to_string(),
@@ -168,19 +162,13 @@ impl EPSParser {
 
         // Add EPS:Version if extracted from header
         if let Some(v) = version {
-            metadata.insert(
-                "EPS:Version".to_string(),
-                TagValue::new_string(v),
-            );
+            metadata.insert("EPS:Version".to_string(), TagValue::new_string(v));
         }
 
         // Add EPS:Pages as integer if available
         if let Some(pages_str) = pages {
             if let Ok(pages_int) = pages_str.parse::<i64>() {
-                metadata.insert(
-                    "EPS:Pages".to_string(),
-                    TagValue::new_integer(pages_int),
-                );
+                metadata.insert("EPS:Pages".to_string(), TagValue::new_integer(pages_int));
             }
         }
 
@@ -415,7 +403,8 @@ fn extract_eps_version_from_header(header: &str) -> Option<String> {
     if let Some(epsf_pos) = header.find("EPSF-") {
         let after_epsf = &header[epsf_pos + 5..];
         // Extract version number (typically X.X)
-        let version: String = after_epsf.chars()
+        let version: String = after_epsf
+            .chars()
             .take_while(|c| c.is_numeric() || *c == '.')
             .collect();
         if !version.is_empty() {
@@ -425,7 +414,8 @@ fn extract_eps_version_from_header(header: &str) -> Option<String> {
     // Fallback: look for PS-Adobe-X.X pattern
     if let Some(ps_pos) = header.find("PS-Adobe-") {
         let after_ps = &header[ps_pos + 9..];
-        let version: String = after_ps.chars()
+        let version: String = after_ps
+            .chars()
             .take_while(|c| c.is_numeric() || *c == '.')
             .collect();
         if !version.is_empty() {

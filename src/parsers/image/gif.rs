@@ -487,10 +487,7 @@ impl FormatParser for GIFParser {
             TagValue::String(lsd.height.to_string()),
         );
         // Add GIF: prefixed versions for format-specific tagging
-        metadata.insert(
-            "GIF:Width".to_string(),
-            TagValue::Integer(lsd.width as i64),
-        );
+        metadata.insert("GIF:Width".to_string(), TagValue::Integer(lsd.width as i64));
         metadata.insert(
             "GIF:Height".to_string(),
             TagValue::Integer(lsd.height as i64),
@@ -503,7 +500,11 @@ impl FormatParser for GIFParser {
         );
 
         // HasColorMap - ExifTool tag for global color table flag
-        let has_color_map_str = if lsd.global_color_table_flag { "Yes" } else { "No" };
+        let has_color_map_str = if lsd.global_color_table_flag {
+            "Yes"
+        } else {
+            "No"
+        };
         metadata.insert(
             "HasColorMap".to_string(),
             TagValue::String(has_color_map_str.to_string()),

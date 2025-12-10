@@ -68,50 +68,74 @@ pub fn parse_xmp_file(reader: &dyn FileReader) -> Result<MetadataMap> {
             // XMP:CreatorTool mapping
             "XMP:XMPToolkit" | "XMP:CreatorTool" => {
                 if !metadata.contains_key("XMP:CreatorTool") {
-                    metadata.insert("XMP:CreatorTool".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:CreatorTool".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             // XMP:CreationDate mapping
             "XMP:CreateDate" | "XMP:CreationDate" => {
                 if !metadata.contains_key("XMP:CreationDate") {
-                    metadata.insert("XMP:CreationDate".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:CreationDate".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             // XMP:ModificationDate mapping
             "XMP:ModifyDate" | "XMP:ModificationDate" => {
                 if !metadata.contains_key("XMP:ModificationDate") {
-                    metadata.insert("XMP:ModificationDate".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:ModificationDate".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             // XMP:Creator mapping
             "XMP:Creator" => {
                 // Ensure XMP:Creator is present
                 if !metadata.contains_key("XMP:Creator") {
-                    metadata.insert("XMP:Creator".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:Creator".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             // XMP:Subject mapping
             "XMP:Subject" => {
                 if !metadata.contains_key("XMP:Subject") {
-                    metadata.insert("XMP:Subject".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:Subject".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             // XMP:Keywords mapping
             "XMP:Keywords" => {
                 if !metadata.contains_key("XMP:Keywords") {
-                    metadata.insert("XMP:Keywords".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:Keywords".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             // XMP:Description mapping
             "XMP:Description" => {
                 if !metadata.contains_key("XMP:Description") {
-                    metadata.insert("XMP:Description".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:Description".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             // XMP:Rights mapping
             "XMP:Rights" => {
                 if !metadata.contains_key("XMP:Rights") {
-                    metadata.insert("XMP:Rights".to_string(), TagValue::new_string(value.clone()));
+                    metadata.insert(
+                        "XMP:Rights".to_string(),
+                        TagValue::new_string(value.clone()),
+                    );
                 }
             }
             _ => {}

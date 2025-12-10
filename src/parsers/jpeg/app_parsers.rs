@@ -380,14 +380,8 @@ pub fn parse_sof_segment(
     );
 
     // Also add JPEG: prefixed versions for format-specific tagging
-    metadata.insert(
-        "JPEG:Width".to_string(),
-        TagValue::Integer(width as i64),
-    );
-    metadata.insert(
-        "JPEG:Height".to_string(),
-        TagValue::Integer(height as i64),
-    );
+    metadata.insert("JPEG:Width".to_string(), TagValue::Integer(width as i64));
+    metadata.insert("JPEG:Height".to_string(), TagValue::Integer(height as i64));
 
     // Encoding process - match ExifTool's format with coding suffix
     let encoding = match marker {

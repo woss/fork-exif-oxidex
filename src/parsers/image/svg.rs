@@ -98,8 +98,19 @@ impl SVGParser {
     /// Counts common SVG elements: rect, circle, ellipse, line, polyline, polygon, path, text, image, use, g
     fn count_svg_elements(text: &str) -> i64 {
         let mut count = 0i64;
-        let elements = ["<rect", "<circle", "<ellipse", "<line", "<polyline", "<polygon",
-                       "<path", "<text", "<image", "<use", "<g "];
+        let elements = [
+            "<rect",
+            "<circle",
+            "<ellipse",
+            "<line",
+            "<polyline",
+            "<polygon",
+            "<path",
+            "<text",
+            "<image",
+            "<use",
+            "<g ",
+        ];
 
         for element in &elements {
             // Count occurrences of each element tag
@@ -327,7 +338,10 @@ impl FormatParser for SVGParser {
 
             // Extract viewBox for dimensions if width/height not present
             if let Some(viewbox) = Self::extract_attribute(svg_tag, "viewBox") {
-                metadata.insert("SVG:ViewBox".to_string(), TagValue::new_string(viewbox.clone()));
+                metadata.insert(
+                    "SVG:ViewBox".to_string(),
+                    TagValue::new_string(viewbox.clone()),
+                );
 
                 // If no width/height, try to extract from viewBox
                 if !metadata.contains_key("ImageWidth")
@@ -345,14 +359,20 @@ impl FormatParser for SVGParser {
 
             // Extract version - ExifTool calls this "SVGVersion" or "Version"
             if let Some(version) = Self::extract_attribute(svg_tag, "version") {
-                metadata.insert("SVG:SVGVersion".to_string(), TagValue::String(version.clone()));
+                metadata.insert(
+                    "SVG:SVGVersion".to_string(),
+                    TagValue::String(version.clone()),
+                );
                 // Also add SVG:Version for Worker 26 compatibility
                 metadata.insert("SVG:Version".to_string(), TagValue::new_string(version));
             }
 
             // Extract preserveAspectRatio
             if let Some(preserve) = Self::extract_attribute(svg_tag, "preserveAspectRatio") {
-                metadata.insert("SVG:PreserveAspectRatio".to_string(), TagValue::new_string(preserve));
+                metadata.insert(
+                    "SVG:PreserveAspectRatio".to_string(),
+                    TagValue::new_string(preserve),
+                );
             }
         }
 
