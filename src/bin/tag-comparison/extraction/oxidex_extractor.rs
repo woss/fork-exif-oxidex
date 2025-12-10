@@ -166,27 +166,26 @@ impl OxiDexExtractor {
                 // ExposureTime might come as a string ratio like "10/2500" - simplify to "1/250"
                 if name == "ExposureTime"
                     && let Some(slash_pos) = s.find('/')
-                {
-                    if let (Ok(num), Ok(den)) = (
+                    && let (Ok(num), Ok(den)) = (
                         s[..slash_pos].parse::<i64>(),
                         s[slash_pos + 1..].parse::<i64>(),
-                    ) {
-                        if den > 0 && num > 0 {
-                            // Find GCD to simplify the fraction
-                            fn gcd(a: i64, b: i64) -> i64 {
-                                if b == 0 { a } else { gcd(b, a % b) }
-                            }
-                            let g = gcd(num, den);
-                            let simplified_num = num / g;
-                            let simplified_den = den / g;
-                            if simplified_num == 1 {
-                                return format!("1/{}", simplified_den);
-                            } else if simplified_den == 1 {
-                                return simplified_num.to_string();
-                            }
-                            return format!("{}/{}", simplified_num, simplified_den);
-                        }
+                    )
+                    && den > 0
+                    && num > 0
+                {
+                    // Find GCD to simplify the fraction
+                    fn gcd(a: i64, b: i64) -> i64 {
+                        if b == 0 { a } else { gcd(b, a % b) }
                     }
+                    let g = gcd(num, den);
+                    let simplified_num = num / g;
+                    let simplified_den = den / g;
+                    if simplified_num == 1 {
+                        return format!("1/{}", simplified_den);
+                    } else if simplified_den == 1 {
+                        return simplified_num.to_string();
+                    }
+                    return format!("{}/{}", simplified_num, simplified_den);
                 }
 
                 // Try to format dates in EXIF style
