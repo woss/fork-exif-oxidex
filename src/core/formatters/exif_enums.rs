@@ -426,10 +426,7 @@ mod tests {
             format_components_configuration(&[1, 2, 3, 0]),
             "Y, Cb, Cr, -"
         );
-        assert_eq!(
-            format_components_configuration(&[4, 5, 6, 0]),
-            "R, G, B, -"
-        );
+        assert_eq!(format_components_configuration(&[4, 5, 6, 0]), "R, G, B, -");
     }
 
     #[test]
@@ -440,9 +437,6 @@ mod tests {
 
     #[test]
     fn test_interop_index() {
-        assert_eq!(
-            format_interop_index("R98"),
-            "R98 - DCF basic file (sRGB)"
-        );
+        assert_eq!(format_interop_index("R98"), "R98 - DCF basic file (sRGB)");
     }
 }

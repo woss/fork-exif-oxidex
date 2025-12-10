@@ -90,12 +90,7 @@ static TAG_ID_TO_NAME_INDEX: LazyLock<HashMap<(u16, FormatFamily), String>> = La
         }
 
         // Skip compression/sensor type names that look like descriptions
-        let description_patterns = [
-            "Associated Alpha",
-            "Baseline JPEG",
-            "JBIG color",
-            "JBIG",
-        ];
+        let description_patterns = ["Associated Alpha", "Baseline JPEG", "JBIG color", "JBIG"];
         for pattern in &description_patterns {
             if name == *pattern {
                 return false;
