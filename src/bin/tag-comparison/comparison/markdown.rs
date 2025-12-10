@@ -225,7 +225,9 @@ fn generate_format_page(
     // Matched Tags
     if !comparison.matched_tags.is_empty() {
         content.push_str("## Matched Tags\n\n");
-        content.push_str("Tags where OxiDex matches ExifTool exactly (or matches expected format):\n\n");
+        content.push_str(
+            "Tags where OxiDex matches ExifTool exactly (or matches expected format):\n\n",
+        );
         content.push_str("| Tag |\n");
         content.push_str("|-----|\n");
         // Sort tags for better readability

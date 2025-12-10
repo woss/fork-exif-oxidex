@@ -115,7 +115,7 @@ pub fn parse_resources_metadata(reader: &dyn FileReader) -> Result<MetadataMap> 
     // Extract metadata from each XObject to find images
     let mut image_count = 0;
     let mut first_image_metadata: Option<ImageMetadata> = None;
-    
+
     // Store extracted metadata from embedded images to merge later
     let mut embedded_metadata = MetadataMap::new();
     let mut found_embedded_metadata = false;
@@ -154,14 +154,21 @@ pub fn parse_resources_metadata(reader: &dyn FileReader) -> Result<MetadataMap> 
                         if let Ok((_, length)) = parse_dict_integer(xobject_data, "/Length") {
                             if length > 0 {
                                 if let Some(stream_start_offset) = find_stream_start(xobject_data) {
-                                    let abs_stream_offset = xobject_offset + stream_start_offset as u64;
-                                    
+                                    let abs_stream_offset =
+                                        xobject_offset + stream_start_offset as u64;
+
                                     // Read the stream data (the JPEG file)
-                                    if let Ok(stream_data) = reader.read(abs_stream_offset, length as usize) {
+                                    if let Ok(stream_data) =
+                                        reader.read(abs_stream_offset, length as usize)
+                                    {
                                         let stream_reader = BufferedReader::from_bytes(stream_data);
-                                        
+
                                         // Use the core JPEG parser
-                                        if let Ok(jpeg_meta) = crate::core::operations::parse_jpeg_metadata(&stream_reader) {
+                                        if let Ok(jpeg_meta) =
+                                            crate::core::operations::parse_jpeg_metadata(
+                                                &stream_reader,
+                                            )
+                                        {
                                             if !jpeg_meta.is_empty() {
                                                 // Merge metadata
                                                 for (k, v) in jpeg_meta {
@@ -214,7 +221,7 @@ pub fn parse_resources_metadata(reader: &dyn FileReader) -> Result<MetadataMap> 
             );
         }
     }
-    
+
     // Merge embedded metadata
     for (k, v) in embedded_metadata {
         metadata.insert(k, v);
@@ -706,7 +713,7 @@ fn find_stream_start(data: &[u8]) -> Option<usize> {
     if let Some(pos) = find_subsequence(data, b"stream") {
         // "stream" keyword is 6 bytes
         let after_stream = &data[pos + 6..];
-        
+
         // PDF spec: 'stream' should be followed by CRLF or LF
         if after_stream.starts_with(b"\r\n") {
             Some(pos + 8)
