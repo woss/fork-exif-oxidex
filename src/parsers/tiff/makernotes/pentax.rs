@@ -649,27 +649,27 @@ impl MakerNoteParser for PentaxParser {
 
                 // Decoded value tags using const decoders
                 PENTAX_QUALITY => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:Quality".to_string(), QUALITY.decode(value));
                 }
 
                 PENTAX_PICTURE_MODE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:PictureMode".to_string(), PICTURE_MODE.decode(value));
                 }
 
                 PENTAX_FLASH_MODE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:FlashMode".to_string(), FLASH_MODE.decode(value));
                 }
 
                 PENTAX_FOCUS_MODE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:FocusMode".to_string(), FOCUS_MODE.decode(value));
                 }
 
                 PENTAX_METERING_MODE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:MeteringMode".to_string(),
                         METERING_MODE.decode(value),
@@ -677,7 +677,7 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_WHITE_BALANCE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:WhiteBalance".to_string(),
                         WHITE_BALANCE.decode(value),
@@ -685,7 +685,7 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_WHITE_BALANCE_MODE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:WhiteBalanceMode".to_string(),
                         WHITE_BALANCE_MODE.decode(value),
@@ -693,39 +693,39 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_SATURATION => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:Saturation".to_string(), SATURATION.decode(value));
                 }
 
                 PENTAX_CONTRAST => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:Contrast".to_string(), CONTRAST.decode(value));
                 }
 
                 PENTAX_SHARPNESS => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:Sharpness".to_string(), SHARPNESS.decode(value));
                 }
 
                 PENTAX_DRIVE_MODE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:DriveMode".to_string(), DRIVE_MODE.decode(value));
                 }
 
                 PENTAX_COLOR_SPACE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:ColorSpace".to_string(), COLOR_SPACE.decode(value));
                 }
 
                 // Note: Former SHAKE_REDUCTION_INFO at 0x003C is now AF_POINTS_IN_FOCUS_2
                 // Shake reduction is now at 0x005C - handled below
                 PENTAX_PENTAX_IMAGE_SIZE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:ImageSize".to_string(), IMAGE_SIZE.decode(value));
                 }
 
                 PENTAX_AUTO_BRACKETING => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:AutoBracketing".to_string(),
                         AUTO_BRACKETING.decode(value),
@@ -733,7 +733,7 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_WORLD_TIME_LOCATION => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:WorldTimeLocation".to_string(),
                         WORLD_TIME_LOCATION.decode(value),
@@ -741,7 +741,7 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_PIXEL_SHIFT_RESOLUTION => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:PixelShiftResolution".to_string(),
                         PIXEL_SHIFT_RESOLUTION.decode(value),
@@ -750,14 +750,14 @@ impl MakerNoteParser for PentaxParser {
 
                 // Numeric value tags (no decoding needed)
                 PENTAX_AF_POINT_SELECTED => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     if (0..=65535).contains(&value) {
                         tags.insert("Pentax:AFPointSelected".to_string(), value.to_string());
                     }
                 }
 
                 PENTAX_AF_POINT_IN_FOCUS => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     if (0..=65535).contains(&value) {
                         tags.insert("Pentax:AFPointInFocus".to_string(), value.to_string());
                     }
@@ -769,12 +769,12 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_BLUE_BALANCE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:BlueBalance".to_string(), value.to_string());
                 }
 
                 PENTAX_RED_BALANCE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:RedBalance".to_string(), value.to_string());
                 }
 
@@ -834,10 +834,10 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_CAMERA_TEMPERATURE => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:CameraTemperature".to_string(),
-                        format!("{}°C", value),
+                        format!("{} C", value),
                     );
                 }
 
@@ -857,7 +857,7 @@ impl MakerNoteParser for PentaxParser {
                 }
 
                 PENTAX_PICTURE_MODE2 => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert("Pentax:PictureMode2".to_string(), value.to_string());
                 }
 
@@ -886,7 +886,7 @@ impl MakerNoteParser for PentaxParser {
                     );
                 }
                 PENTAX_EXPOSURE_COMPENSATION => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:ExposureCompensation".to_string(),
                         format!("{:+.1} EV", value as f32 / 10.0),
@@ -923,7 +923,7 @@ impl MakerNoteParser for PentaxParser {
                     );
                 }
                 PENTAX_EFFECTIVE_LV => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:EffectiveLV".to_string(),
                         format!("{:.1}", value as f32 / 10.0),
@@ -998,7 +998,7 @@ impl MakerNoteParser for PentaxParser {
                     );
                 }
                 PENTAX_FLASH_EXPOSURE_COMP => {
-                    let value = entry.value_offset as i32;
+                    let value = extract_value_as_i32(&entry, byte_order);
                     tags.insert(
                         "Pentax:FlashExposureComp".to_string(),
                         format!("{:+.1} EV", value as f32 / 10.0),
@@ -1490,5 +1490,42 @@ mod tests {
 
         let invalid_data = b"Nikon\0\0\0";
         assert!(!is_pentax_makernote(invalid_data));
+    }
+}
+
+// ============================================================================
+// Value Extraction Helpers for Byte Order Handling
+// ============================================================================
+
+fn extract_u8_value(entry: &IfdEntry, byte_order: ByteOrder) -> u8 {
+    match byte_order {
+        ByteOrder::BigEndian => ((entry.value_offset >> 24) & 0xFF) as u8,
+        ByteOrder::LittleEndian => (entry.value_offset & 0xFF) as u8,
+    }
+}
+
+fn extract_u16_value(entry: &IfdEntry, byte_order: ByteOrder) -> u16 {
+    match byte_order {
+        ByteOrder::BigEndian => ((entry.value_offset >> 16) & 0xFFFF) as u16,
+        ByteOrder::LittleEndian => (entry.value_offset & 0xFFFF) as u16,
+    }
+}
+
+fn extract_value_as_i32(entry: &IfdEntry, byte_order: ByteOrder) -> i32 {
+    match entry.field_type {
+        1 => extract_u8_value(entry, byte_order) as i32,
+        3 => extract_u16_value(entry, byte_order) as i32,
+        6 => extract_u8_value(entry, byte_order) as i8 as i32,
+        8 => extract_u16_value(entry, byte_order) as i16 as i32,
+        _ => entry.value_offset as i32,
+    }
+}
+
+#[allow(dead_code)]
+fn extract_value_as_u32(entry: &IfdEntry, byte_order: ByteOrder) -> u32 {
+    match entry.field_type {
+        1 | 6 => extract_u8_value(entry, byte_order) as u32,
+        3 | 8 => extract_u16_value(entry, byte_order) as u32,
+        _ => entry.value_offset,
     }
 }
