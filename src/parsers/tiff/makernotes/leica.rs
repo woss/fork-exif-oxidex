@@ -98,6 +98,94 @@ const LEICA_CAMERA_ROLL_ANGLE: u16 = 0x0064;
 const LEICA_MACRO_MODE: u16 = 0x0070;
 const LEICA_SCENE_MODE: u16 = 0x0071;
 
+// Leica 4 (M9) Subdirectories
+const L4_SUBDIR_3000: u16 = 0x3000;
+const L4_SUBDIR_3100: u16 = 0x3100;
+const L4_SUBDIR_3400: u16 = 0x3400;
+const L4_SUBDIR_3900: u16 = 0x3900;
+
+// Leica 4 (M9) Tag IDs
+const L4_QUALITY: u16 = 0x0003;
+const L4_USER_PROFILE: u16 = 0x0004;
+const L4_SERIAL_NUMBER: u16 = 0x0005;
+const L4_WHITE_BALANCE: u16 = 0x0006;
+const L4_FIRMWARE_VERSION: u16 = 0x0007;
+const L4_EXTERNAL_SENSOR_BRIGHTNESS: u16 = 0x0008;
+const L4_MEASURED_LV: u16 = 0x0009;
+const L4_APPROXIMATE_F_NUMBER: u16 = 0x000A;
+const L4_CAMERA_TEMPERATURE: u16 = 0x000B;
+const L4_WB_RGB_LEVELS: u16 = 0x000E;
+const L4_LENS_TYPE: u16 = 0x0014;
+const L4_CONTRAST: u16 = 0x002C;
+const L4_SATURATION: u16 = 0x002D;
+const L4_SHARPENING: u16 = 0x002E;
+const L4_JPEG_QUALITY: u16 = 0x002F;
+const L4_BASE_ISO: u16 = 0x0030;
+const L4_SENSOR_WIDTH: u16 = 0x0031;
+const L4_SENSOR_HEIGHT: u16 = 0x0032;
+const L4_SENSOR_BIT_DEPTH: u16 = 0x0033;
+
+// Leica 4 Decoders
+const_decoder!(
+    L4_DECODE_CONTRAST,
+    i32,
+    [
+        (0, "Low"),
+        (1, "Normal"),
+        (2, "High"),
+        (3, "Medium Low"),
+        (4, "Medium High"),
+    ]
+);
+
+const_decoder!(
+    L4_DECODE_SHARPENING,
+    i32,
+    [
+        (0, "Low"),
+        (1, "Normal"),
+        (2, "High"),
+        (3, "Medium Low"),
+        (4, "Medium High"),
+        (5, "Off"),
+    ]
+);
+
+const_decoder!(
+    L4_DECODE_SATURATION,
+    i32,
+    [
+        (0, "Low"),
+        (1, "Normal"),
+        (2, "High"),
+        (3, "Medium Low"),
+        (4, "Medium High"),
+        (5, "Black & White"),
+    ]
+);
+
+const_decoder!(
+    L4_DECODE_WHITE_BALANCE,
+    i32,
+    [
+        (0, "Auto"),
+        (1, "Daylight"),
+        (2, "Fluorescent"),
+        (3, "Tungsten"),
+        (4, "Flash"),
+        (5, "Cloudy"),
+        (6, "Shade"),
+        (7, "Manual"),
+        (8, "Kelvin"),
+    ]
+);
+
+const_decoder!(
+    L4_DECODE_JPEG_QUALITY,
+    i32,
+    [(1, "Basic"), (2, "Standard"), (3, "Fine"),]
+);
+
 // Leica MakerNote header signature
 // Leica typically uses "LEICA\0\0\0" or "LEICA CAMERA AG" headers
 const LEICA_HEADER_SHORT: &[u8] = b"LEICA\0\0\0";
