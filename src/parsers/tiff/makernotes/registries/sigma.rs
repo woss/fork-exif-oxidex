@@ -12,12 +12,8 @@ use super::super::shared::tag_registry::TagRegistry;
 // Inline decoders to avoid cross-module import issues
 
 /// Decoder for Sigma resolution modes
-const DECODE_RESOLUTION_MODE: SimpleValueDecoder<i32> = SimpleValueDecoder::new(&[
-    (0, "Low"),
-    (1, "Medium"),
-    (2, "High"),
-    (3, "Ultra High"),
-]);
+const DECODE_RESOLUTION_MODE: SimpleValueDecoder<i32> =
+    SimpleValueDecoder::new(&[(0, "Low"), (1, "Medium"), (2, "High"), (3, "Ultra High")]);
 
 /// Decoder for Sigma autofocus modes
 const DECODE_AF_MODE: SimpleValueDecoder<i32> = SimpleValueDecoder::new(&[

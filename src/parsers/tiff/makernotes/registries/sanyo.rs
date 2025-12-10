@@ -16,8 +16,7 @@ const QUALITY: SimpleValueDecoder<u16> =
     SimpleValueDecoder::new(&[(0, "Normal"), (1, "Fine"), (2, "Super Fine")]);
 
 /// Decoder for Sanyo focus modes
-const FOCUS_MODE: SimpleValueDecoder<u16> =
-    SimpleValueDecoder::new(&[(0, "Normal"), (1, "Macro")]);
+const FOCUS_MODE: SimpleValueDecoder<u16> = SimpleValueDecoder::new(&[(0, "Normal"), (1, "Macro")]);
 
 /// Decoder for Sanyo sequential modes
 const SEQUENTIAL_MODE: SimpleValueDecoder<u16> = SimpleValueDecoder::new(&[
