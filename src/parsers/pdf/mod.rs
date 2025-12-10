@@ -238,12 +238,11 @@ pub fn parse_pdf_metadata(reader: &dyn FileReader) -> Result<MetadataMap> {
     }
 
     // Extract embedded resources metadata
-    // TODO: Uncomment when resources_parser is fixed
-    // if let Ok(res_meta) = resources_parser::parse_resources_metadata(reader) {
-    //     for (key, value) in res_meta.iter() {
-    //         metadata.insert(key.clone(), value.clone());
-    //     }
-    // }
+    if let Ok(res_meta) = resources_parser::parse_resources_metadata(reader) {
+        for (key, value) in res_meta.iter() {
+            metadata.insert(key.clone(), value.clone());
+        }
+    }
 
     // Extract font metadata
     if let Ok(font_meta) = font_parser::parse_font_metadata(reader) {
