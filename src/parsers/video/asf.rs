@@ -668,7 +668,7 @@ fn parse_codec_list(
     let mut pos = offset + 44; // Start at codec entries (relative to object start)
     let end_pos = offset + size;
     let mut audio_idx = 0;
-    let mut _video_idx = 0;
+    let mut video_idx = 0;
 
     for _ in 0..codec_count {
         if pos + 2 > end_pos {
@@ -774,7 +774,7 @@ fn parse_codec_list(
                     );
                 }
                 // Don't output VideoCodecID - ExifTool doesn't
-                video_idx += 1;
+                _video_idx += 1;
             }
             0x0002 => {
                 // Audio codec
